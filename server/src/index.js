@@ -4,8 +4,10 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
 import { db, newId, hashToken, slugify, uniqueSlug, rowToProduct } from "./db.js";
-import { productFromPhoto, generateDigitalProduct, httpError, PRODUCT_TYPES } from "./claude.js";
-import { renderCover, renderProductPdf, COVER_COLORS, writeFileSafe } from "./artwork.js";
+import { productFromPhoto, httpError, PRODUCT_TYPES } from "./claude.js";
+import { writeFileSafe } from "./artwork.js";
+import * as store from "./store.js";
+import * as agent from "./agent.js";
 import * as pay from "./payments.js";
 import { storePage, productPage, notePage, esc, money } from "./render.js";
 
@@ -72,15 +74,7 @@ function saveImage(base64, mediaType) {
   return writeFileSafe(dirs.images, `${crypto.randomUUID()}.${ext}`, buf);
 }
 
-const clampStr = (v, n) => String(v ?? "").slice(0, n);
-const strList = (v, n, len = 200) => (Array.isArray(v) ? v : []).map((x) => clampStr(x, len)).filter(Boolean).slice(0, n);
-const faqList = (v) => (Array.isArray(v) ? v : []).filter((f) => f && f.q).slice(0, 6).map((f) => ({ q: clampStr(f.q, 200), a: clampStr(f.a, 800) }));
-const cents = (v) => Math.max(0, Math.round(Number(v || 0) * 100));
-const productOf = (seller, id) => {
-  const row = db.prepare("SELECT * FROM products WHERE id = ? AND seller_id = ?").get(id, seller.id);
-  if (!row) throw httpError(404, "That product doesn't exist.");
-  return row;
-};
+const clampStr = store.clampStr, strList = store.strList, faqList = store.faqList;
 
 /* ---------- account ---------- */
 app.get("/health", (_req, res) => res.json({ ok: true }));
@@ -91,21 +85,11 @@ app.post("/api/sellers", wrap(async (req, res) => {
   const id = newId("sel");
   const slug = uniqueSlug("sellers", "store_slug", slugify(name, 40));
   db.prepare("INSERT INTO sellers (id, token_hash, store_name, store_slug) VALUES (?,?,?,?)").run(id, hashToken(token), name, slug);
-  res.status(201).json({ token, seller: publicSeller(db.prepare("SELECT * FROM sellers WHERE id = ?").get(id)) });
+  res.status(201).json({ token, seller: store.publicSeller(db.prepare("SELECT * FROM sellers WHERE id = ?").get(id)) });
 }));
 
-const publicSeller = (s) => ({ id: s.id, store_name: s.store_name, store_slug: s.store_slug, tagline: s.tagline,
-  store_url: `${config.publicUrl}/s/${s.store_slug}`, stripe_connected: Boolean(s.stripe_account_id), stripe_ready: Boolean(s.stripe_ready) });
-
-app.get("/api/me", auth, (req, res) => res.json(publicSeller(req.seller)));
-app.patch("/api/me", auth, wrap(async (req, res) => {
-  const name = req.body.store_name != null ? clampStr(req.body.store_name, 80).trim() : req.seller.store_name;
-  const tagline = req.body.tagline != null ? clampStr(req.body.tagline, 160) : req.seller.tagline;
-  let slug = req.seller.store_slug;
-  if (req.body.store_slug) slug = uniqueSlug("sellers", "store_slug", slugify(req.body.store_slug, 40));
-  db.prepare("UPDATE sellers SET store_name = ?, tagline = ?, store_slug = ? WHERE id = ?").run(name || req.seller.store_name, tagline, slug, req.seller.id);
-  res.json(publicSeller(db.prepare("SELECT * FROM sellers WHERE id = ?").get(req.seller.id)));
-}));
+app.get("/api/me", auth, (req, res) => res.json(store.publicSeller(req.seller)));
+app.patch("/api/me", auth, (req, res) => res.json(store.updateStore(req.seller, req.body || {})));
 
 // App Store guideline 5.1.1(v): apps that create accounts must let people delete them in-app.
 app.delete("/api/me", auth, (req, res) => {
@@ -130,93 +114,26 @@ app.post("/api/ai/product-from-photo", auth, aiLimit, wrap(async (req, res) => {
 }));
 
 app.post("/api/ai/generate", auth, aiLimit, wrap(async (req, res) => {
-  const { type = "guide", niche, color = "cobalt", price } = req.body || {};
-  if (!niche || String(niche).trim().length < 4) throw httpError(400, "Describe who the product is for, in a few words.");
-  const r = await generateDigitalProduct({ type, niche: clampStr(niche, 200) });
-  const hex = COVER_COLORS[color] || COVER_COLORS.cobalt;
-  const cover = renderCover({ title: r.title, tagline: r.tagline, type, color: hex });
-  const image_file = writeFileSafe(dirs.images, `${crypto.randomUUID()}.png`, cover);
-  const pdf = await renderProductPdf({ ...r, type, storeName: req.seller.store_name }, cover, hex);
-  const delivery_file = writeFileSafe(dirs.files, `${crypto.randomUUID()}.pdf`, pdf);
-  const id = insertProduct(req.seller, {
-    title: r.title, tagline: r.tagline, description: r.description, bullets: r.bullets, faq: r.faq, tags: r.tags,
-    category: r.category || PRODUCT_TYPES[type].name, kind: "digital", price: price || r.suggested_price || PRODUCT_TYPES[type].price,
-    image_file, alt_text: `Cover of ${r.title}`, seo_description: r.tagline,
-  }, delivery_file);
-  res.status(201).json(rowToProduct(db.prepare("SELECT * FROM products WHERE id = ?").get(id)));
+  res.status(201).json(await store.generateProduct(req.seller, req.body || {}));
 }));
 
 app.get("/api/product-types", (_req, res) => res.json(Object.entries(PRODUCT_TYPES).map(([id, t]) => ({ id, name: t.name, sub: t.sub, price: t.price }))));
 
+/* ---------- Fable store agent ---------- */
+app.post("/api/agent/runs", auth, aiLimit, (req, res) => {
+  const run = agent.startRun(req.seller, req.body?.messages);
+  res.status(202).json({ id: run.id, status: run.status });
+});
+app.get("/api/agent/runs/:id", auth, (req, res) => res.json(agent.getRun(req.seller, req.params.id, Number(req.query.after) || 0)));
+
 /* ---------- products ---------- */
-function insertProduct(seller, b, deliveryFile = null) {
-  const id = newId("prd");
-  const slug = uniqueSlug("products", "slug", slugify(b.title), seller.id);
-  if (b.image_file && !/^[\w-]+\.(jpg|png|webp|gif)$/.test(b.image_file)) throw httpError(400, "Invalid image reference.");
-  db.prepare(`INSERT INTO products (id, seller_id, slug, title, tagline, description, bullets, faq, tags, category, kind, price_cents, image_file, alt_text, seo_description, delivery_file, delivery_url)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-    id, seller.id, slug, clampStr(b.title, 120) || "Untitled product", clampStr(b.tagline, 160), clampStr(b.description, 3000),
-    JSON.stringify(strList(b.bullets, 6)), JSON.stringify(faqList(b.faq)), JSON.stringify(strList(b.tags, 6, 30)),
-    clampStr(b.category, 60), b.kind === "digital" ? "digital" : "physical", cents(b.price), b.image_file || null,
-    clampStr(b.alt_text, 200), clampStr(b.seo_description, 160), deliveryFile, b.delivery_url ? clampStr(b.delivery_url, 500) : null);
-  return id;
-}
-
-app.get("/api/products", auth, (req, res) => {
-  const rows = db.prepare("SELECT * FROM products WHERE seller_id = ? ORDER BY created_at DESC").all(req.seller.id);
-  res.json(rows.map((r) => ({ ...rowToProduct(r), page_url: `${config.publicUrl}/s/${req.seller.store_slug}/${r.slug}` })));
-});
-app.get("/api/products/:id", auth, (req, res) => {
-  const r = productOf(req.seller, req.params.id);
-  res.json({ ...rowToProduct(r), page_url: `${config.publicUrl}/s/${req.seller.store_slug}/${r.slug}` });
-});
-app.post("/api/products", auth, wrap(async (req, res) => {
-  const b = req.body || {};
-  if (b.delivery_url && !/^https:\/\//.test(b.delivery_url)) throw httpError(400, "The download link must start with https://");
-  const id = insertProduct(req.seller, b);
-  res.status(201).json(rowToProduct(db.prepare("SELECT * FROM products WHERE id = ?").get(id)));
-}));
-app.patch("/api/products/:id", auth, wrap(async (req, res) => {
-  const row = productOf(req.seller, req.params.id), b = req.body || {};
-  const priceChanged = b.price != null && cents(b.price) !== row.price_cents;
-  const next = {
-    title: b.title != null ? clampStr(b.title, 120) : row.title, tagline: b.tagline != null ? clampStr(b.tagline, 160) : row.tagline,
-    description: b.description != null ? clampStr(b.description, 3000) : row.description, category: b.category != null ? clampStr(b.category, 60) : row.category,
-    price_cents: b.price != null ? cents(b.price) : row.price_cents, delivery_url: b.delivery_url !== undefined ? (b.delivery_url ? clampStr(b.delivery_url, 500) : null) : row.delivery_url,
-  };
-  db.prepare("UPDATE products SET title=?, tagline=?, description=?, category=?, price_cents=?, delivery_url=? WHERE id=?")
-    .run(next.title, next.tagline, next.description, next.category, next.price_cents, next.delivery_url, row.id);
-  // A new price needs a new Stripe price + Payment Link; take the product back to draft.
-  if (priceChanged && row.status === "live") db.prepare("UPDATE products SET status='draft', payment_link_url=NULL WHERE id=?").run(row.id);
-  res.json(rowToProduct(db.prepare("SELECT * FROM products WHERE id = ?").get(row.id)));
-}));
-app.delete("/api/products/:id", auth, (req, res) => {
-  const row = productOf(req.seller, req.params.id);
-  db.prepare("DELETE FROM products WHERE id = ?").run(row.id);
-  for (const [dir, f] of [[dirs.images, row.image_file], [dirs.files, row.delivery_file]]) if (f) fs.rm(path.join(dir, f), { force: true }, () => {});
-  res.status(204).end();
-});
-
-app.post("/api/products/:id/publish", auth, wrap(async (req, res) => {
-  const row = productOf(req.seller, req.params.id);
-  if (!req.seller.stripe_account_id) throw httpError(409, "Connect Stripe first so you can get paid.");
-  if (!req.seller.stripe_ready) {
-    const ready = await pay.accountReady(req.seller.stripe_account_id);
-    db.prepare("UPDATE sellers SET stripe_ready = ? WHERE id = ?").run(ready ? 1 : 0, req.seller.id);
-    if (!ready) throw httpError(409, "Finish setting up your Stripe account to start selling.");
-  }
-  if (row.price_cents < 50) throw httpError(400, "Set a price of at least $0.50.");
-  if (row.kind === "digital" && !row.delivery_file && !row.delivery_url) throw httpError(400, "Add the file buyers will download before publishing.");
-  const s = await pay.publishToStripe(req.seller, rowToProduct(row));
-  db.prepare("UPDATE products SET status='live', stripe_product_id=?, stripe_price_id=?, payment_link_url=? WHERE id=?")
-    .run(s.stripe_product_id, s.stripe_price_id, s.payment_link_url, row.id);
-  res.json({ ...rowToProduct(db.prepare("SELECT * FROM products WHERE id = ?").get(row.id)), page_url: `${config.publicUrl}/s/${req.seller.store_slug}/${row.slug}` });
-}));
-
-app.get("/api/orders", auth, (req, res) => {
-  res.json(db.prepare(`SELECT o.id, o.email, o.amount_cents, o.created_at, p.title FROM orders o JOIN products p ON p.id = o.product_id
-    WHERE p.seller_id = ? ORDER BY o.created_at DESC LIMIT 200`).all(req.seller.id));
-});
+app.get("/api/products", auth, (req, res) => res.json(store.listProducts(req.seller)));
+app.get("/api/products/:id", auth, (req, res) => res.json(store.withPage(req.seller, store.productRow(req.seller, req.params.id))));
+app.post("/api/products", auth, (req, res) => res.status(201).json(store.createProduct(req.seller, req.body || {})));
+app.patch("/api/products/:id", auth, (req, res) => res.json(store.updateProduct(req.seller, req.params.id, req.body || {})));
+app.delete("/api/products/:id", auth, (req, res) => { store.deleteProduct(req.seller, req.params.id); res.status(204).end(); });
+app.post("/api/products/:id/publish", auth, wrap(async (req, res) => res.json(await store.publishProduct(req.seller, req.params.id))));
+app.get("/api/orders", auth, (req, res) => res.json(store.listOrders(req.seller)));
 
 /* ---------- Stripe Connect ---------- */
 app.post("/api/stripe/onboard", auth, wrap(async (req, res) => {
@@ -295,15 +212,7 @@ app.get("/terms", legal("Terms of use", `
 <h2>Contact</h2><p>REPLACE_WITH_SUPPORT_EMAIL</p>`));
 
 /* ---------- research list shown in the app's "What's selling" tab ---------- */
-app.get("/api/trends", (_req, res) => res.json([
-  { name: "Digital planners", why: "Hyperlinked PDF planners for GoodNotes and Notability. Peak season runs October to January.", where: "Etsy, TikTok, Pinterest" },
-  { name: "Printable wall art", why: "Minimalist and motivational prints, one of the highest-volume digital categories on Etsy.", where: "Etsy, Pinterest" },
-  { name: "Content & hook templates", why: "Hooks, scripts and content calendars for creators and small shops.", where: "TikTok, Instagram" },
-  { name: "Spreadsheet templates", why: "Budget, savings and small-business trackers for Excel and Google Sheets.", where: "Etsy, TikTok" },
-  { name: "Digital stickers", why: "Transparent PNG sticker packs for iPad planners.", where: "Etsy, Instagram" },
-  { name: "Canva templates", why: "Social posts, business cards and branding kits edited in Canva.", where: "Etsy, Instagram" },
-  { name: "E-books & mini guides", why: "Short, specific how-to guides tied to a creator's niche.", where: "Instagram, TikTok" },
-]));
+app.get("/api/trends", (_req, res) => res.json(store.TRENDS));
 
 /* ---------- errors ---------- */
 app.use((err, _req, res, _next) => {

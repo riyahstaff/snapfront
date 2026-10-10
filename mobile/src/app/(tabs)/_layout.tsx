@@ -1,7 +1,9 @@
 import React from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Pressable } from "react-native";
 import { fonts, useColors } from "@/lib/theme";
+import { assistant } from "@/lib/assistant-store";
 
 export default function TabsLayout() {
   const c = useColors();
@@ -19,6 +21,15 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Snap", headerTitle: "Snapfront", tabBarIcon: ({ color, size }) => <Ionicons name="scan" color={color} size={size} /> }} />
+      <Tabs.Screen name="assistant" options={{
+        title: "Assistant", headerTitle: "Store assistant",
+        tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} />,
+        headerRight: () => (
+          <Pressable onPress={() => assistant.clear()} accessibilityRole="button" accessibilityLabel="Start a new chat" hitSlop={12} style={{ marginRight: 16 }}>
+            <Ionicons name="create-outline" size={22} color={c.ink} />
+          </Pressable>
+        ),
+      }} />
       <Tabs.Screen name="create" options={{ title: "Create", headerTitle: "Create a digital product", tabBarIcon: ({ color, size }) => <Ionicons name="sparkles-outline" color={color} size={size} /> }} />
       <Tabs.Screen name="store" options={{ title: "My store", headerTitle: "My store", tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" color={color} size={size} /> }} />
       <Tabs.Screen name="trends" options={{ title: "Trending", headerTitle: "What's selling", tabBarIcon: ({ color, size }) => <Ionicons name="trending-up" color={color} size={size} /> }} />

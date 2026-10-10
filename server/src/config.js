@@ -17,6 +17,7 @@ export const config = {
   dataDir: path.resolve(env.DATA_DIR || "./data"),
   anthropicKey: env.ANTHROPIC_API_KEY || "",
   claudeModel: env.CLAUDE_MODEL || "claude-sonnet-5-5",
+  agentModel: env.AGENT_MODEL || "claude-fable-5-1",
   stripeKey: env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || "",
   platformFeePercent: Math.max(0, Math.min(50, Number(env.PLATFORM_FEE_PERCENT ?? 5))),

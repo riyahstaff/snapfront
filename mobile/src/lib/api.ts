@@ -42,6 +42,14 @@ export type Seller = {
 };
 export type ProductType = { id: string; name: string; sub: string; price: number };
 export type Trend = { name: string; why: string; where: string };
+export type ChatMessage = { role: "user" | "assistant"; content: string };
+export type AgentProduct = { id: string; title: string; price: number; status: "draft" | "live"; kind: string; page_url?: string };
+export type AgentEvent =
+  | { type: "thinking"; at: number }
+  | { type: "step"; tool: string; label: string; at: number }
+  | { type: "step_failed"; tool: string; label: string; at: number }
+  | { type: "product"; product: AgentProduct; at: number };
+export type AgentRun = { id: string; status: "running" | "done" | "error"; events: AgentEvent[]; next: number; reply: string | null; error: string | null };
 
 export class ApiError extends Error {
   constructor(message: string, public status: number) {
@@ -105,6 +113,8 @@ export const api = {
   updateProduct: (id: string, patch: Partial<Draft>) => request<Product>("PATCH", `/api/products/${id}`, patch),
   deleteProduct: (id: string) => request<void>("DELETE", `/api/products/${id}`),
   publish: (id: string) => request<Product>("POST", `/api/products/${id}/publish`),
+  agentStart: (messages: ChatMessage[]) => request<{ id: string; status: string }>("POST", "/api/agent/runs", { messages }),
+  agentRun: (id: string, after: number) => request<AgentRun>("GET", `/api/agent/runs/${id}?after=${after}`),
   stripeOnboard: () => request<{ url: string }>("POST", "/api/stripe/onboard"),
   stripeStatus: () => request<{ connected: boolean; ready: boolean }>("GET", "/api/stripe/status"),
   stripeDashboard: () => request<{ url: string }>("POST", "/api/stripe/dashboard"),

@@ -12,7 +12,8 @@ server/   Node API + public storefronts                               — Expres
 1. **Snap** – the seller takes or picks a photo. The app sends it to `POST /api/ai/product-from-photo`, where Claude reads the image and writes the title, tagline, description, bullets, FAQ, tags, SEO text and a suggested price.
 2. **Create** – `POST /api/ai/generate` writes a whole digital product for a niche, renders a cover (PNG) and a print-ready PDF, and saves it as a draft listing.
 3. **Get paid** – sellers connect their own Stripe account (Stripe Connect Express). Publishing creates the Stripe product, price and a Payment Link on the seller's account. Snapfront keeps `PLATFORM_FEE_PERCENT` as an application fee.
-4. **Sell** – every store lives at `/s/<store>` with product pages at `/s/<store>/<product>` (Open Graph tags + Product schema for search and social previews). After payment, buyers land on `/thanks`, which verifies the Stripe session and gives digital buyers a signed, 7-day download link (also emailed if Resend is configured).
+4. **Ask the assistant** – the Assistant tab talks to a store agent running on Claude Fable 5.1 (`AGENT_MODEL`). It has tools that act on the seller's own store (check the store, research what sells, generate digital products, create and edit listings, set prices, publish with Stripe, read orders) and runs the multi-step job itself, reporting progress back to the app (`POST /api/agent/runs`, then poll `GET /api/agent/runs/:id`). Limits: 10 tool rounds per request, 15 requests per seller per hour, one at a time.
+5. **Sell** – every store lives at `/s/<store>` with product pages at `/s/<store>/<product>` (Open Graph tags + Product schema for search and social previews). After payment, buyers land on `/thanks`, which verifies the Stripe session and gives digital buyers a signed, 7-day download link (also emailed if Resend is configured).
 
 ## Run it locally
 
@@ -71,6 +72,8 @@ Before submitting, change `com.snapfront.app` in `app.json` to a bundle ID you o
 | GET / POST | `/api/products` | List or create products |
 | GET / PATCH / DELETE | `/api/products/:id` | Read, edit or delete one product |
 | POST | `/api/products/:id/publish` | Create Stripe product, price and Payment Link; go live |
+| POST | `/api/agent/runs` | Start a store-assistant request (Claude Fable 5.1 + store tools) |
+| GET | `/api/agent/runs/:id` | Progress steps, products touched and the final reply |
 | POST | `/api/stripe/onboard` | Stripe Connect onboarding link |
 | GET | `/api/stripe/status` | Whether the seller can take payments |
 | POST | `/api/stripe/dashboard` | Stripe Express dashboard link |
