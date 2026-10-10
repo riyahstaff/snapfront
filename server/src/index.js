@@ -165,7 +165,7 @@ app.post("/api/stripe/dashboard", auth, wrap(async (req, res) => {
   if (!req.seller.stripe_account_id) throw httpError(409, "Connect Stripe first.");
   res.json({ url: await pay.dashboardLink(req.seller.stripe_account_id) });
 }));
-/* Sales tax setup: Express sellers have no Stripe Dashboard, so they use Stripe's embedded tax components on a page we host. */
+/* Sales tax setup in the app: Stripe's embedded tax components on a page we host (sellers can also use their Stripe Dashboard). */
 app.post("/api/stripe/tax-setup", auth, (req, res) => {
   if (!req.seller.stripe_account_id) throw httpError(409, "Connect Stripe first.");
   if (!config.stripePublishableKey) throw httpError(503, "Tax setup isn't configured. Set STRIPE_PUBLISHABLE_KEY on the server.");

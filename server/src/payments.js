@@ -1,4 +1,4 @@
-// Stripe Connect (Express accounts, direct charges). Each seller is paid into their own Stripe
+// Stripe Connect (full Stripe accounts with Stripe-managed losses, direct charges). Each seller is paid into their own Stripe
 // account; Snapfront optionally keeps PLATFORM_FEE_PERCENT of each sale as an application fee.
 import Stripe from "stripe";
 import crypto from "node:crypto";
@@ -19,11 +19,12 @@ export async function onboardingLink(seller) {
   const s = stripeClient();
   let accountId = seller.stripe_account_id;
   if (!accountId) {
-    // Express Dashboard for sellers, but Stripe (not Snapfront) covers losses and sellers pay their own
-    // Stripe fees. Plain type: "express" would make the platform liable for every seller's negative balance.
+    // Sellers get their own full Stripe account: Stripe (not Snapfront) is liable for refunds,
+    // chargebacks and negative balances, and each seller pays their own Stripe fees.
+    // (Stripe only offers the Express Dashboard when the platform carries those losses.)
     const acct = await s.accounts.create({
       controller: {
-        stripe_dashboard: { type: "express" },
+        stripe_dashboard: { type: "full" },
         losses: { payments: "stripe" },
         fees: { payer: "account" },
         requirement_collection: "stripe",
@@ -49,9 +50,11 @@ export async function accountReady(accountId) {
   return Boolean(acct.charges_enabled);
 }
 
-/** Stripe Express dashboard login link so sellers can see payouts. */
+/** Where sellers see sales and payouts. Full-dashboard sellers sign in to Stripe directly. */
 export async function dashboardLink(accountId) {
-  return (await stripeClient().accounts.createLoginLink(accountId)).url;
+  const acct = await stripeClient().accounts.retrieve(accountId);
+  if (acct.controller?.stripe_dashboard?.type === "express") return (await stripeClient().accounts.createLoginLink(accountId)).url;
+  return "https://dashboard.stripe.com/";
 }
 
 /**
@@ -72,7 +75,7 @@ export async function createCheckout(seller, params, discountCents = 0) {
 }
 
 /**
- * Stripe Tax on an Express account. Express sellers have no Stripe Dashboard for tax, so they
+ * Stripe Tax on a seller's account. Sellers can manage tax in their Stripe Dashboard or, from the app,
  * enter their business address and tax registrations in Stripe's embedded components (/stripe/tax).
  */
 export async function taxStatus(accountId) {

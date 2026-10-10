@@ -197,7 +197,7 @@ ${o.tax ? `<div class="row"><span>Tax</span><span>${money$(o.tax)}</span></div>`
     body: `${pending ? `<meta http-equiv="refresh" content="4">` : ""}<div class="order">${body}</div>${clear}` });
 }
 
-/** Stripe's embedded tax settings + registrations components, for Express sellers. */
+/** Stripe's embedded tax settings + registrations components, opened from the app. */
 export function taxSetupPage(store, token, publishableKey) {
   return shell({
     title: "Set up sales tax", description: "Sales tax setup", store,
