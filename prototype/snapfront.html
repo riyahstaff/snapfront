@@ -1,0 +1,802 @@
+<title>Snapfront Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* Layout: app shell — sticky top bar with tabs; each tab is a two-pane workbench that stacks on phones. Motif: camera viewfinder brackets. */
+:root{
+  --bg:#F2F3F7; --surface:#FFFFFF; --sunk:#E7E9F1; --ink:#16152E; --muted:#5D5F78; --line:#D6D9E5;
+  --accent:#2C47F5; --accent-ink:#FFFFFF; --flash:#FFD84A; --good:#157049; --bad:#B02E23;
+  --display:"Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F0F1C; --surface:#191A2B; --sunk:#232438; --ink:#EEEEF7; --muted:#A3A5BE; --line:#2F3149;
+  --accent:#7C8CFF; --accent-ink:#0F0F1C; --flash:#FFD84A; --good:#4CC88C; --bad:#FF7A6B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F0F1C; --surface:#191A2B; --sunk:#232438; --ink:#EEEEF7; --muted:#A3A5BE; --line:#2F3149;
+  --accent:#7C8CFF; --accent-ink:#0F0F1C; --flash:#FFD84A; --good:#4CC88C; --bad:#FF7A6B; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);line-height:1.1;text-wrap:balance;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);margin-inline:-16px;padding:12px 16px 0;border-bottom:1px solid var(--line)}
+.top .row{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:-.02em}
+.brand-mark{width:30px;height:30px;position:relative}
+.brand-mark i{position:absolute;width:10px;height:10px;border-color:var(--ink);border-style:solid;border-width:0}
+.brand-mark i:nth-child(1){top:0;left:0;border-top-width:3px;border-left-width:3px}
+.brand-mark i:nth-child(2){top:0;right:0;border-top-width:3px;border-right-width:3px}
+.brand-mark i:nth-child(3){bottom:0;left:0;border-bottom-width:3px;border-left-width:3px}
+.brand-mark i:nth-child(4){bottom:0;right:0;border-bottom-width:3px;border-right-width:3px}
+.brand-mark b{position:absolute;inset:9px;border-radius:50%;background:var(--accent)}
+.tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none;min-width:0;max-width:100%}
+@media (max-width:760px){.tabs{margin-left:-14px;flex:1 1 100%}}
+.tab{border:0;background:none;padding:10px 14px 12px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.status{font-size:12px;color:var(--muted);font-family:var(--mono)}
+
+section.view{padding-top:28px}
+.intro{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.intro h1{font-size:clamp(28px,4.4vw,46px);font-weight:800;letter-spacing:-.03em;max-width:18ch}
+.intro p{color:var(--muted);max-width:52ch;margin:8px 0 0}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.bench{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:860px){.bench{grid-template-columns:minmax(0,1fr)}}
+.bench>*{min-width:0;max-width:100%}
+.stack{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:grid;gap:14px;min-width:0}
+
+/* viewfinder dropzone */
+.finder{position:relative;aspect-ratio:1/1;max-width:100%;border-radius:10px;background:var(--sunk);display:grid;place-items:center;overflow:hidden;cursor:pointer;text-align:center}
+.finder img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.finder .c{position:absolute;width:28px;height:28px;border:0 solid var(--ink);z-index:2}
+.finder .c1{top:14px;left:14px;border-top-width:3px;border-left-width:3px}
+.finder .c2{top:14px;right:14px;border-top-width:3px;border-right-width:3px}
+.finder .c3{bottom:14px;left:14px;border-bottom-width:3px;border-left-width:3px}
+.finder .c4{bottom:14px;right:14px;border-bottom-width:3px;border-right-width:3px}
+.finder.has .c{border-color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.finder.drag{outline:3px dashed var(--accent);outline-offset:-8px}
+.finder .hint{display:grid;gap:6px;padding:24px;color:var(--muted);font-size:14px}
+.finder .hint strong{font-family:var(--display);font-size:20px;color:var(--ink)}
+.finder .rec{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:11px;z-index:2;background:var(--flash);color:#16152E;padding:2px 8px;border-radius:4px}
+
+label.f{display:grid;gap:5px;font-size:13px;font-weight:600}
+label.f span.sub{font-weight:400;color:var(--muted)}
+input[type=text],input[type=url],input[type=number],select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+textarea{resize:vertical;min-height:90px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;background:var(--sunk);border-radius:10px;padding:3px}
+.seg button{flex:1;border:0;background:none;padding:8px;border-radius:8px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:10px 18px;font-weight:700;cursor:pointer;text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.big{padding:14px 22px;font-size:16px;width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{border-color:transparent;background:none}
+.btn.danger{color:var(--bad)}
+.note{font-size:13px;color:var(--muted)}
+.msg{font-size:13.5px;padding:10px 12px;border-radius:10px;background:var(--sunk)}
+.msg.err{color:var(--bad)}
+.msg.ok{color:var(--good)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* product page (shared by preview, store and export) */
+.pp{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-width:0}
+.pp-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.pp-bar .url{flex:1 1 0;font-family:var(--mono);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.pp-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;padding:24px}
+@media (max-width:700px){.pp-body{grid-template-columns:minmax(0,1fr);padding:16px}}
+.pp-img{aspect-ratio:1/1;max-width:100%;border-radius:12px;background:var(--sunk);overflow:hidden;display:grid;place-items:center;color:var(--muted)}
+.pp-img img{width:100%;height:100%;object-fit:cover}
+.pp-info{display:grid;gap:14px;align-content:start;min-width:0}
+.pp-cat{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.pp-title{font-size:clamp(24px,3vw,34px);font-weight:700;letter-spacing:-.02em}
+.pp-tag{color:var(--muted);font-size:16px;margin:0}
+.pp-price{font-family:var(--display);font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.pp-buy{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pp-desc p{margin:0 0 10px}
+.pp ul.bul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.pp ul.bul li{display:grid;grid-template-columns:18px 1fr;gap:8px}
+.pp ul.bul li::before{content:"";width:10px;height:10px;margin-top:6px;border:2px solid var(--accent);border-radius:2px}
+.pp-tags{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;background:var(--sunk);border-radius:999px;padding:3px 10px;color:var(--muted)}
+.chip.example{background:var(--flash);color:#16152E;font-weight:700}
+.chip.ok{color:var(--good)}
+details.faq{border-top:1px solid var(--line);padding:10px 0}
+details.faq summary{cursor:pointer;font-weight:600}
+details.faq p{margin:6px 0 0;color:var(--muted)}
+.trust{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+
+/* store grid */
+.store-head{display:flex;gap:16px;align-items:end;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;display:grid;text-align:left;padding:0;color:var(--ink)}
+.card:hover{border-color:var(--accent)}
+.card .ph{aspect-ratio:1/1;background:var(--sunk);display:grid;place-items:center;color:var(--muted)}
+.card .ph img{width:100%;height:100%;object-fit:cover}
+.card .meta{padding:12px 14px;display:grid;gap:4px}
+.card .meta h3{font-size:16px;font-weight:700;font-family:var(--body)}
+.card .meta .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.price{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.empty{border:2px dashed var(--line);border-radius:var(--r);padding:36px;text-align:center;color:var(--muted)}
+
+/* create */
+.types{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.type{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;text-align:left;cursor:pointer;display:grid;gap:4px}
+.type strong{font-size:14px}
+.type span{font-size:12.5px;color:var(--muted)}
+.type[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.stream{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:pre-wrap;max-height:160px;overflow:auto;background:var(--sunk);border-radius:10px;padding:10px}
+
+/* trends */
+.trend-list{display:grid;gap:12px}
+.trend{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.rank{font-family:var(--display);font-weight:800;font-size:26px;color:var(--accent);width:36px}
+.trend h3{font-size:17px;font-family:var(--body);font-weight:700}
+.trend p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+.pill{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:999px;background:var(--sunk);white-space:nowrap}
+@media (max-width:560px){.trend{grid-template-columns:auto minmax(0,1fr)}.trend .pill{grid-column:2}}
+
+/* overlay */
+.overlay{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(4px);z-index:20;overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 32px)}
+.overlay .inner{max-width:1000px;margin:0 auto;display:grid;gap:14px}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--sunk);padding:10px 12px;border-radius:10px}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:sp 0.8s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+footer{margin-top:40px;font-size:12.5px;color:var(--muted)}
+</style>
+
+<header class="top">
+  <div class="row">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></span>Snapfront</div>
+    <span class="status" id="status">connecting…</span>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-snap" aria-selected="true" data-view="snap">Snap a product</button>
+      <button class="tab" role="tab" id="tab-create" aria-selected="false" data-view="create">Create digital product</button>
+      <button class="tab" role="tab" id="tab-store" aria-selected="false" data-view="store">My store</button>
+      <button class="tab" role="tab" id="tab-trends" aria-selected="false" data-view="trends">What's selling</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- SNAP -->
+<section class="view" id="view-snap">
+  <div class="intro">
+    <div>
+      <div class="eyebrow">Photo → product page → Stripe checkout</div>
+      <h1>Snap a photo. Get a storefront.</h1>
+      <p>Drop in a product photo. Snapfront writes the title, description, bullet points, FAQ and price, then wires the buy button to your Stripe Payment Link.</p>
+    </div>
+  </div>
+  <div class="bench">
+    <div class="panel">
+      <div class="finder" id="finder" tabindex="0" role="button" aria-label="Choose a product photo">
+        <span class="c c1"></span><span class="c c2"></span><span class="c c3"></span><span class="c c4"></span>
+        <span class="rec" id="finder-rec" hidden>PHOTO READY</span>
+        <div class="hint" id="finder-hint"><strong>Drop a product photo</strong>or tap to choose one · JPG, PNG, WebP</div>
+        <img id="finder-img" alt="" hidden>
+      </div>
+      <input type="file" id="photo" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+      <div class="seg" role="group" aria-label="Product type">
+        <button type="button" id="kind-physical" aria-pressed="true" data-kind="physical">Physical item</button>
+        <button type="button" id="kind-digital" aria-pressed="false" data-kind="digital">Digital download</button>
+      </div>
+      <label class="f">What is it? <span class="sub">Optional. A few words help, e.g. "hand-poured soy candle, 8 oz"</span>
+        <input type="text" id="hint" placeholder="Leave blank and Snapfront will figure it out"></label>
+      <div class="two">
+        <label class="f">Price (USD) <span class="sub">Blank = suggest one</span><input type="number" id="hint-price" min="0" step="0.01" inputmode="decimal"></label>
+        <label class="f">Tone<select id="tone"><option>Warm and friendly</option><option>Minimal and premium</option><option>Playful</option><option>Straightforward</option></select></label>
+      </div>
+      <button class="btn primary big" id="build" disabled>Build product page</button>
+      <div id="snap-msg" class="msg" hidden></div>
+    </div>
+    <div class="stack">
+      <div id="snap-preview"></div>
+      <div class="panel" id="snap-edit" hidden>
+        <h3 style="font-size:18px">Fine-tune and publish</h3>
+        <label class="f">Title<input type="text" id="e-title"></label>
+        <label class="f">Tagline<input type="text" id="e-tagline"></label>
+        <div class="two">
+          <label class="f">Price (USD)<input type="number" id="e-price" min="0" step="0.01"></label>
+          <label class="f">Category<input type="text" id="e-category"></label>
+        </div>
+        <label class="f">Description<textarea id="e-desc" rows="5"></textarea></label>
+        <label class="f">Stripe Payment Link <span class="sub">Starts with https://buy.stripe.com/ · create one in your Stripe Dashboard → Payment Links</span>
+          <input type="url" id="e-stripe" placeholder="https://buy.stripe.com/…"></label>
+        <div class="actions">
+          <button class="btn primary" id="save-product">Add to my store</button>
+          <button class="btn" id="export-snap">Download page (.html)</button>
+          <button class="btn ghost" id="regen">Rewrite copy</button>
+        </div>
+        <div id="save-msg" class="msg" hidden></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CREATE -->
+<section class="view" id="view-create" hidden>
+  <div class="intro">
+    <div>
+      <div class="eyebrow">Digital product generator</div>
+      <h1>Make a product people already buy.</h1>
+      <p>Pick a best-selling format, name your niche, and Snapfront writes the whole product, lays it out as a print-ready PDF, designs a cover and drafts the listing.</p>
+    </div>
+  </div>
+  <div class="bench">
+    <div class="panel">
+      <div class="eyebrow">1 · Format</div>
+      <div class="types" id="types"></div>
+      <div class="eyebrow">2 · Niche</div>
+      <label class="f">Who is it for and what's it about?
+        <input type="text" id="niche" value="busy moms who want to meal prep on a budget"></label>
+      <div class="two">
+        <label class="f">Price (USD)<input type="number" id="g-price" min="0" step="0.01" placeholder="Suggest"></label>
+        <label class="f">Cover colour<select id="g-color">
+          <option value="#2C47F5">Cobalt</option><option value="#157049">Forest</option><option value="#B02E23">Brick</option>
+          <option value="#7A3EC8">Violet</option><option value="#16152E">Ink</option><option value="#D9822B">Amber</option></select></label>
+      </div>
+      <button class="btn primary big" id="generate">Generate product</button>
+      <div id="gen-msg" class="msg" hidden></div>
+      <div id="gen-stream" class="stream" hidden></div>
+    </div>
+    <div class="stack">
+      <div id="gen-preview"></div>
+      <div class="panel" id="gen-actions" hidden>
+        <div class="actions">
+          <button class="btn primary" id="gen-save">Add listing to my store</button>
+          <button class="btn" id="gen-pdf">Download product PDF</button>
+          <button class="btn" id="gen-cover">Download cover (.png)</button>
+        </div>
+        <label class="f">Stripe Payment Link <span class="sub">Optional now, you can add it later from My store</span>
+          <input type="url" id="g-stripe" placeholder="https://buy.stripe.com/…"></label>
+        <p class="note">Deliver the PDF after payment: in Stripe, edit the Payment Link → After payment → "Don't show confirmation page" → redirect to the file's download link (Google Drive, Dropbox or your own host).</p>
+        <div id="gen-save-msg" class="msg" hidden></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STORE -->
+<section class="view" id="view-store" hidden>
+  <div class="store-head">
+    <div style="display:grid;gap:8px;min-width:0">
+      <div class="eyebrow">Your storefront</div>
+      <h1 id="store-name" style="font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-.03em">My Snapfront Store</h1>
+      <p id="store-tag" class="note" style="margin:0;font-size:15px">Digital goods made with care.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="edit-store">Edit store details</button>
+      <button class="btn primary" id="export-store">Download storefront (.html)</button>
+    </div>
+  </div>
+  <div class="panel" id="store-form" hidden style="margin-bottom:18px">
+    <div class="two">
+      <label class="f">Store name<input type="text" id="s-name"></label>
+      <label class="f">Tagline<input type="text" id="s-tag"></label>
+    </div>
+    <div class="actions"><button class="btn primary" id="s-save">Save</button><button class="btn ghost" id="s-cancel">Cancel</button></div>
+  </div>
+  <div id="store-grid" class="grid"></div>
+  <p class="note" id="store-note" style="margin-top:16px"></p>
+</section>
+
+<!-- TRENDS -->
+<section class="view" id="view-trends" hidden>
+  <div class="intro">
+    <div>
+      <div class="eyebrow">Research · October 2026</div>
+      <h1>What's selling on social right now</h1>
+      <p>The digital formats with the strongest demand across Etsy, TikTok, Instagram and Pinterest. Your store opens with one finished product in each of the top five.</p>
+    </div>
+  </div>
+  <div class="trend-list" id="trends"></div>
+  <p class="note" style="margin-top:16px">Sources: Etsy best-seller roundups from InsightAgent, Outfy and Nifty (2026); MyDesigns and Unilink guides on selling digital products from TikTok and Instagram (2026); FastMoss TikTok Shop Q2 2026 data. Note: TikTok Shop itself only lists digital goods for approved "Virtual Goods" sellers, so most creators send TikTok traffic to a link-in-bio store like this one.</p>
+</section>
+
+<footer class="wrap">Snapfront prototype. Products and photos are saved to this page for everyone you share it with; checkout runs on your own Stripe account through Payment Links.</footer>
+</main>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="inner">
+    <div class="actions" style="justify-content:space-between">
+      <button class="btn" id="ov-close">← Back to store</button>
+      <div class="actions" id="ov-actions"></div>
+    </div>
+    <div id="ov-page"></div>
+    <div class="panel" id="ov-edit" hidden>
+      <label class="f">Stripe Payment Link<input type="url" id="ov-stripe" placeholder="https://buy.stripe.com/…"></label>
+      <div class="two">
+        <label class="f">Price (USD)<input type="number" id="ov-price" min="0" step="0.01"></label>
+        <label class="f">Title<input type="text" id="ov-title"></label>
+      </div>
+      <div class="actions"><button class="btn primary" id="ov-save">Save changes</button></div>
+      <div id="ov-msg" class="msg" hidden></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v; else if (k === "text") n.textContent = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat()) if (k != null) n.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return n;
+};
+const money = (n) => (n == null || isNaN(n)) ? "—" : "$" + Number(n).toFixed(2);
+const slug = (s) => String(s || "product").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "product";
+const show = (node, text, kind) => { node.hidden = !text; node.textContent = text || ""; node.className = "msg" + (kind ? " " + kind : ""); };
+const validStripe = (u) => !u || /^https:\/\/(buy|checkout)\.stripe\.com\/[^\s]+$/.test(u.trim());
+const ERR = {
+  not_granted: "Snapfront needs permission to use Claude. Reload the page and choose Allow to try again.",
+  sampling_disabled: "Claude isn't available on this account.",
+  rate_limited: "Too many requests right now. Wait a minute, then try again.",
+  image_rejected: "That image couldn't be read. Try a JPG or PNG under 20 MB.",
+  images_unavailable: "Photo analysis isn't available in this view.",
+  invalid_json: "The answer came back in the wrong shape. Try again.",
+  refused: "Claude declined this one. Try a different photo or description.",
+  session_expired: "Your session expired. Sign in again and reload.",
+};
+const errText = (e) => ERR[e && e.code] || "Something went wrong. Try again.";
+
+/* ---------- state ---------- */
+let db = null, assets = null, sample = null, downloads = null;
+let products = [];   // [{id, ...data}]
+let settings = { name: "My Snapfront Store", tagline: "Digital goods made with care." };
+let snap = { file: null, dataUrl: null, kind: "physical", draft: null };
+let gen = { type: "guide", result: null, coverBlob: null, coverUrl: null };
+
+/* ---------- tabs ---------- */
+document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => go(t.dataset.view)));
+function go(view) {
+  document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.view === view)));
+  document.querySelectorAll("section.view").forEach((s) => (s.hidden = s.id !== "view-" + view));
+  window.scrollTo({ top: 0 });
+}
+if (["snap", "create", "store", "trends"].includes(location.hash.slice(1))) go(location.hash.slice(1));
+
+/* ---------- product page renderer (live preview + store) ---------- */
+function imgSrc(p) { return p._dataUrl || (p.image ? "/_blob/" + p.image : null); }
+function productPage(p, { example = false, storeName = settings.name } = {}) {
+  const src = imgSrc(p);
+  const buy = p.stripeLink && validStripe(p.stripeLink)
+    ? el("a", { class: "btn primary", href: p.stripeLink, target: "_blank", rel: "noopener" }, "Buy now · " + money(p.price))
+    : el("button", { class: "btn primary", disabled: true, title: "Add a Stripe Payment Link to enable checkout" }, "Buy now · " + money(p.price));
+  const desc = el("div", { class: "pp-desc" }, String(p.description || "").split(/\n\s*\n/).filter(Boolean).map((t) => el("p", { text: t })));
+  return el("article", { class: "pp" },
+    el("div", { class: "pp-bar" },
+      el("span", { class: "url", text: slug(storeName) + ".snapfront.shop/" + slug(p.title) }),
+      example ? el("span", { class: "chip example", text: "EXAMPLE" }) :
+        (p.stripeLink ? el("span", { class: "chip ok", text: "Stripe connected" }) : el("span", { class: "chip", text: "No payment link yet" }))),
+    el("div", { class: "pp-body" },
+      el("div", { class: "pp-img" }, src ? el("img", { src, alt: p.altText || p.title || "Product photo" }) : el("span", { text: "Your photo appears here" })),
+      el("div", { class: "pp-info" },
+        el("div", { class: "pp-cat", text: (p.kind === "digital" ? "Digital download · " : "") + (p.category || "Product") }),
+        el("h2", { class: "pp-title", text: p.title || "Untitled product" }),
+        p.tagline ? el("p", { class: "pp-tag", text: p.tagline }) : null,
+        el("div", { class: "pp-price", text: money(p.price) }),
+        el("div", { class: "pp-buy" }, buy),
+        el("div", { class: "trust" }, "Secure checkout by Stripe" + (p.kind === "digital" ? " · instant download" : "")),
+        desc,
+        (p.bullets || []).length ? el("div", {}, el("div", { class: "eyebrow", style: "margin-bottom:8px", text: "What you get" }),
+          el("ul", { class: "bul" }, p.bullets.map((b) => el("li", { text: b })))) : null,
+        (p.tags || []).length ? el("div", { class: "pp-tags" }, p.tags.map((t) => el("span", { class: "chip", text: "#" + t }))) : null,
+        (p.faq || []).length ? el("div", {}, p.faq.map((f) => el("details", { class: "faq" }, el("summary", { text: f.q }), el("p", { text: f.a })))) : null)));
+}
+
+const EXAMPLE = {
+  title: "Hand-Poured Fig & Cedar Soy Candle", tagline: "A slow-burning 8 oz candle that makes a small room feel like a cabin.",
+  price: 28, kind: "physical", category: "Home fragrance",
+  description: "Poured by hand in small batches with 100% soy wax and a cotton wick, this candle burns clean for about 45 hours.\n\nSoft fig up top, warm cedar underneath. It sits in a reusable amber glass jar you'll want to keep long after the last flicker.",
+  bullets: ["8 oz amber glass jar, reusable", "About 45 hours burn time", "100% soy wax, cotton wick", "Phthalate-free fragrance oils"],
+  tags: ["soycandle", "homedecor", "giftforher", "smallbatch", "cozyhome"],
+  faq: [{ q: "How long does shipping take?", a: "Orders ship in 2 business days and arrive in 3–5 days in the US." }],
+};
+function renderSnapPreview() {
+  const target = $("#snap-preview"); target.replaceChildren();
+  if (snap.draft) target.append(productPage({ ...snap.draft, _dataUrl: snap.dataUrl }));
+  else target.append(productPage(EXAMPLE, { example: true }));
+}
+renderSnapPreview();
+
+/* ---------- photo intake ---------- */
+const finder = $("#finder"), photo = $("#photo");
+finder.addEventListener("click", () => photo.click());
+finder.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); photo.click(); } });
+["dragenter", "dragover"].forEach((ev) => finder.addEventListener(ev, (e) => { e.preventDefault(); finder.classList.add("drag"); }));
+["dragleave", "drop"].forEach((ev) => finder.addEventListener(ev, (e) => { e.preventDefault(); finder.classList.remove("drag"); }));
+finder.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) takePhoto(f); });
+photo.addEventListener("change", () => { if (photo.files[0]) takePhoto(photo.files[0]); });
+document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+  snap.kind = b.dataset.kind;
+  document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+}));
+
+async function shrink(file, max = 1400) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.86));
+    return { blob, dataUrl: c.toDataURL("image/jpeg", 0.86) };
+  } finally { URL.revokeObjectURL(url); }
+}
+async function takePhoto(file) {
+  if (!/^image\//.test(file.type)) { show($("#snap-msg"), "That file isn't an image. Choose a JPG, PNG or WebP.", "err"); return; }
+  try {
+    const { blob, dataUrl } = await shrink(file);
+    snap.file = new File([blob], "product.jpg", { type: "image/jpeg" }); snap.dataUrl = dataUrl;
+    const im = $("#finder-img"); im.src = dataUrl; im.hidden = false; $("#finder-hint").hidden = true; $("#finder-rec").hidden = false;
+    finder.classList.add("has"); $("#build").disabled = !sample; show($("#snap-msg"), "");
+    if (!sample) show($("#snap-msg"), "AI writing isn't available in this view, so the page can't be built here.", "err");
+  } catch { show($("#snap-msg"), "That image couldn't be opened. Try another file.", "err"); }
+}
+
+/* ---------- Claude: photo → product page ---------- */
+const SHAPE = `{"title": string (max 70 chars, no emoji), "tagline": string (max 100 chars), "description": string (2 short paragraphs separated by a blank line, plain text), "bullets": [4-6 short strings], "suggested_price": number (USD), "category": string (2-3 words), "tags": [5 lowercase hashtag words without #], "faq": [3 objects {"q": string, "a": string}], "alt_text": string, "seo_description": string (max 155 chars)}`;
+async function buildFromPhoto(variant) {
+  const btn = $("#build"); btn.disabled = true; $("#regen").disabled = true;
+  btn.replaceChildren(el("span", { class: "spin" }), " Reading your photo…");
+  show($("#snap-msg"), "");
+  const hint = $("#hint").value.trim(), price = $("#hint-price").value;
+  const prompt = `You are a top e-commerce copywriter. The attached photo shows a product a small business wants to sell online.
+Write a complete product page for it.
+Product type: ${snap.kind === "digital" ? "digital download (delivered instantly after purchase)" : "physical item that ships"}.
+${hint ? "Seller's note about the product: " + hint : "The seller gave no description; identify the product from the photo."}
+${price ? "The seller's price is $" + price + "; use it as suggested_price." : "Suggest a realistic retail price for the US market."}
+Tone: ${$("#tone").value}. Write only claims a buyer could see in the photo or that the seller stated; do not invent certifications, awards, reviews or materials you can't see. FAQ answers should cover shipping/delivery, care or use, and returns in general terms the seller can edit.
+${variant ? "Write a fresh alternative version with a different angle from your previous one." : ""}
+Reply with only one JSON object of this shape: ${SHAPE}`;
+  try {
+    const r = await sample.json(prompt, { images: [snap.file], cache: variant ? false : undefined });
+    if (!r || typeof r !== "object" || !r.title) throw { code: "invalid_json" };
+    snap.draft = {
+      title: String(r.title), tagline: String(r.tagline || ""), description: String(r.description || ""),
+      bullets: Array.isArray(r.bullets) ? r.bullets.map(String).slice(0, 6) : [],
+      price: price ? Number(price) : Number(r.suggested_price) || 0, kind: snap.kind, category: String(r.category || ""),
+      tags: Array.isArray(r.tags) ? r.tags.map((t) => String(t).replace(/^#/, "")).slice(0, 6) : [],
+      faq: Array.isArray(r.faq) ? r.faq.filter((f) => f && f.q).map((f) => ({ q: String(f.q), a: String(f.a || "") })).slice(0, 4) : [],
+      altText: String(r.alt_text || ""), seo: String(r.seo_description || ""), stripeLink: $("#e-stripe").value.trim(), source: "snap",
+    };
+    fillEditor(); renderSnapPreview(); $("#snap-edit").hidden = false;
+  } catch (e) { show($("#snap-msg"), errText(e), "err"); }
+  finally { btn.disabled = false; $("#regen").disabled = false; btn.textContent = "Build product page"; }
+}
+$("#build").addEventListener("click", () => buildFromPhoto(false));
+$("#regen").addEventListener("click", () => buildFromPhoto(true));
+
+function fillEditor() {
+  const d = snap.draft;
+  $("#e-title").value = d.title; $("#e-tagline").value = d.tagline; $("#e-price").value = d.price;
+  $("#e-category").value = d.category; $("#e-desc").value = d.description; $("#e-stripe").value = d.stripeLink || "";
+}
+let editTimer;
+["#e-title", "#e-tagline", "#e-price", "#e-category", "#e-desc", "#e-stripe"].forEach((s) => $(s).addEventListener("input", () => {
+  if (!snap.draft) return;
+  Object.assign(snap.draft, { title: $("#e-title").value, tagline: $("#e-tagline").value, price: Number($("#e-price").value) || 0,
+    category: $("#e-category").value, description: $("#e-desc").value, stripeLink: $("#e-stripe").value.trim() });
+  clearTimeout(editTimer); editTimer = setTimeout(renderSnapPreview, 250);
+}));
+
+/* ---------- save to store ---------- */
+async function saveProduct(data, blob, msgNode) {
+  if (!db || !assets) { show(msgNode, "Saving needs edit access to this store. Ask the owner to make you an editor.", "err"); return false; }
+  if (!validStripe(data.stripeLink)) { show(msgNode, "That doesn't look like a Stripe Payment Link. It should start with https://buy.stripe.com/", "err"); return false; }
+  show(msgNode, "Saving…");
+  try {
+    let image = data.image || null;
+    if (blob) image = (await assets.upload(blob)).id;
+    const clean = { ...data, image, createdAt: new Date().toISOString() };
+    delete clean._dataUrl;
+    await db.collection("products").add(clean);
+    show(msgNode, "Added to your store.", "ok");
+    return true;
+  } catch (e) {
+    show(msgNode, e && e.code === "quota_exceeded" ? "Your store is full. Delete a product to make room." :
+      e && e.code === "too_large" ? "That image is too large. Try a smaller photo." : "Couldn't save. Try again.", "err");
+    return false;
+  }
+}
+$("#save-product").addEventListener("click", async () => {
+  if (!snap.draft) return;
+  const b = $("#save-product"); b.disabled = true;
+  if (await saveProduct(snap.draft, snap.file, $("#save-msg"))) setTimeout(() => go("store"), 600);
+  b.disabled = false;
+});
+
+/* ---------- standalone HTML export ---------- */
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+async function toDataUrl(p) {
+  if (p._dataUrl) return p._dataUrl;
+  if (!p.image) return null;
+  try { const b = await (await fetch("/_blob/" + p.image)).blob(); return await new Promise((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); }); }
+  catch { return null; }
+}
+const EXPORT_CSS = `*{box-sizing:border-box}body{margin:0;font-family:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;background:#F2F3F7;color:#16152E;line-height:1.55}
+a{color:inherit}.top{background:#fff;border-bottom:1px solid #D6D9E5;padding:16px}.top div{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.top b{font-family:"Bricolage Grotesque",Figtree,sans-serif;font-size:22px}.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+.pp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:36px;background:#fff;border:1px solid #D6D9E5;border-radius:16px;padding:28px}
+@media(max-width:720px){.pp{grid-template-columns:1fr;padding:16px}}.ph{aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:#E7E9F1}.ph img{width:100%;height:100%;object-fit:cover;display:block}
+h1,h2{font-family:"Bricolage Grotesque",Figtree,sans-serif;line-height:1.1;margin:0}h1{font-size:clamp(26px,3.4vw,38px)}.cat{font:500 12px "JetBrains Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:#2C47F5}
+.tag{color:#5D5F78;font-size:17px}.price{font:700 30px "Bricolage Grotesque",sans-serif}.buy{display:inline-block;background:#2C47F5;color:#fff;text-decoration:none;font-weight:700;padding:14px 28px;border-radius:999px;font-size:17px}
+.trust{font-size:13px;color:#5D5F78}ul{padding-left:20px}.chips span{display:inline-block;background:#E7E9F1;border-radius:99px;padding:3px 10px;font-size:12px;margin:0 4px 4px 0;color:#5D5F78}
+details{border-top:1px solid #D6D9E5;padding:10px 0}summary{font-weight:600;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+.card{background:#fff;border:1px solid #D6D9E5;border-radius:14px;overflow:hidden;text-decoration:none}.card div{padding:12px 14px}.card h2{font-size:17px}
+footer{text-align:center;color:#5D5F78;font-size:13px;padding:30px}.info{display:grid;gap:14px;align-content:start}`;
+const FONTS = `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">`;
+function productSection(p, img, id) {
+  const buy = p.stripeLink && validStripe(p.stripeLink) ? `<a class="buy" href="${esc(p.stripeLink)}">Buy now · ${money(p.price)}</a>` : `<span class="buy" style="opacity:.5">Coming soon</span>`;
+  return `<section class="pp" id="${esc(id)}"><div class="ph">${img ? `<img src="${img}" alt="${esc(p.altText || p.title)}">` : ""}</div><div class="info">
+<div class="cat">${p.kind === "digital" ? "Digital download · " : ""}${esc(p.category)}</div><h1>${esc(p.title)}</h1>${p.tagline ? `<div class="tag">${esc(p.tagline)}</div>` : ""}
+<div class="price">${money(p.price)}</div><div>${buy}</div><div class="trust">Secure checkout by Stripe${p.kind === "digital" ? " · instant download" : ""}</div>
+${String(p.description || "").split(/\n\s*\n/).filter(Boolean).map((t) => `<p>${esc(t)}</p>`).join("")}
+${(p.bullets || []).length ? `<h2 style="font-size:18px">What you get</h2><ul>${p.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
+${(p.tags || []).length ? `<div class="chips">${p.tags.map((t) => `<span>#${esc(t)}</span>`).join("")}</div>` : ""}
+${(p.faq || []).map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}</div></section>`;
+}
+function page(title, desc, body, ogImg) {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
+<meta name="description" content="${esc(desc)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">${FONTS}<style>${EXPORT_CSS}</style></head>
+<body><header class="top"><div><b>${esc(settings.name)}</b><span style="color:#5D5F78;font-size:14px">${esc(settings.tagline)}</span></div></header><main class="wrap">${body}</main>
+<footer>© ${new Date().getFullYear()} ${esc(settings.name)} · Payments processed securely by Stripe</footer></body></html>`;
+}
+async function save(filename, data, msgNode) {
+  if (!downloads) { show(msgNode, "Downloads aren't available in this view.", "err"); return; }
+  try { await downloads.save({ filename, data }); show(msgNode, "Saved " + filename, "ok"); }
+  catch (e) { if (e && e.code !== "declined") show(msgNode, "Couldn't save the file. Try again.", "err"); }
+}
+async function exportProduct(p, msgNode) {
+  const img = await toDataUrl(p);
+  await save(slug(p.title) + ".html", page(p.title + " · " + settings.name, p.seo || p.tagline || p.title, productSection(p, img, "product")), msgNode);
+}
+$("#export-snap").addEventListener("click", () => snap.draft && exportProduct({ ...snap.draft, _dataUrl: snap.dataUrl }, $("#save-msg")));
+$("#export-store").addEventListener("click", async () => {
+  const note = $("#store-note");
+  if (!products.length) { note.textContent = "Add a product first."; return; }
+  note.textContent = "Building your storefront…";
+  const imgs = await Promise.all(products.map(toDataUrl));
+  const cards = products.map((p, i) => `<a class="card" href="#p-${i}"><div class="ph">${imgs[i] ? `<img src="${imgs[i]}" alt="">` : ""}</div><div><h2>${esc(p.title)}</h2><div>${money(p.price)}</div></div></a>`).join("");
+  const sections = products.map((p, i) => productSection(p, imgs[i], "p-" + i)).join('<div style="height:28px"></div>');
+  const html = page(settings.name, settings.tagline, `<h1 style="margin:8px 0 18px">Shop</h1><div class="grid">${cards}</div><div style="height:40px"></div>${sections}`);
+  note.textContent = "";
+  const m = el("div"); await save(slug(settings.name) + "-storefront.html", html, m); note.textContent = m.textContent;
+});
+
+/* ---------- store view ---------- */
+function renderStore() {
+  $("#store-name").textContent = settings.name; $("#store-tag").textContent = settings.tagline;
+  const g = $("#store-grid"); g.replaceChildren();
+  if (!products.length) {
+    g.append(el("div", { class: "empty", style: "grid-column:1/-1" },
+      el("h3", { style: "font-size:20px;margin-bottom:6px", text: db ? "Your store is empty" : "Loading your store…" }),
+      el("p", { style: "margin:0 0 14px", text: "Snap a product photo or generate a digital product to add your first listing." }),
+      el("button", { class: "btn primary", onclick: () => go("snap"), text: "Snap a product" })));
+  }
+  for (const p of products) {
+    const src = imgSrc(p);
+    g.append(el("button", { class: "card", onclick: () => openProduct(p.id), "aria-label": "Open " + p.title },
+      el("div", { class: "ph" }, src ? el("img", { src, alt: "", loading: "lazy" }) : el("span", { text: "No photo" })),
+      el("div", { class: "meta" },
+        el("h3", { text: p.title }),
+        el("div", { class: "row" }, el("span", { class: "price", text: money(p.price) }),
+          el("span", { class: "chip" + (p.stripeLink ? " ok" : ""), text: p.stripeLink ? "Checkout live" : "Needs Stripe link" })))));
+  }
+  const live = products.filter((p) => p.stripeLink).length;
+  $("#store-note").textContent = products.length ? `${products.length} product${products.length > 1 ? "s" : ""} · ${live} with checkout live. Open a product to add its Stripe Payment Link.` : "";
+}
+renderStore();
+
+let current = null;
+function openProduct(id) {
+  current = products.find((p) => p.id === id); if (!current) return;
+  $("#ov-page").replaceChildren(productPage(current));
+  const acts = $("#ov-actions"); acts.replaceChildren();
+  acts.append(el("button", { class: "btn", text: "Download page (.html)", onclick: () => exportProduct(current, $("#ov-msg")) }));
+  if (assets) {
+    acts.append(el("button", { class: "btn", text: "Edit", onclick: () => { $("#ov-edit").hidden = !$("#ov-edit").hidden; } }));
+    const del = el("button", { class: "btn danger", text: "Delete" });
+    del.onclick = () => {
+      const box = el("div", { class: "confirm" }, "Delete this product for everyone?",
+        el("button", { class: "btn danger", text: "Yes, delete", onclick: async () => {
+          try { await db.doc("products/" + current.id).delete(); if (current.image) assets.delete(current.image).catch(() => {}); closeOverlay(); }
+          catch { show($("#ov-msg"), "Couldn't delete. Try again.", "err"); $("#ov-edit").hidden = false; }
+        } }),
+        el("button", { class: "btn ghost", text: "Keep it", onclick: () => box.replaceWith(del) }));
+      del.replaceWith(box);
+    };
+    acts.append(del);
+  }
+  $("#ov-stripe").value = current.stripeLink || ""; $("#ov-price").value = current.price ?? ""; $("#ov-title").value = current.title || "";
+  $("#ov-edit").hidden = !!current.stripeLink || !assets; show($("#ov-msg"), "");
+  $("#overlay").hidden = false; document.body.style.overflow = "hidden"; $("#ov-close").focus();
+}
+function closeOverlay() { $("#overlay").hidden = true; document.body.style.overflow = ""; current = null; }
+$("#ov-close").addEventListener("click", closeOverlay);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#overlay").hidden) closeOverlay(); });
+$("#ov-save").addEventListener("click", async () => {
+  const link = $("#ov-stripe").value.trim();
+  if (!validStripe(link)) { show($("#ov-msg"), "That doesn't look like a Stripe Payment Link. It should start with https://buy.stripe.com/", "err"); return; }
+  try {
+    await db.doc("products/" + current.id).update({ stripeLink: link, price: Number($("#ov-price").value) || 0, title: $("#ov-title").value.trim() || current.title });
+    show($("#ov-msg"), "Saved.", "ok");
+  } catch { show($("#ov-msg"), "Couldn't save. Try again.", "err"); }
+});
+
+/* store details */
+$("#edit-store").addEventListener("click", () => { $("#s-name").value = settings.name; $("#s-tag").value = settings.tagline; $("#store-form").hidden = false; });
+$("#s-cancel").addEventListener("click", () => ($("#store-form").hidden = true));
+$("#s-save").addEventListener("click", async () => {
+  const next = { name: $("#s-name").value.trim() || settings.name, tagline: $("#s-tag").value.trim() };
+  try { await db.doc("store/settings").set(next); $("#store-form").hidden = true; }
+  catch { $("#store-note").textContent = "Couldn't save store details. You may need edit access."; }
+});
+
+/* ---------- generator ---------- */
+const TYPES = [
+  { id: "guide", name: "Mini e-book", sub: "6-chapter how-to guide, PDF", price: 12 },
+  { id: "checklist", name: "Checklist pack", sub: "Printable checklists & worksheets", price: 8 },
+  { id: "hooks", name: "Content prompt pack", sub: "60 hooks & post ideas", price: 15 },
+  { id: "quotes", name: "Quote print set", sub: "6 printable 8×10 wall prints", price: 9 },
+  { id: "planner", name: "Mini planner", sub: "Weekly + habit + goal pages", price: 10 },
+];
+const typesBox = $("#types");
+for (const t of TYPES) typesBox.append(el("button", { class: "type", type: "button", id: "type-" + t.id, "aria-pressed": String(t.id === gen.type), onclick: () => {
+  gen.type = t.id; typesBox.querySelectorAll(".type").forEach((x) => x.setAttribute("aria-pressed", String(x.id === "type-" + t.id)));
+} }, el("strong", { text: t.name }), el("span", { text: t.sub })));
+
+const CONTENT_SHAPE = {
+  guide: `"content": {"chapters": [6 objects {"heading": string, "paragraphs": [3-4 strings of 60-110 words each], "tip": string}]}`,
+  checklist: `"content": {"lists": [5 objects {"heading": string, "intro": string, "items": [8-10 short action strings]}]}`,
+  hooks: `"content": {"groups": [6 objects {"heading": string, "items": [10 fill-in-the-blank hooks or post ideas using [brackets] for blanks]}]}`,
+  quotes: `"content": {"quotes": [6 original short quotes, 3-9 words each, no attribution]}`,
+  planner: `"content": {"weekly_prompts": [7 short reflection prompts], "habits": [8 habit names], "goal_areas": [4 short area names]}`,
+};
+$("#generate").addEventListener("click", async () => {
+  if (!sample) { show($("#gen-msg"), "AI writing isn't available in this view.", "err"); return; }
+  const t = TYPES.find((x) => x.id === gen.type), niche = $("#niche").value.trim();
+  if (!niche) { show($("#gen-msg"), "Describe who the product is for first.", "err"); return; }
+  const btn = $("#generate"); btn.disabled = true; btn.replaceChildren(el("span", { class: "spin" }), " Writing your product…");
+  show($("#gen-msg"), ""); const st = $("#gen-stream"); st.hidden = false; st.textContent = "Thinking…";
+  const prompt = `Create a sellable digital product: a ${t.name} (${t.sub}) for this audience and topic: "${niche}".
+The content must be genuinely useful, specific and original; write it in plain, warm, practical English. No emoji. Do not quote real people.
+Reply with only one JSON object:
+{"title": string (max 60 chars), "tagline": string (max 100 chars), "description": string (2 short paragraphs separated by a blank line, describing what the buyer gets), "bullets": [5 strings], "suggested_price": number (USD), "category": string, "tags": [5 lowercase words], "faq": [3 objects {"q","a"} about format, printing/devices and use], ${CONTENT_SHAPE[t.id]}}`;
+  try {
+    const r = await sample.json(prompt, { cache: false, onText: ({ text }) => { st.textContent = text.slice(-1200); st.scrollTop = st.scrollHeight; } });
+    if (!r || !r.title || !r.content) throw { code: "invalid_json" };
+    gen.result = { ...r, type: t.id, price: Number($("#g-price").value) || Number(r.suggested_price) || t.price };
+    gen.coverBlob = await drawCover(gen.result, $("#g-color").value);
+    if (gen.coverUrl) URL.revokeObjectURL(gen.coverUrl); gen.coverUrl = URL.createObjectURL(gen.coverBlob);
+    st.hidden = true; renderGenPreview(); $("#gen-actions").hidden = false; show($("#gen-save-msg"), "");
+  } catch (e) { st.hidden = true; show($("#gen-msg"), errText(e), "err"); }
+  finally { btn.disabled = false; btn.textContent = "Generate product"; }
+});
+function genListing() {
+  const r = gen.result, t = TYPES.find((x) => x.id === r.type);
+  return { title: String(r.title), tagline: String(r.tagline || ""), description: String(r.description || ""),
+    bullets: (r.bullets || []).map(String).slice(0, 6), price: r.price, kind: "digital", category: String(r.category || t.name),
+    tags: (r.tags || []).map((x) => String(x).replace(/^#/, "")).slice(0, 6), faq: (r.faq || []).filter((f) => f && f.q).map((f) => ({ q: String(f.q), a: String(f.a || "") })),
+    stripeLink: $("#g-stripe").value.trim(), source: "generator", format: t.name, _dataUrl: gen.coverUrl };
+}
+function renderGenPreview() { $("#gen-preview").replaceChildren(productPage(genListing())); }
+$("#g-stripe").addEventListener("change", () => gen.result && renderGenPreview());
+$("#gen-save").addEventListener("click", async () => {
+  const b = $("#gen-save"); b.disabled = true;
+  if (await saveProduct(genListing(), gen.coverBlob, $("#gen-save-msg"))) setTimeout(() => go("store"), 600);
+  b.disabled = false;
+});
+$("#gen-cover").addEventListener("click", () => gen.coverBlob && save(slug(gen.result.title) + "-cover.png", gen.coverBlob, $("#gen-save-msg")));
+$("#gen-pdf").addEventListener("click", async () => {
+  if (!gen.result) return;
+  try { const blob = await buildPdf(gen.result, $("#g-color").value); await save(slug(gen.result.title) + ".pdf", blob, $("#gen-save-msg")); }
+  catch { show($("#gen-save-msg"), "Couldn't build the PDF. Try again.", "err"); }
+});
+
+/* cover art on canvas */
+function wrapLines(ctx, text, maxW) {
+  const words = String(text).split(/\s+/), lines = []; let line = "";
+  for (const w of words) { const t = line ? line + " " + w : w; if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; }
+  if (line) lines.push(line); return lines;
+}
+async function drawCover(r, color) {
+  try { await document.fonts.load('800 80px "Bricolage Grotesque"'); await document.fonts.load('600 30px Figtree'); } catch {}
+  const S = 1200, c = document.createElement("canvas"); c.width = c.height = S; const x = c.getContext("2d");
+  x.fillStyle = "#F4F2EE"; x.fillRect(0, 0, S, S);
+  x.fillStyle = color; x.fillRect(0, 0, S, 760);
+  x.globalAlpha = 0.18; x.fillStyle = "#fff";
+  for (let i = 0; i < 7; i++) { x.beginPath(); x.arc(1050 - i * 40, 160 + i * 30, 260 - i * 30, 0, Math.PI * 2); x.fill(); }
+  x.globalAlpha = 1;
+  const t = TYPES.find((q) => q.id === r.type);
+  x.fillStyle = "#fff"; x.font = '600 30px Figtree, sans-serif'; x.fillText((t ? t.name : "Digital product").toUpperCase(), 80, 120);
+  x.font = '800 92px "Bricolage Grotesque", sans-serif';
+  const lines = wrapLines(x, r.title, S - 160).slice(0, 4); let y = 740 - (lines.length - 1) * 100 - 40;
+  for (const ln of lines) { x.fillText(ln, 80, y); y += 100; }
+  x.fillStyle = "#16152E"; x.font = '500 36px Figtree, sans-serif';
+  wrapLines(x, r.tagline || "", S - 160).slice(0, 2).forEach((ln, i) => x.fillText(ln, 80, 850 + i * 50));
+  x.font = '600 28px Figtree, sans-serif'; x.fillStyle = color; x.fillText("INSTANT DOWNLOAD · PRINTABLE PDF", 80, 1110);
+  return await new Promise((res) => c.toBlob(res, "image/png"));
+}
+
+/* PDF builder (jsPDF, US Letter) */
+async function buildPdf(r, color) {
+  const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const W = 612, H = 792, M = 60, rgb = [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16));
+  const coverImg = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(gen.coverBlob); });
+  doc.addImage(coverImg, "PNG", 0, (H - W) / 2, W, W); doc.setFillColor(...rgb); doc.rect(0, 0, W, (H - W) / 2, "F"); doc.setFillColor(244, 242, 238); doc.rect(0, (H + W) / 2, W, (H - W) / 2, "F");
+  let y = M;
+  const newPage = () => { doc.addPage(); y = M; doc.setFillColor(...rgb); doc.rect(0, 0, W, 8, "F"); doc.setFontSize(8); doc.setTextColor(120); doc.text(r.title, M, H - 30); doc.text(String(doc.getNumberOfPages()), W - M, H - 30, { align: "right" }); };
+  const need = (h) => { if (y + h > H - 60) newPage(); };
+  const head = (t, size = 20) => { need(size * 2.4); doc.setFont("helvetica", "bold"); doc.setFontSize(size); doc.setTextColor(22, 21, 46); doc.splitTextToSize(t, W - 2 * M).forEach((ln) => { doc.text(ln, M, y + size); y += size * 1.25; }); y += 8; };
+  const para = (t, size = 11, color2 = [40, 40, 50]) => { doc.setFont("helvetica", "normal"); doc.setFontSize(size); doc.setTextColor(...color2); for (const ln of doc.splitTextToSize(t, W - 2 * M)) { need(size * 1.5); doc.text(ln, M, y + size); y += size * 1.5; } y += 8; };
+  const box = (t) => { doc.setFont("helvetica", "normal"); doc.setFontSize(11); const lines = doc.splitTextToSize(t, W - 2 * M - 40); need(lines.length * 16 + 10); doc.setDrawColor(150); doc.rect(M, y + 2, 11, 11); lines.forEach((ln, i) => doc.text(ln, M + 22, y + 12 + i * 16)); y += lines.length * 16 + 8; };
+  newPage(); head("Welcome", 24); para(r.description || "");
+  para("Personal use licence: thank you for your purchase. Please don't resell or share this file.", 9, [120, 120, 130]);
+  const c = r.content || {};
+  if (r.type === "guide") (c.chapters || []).forEach((ch, i) => { newPage(); doc.setTextColor(...rgb); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.text("CHAPTER " + (i + 1), M, y + 11); y += 22; head(ch.heading || ""); (ch.paragraphs || []).forEach((p) => para(String(p))); if (ch.tip) { need(60); doc.setFillColor(244, 242, 238); const l = doc.splitTextToSize("Try this: " + ch.tip, W - 2 * M - 24); doc.rect(M, y, W - 2 * M, l.length * 15 + 18, "F"); doc.setFontSize(10.5); doc.setTextColor(40); l.forEach((ln, k) => doc.text(ln, M + 12, y + 18 + k * 15)); y += l.length * 15 + 30; } });
+  if (r.type === "checklist") (c.lists || []).forEach((ls) => { newPage(); head(ls.heading || ""); if (ls.intro) para(ls.intro); (ls.items || []).forEach((it) => box(String(it))); });
+  if (r.type === "hooks") (c.groups || []).forEach((g, gi) => { if (gi % 2 === 0) newPage(); head(g.heading || "", 16); (g.items || []).forEach((it, k) => para((gi * 10 + k + 1) + ".  " + it, 10.5)); y += 6; });
+  if (r.type === "quotes") (c.quotes || []).forEach((q) => { doc.addPage(); doc.setFillColor(244, 242, 238); doc.rect(0, 0, W, H, "F"); doc.setFillColor(...rgb); doc.circle(W / 2, H * 0.36, 120, "F"); doc.setFont("times", "normal"); doc.setFontSize(34); doc.setTextColor(22, 21, 46); doc.splitTextToSize(String(q), W - 2 * M - 40).forEach((ln, i, a) => doc.text(ln, W / 2, H * 0.68 + i * 42 - (a.length - 1) * 21, { align: "center" })); });
+  if (r.type === "planner") {
+    const p = c;
+    newPage(); head("My goals", 24); (p.goal_areas || []).forEach((a) => { head(String(a), 14); for (let i = 0; i < 3; i++) box(" "); });
+    for (let w = 0; w < 4; w++) { newPage(); head("Week of ____________", 20); ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].forEach((d) => { need(70); doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...rgb); doc.text(d.toUpperCase(), M, y + 11); doc.setDrawColor(210); for (let k = 0; k < 3; k++) doc.line(M + 50, y + 14 + k * 18, W - M, y + 14 + k * 18); y += 64; }); para("Reflect: " + ((p.weekly_prompts || [])[w] || "What went well this week?"), 11); }
+    newPage(); head("Habit tracker", 20); doc.setFontSize(9); (p.habits || []).forEach((h, i) => { const yy = y + i * 34; doc.setTextColor(40); doc.text(String(h), M, yy + 14); for (let d = 0; d < 31; d++) { doc.setDrawColor(190); doc.rect(M + 150 + d * 11.5, yy + 4, 9, 14); } });
+  }
+  return doc.output("blob");
+}
+
+/* ---------- trends ---------- */
+const TRENDS = [
+  ["Digital planners", "Hyperlinked PDF planners for GoodNotes and Notability. Peak season runs October to January.", "Etsy · TikTok · Pinterest"],
+  ["Printable wall art", "Minimalist and motivational prints. The highest-volume digital category on Etsy.", "Etsy · Pinterest"],
+  ["Content & hook templates", "Hooks, scripts and content calendars for creators and small shops.", "TikTok · Instagram"],
+  ["Spreadsheet templates", "Budget, savings and small-business trackers for Excel and Google Sheets.", "Etsy · TikTok"],
+  ["Digital stickers", "Transparent PNG sticker packs for iPad planners.", "Etsy · Instagram"],
+  ["Canva templates", "Social posts, business cards and branding kits buyers edit in Canva.", "Etsy · Instagram"],
+  ["E-books & mini guides", "Short, specific how-to guides tied to a creator's niche.", "Instagram · TikTok"],
+  ["Resume templates", "Clean, ATS-friendly CV templates in Word and Google Docs.", "Etsy · Pinterest"],
+];
+TRENDS.forEach(([h, p, w], i) => $("#trends").append(el("div", { class: "trend" }, el("div", { class: "rank", text: String(i + 1) }),
+  el("div", { style: "min-width:0" }, el("h3", { text: h }), el("p", { text: p })), el("span", { class: "pill", text: w }))));
+
+/* ---------- capabilities ---------- */
+const status = $("#status");
+(async () => {
+  [db, assets, sample, downloads] = await Promise.all(["db", "assets", "sample", "downloads"].map((n) => window.claude?.use?.(n) ?? Promise.resolve(null)));
+  if (sample) { const lim = await sample.limits().catch(() => null); if (!lim?.images) $("#build").title = "Photo analysis isn't available here"; }
+  $("#build").disabled = !(sample && snap.file);
+  status.textContent = db ? (assets ? "store synced" : "view only") : "offline preview";
+  if (!assets) { $("#save-product").disabled = true; $("#gen-save").disabled = true; $("#edit-store").hidden = true; }
+  if (!sample) { $("#generate").disabled = true; show($("#gen-msg"), "AI writing isn't available in this view."); }
+  if (!downloads) { ["#export-snap", "#export-store", "#gen-pdf", "#gen-cover"].forEach((s) => ($(s).hidden = true)); }
+  if (!db) { renderStore(); return; }
+  db.doc("store/settings").onSnapshot((s) => { if (s.exists) { const d = s.data(); settings = { name: String(d.name || settings.name), tagline: String(d.tagline || "") }; renderStore(); } }, () => {});
+  db.collection("products").orderBy("createdAt", "desc").onSnapshot((snapq) => {
+    products = snapq.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderStore();
+    if (current) { const fresh = products.find((p) => p.id === current.id); if (fresh) { current = fresh; $("#ov-page").replaceChildren(productPage(fresh)); } else closeOverlay(); }
+  }, () => { status.textContent = "store unavailable"; });
+})();
+})();
+</script>

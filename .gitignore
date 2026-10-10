@@ -1,0 +1,11 @@
+node_modules/
+.env
+server/data/
+mobile/.expo/
+mobile/dist/
+mobile/ios/
+mobile/android/
+mobile/google-play-service-account.json
+*.log
+.DS_Store
+products/out/

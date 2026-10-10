@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Snapfront",
+    "slug": "snapfront",
+    "scheme": "snapfront",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "description": "Snap a photo of a product and get a full product page with Stripe checkout, or generate best-selling digital products and sell them from your own storefront.",
+    "ios": {
+      "bundleIdentifier": "com.snapfront.app",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "config": { "usesNonExemptEncryption": false },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          { "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults", "NSPrivacyAccessedAPITypeReasons": ["CA92.1"] }
+        ]
+      }
+    },
+    "android": {
+      "package": "com.snapfront.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#2C47F5",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": { "favicon": "./assets/favicon.png", "bundler": "metro" },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-font",
+      "expo-image",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#2C47F5"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Snapfront uses your photos so you can turn a product picture into a product page.",
+          "cameraPermission": "Snapfront uses the camera so you can photograph a product and turn it into a product page.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "experiments": { "typedRoutes": true },
+    "extra": {
+      "apiUrl": "https://YOUR-SNAPFRONT-SERVER.up.railway.app",
+      "eas": { "projectId": "" }
+    }
+  }
+}
