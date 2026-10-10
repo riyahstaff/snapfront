@@ -12,10 +12,17 @@
       "bundleIdentifier": "com.sidebanc.snapfront",
       "buildNumber": "1",
       "supportsTablet": true,
-      "config": { "usesNonExemptEncryption": false },
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
-          { "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults", "NSPrivacyAccessedAPITypeReasons": ["CA92.1"] }
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
+          }
         ]
       }
     },
@@ -30,7 +37,10 @@
       },
       "predictiveBackGestureEnabled": false
     },
-    "web": { "favicon": "./assets/favicon.png", "bundler": "metro" },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
     "plugins": [
       "expo-router",
       "expo-secure-store",
@@ -55,10 +65,16 @@
         }
       ]
     ],
-    "experiments": { "typedRoutes": true },
+    "experiments": {
+      "typedRoutes": true
+    },
     "extra": {
       "apiUrl": "https://snapfront-api-production.up.railway.app",
-      "eas": { "projectId": "" }
-    }
+      "eas": {
+        "projectId": "d9ef2157-0771-455a-b3c4-867036f70222"
+      },
+      "router": {}
+    },
+    "owner": "snapfront"
   }
 }
