@@ -20,7 +20,7 @@ app.set("trust proxy", 1);
 app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   let event;
   try { event = pay.verifyWebhook(req.body, req.get("stripe-signature")); }
-  catch (e) { return res.status(400).send(`Webhook error: ${e.message}`); }
+  catch (e) { console.error("[webhook] rejected:", e.message); return res.status(400).send(`Webhook error: ${e.message}`); }
   try {
     const obj = event.data.object;
     const orderId = obj.object === "checkout.session" ? obj.metadata?.snapfront_order : null;
@@ -239,7 +239,9 @@ app.get("/thanks", wrap(async (req, res) => {
   const store = db.prepare("SELECT * FROM sellers WHERE id = ?").get(order.seller_id);
   // The webhook can arrive after the buyer lands here, so check Stripe directly while the order is pending.
   if (order.status === "pending" && order.checkout_session_id && store.stripe_account_id) {
-    const session = await pay.getSession(store.stripe_account_id, order.checkout_session_id).catch(() => null);
+    const session = await pay.getSession(store.stripe_account_id, order.checkout_session_id)
+      .catch((e) => { console.error("[thanks] could not read checkout session", order.id, e.type, e.message); return null; });
+    if (session && session.payment_status !== "paid") console.log("[thanks] session not paid yet", order.id, session.status, session.payment_status);
     if (session?.payment_status === "paid") order = await completeOrder(order.id, session);
   }
   res.send(orderPage(store, commerce.publicOrder(order), commerce.downloadsFor(order)));
