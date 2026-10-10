@@ -19,8 +19,15 @@ export async function onboardingLink(seller) {
   const s = stripeClient();
   let accountId = seller.stripe_account_id;
   if (!accountId) {
+    // Express Dashboard for sellers, but Stripe (not Snapfront) covers losses and sellers pay their own
+    // Stripe fees. Plain type: "express" would make the platform liable for every seller's negative balance.
     const acct = await s.accounts.create({
-      type: "express",
+      controller: {
+        stripe_dashboard: { type: "express" },
+        losses: { payments: "stripe" },
+        fees: { payer: "account" },
+        requirement_collection: "stripe",
+      },
       capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
       business_profile: { name: seller.store_name, url: `${config.publicUrl}/s/${seller.store_slug}` },
       metadata: { snapfront_seller: seller.id },
