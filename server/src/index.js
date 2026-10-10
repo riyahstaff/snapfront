@@ -264,14 +264,14 @@ app.get("/privacy", legal("Privacy policy", `
 <h2>What we collect</h2><ul><li>Store details you enter: store name, tagline, product text and prices.</li>
 <li>Photos you choose to upload, used to write your product page and shown on your storefront.</li>
 <li>A random device token that identifies your store. We do not collect your name, contacts or location.</li>
-<li>Order records from Stripe for your sales: buyer email and amount, so we can deliver digital downloads.</li></ul>
+<li>Order records for your sales: what was bought, amounts, the buyer's name, email and shipping address, so we can deliver digital downloads and you can ship physical orders.</li></ul>
 <h2>How we use it</h2><p>To generate product pages (photos and text are sent to Anthropic's Claude API for this purpose only), to host your storefront, and to process sales through Stripe. We don't sell your data or use it for advertising.</p>
 <h2>Third parties</h2><p>Anthropic (AI writing), Stripe (payments and seller verification), and our hosting provider.</p>
 <h2>Deleting your data</h2><p>Open Store settings in the app and tap "Delete my store". This removes your store, products and photos from our servers.</p>
-<h2>Contact</h2><p>REPLACE_WITH_SUPPORT_EMAIL</p>`));
+<h2>Contact</h2><p><a href="mailto:torrey@troosec.com">torrey@troosec.com</a></p>`));
 app.get("/terms", legal("Terms of use", `
 <p>By using Snapfront you agree to sell only products you have the right to sell, to describe them honestly, and to follow Stripe's terms and restricted-business list. You're responsible for fulfilling orders, taxes and refunds. Snapfront may remove listings that break these rules. Snapfront keeps a platform fee shown in the app on each sale.</p>
-<h2>Contact</h2><p>REPLACE_WITH_SUPPORT_EMAIL</p>`));
+<h2>Contact</h2><p><a href="mailto:torrey@troosec.com">torrey@troosec.com</a></p>`));
 
 /* ---------- research list shown in the app's "What's selling" tab ---------- */
 app.get("/api/trends", (_req, res) => res.json(store.TRENDS));
