@@ -7,6 +7,7 @@ import { config } from "./config.js";
 import { db } from "./db.js";
 import { httpError, PRODUCT_TYPES } from "./claude.js";
 import * as store from "./store.js";
+import * as commerce from "./commerce.js";
 
 const MAX_ROUNDS = 10;          // tool-use rounds per request
 const MAX_TOKENS = 16000;       // per model turn
@@ -23,7 +24,8 @@ function anthropic() {
 
 const fresh = (id) => db.prepare("SELECT * FROM sellers WHERE id = ?").get(id);
 const brief = (p) => ({ id: p.id, title: p.title, price: p.price, status: p.status, kind: p.kind, category: p.category,
-  has_delivery_file: p.has_delivery, page_url: p.page_url, checkout_url: p.payment_link_url || null });
+  has_delivery_file: p.has_delivery, page_url: p.page_url, inventory: p.inventory, in_stock: p.in_stock,
+  option_name: p.option_name || null, variants: p.variants?.map((v) => ({ id: v.id, name: v.name, price: v.price, inventory: v.inventory })) });
 
 const TYPE_IDS = Object.keys(PRODUCT_TYPES);
 
@@ -42,7 +44,7 @@ const TOOLS = [
   },
   {
     name: "list_products",
-    description: "List every product in the seller's store with its id, title, price in US dollars, status (draft or live), kind (physical or digital), whether a download file is attached, its public page URL and checkout URL. Use it to find a product's id before editing or publishing it.",
+    description: "List every product in the seller's store with its id, title, price in US dollars, status (draft or live), kind (physical or digital), whether a download file is attached, its public page URL, stock (inventory null means unlimited) and variants. Use it to find a product's id before editing or publishing it.",
     input_schema: { type: "object", properties: {} },
     label: () => "Looking through your products",
     run: (seller) => store.listProducts(seller).map(brief),
@@ -91,7 +93,7 @@ const TOOLS = [
   },
   {
     name: "update_product",
-    description: "Edit an existing product. Pass only the fields to change. Changing the price of a live product takes it back to draft until it is published again.",
+    description: "Edit an existing product. Pass only the fields to change; price changes apply to the live store immediately. inventory: units in stock (null = unlimited). Variants: set option_name (e.g. 'Size') and pass the FULL variants list, each {id?, name, price?, inventory?}; keep each existing variant's id to update it, omit id to add one, and leave a variant out to remove it. A variant's price defaults to the product price. Set status to 'draft' to take a live product off sale.",
     input_schema: {
       type: "object",
       properties: {
@@ -99,6 +101,12 @@ const TOOLS = [
         bullets: { type: "array", items: { type: "string" } }, tags: { type: "array", items: { type: "string" } },
         faq: { type: "array", items: { type: "object", properties: { q: { type: "string" }, a: { type: "string" } }, required: ["q", "a"] } },
         category: { type: "string" }, price: { type: "number", description: "US dollars" }, delivery_url: { type: "string" },
+        inventory: { type: ["integer", "null"], description: "Units in stock; null for unlimited" },
+        sku: { type: "string" }, option_name: { type: "string", description: "Name of the variant choice, e.g. Size or Colour" },
+        variants: { type: "array", items: { type: "object", properties: {
+          id: { type: "string" }, name: { type: "string" }, price: { type: ["number", "null"], description: "US dollars; null = product price" },
+          inventory: { type: ["integer", "null"] }, sku: { type: "string" } }, required: ["name"] } },
+        status: { type: "string", enum: ["draft"], description: "Only to take a live product off sale" },
       },
       required: ["id"],
     },
@@ -108,16 +116,20 @@ const TOOLS = [
   },
   {
     name: "publish_product",
-    description: "Put a draft product on sale: creates the Stripe product, price and checkout link on the seller's own Stripe account and adds it to the public storefront. Only call this when the seller has asked to sell, publish or put something on sale. Fails with a clear message if Stripe isn't connected yet; then tell the seller to tap Connect Stripe in My store.",
+    description: "Put a draft product on sale: adds it to the public storefront, where buyers add it to a cart and pay through Stripe Checkout on the seller's own Stripe account. Only call this when the seller has asked to sell, publish or put something on sale. Fails with a clear message if Stripe isn't connected yet; then tell the seller to tap Connect Stripe in My store.",
     input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
-    label: () => "Publishing with Stripe checkout",
+    label: () => "Putting it on sale",
     product: true,
     run: async (seller, i) => brief(await store.publishProduct(seller, i.id)),
   },
   {
     name: "update_store",
-    description: "Change the store's name or tagline (the line under the name on the storefront).",
-    input_schema: { type: "object", properties: { store_name: { type: "string" }, tagline: { type: "string" } } },
+    description: "Change store details: name, tagline (the line under the name on the storefront), and checkout settings. shipping_flat is the flat shipping charge in US dollars per order with physical items; free_shipping_over makes shipping free when the order (after discounts) reaches that many dollars (null turns it off); ship_countries is a list of two-letter country codes; tax_enabled turns on automatic sales tax through Stripe Tax (the seller must first add their tax registrations in their Stripe dashboard).",
+    input_schema: { type: "object", properties: {
+      store_name: { type: "string" }, tagline: { type: "string" },
+      shipping_flat: { type: "number" }, free_shipping_over: { type: ["number", "null"] },
+      ship_countries: { type: "array", items: { type: "string" } }, tax_enabled: { type: "boolean" },
+    } },
     label: () => "Updating your store details",
     run: (seller, i) => store.updateStore(fresh(seller.id), i),
   },
@@ -130,10 +142,41 @@ const TOOLS = [
   },
   {
     name: "list_orders",
-    description: "The store's recent orders: product title, amount in cents, buyer email and date, newest first.",
+    description: "The store's recent orders, newest first: status (paid, fulfilled or canceled), items with variant and quantity, subtotal, discount, shipping, tax and total in US dollars, buyer email and name, shipping address.",
     input_schema: { type: "object", properties: {} },
     label: () => "Checking your orders",
-    run: (seller) => store.listOrders(seller),
+    run: (seller) => commerce.listOrders(seller).slice(0, 50),
+  },
+  {
+    name: "fulfill_order",
+    description: "Mark a paid order as fulfilled (shipped or delivered). Only do this when the seller says the order has been sent.",
+    input_schema: { type: "object", properties: { id: { type: "string", description: "Order id from list_orders" } }, required: ["id"] },
+    label: () => "Marking an order as fulfilled",
+    run: (seller, i) => commerce.setOrderStatus(seller, i.id, "fulfilled"),
+  },
+  {
+    name: "list_discounts",
+    description: "The store's discount codes with their value, uses, limits and whether they're active.",
+    input_schema: { type: "object", properties: {} },
+    label: () => "Checking your discount codes",
+    run: (seller) => commerce.listDiscounts(seller),
+  },
+  {
+    name: "create_discount",
+    description: "Create a discount code buyers enter in their cart. Use kind 'percent' with percent (1-100), or kind 'amount' with amount in US dollars off the order. Optional: min_subtotal (dollars), max_uses, expires_at (ISO date). Codes are letters and numbers, e.g. HOLIDAY20.",
+    input_schema: { type: "object", properties: {
+      code: { type: "string" }, kind: { type: "string", enum: ["percent", "amount"] }, percent: { type: "number" }, amount: { type: "number" },
+      min_subtotal: { type: "number" }, max_uses: { type: "integer" }, expires_at: { type: "string" },
+    }, required: ["code", "kind"] },
+    label: (i) => `Creating the code ${commerce.normCode(i.code)}`,
+    run: (seller, i) => commerce.createDiscount(seller, i),
+  },
+  {
+    name: "set_discount_active",
+    description: "Turn a discount code on or off without deleting it. Use the id from list_discounts.",
+    input_schema: { type: "object", properties: { id: { type: "string" }, active: { type: "boolean" } }, required: ["id", "active"] },
+    label: (i) => (i.active ? "Turning a code on" : "Turning a code off"),
+    run: (seller, i) => commerce.updateDiscount(seller, i.id, { active: i.active }),
   },
 ];
 const BY_NAME = Object.fromEntries(TOOLS.map((t) => [t.name, t]));
@@ -150,6 +193,7 @@ How to work:
 - Products you create start as drafts. Publish only when the seller asked to sell, publish or put something on sale.
 - Never invent facts about a seller's physical product (materials, sizes, certifications). Ask if you need them.
 - Prices are in US dollars. If the seller gives no price, use a sensible one and say what you chose.
+- The storefront has a cart, product options (variants like size), stock counts, discount codes, flat-rate shipping and optional automatic sales tax. You can manage all of these with the tools.
 - You can't take photos, delete products, issue refunds or change Stripe settings; tell the seller where in the app to do those (Snap tab, a product's page, the Stripe dashboard from Store settings).
 - When you write marketing copy (captions, hooks, launch posts), write it directly in your reply, ready to paste.
 

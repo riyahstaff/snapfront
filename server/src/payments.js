@@ -6,9 +6,11 @@ import { config } from "./config.js";
 import { httpError } from "./claude.js";
 
 let stripe = null;
+export function setStripeClient(c) { stripe = c; }   // used by tests
 export function stripeClient() {
+  if (stripe) return stripe;
   if (!config.stripeKey) throw httpError(503, "Payments are not configured. Set STRIPE_SECRET_KEY on the server.");
-  stripe ??= new Stripe(config.stripeKey);
+  stripe = new Stripe(config.stripeKey);
   return stripe;
 }
 
@@ -45,27 +47,26 @@ export async function dashboardLink(accountId) {
   return (await stripeClient().accounts.createLoginLink(accountId)).url;
 }
 
-/** Create the Stripe product, price and Payment Link on the seller's account. */
-export async function publishToStripe(seller, product) {
+/**
+ * Create a Checkout Session on the seller's connected account (a direct charge).
+ * A cart discount becomes a single-use coupon so the buyer sees it itemised in Checkout.
+ */
+export async function createCheckout(seller, params, discountCents = 0) {
   const s = stripeClient();
   const opts = { stripeAccount: seller.stripe_account_id };
-  const imageUrl = product.image_url && product.image_url.startsWith("https://") ? [product.image_url] : undefined;
-  const sp = await s.products.create({
-    name: product.title,
-    description: (product.tagline || product.description || "").slice(0, 500) || undefined,
-    images: imageUrl,
-    metadata: { snapfront_product: product.id },
-  }, opts);
-  const price = await s.prices.create({ product: sp.id, unit_amount: product.price_cents, currency: product.currency }, opts);
-  const params = {
-    line_items: [{ price: price.id, quantity: 1 }],
-    metadata: { snapfront_product: product.id },
-    after_completion: { type: "redirect", redirect: { url: `${config.publicUrl}/thanks?p=${product.id}&session_id={CHECKOUT_SESSION_ID}` } },
-  };
-  if (config.platformFeePercent > 0) params.application_fee_percent = config.platformFeePercent;
-  if (product.kind === "physical") params.shipping_address_collection = { allowed_countries: ["US", "CA", "GB", "AU", "NZ", "IE"] };
-  const link = await s.paymentLinks.create(params, opts);
-  return { stripe_product_id: sp.id, stripe_price_id: price.id, payment_link_url: link.url };
+  if (discountCents > 0) {
+    const coupon = await s.coupons.create({
+      amount_off: discountCents, currency: "usd", duration: "once", max_redemptions: 1,
+      name: `Discount ${params.metadata?.snapfront_order || ""}`.trim().slice(0, 40),
+    }, opts);
+    params = { ...params, discounts: [{ coupon: coupon.id }] };
+  }
+  return s.checkout.sessions.create(params, opts);
+}
+
+/** Read a checkout on the seller's account (status, totals, buyer details). */
+export async function getSession(accountId, sessionId) {
+  return stripeClient().checkout.sessions.retrieve(sessionId, { stripeAccount: accountId });
 }
 
 /** Check a finished checkout on the seller's account. */
@@ -94,14 +95,18 @@ export function readDownloadToken(token) {
   return data.e > Date.now() ? data : null;
 }
 
-export async function emailDownload(to, product, url, storeName) {
+const escHtml = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+/** Order confirmation with any download links. Sent only when RESEND_API_KEY is set. */
+export async function emailOrder(to, { storeName, orderUrl, downloads }) {
   if (!config.resendKey || !to) return false;
+  const links = downloads.map((d) => `<li><a href="${escHtml(d.url)}">Download ${escHtml(d.title)}</a></li>`).join("");
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${config.resendKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: config.emailFrom, to, subject: `Your download: ${product.title}`,
-      html: `<p>Thanks for your order from ${storeName}!</p><p><a href="${url}">Download ${product.title}</a></p><p>The link works for 7 days.</p>`,
+      from: config.emailFrom, to, subject: `Your order from ${storeName}`,
+      html: `<p>Thanks for your order from ${escHtml(storeName)}!</p>${links ? `<ul>${links}</ul><p>Download links work for 7 days.</p>` : ""}<p><a href="${escHtml(orderUrl)}">View your order</a></p>`,
     }),
   });
   return res.ok;

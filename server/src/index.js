@@ -9,7 +9,8 @@ import { writeFileSafe } from "./artwork.js";
 import * as store from "./store.js";
 import * as agent from "./agent.js";
 import * as pay from "./payments.js";
-import { storePage, productPage, notePage, esc, money } from "./render.js";
+import * as commerce from "./commerce.js";
+import { storePage, productPage, cartPage, orderPage, notePage } from "./render.js";
 
 export const app = express();
 app.disable("x-powered-by");
@@ -21,19 +22,13 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   try { event = pay.verifyWebhook(req.body, req.get("stripe-signature")); }
   catch (e) { return res.status(400).send(`Webhook error: ${e.message}`); }
   try {
-    if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
-      const s = event.data.object;
-      const productId = s.metadata?.snapfront_product;
-      const row = productId && db.prepare("SELECT * FROM products WHERE id = ?").get(productId);
-      if (row && s.payment_status === "paid") {
-        const inserted = db.prepare("INSERT OR IGNORE INTO orders (id, product_id, checkout_session_id, email, amount_cents) VALUES (?,?,?,?,?)")
-          .run(newId("ord"), row.id, s.id, s.customer_details?.email || null, s.amount_total ?? null);
-        if (inserted.changes && row.kind === "digital") {
-          const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(row.seller_id);
-          const url = `${config.publicUrl}/d/${pay.downloadToken(row.id, s.id)}`;
-          await pay.emailDownload(s.customer_details?.email, row, url, seller.store_name).catch(() => false);
-        }
-      }
+    const obj = event.data.object;
+    const orderId = obj.object === "checkout.session" ? obj.metadata?.snapfront_order : null;
+    if (orderId && (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")) {
+      await completeOrder(orderId, obj);
+    }
+    if (orderId && (event.type === "checkout.session.async_payment_failed" || event.type === "checkout.session.expired")) {
+      db.prepare("UPDATE orders SET status='canceled' WHERE id=? AND status='pending'").run(orderId);
     }
     if (event.type === "account.updated") {
       const a = event.data.object;
@@ -46,6 +41,19 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
 app.use(express.json({ limit: "12mb" }));
 
 /* ---------- helpers ---------- */
+/** Mark an order paid (once) and send the confirmation email. Safe to call from both the webhook and /thanks. */
+async function completeOrder(orderId, session) {
+  const before = db.prepare("SELECT status FROM orders WHERE id = ?").get(orderId);
+  const order = commerce.finalizeOrder(orderId, session);
+  if (order && before?.status === "pending" && order.status === "paid") {
+    const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(order.seller_id);
+    await pay.emailOrder(order.email, {
+      storeName: seller.store_name, orderUrl: `${config.publicUrl}/thanks?o=${order.id}`, downloads: commerce.downloadsFor(order),
+    }).catch(() => false);
+  }
+  return order;
+}
+
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 function auth(req, _res, next) {
@@ -133,7 +141,14 @@ app.post("/api/products", auth, (req, res) => res.status(201).json(store.createP
 app.patch("/api/products/:id", auth, (req, res) => res.json(store.updateProduct(req.seller, req.params.id, req.body || {})));
 app.delete("/api/products/:id", auth, (req, res) => { store.deleteProduct(req.seller, req.params.id); res.status(204).end(); });
 app.post("/api/products/:id/publish", auth, wrap(async (req, res) => res.json(await store.publishProduct(req.seller, req.params.id))));
-app.get("/api/orders", auth, (req, res) => res.json(store.listOrders(req.seller)));
+
+/* ---------- orders and discount codes ---------- */
+app.get("/api/orders", auth, (req, res) => res.json(commerce.listOrders(req.seller)));
+app.post("/api/orders/:id/fulfill", auth, (req, res) => res.json(commerce.setOrderStatus(req.seller, req.params.id, "fulfilled")));
+app.get("/api/discounts", auth, (req, res) => res.json(commerce.listDiscounts(req.seller)));
+app.post("/api/discounts", auth, (req, res) => res.status(201).json(commerce.createDiscount(req.seller, req.body || {})));
+app.patch("/api/discounts/:id", auth, (req, res) => res.json(commerce.updateDiscount(req.seller, req.params.id, req.body || {})));
+app.delete("/api/discounts/:id", auth, (req, res) => { commerce.deleteDiscount(req.seller, req.params.id); res.status(204).end(); });
 
 /* ---------- Stripe Connect ---------- */
 app.post("/api/stripe/onboard", auth, wrap(async (req, res) => {
@@ -167,6 +182,30 @@ app.get("/s/:store", (req, res) => {
   const rows = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' ORDER BY created_at DESC").all(store.id);
   res.send(storePage(store, rows.map(rowToProduct), config.publicUrl));
 });
+app.get("/s/:store/cart", (req, res) => {
+  const store = storeBySlug(req.params.store);
+  if (!store) return res.status(404).send("Store not found");
+  res.send(cartPage(store, config.publicUrl));
+});
+// Buyers' carts live in their browser; the server prices them from the database every time.
+const buyerHits = new Map();
+function buyerLimit(req, _res, next) {
+  const now = Date.now(), key = req.ip, list = (buyerHits.get(key) || []).filter((t) => now - t < 60_000);
+  if (list.length >= 30) return next(httpError(429, "Too many tries. Wait a minute and try again."));
+  list.push(now); buyerHits.set(key, list);
+  if (buyerHits.size > 5000) buyerHits.clear();
+  next();
+}
+app.post("/s/:store/cart/quote", buyerLimit, (req, res) => {
+  const store = storeBySlug(req.params.store);
+  if (!store) throw httpError(404, "Store not found");
+  res.json(commerce.quote(store, req.body?.items, req.body?.code));
+});
+app.post("/s/:store/checkout", buyerLimit, wrap(async (req, res) => {
+  const store = storeBySlug(req.params.store);
+  if (!store) throw httpError(404, "Store not found");
+  res.json(await commerce.startCheckout(store, req.body?.items, req.body?.code));
+}));
 app.get("/s/:store/:product", (req, res) => {
   const store = storeBySlug(req.params.store);
   const row = store && db.prepare("SELECT * FROM products WHERE seller_id = ? AND slug = ?").get(store.id, req.params.product);
@@ -174,15 +213,15 @@ app.get("/s/:store/:product", (req, res) => {
   res.send(productPage(store, rowToProduct(row), config.publicUrl));
 });
 app.get("/thanks", wrap(async (req, res) => {
-  const row = db.prepare("SELECT * FROM products WHERE id = ?").get(String(req.query.p || ""));
-  if (!row) return res.status(404).send("Order not found");
-  const store = db.prepare("SELECT * FROM sellers WHERE id = ?").get(row.seller_id);
-  const session = await pay.paidSession(store.stripe_account_id, String(req.query.session_id || "")).catch(() => null);
-  if (!session) return res.send(notePage(store, "Payment pending", `<h1>Almost there</h1><p>We haven't received your payment yet. If you were charged, refresh this page in a minute.</p>`));
-  db.prepare("INSERT OR IGNORE INTO orders (id, product_id, checkout_session_id, email, amount_cents) VALUES (?,?,?,?,?)")
-    .run(newId("ord"), row.id, session.id, session.customer_details?.email || null, session.amount_total ?? null);
-  const dl = row.kind === "digital" ? `<a class="buy" href="/d/${pay.downloadToken(row.id, session.id)}">Download ${esc(row.title)}</a><p class="fine">This link works for 7 days. Bookmark this page to download again.</p>` : `<p>We'll email you when your order ships.</p>`;
-  res.send(notePage(store, "Thank you", `<h1>Thank you!</h1><p>Your order for <strong>${esc(row.title)}</strong> (${money(session.amount_total ?? row.price_cents, row.currency)}) is confirmed.</p>${dl}`));
+  let order = db.prepare("SELECT * FROM orders WHERE id = ?").get(String(req.query.o || ""));
+  if (!order) return res.status(404).send("Order not found");
+  const store = db.prepare("SELECT * FROM sellers WHERE id = ?").get(order.seller_id);
+  // The webhook can arrive after the buyer lands here, so check Stripe directly while the order is pending.
+  if (order.status === "pending" && order.checkout_session_id && store.stripe_account_id) {
+    const session = await pay.getSession(store.stripe_account_id, order.checkout_session_id).catch(() => null);
+    if (session?.payment_status === "paid") order = await completeOrder(order.id, session);
+  }
+  res.send(orderPage(store, commerce.publicOrder(order), commerce.downloadsFor(order)));
 }));
 app.get("/d/:token", (req, res) => {
   const t = pay.readDownloadToken(req.params.token);

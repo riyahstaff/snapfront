@@ -44,14 +44,72 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (seller_id, slug)
 );
-CREATE TABLE IF NOT EXISTS orders (
+`);
+
+/* ---------- migrations (safe to run on every start) ---------- */
+const cols = (t) => new Set(db.prepare(`PRAGMA table_info(${t})`).all().map((c) => c.name));
+const addCol = (t, name, def) => { if (!cols(t).has(name)) db.exec(`ALTER TABLE ${t} ADD COLUMN ${name} ${def}`); };
+
+// Phase 1 commerce: inventory, variants, tax codes, shipping and tax settings.
+addCol("products", "inventory", "INTEGER");               // NULL = unlimited
+addCol("products", "option_name", "TEXT NOT NULL DEFAULT ''"); // e.g. "Size"; variants hold the values
+addCol("products", "tax_code", "TEXT");
+addCol("products", "sku", "TEXT NOT NULL DEFAULT ''");
+addCol("sellers", "shipping_flat_cents", "INTEGER NOT NULL DEFAULT 0");
+addCol("sellers", "free_shipping_over_cents", "INTEGER");
+addCol("sellers", "ship_countries", "TEXT NOT NULL DEFAULT 'US,CA,GB,AU,NZ,IE'");
+addCol("sellers", "tax_enabled", "INTEGER NOT NULL DEFAULT 0");
+
+// Orders became multi-item. The first schema (one product per order) is kept aside if it exists.
+if (db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='orders'").get() && !cols("orders").has("seller_id")) {
+  db.exec("ALTER TABLE orders RENAME TO orders_v1");
+}
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS product_variants (
   id TEXT PRIMARY KEY,
   product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  checkout_session_id TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  price_cents INTEGER,          -- NULL = the product's price
+  inventory INTEGER,            -- NULL = unlimited
+  sku TEXT NOT NULL DEFAULT '',
+  position INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS discounts (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('percent','amount')),
+  value INTEGER NOT NULL,       -- percent (1-100) or cents
+  min_subtotal_cents INTEGER NOT NULL DEFAULT 0,
+  max_uses INTEGER,             -- NULL = unlimited
+  uses INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
+  expires_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (seller_id, code)
+);
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','fulfilled','canceled')),
+  items TEXT NOT NULL DEFAULT '[]',
+  subtotal_cents INTEGER NOT NULL DEFAULT 0,
+  discount_cents INTEGER NOT NULL DEFAULT 0,
+  shipping_cents INTEGER NOT NULL DEFAULT 0,
+  tax_cents INTEGER NOT NULL DEFAULT 0,
+  total_cents INTEGER NOT NULL DEFAULT 0,
+  discount_code TEXT,
   email TEXT,
-  amount_cents INTEGER,
+  customer_name TEXT,
+  shipping_address TEXT,
+  checkout_session_id TEXT UNIQUE,
+  paid_at TEXT,
+  fulfilled_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE INDEX IF NOT EXISTS orders_seller ON orders (seller_id, created_at);
+CREATE INDEX IF NOT EXISTS variants_product ON product_variants (product_id, position);
 `);
 
 export const newId = (prefix) => `${prefix}_${crypto.randomBytes(9).toString("base64url")}`;
@@ -79,5 +137,8 @@ export function rowToProduct(r) {
   p.image_url = r.image_file ? `${config.publicUrl}/img/${r.image_file}` : null;
   p.has_delivery = Boolean(r.delivery_file || r.delivery_url);
   delete p.delivery_file;
+  p.variants = db.prepare("SELECT id, name, price_cents, inventory, sku FROM product_variants WHERE product_id = ? ORDER BY position").all(r.id)
+    .map((v) => ({ ...v, price: (v.price_cents ?? r.price_cents) / 100 }));
+  p.in_stock = p.variants.length ? p.variants.some((v) => v.inventory == null || v.inventory > 0) : (r.inventory == null || r.inventory > 0);
   return p;
 }

@@ -18,7 +18,16 @@ const fresh = (id) => db.prepare("SELECT * FROM sellers WHERE id = ?").get(id);
 export const publicSeller = (s) => ({
   id: s.id, store_name: s.store_name, store_slug: s.store_slug, tagline: s.tagline,
   store_url: `${config.publicUrl}/s/${s.store_slug}`, stripe_connected: Boolean(s.stripe_account_id), stripe_ready: Boolean(s.stripe_ready),
+  shipping_flat: s.shipping_flat_cents / 100,
+  free_shipping_over: s.free_shipping_over_cents == null ? null : s.free_shipping_over_cents / 100,
+  ship_countries: String(s.ship_countries || "").split(",").filter(Boolean),
+  tax_enabled: Boolean(s.tax_enabled),
 });
+
+/** NULL/blank means unlimited stock; otherwise a whole number >= 0. */
+const stock = (v) => (v === null || v === undefined || v === "" ? null : Math.max(0, Math.min(1e6, Math.floor(Number(v) || 0))));
+const TAX_CODE = /^txcd_\d{8}$/;
+const COUNTRY = /^[A-Z]{2}$/;
 
 export const withPage = (seller, row) => ({ ...rowToProduct(row), page_url: `${config.publicUrl}/s/${seller.store_slug}/${row.slug}` });
 
@@ -38,6 +47,17 @@ export function updateStore(seller, b) {
   let slug = seller.store_slug;
   if (b.store_slug) slug = uniqueSlug("sellers", "store_slug", slugify(b.store_slug, 40));
   db.prepare("UPDATE sellers SET store_name = ?, tagline = ?, store_slug = ? WHERE id = ?").run(name || seller.store_name, tagline, slug, seller.id);
+  if (b.shipping_flat != null) db.prepare("UPDATE sellers SET shipping_flat_cents = ? WHERE id = ?").run(Math.min(cents(b.shipping_flat), 100000), seller.id);
+  if (b.free_shipping_over !== undefined) {
+    db.prepare("UPDATE sellers SET free_shipping_over_cents = ? WHERE id = ?").run(b.free_shipping_over === null || b.free_shipping_over === "" ? null : cents(b.free_shipping_over), seller.id);
+  }
+  if (b.ship_countries != null) {
+    const list = (Array.isArray(b.ship_countries) ? b.ship_countries : String(b.ship_countries).split(/[\s,]+/))
+      .map((c) => String(c).trim().toUpperCase()).filter((c) => COUNTRY.test(c));
+    if (!list.length) throw httpError(400, "Add at least one country you ship to, as a two-letter code like US.");
+    db.prepare("UPDATE sellers SET ship_countries = ? WHERE id = ?").run([...new Set(list)].slice(0, 60).join(","), seller.id);
+  }
+  if (b.tax_enabled != null) db.prepare("UPDATE sellers SET tax_enabled = ? WHERE id = ?").run(b.tax_enabled ? 1 : 0, seller.id);
   return publicSeller(fresh(seller.id));
 }
 
@@ -52,13 +72,13 @@ export function createProduct(seller, b, deliveryFile = null) {
     JSON.stringify(strList(b.bullets, 6)), JSON.stringify(faqList(b.faq)), JSON.stringify(strList(b.tags, 6, 30).map((t) => t.replace(/^#/, ""))),
     clampStr(b.category, 60), b.kind === "digital" ? "digital" : "physical", cents(b.price), b.image_file || null,
     clampStr(b.alt_text, 200), clampStr(b.seo_description || b.tagline, 160), deliveryFile, b.delivery_url ? clampStr(b.delivery_url, 500) : null);
+  applyCommerceFields(id, b);
   return withPage(seller, db.prepare("SELECT * FROM products WHERE id = ?").get(id));
 }
 
 export function updateProduct(seller, id, b) {
   const row = productRow(seller, id);
   if (b.delivery_url && !/^https:\/\//.test(b.delivery_url)) throw httpError(400, "The download link must start with https://");
-  const priceChanged = b.price != null && cents(b.price) !== row.price_cents;
   const next = {
     title: b.title != null ? clampStr(b.title, 120) : row.title,
     tagline: b.tagline != null ? clampStr(b.tagline, 160) : row.tagline,
@@ -70,11 +90,55 @@ export function updateProduct(seller, id, b) {
     tags: Array.isArray(b.tags) ? JSON.stringify(strList(b.tags, 6, 30).map((t) => t.replace(/^#/, ""))) : row.tags,
     faq: Array.isArray(b.faq) ? JSON.stringify(faqList(b.faq)) : row.faq,
   };
+  if (next.price_cents < 50 && row.status === "live") throw httpError(400, "Live products need a price of at least $0.50.");
   db.prepare("UPDATE products SET title=?, tagline=?, description=?, category=?, price_cents=?, delivery_url=?, bullets=?, tags=?, faq=? WHERE id=?")
     .run(next.title, next.tagline, next.description, next.category, next.price_cents, next.delivery_url, next.bullets, next.tags, next.faq, row.id);
-  // A new price needs a new Stripe price + Payment Link; take the product back to draft.
-  if (priceChanged && row.status === "live") db.prepare("UPDATE products SET status='draft', payment_link_url=NULL WHERE id=?").run(row.id);
+  applyCommerceFields(row.id, b);
+  if (b.status === "draft" && row.status === "live") db.prepare("UPDATE products SET status='draft' WHERE id=?").run(row.id);
   return withPage(seller, db.prepare("SELECT * FROM products WHERE id = ?").get(row.id));
+}
+
+/** Inventory, SKU, tax code and the option/variant list. Prices are re-read at checkout, so edits apply immediately. */
+function applyCommerceFields(id, b) {
+  if (b.inventory !== undefined) db.prepare("UPDATE products SET inventory = ? WHERE id = ?").run(stock(b.inventory), id);
+  if (b.sku != null) db.prepare("UPDATE products SET sku = ? WHERE id = ?").run(clampStr(b.sku, 64), id);
+  if (b.tax_code !== undefined) {
+    if (b.tax_code && !TAX_CODE.test(b.tax_code)) throw httpError(400, "Tax codes look like txcd_99999999.");
+    db.prepare("UPDATE products SET tax_code = ? WHERE id = ?").run(b.tax_code || null, id);
+  }
+  if (b.option_name != null) db.prepare("UPDATE products SET option_name = ? WHERE id = ?").run(clampStr(b.option_name, 30), id);
+  if (Array.isArray(b.variants)) setVariants(id, b.variants);
+}
+
+/** Replace a product's variants. Rows that keep their id keep their identity (open carts still match). */
+export function setVariants(productId, list) {
+  const clean = list.slice(0, 30).map((v) => ({
+    id: typeof v.id === "string" ? v.id : null, name: clampStr(v.name, 60).trim(),
+    price_cents: v.price === null || v.price === undefined || v.price === "" ? null : cents(v.price),
+    inventory: stock(v.inventory), sku: clampStr(v.sku, 64),
+  })).filter((v) => v.name);
+  const names = clean.map((v) => v.name.toLowerCase());
+  if (new Set(names).size !== names.length) throw httpError(400, "Each option needs a different name.");
+  if (clean.some((v) => v.price_cents != null && v.price_cents < 50)) throw httpError(400, "Option prices must be at least $0.50.");
+  db.transaction(() => {
+    const existing = new Set(db.prepare("SELECT id FROM product_variants WHERE product_id = ?").all(productId).map((r) => r.id));
+    const keep = new Set();
+    clean.forEach((v, i) => {
+      if (v.id && existing.has(v.id)) {
+        db.prepare("UPDATE product_variants SET name=?, price_cents=?, inventory=?, sku=?, position=? WHERE id=?").run(v.name, v.price_cents, v.inventory, v.sku, i, v.id);
+        keep.add(v.id);
+      } else {
+        const id = newId("var");
+        db.prepare("INSERT INTO product_variants (id, product_id, name, price_cents, inventory, sku, position) VALUES (?,?,?,?,?,?,?)").run(id, productId, v.name, v.price_cents, v.inventory, v.sku, i);
+        keep.add(id);
+      }
+    });
+    for (const id of existing) if (!keep.has(id)) db.prepare("DELETE FROM product_variants WHERE id = ?").run(id);
+    if (clean.length) {
+      const p = db.prepare("SELECT option_name FROM products WHERE id = ?").get(productId);
+      if (!p.option_name) db.prepare("UPDATE products SET option_name = 'Option' WHERE id = ?").run(productId);
+    }
+  })();
 }
 
 export function deleteProduct(seller, id) {
@@ -95,9 +159,8 @@ export async function publishProduct(sellerIn, id) {
   }
   if (row.price_cents < 50) throw httpError(400, "Set a price of at least $0.50.");
   if (row.kind === "digital" && !row.delivery_file && !row.delivery_url) throw httpError(400, "Add the file buyers will download before publishing.");
-  const s = await pay.publishToStripe(seller, rowToProduct(row));
-  db.prepare("UPDATE products SET status='live', stripe_product_id=?, stripe_price_id=?, payment_link_url=? WHERE id=?")
-    .run(s.stripe_product_id, s.stripe_price_id, s.payment_link_url, row.id);
+  // Checkout sessions are created per cart from the live prices, so going live needs no Stripe objects.
+  db.prepare("UPDATE products SET status='live' WHERE id=?").run(row.id);
   return withPage(seller, db.prepare("SELECT * FROM products WHERE id = ?").get(row.id));
 }
 
@@ -118,10 +181,7 @@ export async function generateProduct(seller, { type = "guide", niche, color = "
   }, delivery_file);
 }
 
-export function listOrders(seller) {
-  return db.prepare(`SELECT o.id, o.email, o.amount_cents, o.created_at, p.title FROM orders o JOIN products p ON p.id = o.product_id
-    WHERE p.seller_id = ? ORDER BY o.created_at DESC LIMIT 200`).all(seller.id);
-}
+export { listOrders } from "./commerce.js";
 
 export const TRENDS = [
   { name: "Digital planners", why: "Hyperlinked PDF planners for GoodNotes and Notability. Peak season runs October to January.", where: "Etsy, TikTok, Pinterest" },

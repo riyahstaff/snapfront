@@ -33,6 +33,8 @@ export default function RootLayout() {
         <Stack.Screen name="draft" options={{ title: "Your product page" }} />
         <Stack.Screen name="product/[id]" options={{ title: "Product" }} />
         <Stack.Screen name="settings" options={{ title: "Store settings", presentation: "modal" }} />
+        <Stack.Screen name="orders" options={{ title: "Orders" }} />
+        <Stack.Screen name="discounts" options={{ title: "Discount codes" }} />
       </Stack>
     </>
   );

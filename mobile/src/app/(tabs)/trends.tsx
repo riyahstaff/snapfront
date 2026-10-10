@@ -12,7 +12,7 @@ export default function TrendsScreen() {
   return (
     <Screen>
       <View style={{ gap: space.sm }}>
-        <H1>What's selling right now</H1>
+        <H1>What’s selling right now</H1>
         <Body muted>The digital formats with the strongest demand across Etsy, TikTok, Instagram and Pinterest, ranked.</Body>
       </View>
       {trends.map((t, i) => (

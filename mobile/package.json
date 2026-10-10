@@ -29,6 +29,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -41,7 +43,8 @@
     "build:ios": "npx eas-cli@latest build -p ios --profile production",
     "build:android": "npx eas-cli@latest build -p android --profile production",
     "submit:ios": "npx eas-cli@latest submit -p ios --profile production",
-    "submit:android": "npx eas-cli@latest submit -p android --profile production"
+    "submit:android": "npx eas-cli@latest submit -p android --profile production",
+    "lint": "expo lint"
   },
   "private": true
 }

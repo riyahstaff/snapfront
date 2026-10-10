@@ -10,7 +10,7 @@ const SUGGESTIONS = [
   "What should I sell this month?",
   "Make a holiday gift guide for dog owners and price it at $9",
   "Write 5 TikTok hooks for my best product",
-  "Publish all my drafts",
+  "Create a 15% off code called WELCOME15",
 ];
 
 export default function AssistantScreen() {
@@ -31,7 +31,7 @@ export default function AssistantScreen() {
             <View style={{ gap: space.sm }}>
               <Text style={[type.hero, { color: c.ink }]}>Tell me what{"\n"}to make.</Text>
               <Text style={[type.body, { color: c.muted }]}>
-                I can research what's selling, write and design digital products, edit listings, set prices and publish them with Stripe checkout. Just ask.
+                I can research what’s selling, write and design digital products, edit listings, set prices, stock and sizes, create discount codes and check your orders. Just ask.
               </Text>
             </View>
             <View style={{ gap: space.sm }}>

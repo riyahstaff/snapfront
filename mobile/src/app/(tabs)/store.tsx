@@ -61,6 +61,11 @@ export default function StoreScreen() {
           <Button label={seller.stripe_connected ? "Continue setup" : "Connect Stripe"} onPress={connectStripe} style={{ alignSelf: "flex-start" }} />
         </View>
       ) : null}
+      <View style={{ flexDirection: "row", gap: space.sm }}>
+        <Shortcut icon="receipt-outline" label="Orders" onPress={() => router.push("/orders")} />
+        <Shortcut icon="pricetag-outline" label="Discounts" onPress={() => router.push("/discounts")} />
+        <Shortcut icon="cube-outline" label="Shipping & tax" onPress={() => router.push("/settings")} />
+      </View>
       <Notice text={error} tone="error" />
     </View>
   );
@@ -93,10 +98,21 @@ export default function StoreScreen() {
           </View>
           <View style={{ padding: space.md, gap: 6 }}>
             <Text numberOfLines={2} style={[type.label, { color: c.ink }]}>{item.title}</Text>
-            <Pill text={item.status === "live" ? "Live" : "Draft"} tone={item.status === "live" ? "good" : "neutral"} />
+            <Pill text={item.status === "live" ? (item.in_stock ? "Live" : "Sold out") : "Draft"} tone={item.status === "live" && item.in_stock ? "good" : "neutral"} />
           </View>
         </Pressable>
       )}
     />
+  );
+}
+
+function Shortcut({ icon, label, onPress }: { icon: React.ComponentProps<typeof Ionicons>["name"]; label: string; onPress: () => void }) {
+  const c = useColors();
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
+      style={({ pressed }) => ({ flex: 1, alignItems: "center", gap: 6, paddingVertical: space.md, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, opacity: pressed ? 0.85 : 1 })}>
+      <Ionicons name={icon} size={22} color={c.accent} />
+      <Text numberOfLines={1} style={[type.small, { color: c.ink, fontFamily: fonts.bodyMedium }]}>{label}</Text>
+    </Pressable>
   );
 }

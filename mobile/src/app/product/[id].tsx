@@ -3,6 +3,7 @@ import { Share, View } from "react-native";
 import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import * as Clipboard from "expo-clipboard";
+import { StockEditor } from "@/components/stock-editor";
 import { Body, Button, Field, H2, Notice, Pill, Screen } from "@/components/ui";
 import { ProductPreview } from "@/components/product-preview";
 import { api, ApiError, type Product } from "@/lib/api";
@@ -33,16 +34,16 @@ export default function ProductScreen() {
   return (
     <Screen>
       <Stack.Screen options={{ title: live ? "Live product" : "Draft product" }} />
-      <ProductPreview product={p} imageUri={p.image_url} badge={<Pill text={live ? "Live · taking orders" : "Draft · not visible yet"} tone={live ? "good" : "flash"} />} />
+      <ProductPreview product={p} imageUri={p.image_url} badge={<Pill text={live ? (p.in_stock ? "Live · taking orders" : "Live · sold out") : "Draft · not visible yet"} tone={live ? (p.in_stock ? "good" : "neutral") : "flash"} />} />
       {live ? (
         <View style={{ gap: space.sm }}>
           <Button label="Share product link" onPress={() => p.page_url && Share.share({ message: `${p.title} ${p.page_url}`, url: p.page_url })} />
           <Button label="Open product page" variant="secondary" onPress={() => p.page_url && WebBrowser.openBrowserAsync(p.page_url)} />
-          <Button label="Copy checkout link" variant="ghost" onPress={async () => { if (p.payment_link_url) { await Clipboard.setStringAsync(p.payment_link_url); setMsg({ text: "Checkout link copied.", tone: "ok" }); } }} />
+          <Button label="Copy product link" variant="ghost" onPress={async () => { if (p.page_url) { await Clipboard.setStringAsync(p.page_url); setMsg({ text: "Product link copied.", tone: "ok" }); } }} />
         </View>
       ) : (
         <View style={{ gap: space.sm }}>
-          <Body muted>Publishing creates the product and a secure checkout in your Stripe account, then puts it in your storefront.</Body>
+          <Body muted>Publishing puts it in your storefront. Buyers add it to their cart and pay through Stripe, straight into your account.</Body>
           <Button label="Publish and start selling" loading={busy === "publish"} onPress={() => run("publish", async () => {
             const next = await api.publish(p.id); setP(next); setMsg({ text: "Published. Share the link to start selling.", tone: "ok" });
           })} />
@@ -52,11 +53,17 @@ export default function ProductScreen() {
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
       <View style={{ gap: space.md }}>
         <H2>Price</H2>
-        <Field label="Price (USD)" hint={live ? "Changing the price unpublishes the product until you publish again." : undefined} value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
+        <Field label="Price (USD)" hint={live ? "New prices apply to your store right away." : undefined} value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
         <Button label="Save price" variant="secondary" loading={busy === "price"} onPress={() => run("price", async () => {
           const next = await api.updateProduct(p.id, { price: Number(price) || 0 }); setP({ ...p, ...next }); setMsg({ text: "Price saved.", tone: "ok" });
         })} />
       </View>
+      <StockEditor product={p} onSaved={setP} />
+      {live ? (
+        <Button label="Take off sale" variant="secondary" loading={busy === "unpublish"} onPress={() => run("unpublish", async () => {
+          const next = await api.updateProduct(p.id, { status: "draft" }); setP(next); setMsg({ text: "Taken off sale. It's a draft again.", tone: "ok" });
+        })} />
+      ) : null}
       {confirmDelete ? (
         <View style={{ gap: space.sm }}>
           <Body>Delete this product and its page? Buyers with a download link keep access until it expires.</Body>
