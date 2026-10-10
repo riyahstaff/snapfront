@@ -161,6 +161,8 @@ export const api = {
   agentRun: (id: string, after: number) => request<AgentRun>("GET", `/api/agent/runs/${id}?after=${after}`),
   stripeOnboard: () => request<{ url: string }>("POST", "/api/stripe/onboard"),
   stripeStatus: () => request<{ connected: boolean; ready: boolean }>("GET", "/api/stripe/status"),
+  taxSetup: () => request<{ url: string }>("POST", "/api/stripe/tax-setup"),
+  taxStatus: () => request<{ active: boolean; missing: string[]; registrations: string[] }>("GET", "/api/stripe/tax"),
   stripeDashboard: () => request<{ url: string }>("POST", "/api/stripe/dashboard"),
 };
 

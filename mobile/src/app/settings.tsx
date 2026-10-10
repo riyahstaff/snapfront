@@ -20,12 +20,14 @@ export default function SettingsScreen() {
   const [shipMsg, setShipMsg] = useState<{ text: string; tone: "error" | "ok" } | null>(null);
   const [savingShip, setSavingShip] = useState(false);
   const c = useColors();
+  const [taxInfo, setTaxInfo] = useState<{ active: boolean; registrations: string[] } | null>(null);
 
   useEffect(() => {
     api.me().then((s) => {
       setSeller(s); setName(s.store_name); setTagline(s.tagline);
       setShipFlat(s.shipping_flat ? s.shipping_flat.toFixed(2) : ""); setFreeOver(s.free_shipping_over == null ? "" : String(s.free_shipping_over));
       setCountries(s.ship_countries.join(", ")); setTax(s.tax_enabled);
+      if (s.stripe_connected) api.taxStatus().then(setTaxInfo).catch(() => {});
     })
       .catch((e) => setMsg({ text: e instanceof ApiError ? e.message : "Couldn't load settings.", tone: "error" }));
   }, []);
@@ -49,6 +51,15 @@ export default function SettingsScreen() {
       setShipMsg({ text: "Checkout settings saved.", tone: "ok" });
     } catch (e) { setShipMsg({ text: e instanceof ApiError ? e.message : "Couldn't save.", tone: "error" }); }
     finally { setSavingShip(false); }
+  }
+
+  async function setupTax() {
+    setShipMsg(null);
+    try {
+      const { url } = await api.taxSetup();
+      await WebBrowser.openBrowserAsync(url);
+      setTaxInfo(await api.taxStatus());
+    } catch (e) { setShipMsg({ text: e instanceof ApiError ? e.message : "Couldn't open tax setup.", tone: "error" }); }
   }
 
   async function stripe() {
@@ -76,10 +87,17 @@ export default function SettingsScreen() {
         <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={[type.label, { color: c.ink }]}>Collect sales tax automatically</Text>
-            <Text style={[type.small, { color: c.muted }]}>Stripe works out and adds the right tax at checkout. Add where you’re registered to collect tax in your Stripe dashboard (Tax, then Registrations) first.</Text>
+            <Text style={[type.small, { color: c.muted }]}>
+              {taxInfo?.active && taxInfo.registrations.length
+                ? `Stripe adds the right tax at checkout. Collecting in: ${taxInfo.registrations.join(", ")}.`
+                : "Stripe works out and adds the right tax at checkout. First add your business address and where you’re registered to collect tax."}
+            </Text>
           </View>
           <Switch value={tax} onValueChange={setTax} accessibilityLabel="Collect sales tax automatically" trackColor={{ true: c.accent, false: c.line }} />
         </View>
+        {seller?.stripe_connected ? (
+          <Button label={taxInfo?.active && taxInfo.registrations.length ? "Edit tax registrations" : "Set up sales tax"} variant="ghost" onPress={setupTax} />
+        ) : null}
         <Button label="Save checkout settings" variant="secondary" loading={savingShip} onPress={saveShipping} />
         <Notice text={shipMsg?.text ?? null} tone={shipMsg?.tone} />
       </View>

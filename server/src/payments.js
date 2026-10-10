@@ -64,6 +64,32 @@ export async function createCheckout(seller, params, discountCents = 0) {
   return s.checkout.sessions.create(params, opts);
 }
 
+/**
+ * Stripe Tax on an Express account. Express sellers have no Stripe Dashboard for tax, so they
+ * enter their business address and tax registrations in Stripe's embedded components (/stripe/tax).
+ */
+export async function taxStatus(accountId) {
+  const opts = { stripeAccount: accountId };
+  const [settings, regs] = await Promise.all([
+    stripeClient().tax.settings.retrieve({}, opts),
+    stripeClient().tax.registrations.list({ status: "active", limit: 100 }, opts),
+  ]);
+  return {
+    active: settings.status === "active",
+    missing: settings.status_details?.pending?.missing_fields || [],
+    registrations: regs.data.map((r) => [r.country, r.country_options?.us?.state].filter(Boolean).join("-")),
+  };
+}
+
+/** A short-lived session for Stripe's embedded tax settings and registrations components. */
+export async function taxAccountSession(accountId) {
+  const session = await stripeClient().accountSessions.create({
+    account: accountId,
+    components: { tax_settings: { enabled: true }, tax_registrations: { enabled: true } },
+  });
+  return session.client_secret;
+}
+
 /** Read a checkout on the seller's account (status, totals, buyer details). */
 export async function getSession(accountId, sessionId) {
   return stripeClient().checkout.sessions.retrieve(sessionId, { stripeAccount: accountId });
@@ -82,6 +108,16 @@ export function verifyWebhook(rawBody, signature) {
 
 /* ---- signed, expiring download links (no login needed for buyers) ---- */
 const sign = (payload) => crypto.createHmac("sha256", config.downloadSecret).update(payload).digest("base64url");
+
+/** Signed link for the tax setup page, so the app can open it in the browser without sharing its token. */
+export function taxSetupToken(sellerId, minutes = 30) {
+  const payload = Buffer.from(JSON.stringify({ t: "tax", sel: sellerId, e: Date.now() + minutes * 60e3 })).toString("base64url");
+  return `${payload}.${sign(payload)}`;
+}
+export function readTaxSetupToken(token) {
+  const data = readDownloadToken(token);
+  return data?.t === "tax" ? data.sel : null;
+}
 export function downloadToken(productId, sessionId, days = 7) {
   const payload = Buffer.from(JSON.stringify({ p: productId, s: sessionId, e: Date.now() + days * 864e5 })).toString("base64url");
   return `${payload}.${sign(payload)}`;
@@ -91,7 +127,8 @@ export function readDownloadToken(token) {
   if (!payload || !sig) return null;
   const expected = sign(payload);
   if (sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
-  const data = JSON.parse(Buffer.from(payload, "base64url").toString());
+  let data;
+  try { data = JSON.parse(Buffer.from(payload, "base64url").toString()); } catch { return null; }
   return data.e > Date.now() ? data : null;
 }
 

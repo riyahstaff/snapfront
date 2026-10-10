@@ -10,7 +10,7 @@ import * as store from "./store.js";
 import * as agent from "./agent.js";
 import * as pay from "./payments.js";
 import * as commerce from "./commerce.js";
-import { storePage, productPage, cartPage, orderPage, notePage } from "./render.js";
+import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage } from "./render.js";
 
 export const app = express();
 app.disable("x-powered-by");
@@ -97,7 +97,7 @@ app.post("/api/sellers", wrap(async (req, res) => {
 }));
 
 app.get("/api/me", auth, (req, res) => res.json(store.publicSeller(req.seller)));
-app.patch("/api/me", auth, (req, res) => res.json(store.updateStore(req.seller, req.body || {})));
+app.patch("/api/me", auth, wrap(async (req, res) => res.json(await store.updateStoreChecked(req.seller, req.body || {}))));
 
 // App Store guideline 5.1.1(v): apps that create accounts must let people delete them in-app.
 app.delete("/api/me", auth, (req, res) => {
@@ -165,6 +165,27 @@ app.post("/api/stripe/dashboard", auth, wrap(async (req, res) => {
   if (!req.seller.stripe_account_id) throw httpError(409, "Connect Stripe first.");
   res.json({ url: await pay.dashboardLink(req.seller.stripe_account_id) });
 }));
+/* Sales tax setup: Express sellers have no Stripe Dashboard, so they use Stripe's embedded tax components on a page we host. */
+app.post("/api/stripe/tax-setup", auth, (req, res) => {
+  if (!req.seller.stripe_account_id) throw httpError(409, "Connect Stripe first.");
+  if (!config.stripePublishableKey) throw httpError(503, "Tax setup isn't configured. Set STRIPE_PUBLISHABLE_KEY on the server.");
+  res.json({ url: `${config.publicUrl}/stripe/tax?t=${pay.taxSetupToken(req.seller.id)}` });
+});
+app.get("/api/stripe/tax", auth, wrap(async (req, res) => {
+  if (!req.seller.stripe_account_id) return res.json({ active: false, missing: [], registrations: [] });
+  res.json(await pay.taxStatus(req.seller.stripe_account_id));
+}));
+const taxSeller = (t) => { const id = pay.readTaxSetupToken(t); return id && db.prepare("SELECT * FROM sellers WHERE id = ?").get(id); };
+app.post("/stripe/tax/session", wrap(async (req, res) => {
+  const seller = taxSeller(req.body?.t);
+  if (!seller?.stripe_account_id) throw httpError(401, "This link has expired. Open tax setup from the app again.");
+  res.json({ client_secret: await pay.taxAccountSession(seller.stripe_account_id) });
+}));
+app.get("/stripe/tax", (req, res) => {
+  const seller = taxSeller(req.query.t);
+  if (!seller) return res.status(410).send(notePage({ store_slug: "", store_name: "Snapfront", tagline: "" }, "Link expired", "<h1>This link has expired</h1><p>Open Store settings in the Snapfront app and tap Set up sales tax again.</p>"));
+  res.send(taxSetupPage(seller, String(req.query.t), config.stripePublishableKey));
+});
 const stripeDone = (msg) => (_req, res) => res.send(`<!doctype html><meta name=viewport content="width=device-width"><body style="font:18px system-ui;padding:40px;text-align:center"><h1>${msg}</h1><p>You can close this window and return to Snapfront.</p></body>`);
 app.get("/stripe/return", stripeDone("Stripe setup saved"));
 app.get("/stripe/refresh", stripeDone("That link expired"));
@@ -225,7 +246,7 @@ app.get("/thanks", wrap(async (req, res) => {
 }));
 app.get("/d/:token", (req, res) => {
   const t = pay.readDownloadToken(req.params.token);
-  if (!t) return res.status(410).send("This download link has expired. Open your order confirmation page for a fresh one.");
+  if (!t?.p) return res.status(410).send("This download link has expired. Open your order confirmation page for a fresh one.");
   const row = db.prepare("SELECT * FROM products WHERE id = ?").get(t.p);
   if (!row) return res.status(404).send("Product not found");
   if (row.delivery_url) return res.redirect(row.delivery_url);

@@ -19,6 +19,7 @@ const { db } = await import("../src/db.js");
 
 const calls = [];
 const sessions = new Map();
+let taxRegs = [];
 pay.setStripeClient({
   coupons: { async create(p, o) { calls.push(["coupon", p, o]); return { id: "co_1" }; } },
   checkout: { sessions: {
@@ -26,6 +27,10 @@ pay.setStripeClient({
     async retrieve(id) { return { id, payment_status: "unpaid" }; },
   } },
   accounts: { async retrieve() { return { charges_enabled: true }; } },
+  tax: {
+    settings: { async retrieve(_p, o) { calls.push(["tax", o]); return { status: "active" }; } },
+    registrations: { async list() { return { data: taxRegs }; } },
+  },
   webhooks: { constructEvent(raw) { return JSON.parse(raw.toString()); } },
 });
 
@@ -54,7 +59,12 @@ test("seller sets up variants, stock, shipping, tax and a code", async () => {
   guide = await json(await call("POST", "/api/products", { title: "Loop Guide", kind: "digital", price: 10, delivery_url: "https://files.example/guide.pdf" }), 201);
   await json(await call("POST", `/api/products/${guide.id}/publish`), 200);
 
+  // Sales tax needs at least one tax registration on the seller's Stripe account
+  const refused = await json(await call("PATCH", "/api/me", { tax_enabled: true }), 409);
+  assert.match(refused.error, /registered to collect tax/);
+  taxRegs = [{ country: "US", country_options: { us: { state: "TX" } } }];
   const me = await json(await call("PATCH", "/api/me", { shipping_flat: 5, free_shipping_over: 100, ship_countries: ["us", "CA", "nope"], tax_enabled: true }), 200);
+  assert.equal(calls.find((c) => c[0] === "tax")[1].stripeAccount, "acct_123");
   assert.equal(me.shipping_flat, 5);
   assert.deepEqual(me.ship_countries, ["US", "CA"]);
   assert.equal(me.tax_enabled, true);

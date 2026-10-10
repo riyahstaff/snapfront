@@ -61,6 +61,17 @@ export function updateStore(seller, b) {
   return publicSeller(fresh(seller.id));
 }
 
+/** updateStore, but turning on sales tax first checks the seller's Stripe Tax setup is complete. */
+export async function updateStoreChecked(seller, b) {
+  if (b.tax_enabled === true && !seller.tax_enabled) {
+    if (!seller.stripe_account_id || !seller.stripe_ready) throw httpError(409, "Connect Stripe and finish setup before turning on sales tax.");
+    const t = await pay.taxStatus(seller.stripe_account_id);
+    if (!t.active) throw httpError(409, "Finish tax setup first: add your business address in Set up sales tax.");
+    if (!t.registrations.length) throw httpError(409, "Add at least one place where you're registered to collect tax in Set up sales tax, then turn this on.");
+  }
+  return updateStore(seller, b);
+}
+
 export function createProduct(seller, b, deliveryFile = null) {
   if (b.delivery_url && !/^https:\/\//.test(b.delivery_url)) throw httpError(400, "The download link must start with https://");
   if (b.image_file && !/^[\w-]+\.(jpg|png|webp|gif)$/.test(b.image_file)) throw httpError(400, "Invalid image reference.");

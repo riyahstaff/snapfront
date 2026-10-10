@@ -197,6 +197,26 @@ ${o.tax ? `<div class="row"><span>Tax</span><span>${money$(o.tax)}</span></div>`
     body: `${pending ? `<meta http-equiv="refresh" content="4">` : ""}<div class="order">${body}</div>${clear}` });
 }
 
+/** Stripe's embedded tax settings + registrations components, for Express sellers. */
+export function taxSetupPage(store, token, publishableKey) {
+  return shell({
+    title: "Set up sales tax", description: "Sales tax setup", store,
+    body: `<div class="order" style="max-width:760px"><h1>Set up sales tax</h1>
+<p>Stripe works out the right tax for each order from your business address and the places you're registered to collect tax. Add both below, then go back to Snapfront and turn on automatic sales tax.</p>
+<p class="fine">Not sure where you're registered? Your accountant or state tax agency can tell you. In the US you usually register in your home state first.</p>
+<h2 style="font-size:22px">1. Business address</h2><div id="settings"><p class="fine" id="l1">Loading…</p></div>
+<h2 style="font-size:22px">2. Where you collect tax</h2><div id="regs"><p class="fine" id="l2">Loading…</p></div>
+<p class="err" id="err" hidden></p><p class="fine">When you're done, close this page and return to the app.</p></div>
+<script src="https://connect-js.stripe.com/v1.0/connect.js" async></script>
+<script>window.StripeConnect=window.StripeConnect||{};StripeConnect.onLoad=function(){
+var T=${JSON.stringify(token)};function fail(m){var e=document.getElementById("err");e.hidden=false;e.textContent=m}
+var sc=StripeConnect.init({publishableKey:${JSON.stringify(publishableKey)},fetchClientSecret:function(){return fetch("/stripe/tax/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({t:T})}).then(function(r){return r.json().then(function(j){if(!r.ok){fail(j.error||"Couldn't start tax setup.");return undefined}return j.client_secret})})},
+appearance:{variables:{colorPrimary:"#2C47F5",fontFamily:"Figtree, system-ui, sans-serif",borderRadius:"10px"}},fonts:[{cssSrc:"https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap"}]});
+[["tax-settings","settings","l1"],["tax-registrations","regs","l2"]].forEach(function(c){var el=sc.create(c[0]);el.setOnLoaderStart&&el.setOnLoaderStart(function(){var l=document.getElementById(c[2]);l&&l.remove()});
+el.setOnLoadError&&el.setOnLoadError(function(e){fail("Stripe couldn't load this section: "+(e.error&&e.error.message||"try again."))});document.getElementById(c[1]).appendChild(el)})};</script>`,
+  });
+}
+
 export function notePage(store, title, html) {
   return shell({ title, description: title, store, body: `<div class="note">${html}</div>` });
 }

@@ -124,14 +124,14 @@ const TOOLS = [
   },
   {
     name: "update_store",
-    description: "Change store details: name, tagline (the line under the name on the storefront), and checkout settings. shipping_flat is the flat shipping charge in US dollars per order with physical items; free_shipping_over makes shipping free when the order (after discounts) reaches that many dollars (null turns it off); ship_countries is a list of two-letter country codes; tax_enabled turns on automatic sales tax through Stripe Tax (the seller must first add their tax registrations in their Stripe dashboard).",
+    description: "Change store details: name, tagline (the line under the name on the storefront), and checkout settings. shipping_flat is the flat shipping charge in US dollars per order with physical items; free_shipping_over makes shipping free when the order (after discounts) reaches that many dollars (null turns it off); ship_countries is a list of two-letter country codes; tax_enabled turns on automatic sales tax through Stripe Tax; it fails until the seller has entered their business address and tax registrations under Store settings, Set up sales tax.",
     input_schema: { type: "object", properties: {
       store_name: { type: "string" }, tagline: { type: "string" },
       shipping_flat: { type: "number" }, free_shipping_over: { type: ["number", "null"] },
       ship_countries: { type: "array", items: { type: "string" } }, tax_enabled: { type: "boolean" },
     } },
     label: () => "Updating your store details",
-    run: (seller, i) => store.updateStore(fresh(seller.id), i),
+    run: (seller, i) => store.updateStoreChecked(fresh(seller.id), i),
   },
   {
     name: "get_trends",

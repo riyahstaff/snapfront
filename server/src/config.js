@@ -20,6 +20,7 @@ export const config = {
   agentModel: env.AGENT_MODEL || "claude-fable-5-1",
   stripeKey: env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || "",
+  stripePublishableKey: env.STRIPE_PUBLISHABLE_KEY || "",
   platformFeePercent: Math.max(0, Math.min(50, Number(env.PLATFORM_FEE_PERCENT ?? 5))),
   downloadSecret: env.DOWNLOAD_SIGNING_SECRET || "dev-only-secret-change-me",
   resendKey: env.RESEND_API_KEY || "",
