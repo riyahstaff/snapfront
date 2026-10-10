@@ -102,12 +102,12 @@ export async function taxAccountSession(accountId) {
 
 /** Read a checkout on the seller's account (status, totals, buyer details). */
 export async function getSession(accountId, sessionId) {
-  return stripeClient().checkout.sessions.retrieve(sessionId, { stripeAccount: accountId });
+  return stripeClient().checkout.sessions.retrieve(sessionId, {}, { stripeAccount: accountId });
 }
 
 /** Check a finished checkout on the seller's account. */
 export async function paidSession(accountId, sessionId) {
-  const session = await stripeClient().checkout.sessions.retrieve(sessionId, { stripeAccount: accountId });
+  const session = await stripeClient().checkout.sessions.retrieve(sessionId, {}, { stripeAccount: accountId });
   return session.payment_status === "paid" ? session : null;
 }
 

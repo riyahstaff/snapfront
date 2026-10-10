@@ -24,7 +24,14 @@ pay.setStripeClient({
   coupons: { async create(p, o) { calls.push(["coupon", p, o]); return { id: "co_1" }; } },
   checkout: { sessions: {
     async create(p, o) { const id = `cs_test_${sessions.size + 1}`; sessions.set(id, { p, o }); calls.push(["session", p, o]); return { id, url: `https://checkout.stripe.com/c/${id}` }; },
-    async retrieve(id) { return { id, payment_status: "unpaid" }; },
+    async retrieve(id, params, opts) {
+      calls.push(["retrieve", params, opts]);
+      // Real Stripe rejects request options passed in the params slot ("unknown parameter: stripeAccount")
+      if (params && "stripeAccount" in params) throw Object.assign(new Error("Received unknown parameter: stripeAccount"), { type: "StripeInvalidRequestError" });
+      const order = db.prepare("SELECT * FROM orders WHERE checkout_session_id = ?").get(id);
+      return { id, status: "complete", payment_status: "paid", metadata: { snapfront_order: order?.id }, customer_details: { email: "late@example.com" },
+        amount_subtotal: 3400, amount_total: 3400, total_details: { amount_discount: 0, amount_shipping: 0, amount_tax: 0 } };
+    },
   } },
   accounts: { async retrieve() { return { charges_enabled: true }; } },
   tax: {
@@ -173,4 +180,16 @@ test("a failed bank payment cancels the pending order", async () => {
     body: JSON.stringify({ type: "checkout.session.async_payment_failed", data: { object: { object: "checkout.session", id: "cs_x", metadata: { snapfront_order: r.order_id } } } }) });
   const page = await (await fetch(`${base}/thanks?o=${r.order_id}`)).text();
   assert.match(page, /Payment didn't go through/);
+});
+
+test("the thank-you page confirms a paid order itself when the webhook is late", async () => {
+  const XL = tee.variants[2];
+  const r = await json(await call("POST", `/s/${slug}/checkout`, { items: [{ product_id: tee.id, variant_id: XL.id, qty: 1 }] }, false), 200);
+  const page = await (await fetch(`${base}/thanks?o=${r.order_id}`)).text();
+  const [, , opts] = calls.findLast((c) => c[0] === "retrieve");
+  assert.equal(opts.stripeAccount, "acct_123");
+  assert.match(page, /Thank you!/);
+  const o = (await json(await call("GET", "/api/orders"), 200)).find((x) => x.id === r.order_id);
+  assert.equal(o.status, "paid");
+  assert.equal(o.email, "late@example.com");
 });
