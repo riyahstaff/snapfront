@@ -127,6 +127,7 @@ export async function look(src) {
   try {
     const out = await Promise.race([lookImpl(src), new Promise((_, no) => setTimeout(() => no(new Error("look timed out")), 20_000).unref?.())]);
     seen = { view: out?.view === "top" ? "top" : "side", cut: [...new Set((Array.isArray(out?.cut) ? out.cut : []).filter((c) => SIDES.includes(c)))] };
+    console.log("[studio] look", key, seen.view, seen.cut.join(",") || "-");
     db.prepare("INSERT OR REPLACE INTO photo_looks (image_file, view, cut) VALUES (?, ?, ?)").run(key, seen.view, JSON.stringify(seen.cut));
   } catch (e) { console.warn("[studio] look", e.message); }
   return seen;
@@ -137,11 +138,11 @@ async function askLook(src) {
   const small = await sharp(src).rotate().resize(640, 640, { fit: "inside" }).jpeg({ quality: 80 }).toBuffer();
   return askJson([
     { type: "image", source: { type: "base64", media_type: "image/jpeg", data: small.toString("base64") } },
-    { type: "text", text: `This is a seller's photo of a product. We will cut the product out and put it on a new background.
-1. view: "top" if the camera looks down on the product from above (a flat lay: the product lies on a floor, table or bed and we see it from overhead, even if slightly tilted). "side" if the camera is level with the product or at a normal angle, so it is seen standing or sitting.
-2. cut: the edges of the photo that cut through the main product, so part of it is outside the frame. Any of "top", "bottom", "left", "right". Use [] if the whole product is inside the photo.
-Return JSON {"view": "top" | "side", "cut": [..]}` },
-  ], 800, config.quickModel);
+    { type: "text", text: `This is a seller's photo of a product. We will cut the product out and put it on a new background, so we need to know how the photo was taken.
+1. view: Is the product lying on a surface (floor, table, bed, carpet) with the camera above it looking down, so we see its top and the surface fills the background? Then "top". This includes overhead shots that are a little tilted. If instead the camera is roughly at the product's height and we see it standing or sitting with a wall, sky or backdrop behind it, answer "side".
+2. cut: Which edges of the photo cut through the main product, so part of it is missing from the picture? Any of "top", "bottom", "left", "right". Use [] if the whole product is inside the photo.
+Call submit with {"view": "top" or "side", "cut": [ ... ]}.` },
+  ], 800);
 }
 
 /* ---------- composing ---------- */

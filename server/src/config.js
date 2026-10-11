@@ -18,7 +18,6 @@ export const config = {
   anthropicKey: env.ANTHROPIC_API_KEY || "",
   claudeModel: env.CLAUDE_MODEL || "claude-sonnet-5-5",
   agentModel: env.AGENT_MODEL || "claude-fable-5-1",
-  quickModel: env.QUICK_MODEL || "claude-haiku-5-5",   // small yes/no looks at a photo
   stripeKey: env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || "",
   stripePublishableKey: env.STRIPE_PUBLISHABLE_KEY || "",
