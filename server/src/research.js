@@ -80,7 +80,7 @@ export function suggest(matches, cost) {
 export async function priceCheck(imageUrl, cost) {
   if (!config.serpapiKey) throw httpError(503, "Price check isn't set up yet. Try again later.");
   if (!/^https:\/\//.test(imageUrl)) throw httpError(400, "Price check needs a public image link.");
-  const q = new URLSearchParams({ engine: "google_lens", url: imageUrl, type: "products", hl: "en", country: "us", api_key: config.serpapiKey });
+  const q = new URLSearchParams({ engine: "google_lens", url: imageUrl, type: "all", hl: "en", country: "us", api_key: config.serpapiKey });
   const res = await fetchImpl(`https://serpapi.com/search.json?${q}`);
   const body = await res.json().catch(() => ({}));
   if (!res.ok || body?.error) {

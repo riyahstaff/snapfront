@@ -68,7 +68,7 @@ test("the endpoint searches with a public image link and counts toward the plan"
   assert.equal(out.suggestion.price, 17.99);
   const q = calls.at(-1);
   assert.equal(q.searchParams.get("engine"), "google_lens");
-  assert.equal(q.searchParams.get("type"), "products");
+  assert.equal(q.searchParams.get("type"), "all");
   assert.equal(q.searchParams.get("url"), out.image_url);
 
   assert.equal((await call({ image_url: "https://cf.cjdropshipping.com/a.jpg" })).status, 200);
