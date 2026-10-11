@@ -18,6 +18,7 @@ import * as dropship from "./dropship.js";
 import * as urls from "./urls.js";
 import * as domains from "./domains.js";
 import { landingPage } from "./landing.js";
+import { THEME_IDS, publicThemes } from "./themes.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, esc } from "./render.js";
 
 export const app = express();
@@ -141,6 +142,7 @@ app.post("/api/sellers", (req, res) => {
 });
 
 const me = (req) => ({ ...store.publicSeller(plans.storesOf(req.account.id).find((s) => s.id === req.seller.id)), account: plans.publicAccount(plans.getAccount(req.account.id), req.seller.id) });
+app.get("/api/themes", (req, res) => res.json({ themes: publicThemes() }));
 app.get("/api/me", auth, (req, res) => res.json(me(req)));
 app.patch("/api/me", auth, wrap(async (req, res) => { await store.updateStoreChecked(req.seller, req.body || {}); res.json(me(req)); }));
 
@@ -369,7 +371,9 @@ app.get("/img/:file", (req, res) => {
 });
 const storeBySlug = (slug) => db.prepare("SELECT * FROM sellers WHERE store_slug = ?").get(slug);
 /** Links inside a store page start at "" on its own address and at /s/<slug> anywhere else. */
-const view = (req, store) => ({ ...store, _base: req.storeHost === store.store_slug ? "" : `/s/${store.store_slug}` });
+const view = (req, store) => ({ ...store, _base: req.storeHost === store.store_slug ? "" : `/s/${store.store_slug}`,
+  // ?theme=<id> previews another look (the app's theme picker); it never changes what buyers see.
+  _theme: THEME_IDS.has(req.query.theme) && req.query.theme !== store.theme ? req.query.theme : undefined });
 const noStore = (res) => res.status(404).send(notePage({ store_slug: "", store_name: "Snapfront", tagline: "", _base: "" }, "Store not found",
   `<h1>There’s no store here</h1><p>Check the address, or <a href="https://${esc(config.storeDomain || new URL(config.publicUrl).host)}">make your own with Snapfront</a>.</p>`));
 

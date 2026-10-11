@@ -79,7 +79,8 @@ export default function StoreScreen() {
       <View style={{ flexDirection: "row", gap: space.sm }}>
         <Shortcut icon="receipt-outline" label="Orders" onPress={() => router.push("/orders")} />
         <Shortcut icon="pricetag-outline" label="Discounts" onPress={() => router.push("/discounts")} />
-        <Shortcut icon="cube-outline" label="Shipping & tax" onPress={() => router.push("/settings")} />
+        <Shortcut icon="color-palette-outline" label="Store look" onPress={() => router.push("/looks")} />
+        <Shortcut icon="cube-outline" label="Shipping" onPress={() => router.push("/settings")} />
       </View>
       <Notice text={error} tone="error" />
     </View>

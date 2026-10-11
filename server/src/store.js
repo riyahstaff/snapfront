@@ -9,6 +9,7 @@ import { renderCover, renderProductPdf, COVER_COLORS, writeFileSafe } from "./ar
 import * as pay from "./payments.js";
 import * as plans from "./plans.js";
 import * as urls from "./urls.js";
+import { THEME_IDS } from "./themes.js";
 
 export const clampStr = (v, n) => String(v ?? "").slice(0, n);
 export const strList = (v, n, len = 200) => (Array.isArray(v) ? v : []).map((x) => clampStr(x, len)).filter(Boolean).slice(0, n);
@@ -25,6 +26,7 @@ export const publicSeller = (s) => ({
   free_shipping_over: s.free_shipping_over_cents == null ? null : s.free_shipping_over_cents / 100,
   ship_countries: String(s.ship_countries || "").split(",").filter(Boolean),
   tax_enabled: Boolean(s.tax_enabled),
+  theme: THEME_IDS.has(s.theme) ? s.theme : "classic",
 });
 
 /** NULL/blank means unlimited stock; otherwise a whole number >= 0. */
@@ -64,6 +66,10 @@ export function updateStore(seller, b) {
     db.prepare("UPDATE sellers SET ship_countries = ? WHERE id = ?").run([...new Set(list)].slice(0, 60).join(","), seller.id);
   }
   if (b.tax_enabled != null) db.prepare("UPDATE sellers SET tax_enabled = ? WHERE id = ?").run(b.tax_enabled ? 1 : 0, seller.id);
+  if (b.theme != null) {
+    if (!THEME_IDS.has(b.theme)) throw httpError(400, "That store look doesn't exist.");
+    db.prepare("UPDATE sellers SET theme = ? WHERE id = ?").run(b.theme, seller.id);
+  }
   return publicSeller(fresh(seller.id));
 }
 
