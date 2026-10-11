@@ -437,6 +437,14 @@ app.get("/img/:file", (req, res) => {
   res.set("Cache-Control", "public, max-age=31536000, immutable");
   res.sendFile(path.join(dirs.images, req.params.file), (err) => err && !res.headersSent && res.status(404).end());
 });
+// QR codes for our own store addresses only (used by the app to show and save them).
+app.get("/qr.png", wrap(async (req, res) => {
+  let u;
+  try { u = new URL(String(req.query.url || "")); } catch { return res.status(400).end(); }
+  const ours = u.protocol === "https:" && ((config.storeDomain && (u.hostname === config.storeDomain || u.hostname.endsWith(`.${config.storeDomain}`))) || urls.sellerForDomain(u.hostname));
+  if (!ours) return res.status(400).end();
+  res.type("png").set("Cache-Control", "public, max-age=86400").send(await growth.qrPng(u.href));
+}));
 app.get("/media/:file", (req, res) => {
   if (!/^[\w-]+\.(jpg|png|mp4)$/.test(req.params.file)) return res.status(404).end();
   res.set("Cache-Control", "public, max-age=31536000, immutable");

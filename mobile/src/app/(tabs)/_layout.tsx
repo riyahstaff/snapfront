@@ -1,7 +1,7 @@
 import React from "react";
-import { Tabs } from "expo-router";
+import { router, Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable } from "react-native";
+import { Pressable, Text } from "react-native";
 import { fonts, useColors } from "@/lib/theme";
 import { assistant } from "@/lib/assistant-store";
 
@@ -21,7 +21,13 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Snap", headerTitle: "Snapfront", tabBarIcon: ({ color, size }) => <Ionicons name="scan" color={color} size={size} /> }} />
-      <Tabs.Screen name="find" options={{ title: "Find", headerTitle: "Find products", tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} /> }} />
+      <Tabs.Screen name="find" options={{ title: "Find", headerTitle: "Find products", tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />,
+        headerRight: () => (
+          <Pressable onPress={() => router.push("/sources")} accessibilityRole="button" accessibilityLabel="Supplier directory" hitSlop={12} style={{ marginRight: 16, flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Ionicons name="business-outline" size={20} color={c.accent} />
+            <Text style={{ color: c.accent, fontFamily: fonts.bodyBold, fontSize: 14 }}>Suppliers</Text>
+          </Pressable>
+        ) }} />
       <Tabs.Screen name="assistant" options={{
         title: "Assistant", headerTitle: "Store assistant",
         tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} />,

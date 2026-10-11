@@ -43,6 +43,7 @@ export default function StoreScreen() {
       { text: "Snap or upload a photo", onPress: () => router.navigate("/") },
       { text: "Create a digital product", onPress: () => router.navigate("/create") },
       { text: "Find a product to dropship", onPress: () => router.navigate("/find") },
+      { text: "Browse the supplier directory", onPress: () => router.push("/sources") },
       { text: "Cancel", style: "cancel" },
     ]);
   }
@@ -101,7 +102,17 @@ export default function StoreScreen() {
         <Shortcut icon="color-palette-outline" label="Store look" onPress={() => router.push("/looks")} />
         <Shortcut icon="cube-outline" label="Shipping" onPress={() => router.push("/settings")} />
       </View>
+      <Text style={[type.heading, { color: c.ink, marginTop: space.sm }]}>Grow your store</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+        <GrowTile icon="megaphone-outline" label="Marketing posts" sub="Posts, carousels and Reels" onPress={() => router.push("/marketing")} />
+        <GrowTile icon="sparkles-outline" label="AI photos & video" sub="Lifestyle shots and clips" onPress={() => router.push("/ai-media")} />
+        <GrowTile icon="people-outline" label="Get more buyers" sub="Link in bio, QR, Google" onPress={() => router.push("/channels")} />
+        <GrowTile icon="bar-chart-outline" label="Insights" sub="Visitors and sales" onPress={() => router.push("/insights")} />
+        <GrowTile icon="star-outline" label="Reviews" sub="What buyers say" onPress={() => router.push("/reviews")} />
+        <GrowTile icon="business-outline" label="Suppliers" sub="Where to find products" onPress={() => router.push("/sources")} />
+      </View>
       <Notice text={error} tone="error" />
+      {items.length ? <Text style={[type.heading, { color: c.ink, marginTop: space.sm }]}>Your products</Text> : null}
     </View>
   );
 
@@ -137,6 +148,18 @@ export default function StoreScreen() {
         </Pressable>
       )}
     />
+  );
+}
+
+function GrowTile({ icon, label, sub, onPress }: { icon: React.ComponentProps<typeof Ionicons>["name"]; label: string; sub: string; onPress: () => void }) {
+  const c = useColors();
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${label}: ${sub}`}
+      style={({ pressed }) => ({ width: "48.5%", padding: space.md, gap: 4, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, opacity: pressed ? 0.85 : 1 })}>
+      <Ionicons name={icon} size={22} color={c.accent} />
+      <Text style={[type.label, { color: c.ink }]}>{label}</Text>
+      <Text style={[type.small, { color: c.muted }]} numberOfLines={1}>{sub}</Text>
+    </Pressable>
   );
 }
 

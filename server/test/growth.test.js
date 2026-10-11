@@ -148,6 +148,8 @@ test("feeds, link in bio and QR code", async () => {
   const qr = await call("GET", "/api/qr?target=links");
   assert.equal(qr.type, "image/png");
   assert.equal(qr.body.subarray(1, 4).toString(), "PNG");
+  assert.equal((await fetch(`${base}/qr.png?url=${encodeURIComponent("https://glow-lab.grow.test/links")}`)).headers.get("content-type"), "image/png");
+  assert.equal((await fetch(`${base}/qr.png?url=${encodeURIComponent("https://evil.example.com/")}`)).status, 400);
 });
 
 test("reviews: buyer leaves one from the order link; it shows on the product with stars; seller can hide it", async () => {

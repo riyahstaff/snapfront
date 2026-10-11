@@ -61,6 +61,19 @@
           "cameraPermission": "Snapfront uses the camera so you can photograph a product and turn it into a product page.",
           "microphonePermission": false
         }
+      ],
+      "expo-video",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Snapfront saves your marketing posts and videos to your photos.",
+          "savePhotosPermission": "Snapfront saves your marketing posts and videos to your photos.",
+          "isAccessMediaLocationEnabled": false,
+          "granularPermissions": [
+            "photo",
+            "video"
+          ]
+        }
       ]
     ],
     "experiments": {

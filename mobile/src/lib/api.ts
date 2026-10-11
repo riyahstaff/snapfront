@@ -72,6 +72,12 @@ export type Seller = {
   announcement: string;
   /** Storefront cover photo */
   banner_url: string | null;
+  /** Link-in-bio buttons */
+  links: { label: string; url: string }[];
+  links_url: string;
+  feeds: { google: string; meta: string };
+  /** Pro: email buyers who leave checkout (needs email set up on the server) */
+  abandoned_emails: boolean;
 };
 /** A storefront look the seller can pick (server/src/themes.js). */
 export type StoreTheme = {
@@ -86,8 +92,24 @@ export type StoreTheme = {
 export type StudioStyle = { color: string } | { scene: string } | { prompt: string };
 export type StudioPresets = { enabled: boolean; custom: boolean; colors: { id: string; name: string; hex: string }[]; scenes: { id: string; name: string }[] };
 export type StudioResult = { image_file: string; image_url: string; source_file: string };
+/** Free directory of places to source products. */
+export type SourceSupplier = { id: string; name: string; url: string; sells: string; shipsFrom: string; cost: string; delivery: string; tip?: string; connect?: "cj" | "aliexpress" | "printful" };
+export type SourceDirectory = { updated: string; note: string; groups: { id: string; name: string; blurb: string; suppliers: SourceSupplier[] }[] };
+/** Marketing posts */
+export type PostCopy = { headline: string; subline: string; bullets: string[]; cta: string; caption: string; hashtags: string[]; link: string };
+export type PostKind = "image" | "carousel" | "reel";
+export type PostFormat = "post" | "square" | "story";
+export type MarketingOptions = { templates: { id: string; name: string; about: string }[]; formats: PostFormat[]; ai: AiPresets };
+export type RenderedPost = { kind: PostKind; files: { file: string; url: string }[] };
+/** AI video clips and lifestyle photos (Runpod) */
+export type AiPresets = { enabled: boolean; motions: { id: string; name: string }[]; scenes: { id: string; name: string }[] };
+export type AiJob = { id: string; kind: "video" | "scene"; status: "queued" | "running" | "done" | "failed"; error: string | null; created_at: string; url?: string; file?: string; image_file?: string };
+/** Store insights (Pro) */
+export type Insights = { days: number; visitors: number; views: number; orders: number; sales: number; conversion: number;
+  daily: { day: string; visitors: number; orders: number; sales: number }[]; top_products: { id: string; title: string; visitors: number; sold: number }[]; sources: { source: string; visitors: number }[] };
+export type Review = { id: string; product_id: string; product_title: string | null; name: string; rating: number; body: string; status: "published" | "hidden"; created_at: string };
 export type PlanId = "free" | "launch" | "pro";
-export type PlanLimits = { name: string; liveStores: number; stores: number; photo: number; product: number; agent: number; research: number; studio: number };
+export type PlanLimits = { name: string; liveStores: number; stores: number; photo: number; product: number; agent: number; research: number; studio: number; post: number; scene: number; video: number };
 export type Account = {
   id: string;
   email: string | null;
@@ -95,7 +117,7 @@ export type Account = {
   plan_name: string;
   limits: PlanLimits;
   period: string;  // "YYYY-MM", or "trial" on the free plan
-  usage: { photo: number; product: number; agent: number; research: number; studio: number };
+  usage: { photo: number; product: number; agent: number; research: number; studio: number; post: number; scene: number; video: number };
   stores: { id: string; store_name: string; store_slug: string; live_allowed: boolean; current: boolean }[];
   can_add_store: boolean;
   suppliers: Suppliers;
@@ -121,7 +143,7 @@ export type PriceCheck = {
   suggestion: null | { price: number; basis: string; cost?: number; profit?: number; margin_percent?: number; warning?: string };
 };
 export type PriceCheckInput = { imageBase64?: string; mediaType?: string; image_file?: string; image_url?: string; cost?: number };
-export type StorePatch = Partial<Pick<Seller, "store_name" | "store_slug" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled" | "theme" | "about" | "announcement">>;
+export type StorePatch = Partial<Pick<Seller, "store_name" | "store_slug" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled" | "theme" | "about" | "announcement" | "links" | "abandoned_emails">>;
 export type OrderItem = { title: string; variant: string | null; qty: number; kind: "physical" | "digital"; unit: number };
 export type Address = { line1?: string; line2?: string | null; city?: string; state?: string | null; postal_code?: string; country?: string };
 export type Order = {
@@ -244,6 +266,18 @@ export const api = {
   removeBanner: () => request<Me>("DELETE", "/api/me/banner"),
   studioPresets: () => request<StudioPresets>("GET", "/api/studio"),
   studio: (input: { image_file?: string; imageBase64?: string; mediaType?: string; style: StudioStyle }) => request<StudioResult>("POST", "/api/studio", input),
+  sources: () => request<SourceDirectory>("GET", "/api/sources"),
+  marketing: () => request<MarketingOptions>("GET", "/api/marketing"),
+  postCopy: (input: { product_id: string; platform: "instagram" | "tiktok"; offer?: string; tone?: string }) => request<PostCopy>("POST", "/api/marketing/copy", input),
+  renderPost: (input: { product_id: string; kind: PostKind; template: string; format: PostFormat; copy: Partial<PostCopy>; offer?: string; image_url?: string }) =>
+    request<RenderedPost>("POST", "/api/marketing/render", input),
+  aiMedia: () => request<AiPresets & { jobs: AiJob[] }>("GET", "/api/ai-media"),
+  startAiMedia: (input: { kind: "video" | "scene"; image_file: string; preset?: string; prompt?: string }) => request<AiJob>("POST", "/api/ai-media", input),
+  aiJob: (id: string) => request<AiJob>("GET", `/api/ai-media/${id}`),
+  insights: (days: 7 | 30 | 90) => request<Insights>("GET", `/api/insights?days=${days}`),
+  reviews: () => request<Review[]>("GET", "/api/reviews"),
+  setReview: (id: string, status: "published" | "hidden") => request<Review[]>("PATCH", `/api/reviews/${id}`, { status }),
+  qrUrl: (url: string) => `${API_URL}/qr.png?url=${encodeURIComponent(url)}`,
   themes: () => request<{ themes: StoreTheme[] }>("GET", "/api/themes").then((r) => r.themes),
   async deleteAccount() {
     await request<void>("DELETE", "/api/me");
