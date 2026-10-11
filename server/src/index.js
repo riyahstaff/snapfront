@@ -275,6 +275,10 @@ app.delete("/api/discounts/:id", auth, (req, res) => { commerce.deleteDiscount(r
 
 /* ---------- Stripe Connect ---------- */
 app.post("/api/stripe/onboard", auth, wrap(async (req, res) => {
+  // Payments come with a paid plan, so Stripe setup starts after the upgrade.
+  if (plans.effectivePlan(req.account) === "free" && !req.seller.stripe_account_id) {
+    throw httpError(402, "Get Launch ($29, one time) to take payments, then connect Stripe.", { upgrade: "launch" });
+  }
   const { accountId, url } = await pay.onboardingLink(req.seller);
   // One Stripe account per person: every store on the account gets paid into it.
   db.prepare("UPDATE sellers SET stripe_account_id = ? WHERE id = ? OR (account_id = ? AND stripe_account_id IS NULL)").run(accountId, req.seller.id, req.account.id);

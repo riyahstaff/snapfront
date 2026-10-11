@@ -62,6 +62,8 @@ test("free plan: a taste of the AI, one store, no publishing", async () => {
 
   const p = await json(await call(A.token, "POST", "/api/products", { title: "Mug", price: 18 }), 201);
   assert.equal((await json(await call(A.token, "POST", `/api/products/${p.id}/publish`), 402)).upgrade, "launch");
+  // Stripe setup starts after upgrading
+  assert.equal((await json(await call(A.token, "POST", "/api/stripe/onboard"), 402)).upgrade, "launch");
 });
 
 test("buying Launch through RevenueCat unlocks publishing and resets to monthly allowances", async () => {

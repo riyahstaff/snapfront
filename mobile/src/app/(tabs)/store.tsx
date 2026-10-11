@@ -68,7 +68,8 @@ export default function StoreScreen() {
           <Text style={[type.label, { color: c.accent }]}>Share</Text>
         </Pressable>
       ) : null}
-      {seller && !seller.stripe_ready ? (
+      {/* Stripe setup appears once the seller has a plan that can take payments. */}
+      {seller && seller.account.plan !== "free" && !seller.stripe_ready ? (
         <View style={{ backgroundColor: c.flash, borderRadius: radius.lg, padding: space.lg, gap: space.sm }}>
           <Text style={[type.heading, { color: c.onFlash }]}>{seller.stripe_connected ? "Finish your Stripe setup" : "Connect Stripe to get paid"}</Text>
           <Text style={[type.small, { color: c.onFlash }]}>Payments go straight to your own Stripe account. It takes about five minutes.</Text>
@@ -138,12 +139,12 @@ function PlanCard({ me }: { me: Me }) {
   const meter = (used: number, max: number, label: string) => `${Math.min(used, max)} of ${max} ${label}`;
   return (
     <Pressable onPress={() => router.push("/plans")} accessibilityRole="button" accessibilityLabel={free ? "See plans and go live" : `${a.plan_name} plan, see plans`}
-      style={({ pressed }) => ({ backgroundColor: free ? c.ink : c.surface, borderColor: c.line, borderWidth: free ? 0 : 1, borderRadius: radius.lg, padding: space.lg, gap: 6, opacity: pressed ? 0.9 : 1 })}>
+      style={({ pressed }) => ({ backgroundColor: free ? c.flash : c.surface, borderColor: c.line, borderWidth: free ? 0 : 1, borderRadius: radius.lg, padding: space.lg, gap: 6, opacity: pressed ? 0.9 : 1 })}>
       {free ? (
         <>
-          <Text style={[type.heading, { color: c.bg }]}>Go live for $29</Text>
-          <Text style={[type.small, { color: c.bg, opacity: 0.85 }]}>Publish your store and take payments, with no fees on your sales. {meter(a.usage.photo, a.limits.photo, "free AI pages")} used.</Text>
-          <Text style={[type.label, { color: c.flash, marginTop: 4 }]}>See plans</Text>
+          <Text style={[type.heading, { color: c.onFlash }]}>Go live for $29</Text>
+          <Text style={[type.small, { color: c.onFlash }]}>Publish your store and take payments, with no fees on your sales. After that, you connect Stripe to get paid. {meter(a.usage.photo, a.limits.photo, "free AI pages")} used.</Text>
+          <Text style={[type.label, { color: c.onFlash, marginTop: 4, textDecorationLine: "underline" }]}>See plans</Text>
         </>
       ) : (
         <>
