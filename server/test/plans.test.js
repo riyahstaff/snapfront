@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "snapfront-plans-"));
+process.env.ADMIN_TOKEN = "admin_test_secret";
 process.env.DATA_DIR = tmp;
 process.env.PUBLIC_URL = "http://localhost";
 process.env.STRIPE_SECRET_KEY = "";
@@ -147,4 +148,16 @@ test("deleting the account removes every store", async () => {
   await json(await call(A.token, "DELETE", "/api/me"), 204);
   assert.equal(db.prepare("SELECT COUNT(*) n FROM sellers WHERE account_id = ?").get(A.account.id).n, 0);
   await json(await call(A.token, "GET", "/api/me"), 401);
+});
+
+test("owner tool: grant a free plan by store address; refused without the admin token", async () => {
+  const c = await json(await call(null, "POST", "/api/sellers", { store_name: "Comped" }), 201);
+  const slug = c.seller.store_slug;
+  assert.equal((await call(null, "POST", "/api/admin/comp", { store_slug: slug, plan: "pro" })).status, 401);
+  assert.equal((await call("wrong", "POST", "/api/admin/comp", { store_slug: slug, plan: "pro" })).status, 401);
+  const r = await json(await call("admin_test_secret", "POST", "/api/admin/comp", { store_slug: slug, plan: "pro" }), 200);
+  assert.equal(r.plan, "pro");
+  assert.equal((await json(await call(c.token, "GET", "/api/me"), 200)).account.plan, "pro");
+  assert.equal((await json(await call("admin_test_secret", "POST", "/api/admin/comp", { store_slug: slug, plan: "none" }), 200)).plan, "free");
+  assert.equal((await call("admin_test_secret", "POST", "/api/admin/comp", { store_slug: "no-such-store", plan: "pro" })).status, 404);
 });

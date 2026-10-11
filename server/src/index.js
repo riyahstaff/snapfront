@@ -183,6 +183,23 @@ app.delete("/api/stores/:id", auth, (req, res) => {
 
 /* ---------- plans and purchases ---------- */
 app.get("/api/plans", (_req, res) => res.json(plans.PLANS));
+
+/* ---------- owner tools (ADMIN_TOKEN): give a store's account a free plan, e.g. for testers and app reviewers ---------- */
+function adminOnly(req, _res, next) {
+  const t = (req.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!config.adminToken || !sameSecret(t, config.adminToken)) return next(httpError(401, "Unauthorized"));
+  next();
+}
+app.post("/api/admin/comp", adminOnly, (req, res) => {
+  const { store_slug, email, plan } = req.body || {};
+  if (!["launch", "pro", null, "none"].includes(plan ?? null)) throw httpError(400, "plan must be launch, pro or none");
+  const acc = store_slug ? db.prepare("SELECT a.* FROM accounts a JOIN sellers s ON s.account_id = a.id WHERE s.store_slug = ?").get(String(store_slug))
+    : email ? db.prepare("SELECT * FROM accounts WHERE email = ?").get(String(email).toLowerCase()) : null;
+  if (!acc) throw httpError(404, "No account with that store address or email.");
+  db.prepare("UPDATE accounts SET comp_plan = ? WHERE id = ?").run(plan === "none" ? null : plan, acc.id);
+  const a = plans.getAccount(acc.id);
+  res.json({ account: acc.id, plan: plans.effectivePlan(a), comp_plan: a.comp_plan, stores: plans.storesOf(acc.id).map((s) => s.store_slug) });
+});
 // The app calls this right after a purchase or restore; the webhook below catches renewals and expiries.
 app.post("/api/billing/sync", auth, wrap(async (req, res) => {
   req.account = await plans.syncPlan(req.account);

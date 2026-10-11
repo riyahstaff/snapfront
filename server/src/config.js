@@ -27,6 +27,7 @@ export const config = {
   cjApiKey: env.CJ_API_KEY || "",
   // Stores get https://<slug>.<STORE_DOMAIN> (e.g. snapfront.app) once its wildcard DNS is in place.
   cloudflareToken: env.CLOUDFLARE_API_TOKEN || "",
+  adminToken: env.ADMIN_TOKEN || "",
   storeDomain: String(env.STORE_DOMAIN || "").trim().toLowerCase().replace(/^\.+|\/+$/g, ""),
   revenuecatWebhookAuth: env.REVENUECAT_WEBHOOK_AUTH || "",
   downloadSecret: env.DOWNLOAD_SIGNING_SECRET || "dev-only-secret-change-me",
