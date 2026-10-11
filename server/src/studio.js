@@ -141,7 +141,7 @@ async function askLook(src) {
 1. view: "top" if the camera looks down on the product from above (a flat lay: the product lies on a floor, table or bed and we see it from overhead, even if slightly tilted). "side" if the camera is level with the product or at a normal angle, so it is seen standing or sitting.
 2. cut: the edges of the photo that cut through the main product, so part of it is outside the frame. Any of "top", "bottom", "left", "right". Use [] if the whole product is inside the photo.
 Return JSON {"view": "top" | "side", "cut": [..]}` },
-  ], 200, config.quickModel);
+  ], 800, config.quickModel);
 }
 
 /* ---------- composing ---------- */
