@@ -204,7 +204,8 @@ async function makeProducts({ launchPrice = "29.00", proPrice = "14.99" } = {}, 
       ...(lp.other ? { newRegionsConfig: { usdPrice: lp.other.usdPrice, eurPrice: lp.other.eurPrice, availability: "AVAILABLE" } } : {}),
     }],
   };
-  let r = await play("PATCH", `/oneTimeProducts/${LAUNCH}?allowMissing=true&updateMask=listings,purchaseOptions&regionsVersion.version=${encodeURIComponent(lp.version || "2022/02")}`, once);
+  // Google documents this one path in lower case (get and activate use oneTimeProducts).
+  let r = await play("PATCH", `/onetimeproducts/${LAUNCH}?allowMissing=true&updateMask=listings,purchaseOptions&regionsVersion.version=${encodeURIComponent(lp.version || "2022/02")}`, once);
   log.push(["launch product", r.status, r.status >= 300 ? r.body : "ok"]);
   if (r.status < 300) {
     r = await play("POST", `/oneTimeProducts/${LAUNCH}/purchaseOptions:batchUpdateStates`, { requests: [{ activatePurchaseOptionRequest: { packageName: config.playPackage, productId: LAUNCH, purchaseOptionId: "buy" } }] });
