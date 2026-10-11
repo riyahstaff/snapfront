@@ -1,20 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, H2, Notice, Screen } from "@/components/ui";
-import { api, ApiError, money, type CatalogProduct, type ImportResult } from "@/lib/api";
+import { api, ApiError, money, type CatalogProduct, type ImportResult, type SupplierId } from "@/lib/api";
 import { account } from "@/lib/account-store";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
 
 const MAX_OPTIONS = 30;
 
-/** A CJdropshipping product: what it costs you, its options, and adding it to your store. */
+const NAMES: Record<SupplierId, string> = { cj: "CJ", printful: "Printful", aliexpress: "AliExpress" };
+
+/** A supplier's product: what it costs you, its options, and adding it to your store. */
 export default function SupplierProductScreen() {
   const c = useColors();
   const { width } = useWindowDimensions();
-  const { pid } = useLocalSearchParams<{ pid: string }>();
+  const params = useLocalSearchParams<{ pid: string; source?: SupplierId }>();
+  const pid = String(params.pid);
+  const source: SupplierId = params.source && params.source in NAMES ? params.source : "cj";
   const [p, setP] = useState<CatalogProduct | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [price, setPrice] = useState("");
@@ -23,10 +27,10 @@ export default function SupplierProductScreen() {
   const [done, setDone] = useState<ImportResult | null>(null);
 
   useEffect(() => {
-    api.catalogProduct(String(pid))
+    api.catalogProduct(source, pid)
       .then((r) => { setP(r); setPicked(new Set(r.variants.slice(0, MAX_OPTIONS).map((v) => v.vid))); })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Couldn't load this product."));
-  }, [pid]);
+  }, [pid, source]);
 
   function toggle(vid: string) {
     setPicked((prev) => {
@@ -42,7 +46,7 @@ export default function SupplierProductScreen() {
     setBusy(true); setError(null);
     try {
       const n = Number(price.replace(/[^0-9.]/g, ""));
-      const r = await api.importProduct(p.pid, { vids: p.variants.length ? [...picked] : undefined, price: n > 0 ? n : undefined });
+      const r = await api.importProduct(source, p.pid, { vids: p.variants.length ? [...picked] : undefined, price: n > 0 ? n : undefined });
       setDone(r);
       account.refresh().catch(() => {});
     } catch (e) {
@@ -50,9 +54,11 @@ export default function SupplierProductScreen() {
     } finally { setBusy(false); }
   }
 
+  const header = <Stack.Screen options={{ title: `Product from ${NAMES[source]}` }} />;
   if (!p) {
     return (
       <Screen>
+        {header}
         {error ? <Notice text={error} tone="error" /> : <ActivityIndicator color={c.accent} style={{ marginTop: space.xxl }} />}
       </Screen>
     );
@@ -62,6 +68,7 @@ export default function SupplierProductScreen() {
     const pr = done.pricing;
     return (
       <Screen>
+        {header}
         <View style={{ gap: space.sm }}>
           <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Added to{"\n"}your store</Text>
           <Body muted>It’s saved as a draft. Check the page, then publish when you’re happy.</Body>
@@ -98,6 +105,7 @@ export default function SupplierProductScreen() {
   const allOn = picked.size === Math.min(p.variants.length, MAX_OPTIONS);
   return (
     <Screen>
+      {header}
       <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -space.lg }}
         contentContainerStyle={{ paddingHorizontal: space.lg, gap: space.lg }} snapToInterval={imgW + space.lg} decelerationRate="fast">
         {p.images.map((u, i) => (
@@ -107,7 +115,7 @@ export default function SupplierProductScreen() {
       </ScrollView>
       <View style={{ gap: space.xs }}>
         <Text style={[type.heading, { color: c.ink }]}>{p.title}</Text>
-        <Text style={[type.small, { color: c.muted }]}>This is the supplier’s title. Snapfront writes a fresh title and description for your store.</Text>
+        <Text style={[type.small, { color: c.muted }]}>{p.design ? "Your product in Printful. Snapfront writes a title and description for your store." : "This is the supplier’s title. Snapfront writes a fresh title and description for your store."}</Text>
       </View>
 
       <View style={{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.md, gap: space.sm }}>
@@ -115,7 +123,7 @@ export default function SupplierProductScreen() {
         <Row label={p.shipping ? `Shipping to the US (${p.shipping.days} days)` : "Shipping to the US"} value={p.shipping ? money(p.shipping.price) : "not available"} />
         <View style={{ height: 1, backgroundColor: c.line }} />
         <Row label="Your cost per sale" value={p.landed_cost != null ? money(p.landed_cost) : "—"} bold />
-        <Text style={[type.small, { color: c.muted }]}>You pay CJ this when an order comes in. Shipping is an estimate; set your store’s shipping charge in Store settings.</Text>
+        <Text style={[type.small, { color: c.muted }]}>You pay {p.supplier_name} this when an order comes in. Shipping is an estimate; set your store’s shipping charge in Store settings.</Text>
       </View>
 
       {p.variants.length > 1 ? (
@@ -144,11 +152,11 @@ export default function SupplierProductScreen() {
         </View>
       ) : null}
 
-      <Field label="Your price (optional)" hint="Leave it blank and Snapfront checks Amazon, Walmart and more, then picks a price that beats them."
+      <Field label="Your price (optional)" hint={p.suggested_price ? `Leave it blank to use your Printful price, ${money(p.suggested_price)}.` : p.design ? "Leave it blank and Snapfront sets about 2.5 times your cost." : "Leave it blank and Snapfront checks Amazon, Walmart and more, then picks a price that beats them."}
         value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="e.g. 29.99" />
       <Notice text={busy ? "Writing your product page and checking market prices. This takes about half a minute." : error} tone={busy ? "info" : "error"} />
       <Button label={busy ? "Adding…" : "Add to my store"} loading={busy} disabled={p.variants.length > 1 && picked.size === 0} onPress={add} />
-      {p.images[0] ? (
+      {p.images[0] && !p.design ? (
         <Button label="Compare prices first" variant="secondary" disabled={busy}
           onPress={() => router.push({ pathname: "/price-check", params: { image_url: p.images[0], cost: p.landed_cost != null ? String(p.landed_cost) : undefined } })} />
       ) : null}

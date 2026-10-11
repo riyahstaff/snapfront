@@ -47,7 +47,7 @@ export default function RootLayout() {
         <Stack.Screen name="discounts" options={{ title: "Discount codes" }} />
         <Stack.Screen name="plans" options={{ title: "Plans", presentation: "modal" }} />
         <Stack.Screen name="price-check" options={{ title: "Price check" }} />
-        <Stack.Screen name="supplier/[pid]" options={{ title: "Product from CJ" }} />
+        <Stack.Screen name="supplier/[pid]" options={{ title: "Product" }} />
       </Stack>
     </>
   );

@@ -74,7 +74,14 @@ export type Account = {
   can_add_store: boolean;
   suppliers: Suppliers;
 };
-export type Suppliers = { cj: { connected: boolean; auto_pay: boolean } };
+export type SupplierId = "cj" | "printful" | "aliexpress";
+export type SupplierState = {
+  name: string; connected: boolean; auto_pay: boolean;
+  browse_without_account?: boolean; pending_authorization?: boolean; callback_url?: string; store_name?: string; account_name?: string;
+};
+export type Suppliers = Record<SupplierId, SupplierState>;
+/** What each supplier needs from the seller to connect. */
+export type SupplierConnectInput = { api_key?: string; token?: string; app_key?: string; app_secret?: string; auto_pay?: boolean };
 export type Me = Seller & { account: Account };
 export type PriceMatch = { title: string; link: string; thumbnail: string | null; price: number; in_stock: boolean | null; store: string; store_name: string };
 export type PriceCheck = {
@@ -100,6 +107,11 @@ export type Order = {
   fulfilled_at: string | null;
   created_at: string;
   supplier: null | { name: string; status: SupplierStatus; order_id: string | null; error: string | null };
+  fulfillments?: Fulfillment[];
+  tracking: null | { number: string; carrier: string | null; url: string };
+};
+export type Fulfillment = {
+  supplier: SupplierId; name: string; status: SupplierStatus; order_id: string | null; error: string | null;
   tracking: null | { number: string; carrier: string | null; url: string };
 };
 export type SupplierStatus = "needs_key" | "sending" | "awaiting_payment" | "sent" | "shipped" | "delivered" | "failed" | "canceled";
@@ -110,6 +122,7 @@ export type ShippingQuote = { name: string; price: number; days: string; from: s
 export type CatalogProduct = {
   pid: string; title: string; description: string; images: string[]; option_name: string; cost: number | null;
   variants: CatalogVariant[]; shipping: ShippingQuote | null; landed_cost: number | null;
+  source: SupplierId; supplier_name: string; suggested_price?: number | null; design?: boolean;
 };
 export type ImportResult = {
   product: Product;
@@ -241,13 +254,15 @@ export const api = {
   publish: (id: string) => request<Product>("POST", `/api/products/${id}/publish`),
   orders: () => request<Order[]>("GET", "/api/orders"),
   orderSupplier: (id: string) => request<Order>("POST", `/api/orders/${id}/supplier`),
-  catalogSearch: (q: string, page = 1) => request<CatalogPage>("GET", `/api/catalog/search?q=${encodeURIComponent(q)}&page=${page}`),
-  catalogProduct: (pid: string) => request<CatalogProduct>("GET", `/api/catalog/products/${encodeURIComponent(pid)}`),
-  importProduct: (pid: string, body: { price?: number; vids?: string[]; price_check?: boolean }) =>
-    request<ImportResult>("POST", `/api/catalog/products/${encodeURIComponent(pid)}/import`, body),
-  connectCj: (api_key: string, auto_pay: boolean) => request<Suppliers>("PUT", "/api/suppliers/cj", { api_key, auto_pay }),
-  setCjAutoPay: (auto_pay: boolean) => request<Suppliers>("PATCH", "/api/suppliers/cj", { auto_pay }),
-  disconnectCj: () => request<Suppliers>("DELETE", "/api/suppliers/cj"),
+  catalogSearch: (source: SupplierId, q: string, page = 1) =>
+    request<CatalogPage>("GET", `/api/catalog/search?source=${source}&q=${encodeURIComponent(q)}&page=${page}`),
+  catalogProduct: (source: SupplierId, pid: string) => request<CatalogProduct>("GET", `/api/catalog/products/${encodeURIComponent(pid)}?source=${source}`),
+  importProduct: (source: SupplierId, pid: string, body: { price?: number; vids?: string[]; price_check?: boolean }) =>
+    request<ImportResult>("POST", `/api/catalog/products/${encodeURIComponent(pid)}/import?source=${source}`, body),
+  connectSupplier: (source: SupplierId, input: SupplierConnectInput) => request<Suppliers & { authorize_url?: string }>("PUT", `/api/suppliers/${source}`, input),
+  setSupplierAutoPay: (source: SupplierId, auto_pay: boolean) => request<Suppliers>("PATCH", `/api/suppliers/${source}`, { auto_pay }),
+  disconnectSupplier: (source: SupplierId) => request<Suppliers>("DELETE", `/api/suppliers/${source}`),
+  supplierAuthorizeUrl: (source: SupplierId) => request<{ url: string }>("POST", `/api/suppliers/${source}/authorize`),
   fulfillOrder: (id: string) => request<Order>("POST", `/api/orders/${id}/fulfill`),
   discounts: () => request<Discount[]>("GET", "/api/discounts"),
   createDiscount: (d: DiscountInput) => request<Discount>("POST", "/api/discounts", d),

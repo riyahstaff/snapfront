@@ -1,63 +1,177 @@
 import React, { useState } from "react";
-import { Switch, Text, View } from "react-native";
+import { Pressable, Switch, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
+import * as Clipboard from "expo-clipboard";
+import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, H2, Notice } from "@/components/ui";
-import { api, ApiError, type Suppliers } from "@/lib/api";
+import { api, ApiError, type SupplierConnectInput, type SupplierId, type SupplierState } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
-import { space, type, useColors } from "@/lib/theme";
+import { radius, space, type, useColors } from "@/lib/theme";
 
-/** The seller's own CJdropshipping account: orders for CJ products are placed there, and CJ bills them. */
+type Msg = { text: string; tone: "error" | "ok" | "info" } | null;
+
+const INFO: Record<SupplierId, { what: string; payLabel: string; payOn: string; payOff: string; site: string; siteLabel: string }> = {
+  cj: {
+    what: "Wholesale products shipped from CJ’s warehouses.",
+    payLabel: "Pay CJ automatically", payOn: "Orders are paid from your CJ wallet, so they ship right away. Keep money in your CJ wallet.",
+    payOff: "Orders wait in CJ until you pay for them there (My CJ, then Orders).",
+    site: "https://cjdropshipping.com/", siteLabel: "Open CJdropshipping",
+  },
+  printful: {
+    what: "Your own designs on shirts, mugs, posters and more, printed and shipped by Printful.",
+    payLabel: "Send orders to Printful automatically", payOn: "Orders are confirmed in Printful straight away and charged to the card on your Printful account.",
+    payOff: "Orders arrive in Printful as drafts. Confirm them in Printful (Orders) so they’re printed.",
+    site: "https://developers.printful.com/", siteLabel: "Open Printful’s Developer Portal",
+  },
+  aliexpress: {
+    what: "Products from AliExpress sellers, ordered through your own AliExpress account.",
+    payLabel: "Pay AliExpress automatically", payOn: "Snapfront tries to pay each order with your saved AliExpress payment method.",
+    payOff: "Orders wait in your AliExpress account until you pay for them there (My Orders).",
+    site: "https://openservice.aliexpress.com/", siteLabel: "Open AliExpress Open Platform",
+  },
+};
+
+/** Suppliers the seller connects with their own account. Orders for those products go to that account. */
 export function SupplierSection() {
-  const c = useColors();
   const me = useMe();
-  const [key, setKey] = useState("");
+  if (!me?.account.suppliers) return null;
+  const s = me.account.suppliers;
+  return (
+    <View style={{ gap: space.md }}>
+      <H2>Suppliers</H2>
+      <Body muted>Connect your own supplier accounts. You find products in the Find tab, and when a buyer orders, Snapfront places the order in your supplier account so they ship it to your buyer. You pay the supplier; you keep the rest.</Body>
+      {(["cj", "printful", "aliexpress"] as const).map((id) => <SupplierCard key={id} id={id} state={s[id]} />)}
+    </View>
+  );
+}
+
+function SupplierCard({ id, state }: { id: SupplierId; state: SupplierState }) {
+  const c = useColors();
+  const info = INFO[id];
+  const [open, setOpen] = useState(false);
+  const [fields, setFields] = useState<SupplierConnectInput>({});
   const [autoPay, setAutoPay] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [msg, setMsg] = useState<{ text: string; tone: "error" | "ok" | "info" } | null>(null);
-  const cj = me?.account.suppliers?.cj;
+  const [msg, setMsg] = useState<Msg>(null);
+  const set = (k: keyof SupplierConnectInput) => (v: string) => setFields((f) => ({ ...f, [k]: v }));
 
-  async function apply(label: string, fn: () => Promise<Suppliers>, ok: string) {
+  async function run(label: string, fn: () => Promise<string | null>) {
     setBusy(label); setMsg(null);
-    try { await fn(); await account.refresh(); setKey(""); setMsg({ text: ok, tone: "ok" }); }
-    catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't update your CJ account.", tone: "error" }); }
+    try { const ok = await fn(); await account.refresh(); if (ok) setMsg({ text: ok, tone: "ok" }); }
+    catch (e) { setMsg({ text: e instanceof ApiError ? e.message : `Couldn’t update ${state.name}.`, tone: "error" }); }
     finally { setBusy(null); }
   }
 
-  if (!me) return null;
+  async function authorize(url?: string) {
+    const target = url || (await api.supplierAuthorizeUrl(id)).url;
+    await WebBrowser.openAuthSessionAsync(target, "snapfront://settings");
+    const next = await account.refresh();
+    return next.account.suppliers[id].connected ? `${state.name} is connected.` : "Not connected yet. Tap Authorize and approve Snapfront on AliExpress.";
+  }
+
+  const connect = () => run("connect", async () => {
+    const r = await api.connectSupplier(id, { ...fields, auto_pay: autoPay });
+    setFields({});
+    if (r.authorize_url) return authorize(r.authorize_url);
+    setOpen(false);
+    return `${state.name} connected.`;
+  });
+
+  const status = state.connected ? (state.store_name || state.account_name ? `Connected: ${state.store_name || state.account_name}` : "Connected")
+    : state.pending_authorization ? "Waiting for you to approve on AliExpress" : "Not connected";
+  const canSubmit = id === "cj" ? (fields.api_key || "").trim().length >= 10
+    : id === "printful" ? (fields.token || "").trim().length >= 20
+    : (fields.app_key || "").trim().length >= 5 && (fields.app_secret || "").trim().length >= 16;
+
   return (
-    <View style={{ gap: space.md }}>
-      <H2>CJdropshipping</H2>
-      {cj?.connected ? (
-        <>
-          <Body muted>Connected. When someone buys a CJ product from you, Snapfront places the order in your CJ account and CJ ships it to your buyer.</Body>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={[type.label, { color: c.ink }]}>Pay CJ automatically</Text>
-              <Text style={[type.small, { color: c.muted }]}>
-                {cj.auto_pay ? "Orders are paid from your CJ wallet balance, so they ship right away. Keep money in your CJ wallet." : "Orders wait in CJ until you pay for them there (My CJ, then Orders)."}
-              </Text>
-            </View>
-            <Switch value={cj.auto_pay} disabled={Boolean(busy)} accessibilityLabel="Pay CJ automatically from my CJ balance" trackColor={{ true: c.accent, false: c.line }}
-              onValueChange={(v) => apply("auto", () => api.setCjAutoPay(v), v ? "New orders will be paid from your CJ balance." : "New orders will wait for you to pay in CJ.")} />
-          </View>
-          <Button label="Disconnect CJ" variant="ghost" loading={busy === "off"} onPress={() => apply("off", api.disconnectCj, "CJ disconnected. New orders won’t be sent to CJ.")} />
-        </>
-      ) : (
-        <>
-          <Body muted>Connect your own free CJ account so orders for CJ products go straight to CJ, and CJ ships them to your buyers. You pay CJ the product and shipping cost; you keep the rest.</Body>
-          <Text style={[type.small, { color: c.ink }]}>
-            In CJ, open My CJ, then Authorization, then API, and generate an API key. Copy it and paste it here.
-          </Text>
-          <Button label="Open CJdropshipping" variant="ghost" onPress={() => WebBrowser.openBrowserAsync("https://cjdropshipping.com/")} />
-          <Field label="CJ API key" value={key} onChangeText={setKey} autoCapitalize="none" autoCorrect={false} secureTextEntry placeholder="Paste your API key" />
-          <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-            <Text style={[type.small, { color: c.ink, flex: 1 }]}>Pay CJ automatically from my CJ wallet balance</Text>
-            <Switch value={autoPay} onValueChange={setAutoPay} accessibilityLabel="Pay CJ automatically from my CJ wallet balance" trackColor={{ true: c.accent, false: c.line }} />
-          </View>
-          <Button label="Connect CJ" loading={busy === "on"} disabled={key.trim().length < 10} onPress={() => apply("on", () => api.connectCj(key.trim(), autoPay), "CJ connected. Orders for CJ products will be sent there.")} />
-        </>
-      )}
-      <Notice text={msg?.text ?? null} tone={msg?.tone} />
+    <View style={{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.md, gap: space.md }}>
+      <Pressable onPress={() => setOpen((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: open }}
+        style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={[type.heading, { color: c.ink }]}>{state.name}</Text>
+          <Text style={[type.small, { color: state.connected ? c.good : c.muted }]}>{status}</Text>
+        </View>
+        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={18} color={c.muted} />
+      </Pressable>
+
+      {open ? (
+        <View style={{ gap: space.md }}>
+          <Text style={[type.small, { color: c.muted }]}>{info.what}</Text>
+          {state.connected ? (
+            <>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[type.label, { color: c.ink }]}>{info.payLabel}</Text>
+                  <Text style={[type.small, { color: c.muted }]}>{state.auto_pay ? info.payOn : info.payOff}</Text>
+                </View>
+                <Switch value={state.auto_pay} disabled={Boolean(busy)} accessibilityLabel={info.payLabel} trackColor={{ true: c.accent, false: c.line }}
+                  onValueChange={(v) => run("auto", async () => { await api.setSupplierAutoPay(id, v); return null; })} />
+              </View>
+              <Button label={`Disconnect ${state.name}`} variant="ghost" loading={busy === "off"}
+                onPress={() => run("off", async () => { await api.disconnectSupplier(id); return `${state.name} disconnected. New orders won’t be sent there.`; })} />
+            </>
+          ) : (
+            <>
+              <Steps id={id} callbackUrl={state.callback_url} />
+              <Button label={info.siteLabel} variant="ghost" onPress={() => WebBrowser.openBrowserAsync(info.site)} />
+              {state.pending_authorization ? (
+                <Button label="Authorize on AliExpress" loading={busy === "auth"} onPress={() => run("auth", () => authorize())} />
+              ) : null}
+              {id === "cj" ? <Field label="CJ API key" value={fields.api_key || ""} onChangeText={set("api_key")} autoCapitalize="none" autoCorrect={false} secureTextEntry placeholder="Paste your API key" /> : null}
+              {id === "printful" ? <Field label="Printful private token" value={fields.token || ""} onChangeText={set("token")} autoCapitalize="none" autoCorrect={false} secureTextEntry placeholder="Paste your token" /> : null}
+              {id === "aliexpress" ? (
+                <>
+                  <Field label="App Key" value={fields.app_key || ""} onChangeText={set("app_key")} keyboardType="number-pad" placeholder="e.g. 512345" />
+                  <Field label="App Secret" value={fields.app_secret || ""} onChangeText={set("app_secret")} autoCapitalize="none" autoCorrect={false} secureTextEntry placeholder="Paste your App Secret" />
+                </>
+              ) : null}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+                <Text style={[type.small, { color: c.ink, flex: 1 }]}>{info.payLabel}</Text>
+                <Switch value={autoPay} onValueChange={setAutoPay} accessibilityLabel={info.payLabel} trackColor={{ true: c.accent, false: c.line }} />
+              </View>
+              <Button label={id === "aliexpress" ? (state.pending_authorization ? "Save new details and authorize" : "Save and authorize") : `Connect ${state.name}`}
+                loading={busy === "connect"} disabled={!canSubmit} onPress={connect} />
+            </>
+          )}
+          <Notice text={msg?.text ?? null} tone={msg?.tone} />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function Steps({ id, callbackUrl }: { id: SupplierId; callbackUrl?: string }) {
+  const c = useColors();
+  const [copied, setCopied] = useState(false);
+  const steps = id === "cj" ? [
+    "Sign in to CJdropshipping (it’s free).",
+    "Open My CJ, then Authorization, then API.",
+    "Generate an API key, copy it and paste it below.",
+  ] : id === "printful" ? [
+    "In Printful, add a store if you don’t have one (choose “Manual order platform / API”) and create your products there.",
+    "Open Printful’s Developer Portal and choose Your tokens, then Create a token.",
+    "Give it access to your store, with the Orders and Sync products permissions. Copy the token and paste it below.",
+  ] : [
+    "Sign in to the AliExpress Open Platform with your AliExpress account and register as a developer.",
+    "Create an app in the Dropshipping category and wait for AliExpress to approve it.",
+    "In the app’s settings, set the Callback URL to the address below.",
+    "Copy the app’s App Key and App Secret, paste them below, then approve Snapfront on the AliExpress page that opens.",
+  ];
+  return (
+    <View style={{ gap: 6 }}>
+      {steps.map((t, i) => (
+        <View key={t} style={{ flexDirection: "row", gap: space.sm }}>
+          <Text style={[type.label, { color: c.accent, width: 16 }]}>{i + 1}</Text>
+          <Text style={[type.small, { color: c.ink, flex: 1 }]}>{t}</Text>
+        </View>
+      ))}
+      {id === "aliexpress" && callbackUrl ? (
+        <Pressable onPress={async () => { await Clipboard.setStringAsync(callbackUrl); setCopied(true); }} accessibilityRole="button" accessibilityLabel="Copy callback URL"
+          style={{ flexDirection: "row", alignItems: "center", gap: space.sm, backgroundColor: c.sunk, borderRadius: radius.md, padding: space.md, marginTop: 4 }}>
+          <Text selectable style={[type.small, { color: c.ink, flex: 1 }]}>{callbackUrl}</Text>
+          <Ionicons name={copied ? "checkmark" : "copy-outline"} size={18} color={copied ? c.good : c.accent} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

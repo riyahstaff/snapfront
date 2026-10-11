@@ -4,7 +4,7 @@ import { router, useFocusEffect } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 import { Button, Notice, Pill, Segmented } from "@/components/ui";
-import { api, ApiError, money, type Address, type Order } from "@/lib/api";
+import { api, ApiError, money, type Address, type Fulfillment, type Order } from "@/lib/api";
 import { radius, space, type, useColors } from "@/lib/theme";
 
 const when = (iso: string | null) => (iso ? new Date(iso.replace(" ", "T") + "Z").toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "");
@@ -112,7 +112,7 @@ export default function OrdersScreen() {
                   </View>
                 ) : null}
                 {o.email ? <Text selectable style={[type.small, { color: c.muted }]}>{o.email}</Text> : null}
-                {o.supplier ? <SupplierBox o={o} busy={busy === `s:${o.id}`} onAction={() => supplier(o)} /> : null}
+                {o.supplier || o.fulfillments?.length ? <SupplierBox o={o} busy={busy === `s:${o.id}`} onAction={() => supplier(o)} /> : null}
                 {o.tracking && !o.supplier ? (
                   <Button label={`Track package ${o.tracking.number}`} variant="secondary" onPress={() => WebBrowser.openBrowserAsync(o.tracking!.url)} />
                 ) : null}
@@ -126,31 +126,46 @@ export default function OrdersScreen() {
   );
 }
 
-const SUPPLIER_TEXT: Record<string, string> = {
-  needs_key: "Waiting for your CJ account. Connect CJ in Store settings and this order is sent to CJ automatically.",
-  sending: "Sending this order to CJ…",
-  awaiting_payment: "Placed at CJ and waiting for payment. Pay for it in CJ (My CJ, then Orders) so it ships.",
-  sent: "Paid at CJ. CJ is packing it; tracking appears here once it ships.",
-  shipped: "CJ shipped it to your buyer.",
-  delivered: "Delivered to your buyer.",
-  failed: "CJ didn’t accept this order.",
-  canceled: "CJ canceled this order. Check your CJ account for details.",
+const PAY: Record<string, { text: string; button: string; url: string }> = {
+  cj: { text: "Pay for it in CJ (My CJ, then Orders) so it ships.", button: "Open CJ to pay", url: "https://cjdropshipping.com/" },
+  printful: { text: "Confirm it in Printful (Orders) so it’s printed and shipped.", button: "Open Printful", url: "https://www.printful.com/dashboard" },
+  aliexpress: { text: "Pay for it in your AliExpress account (My Orders) so it ships.", button: "Open AliExpress", url: "https://www.aliexpress.com/p/order/index.html" },
 };
+function statusText(f: Fulfillment) {
+  switch (f.status) {
+    case "needs_key": return `Waiting for your ${f.name} account. Connect ${f.name} in Store settings and this order is sent automatically.`;
+    case "sending": return `Sending this order to ${f.name}…`;
+    case "awaiting_payment": return `Placed with ${f.name} and waiting for you. ${PAY[f.supplier]?.text ?? ""}`;
+    case "sent": return `${f.name} has it and is getting it ready. Tracking appears here once it ships.`;
+    case "shipped": return `${f.name} shipped it to your buyer.`;
+    case "delivered": return "Delivered to your buyer.";
+    case "failed": return `${f.name} didn’t accept this order.${f.error ? ` ${f.error}` : ""}`;
+    case "canceled": return `${f.name} canceled this order. Check your ${f.name} account for details.`;
+    default: return f.status;
+  }
+}
 
+/** Each supplier's part of the order (older servers only send `supplier`). */
 function SupplierBox({ o, busy, onAction }: { o: Order; busy: boolean; onAction: () => void }) {
   const c = useColors();
-  const s = o.supplier!;
-  const action = s.status === "needs_key" ? null : s.status === "failed" ? "Try sending again" : ["awaiting_payment", "sent", "shipped"].includes(s.status) ? "Check for updates" : null;
+  const list: Fulfillment[] = o.fulfillments ?? (o.supplier ? [{ supplier: "cj", name: o.supplier.name, status: o.supplier.status, order_id: o.supplier.order_id, error: o.supplier.error, tracking: o.tracking }] : []);
+  const canRefresh = list.some((f) => ["failed", "awaiting_payment", "sent", "shipped"].includes(f.status));
   return (
-    <View style={{ gap: space.sm, backgroundColor: c.sunk, borderRadius: radius.md, padding: space.md }}>
-      <Text style={[type.label, { color: c.ink }]}>Fulfilled by CJdropshipping{s.order_id ? ` · CJ order ${s.order_id}` : ""}</Text>
-      <Text style={[type.small, { color: s.status === "failed" ? c.bad : c.ink }]}>{SUPPLIER_TEXT[s.status] ?? s.status}{s.status === "failed" && s.error ? ` ${s.error}` : ""}</Text>
-      {o.tracking ? (
-        <Button label={`Track package ${o.tracking.number}`} variant="secondary" onPress={() => WebBrowser.openBrowserAsync(o.tracking!.url)} />
-      ) : null}
-      {s.status === "needs_key" ? <Button label="Connect CJ" variant="secondary" onPress={() => router.push("/settings")} /> : null}
-      {s.status === "awaiting_payment" ? <Button label="Open CJ to pay" variant="secondary" onPress={() => WebBrowser.openBrowserAsync("https://cjdropshipping.com/")} /> : null}
-      {action ? <Button label={action} variant="ghost" loading={busy} onPress={onAction} /> : null}
+    <View style={{ gap: space.sm }}>
+      {list.map((f) => (
+        <View key={f.supplier} style={{ gap: space.sm, backgroundColor: c.sunk, borderRadius: radius.md, padding: space.md }}>
+          <Text style={[type.label, { color: c.ink }]}>Fulfilled by {f.name}{f.order_id ? ` · order ${f.order_id}` : ""}</Text>
+          <Text style={[type.small, { color: f.status === "failed" ? c.bad : c.ink }]}>{statusText(f)}</Text>
+          {f.tracking ? (
+            <Button label={`Track package ${f.tracking.number}`} variant="secondary" onPress={() => WebBrowser.openBrowserAsync(f.tracking!.url)} />
+          ) : null}
+          {f.status === "needs_key" ? <Button label={`Connect ${f.name}`} variant="secondary" onPress={() => router.push("/settings")} /> : null}
+          {f.status === "awaiting_payment" && PAY[f.supplier] ? (
+            <Button label={PAY[f.supplier].button} variant="secondary" onPress={() => WebBrowser.openBrowserAsync(PAY[f.supplier].url)} />
+          ) : null}
+        </View>
+      ))}
+      {canRefresh ? <Button label={list.some((f) => f.status === "failed") ? "Try sending again" : "Check for updates"} variant="ghost" loading={busy} onPress={onAction} /> : null}
     </View>
   );
 }
