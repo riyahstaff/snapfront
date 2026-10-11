@@ -204,7 +204,7 @@ async function makeProducts({ launchPrice = "29.00", proPrice = "14.99" } = {}, 
       ...(lp.other ? { newRegionsConfig: { usdPrice: lp.other.usdPrice, eurPrice: lp.other.eurPrice, availability: "AVAILABLE" } } : {}),
     }],
   };
-  let r = await play("PATCH", `/onetimeproducts/${LAUNCH}?allowMissing=true&updateMask=listings,purchaseOptions&regionsVersion.version=${encodeURIComponent(lp.version || "2022/02")}`, once);
+  let r = await play("PATCH", `/oneTimeProducts/${LAUNCH}?allowMissing=true&updateMask=listings,purchaseOptions&regionsVersion.version=${encodeURIComponent(lp.version || "2022/02")}`, once);
   log.push(["launch product", r.status, r.status >= 300 ? r.body : "ok"]);
   if (r.status < 300) {
     r = await play("POST", `/oneTimeProducts/${LAUNCH}/purchaseOptions:batchUpdateStates`, { requests: [{ activatePurchaseOptionRequest: { packageName: config.playPackage, productId: LAUNCH, purchaseOptionId: "buy" } }] });
@@ -240,7 +240,7 @@ let productsReady = false;
 export async function ensureProducts() {
   if (productsReady || !enabled()) return productsReady;
   const sub = await play("GET", `/subscriptions/${PRO}`);
-  const once = await play("GET", `/onetimeproducts/${LAUNCH}`);
+  const once = await play("GET", `/oneTimeProducts/${LAUNCH}`);
   const subActive = sub.status === 200 && (sub.body.basePlans || []).some((b) => b.basePlanId === PRO_BASE_PLAN && b.state === "ACTIVE");
   const onceActive = once.status === 200 && (once.body.purchaseOptions || []).some((o) => o.state === "ACTIVE");
   if (subActive && onceActive) { productsReady = true; console.log("[play] Launch and Pro are on sale"); return true; }
