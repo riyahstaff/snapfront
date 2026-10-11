@@ -15,14 +15,14 @@ const SCENE_LOOK: Record<string, { bg: string; fg: string; icon: React.Component
   match: { bg: "#E7E2F7", fg: "#2B2347", icon: "color-palette-outline" },
   beach: { bg: "#EED9AE", fg: "#4A3B1C", icon: "sunny-outline" },
   wood: { bg: "#A9784F", fg: "#FFF8F0", icon: "reorder-four-outline" },
-  granite: { bg: "#7D7B78", fg: "#FFFFFF", icon: "ellipse-outline" },
+  granite: { bg: "#7D7B78", fg: "#FFFFFF", icon: "grid-outline" },
   marble: { bg: "#F1F0EE", fg: "#3B3B3B", icon: "water-outline" },
   concrete: { bg: "#BDBDB8", fg: "#262626", icon: "square-outline" },
   linen: { bg: "#E8DFD0", fg: "#4A4032", icon: "shirt-outline" },
-  podium: { bg: "#F4D7E3", fg: "#4A2236", icon: "cube-outline" },
-  nature: { bg: "#5F7E4E", fg: "#F3F8EE", icon: "leaf-outline" },
-  bathroom: { bg: "#E6F0F0", fg: "#21403F", icon: "sparkles-outline" },
-  street: { bg: "#6E7380", fg: "#FFFFFF", icon: "business-outline" },
+  studio: { bg: "#F1F1F1", fg: "#2A2A2A", icon: "cube-outline" },
+  arch: { bg: "#EADFD2", fg: "#4A3A28", icon: "home-outline" },
+  pink: { bg: "#C9939B", fg: "#FFFFFF", icon: "ellipse-outline" },
+  stone: { bg: "#4A4A4A", fg: "#FFFFFF", icon: "diamond-outline" },
 };
 
 type Shot = { file: string; url: string; label: string };
@@ -44,7 +44,7 @@ export default function StudioScreen() {
   const [prompt, setPrompt] = useState("");
   const [msg, setMsg] = useState<{ text: string; tone: "error" | "ok" | "info" } | null>(null);
 
-  useEffect(() => { api.studioPresets().then(setPresets).catch(() => setPresets({ enabled: false, colors: [], scenes: [] })); }, []);
+  useEffect(() => { api.studioPresets().then(setPresets).catch(() => setPresets({ enabled: false, custom: false, colors: [], scenes: [] })); }, []);
 
   const a = me?.account;
   const left = a ? Math.max(0, a.limits.studio - a.usage.studio) : null;
@@ -84,7 +84,7 @@ export default function StudioScreen() {
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center", gap: space.sm, padding: space.lg }}>
               <ActivityIndicator color="#fff" size="large" />
               <Text style={[type.heading, { color: "#fff", textAlign: "center" }]}>Creating your new photo…</Text>
-              <Text style={[type.small, { color: "#fff", textAlign: "center" }]}>This takes about 10 seconds.</Text>
+              <Text style={[type.small, { color: "#fff", textAlign: "center" }]}>This takes a few seconds.</Text>
             </View>
           ) : null}
           <View style={{ position: "absolute", left: 12, bottom: 12, backgroundColor: "rgba(0,0,0,0.6)", borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 5 }}>
@@ -135,11 +135,11 @@ export default function StudioScreen() {
                 })}
               </View>
             </View>
-            <View style={{ gap: space.sm }}>
+            {presets.custom ? <View style={{ gap: space.sm }}>
               <Field label="Describe your own" hint="Say where the product should be, like “on a rustic brick wall” or “in a snowy cabin window”." value={prompt} onChangeText={setPrompt}
                 placeholder="on a granite kitchen counter" maxLength={300} returnKeyType="go" onSubmitEditing={() => prompt.trim().length > 2 && make({ prompt: prompt.trim() }, "your background")} />
               <Button label="Make this background" variant="secondary" disabled={off || prompt.trim().length < 3} onPress={() => make({ prompt: prompt.trim() }, "your background")} />
-            </View>
+            </View> : null}
           </>
         )}
         <Notice text={msg?.text ?? null} tone={msg?.tone} />

@@ -5,7 +5,9 @@
   "description": "Snapfront API: photo-to-product-page with Claude, digital product generation, hosted storefronts and Stripe Connect checkout.",
   "type": "module",
   "main": "src/index.js",
-  "engines": { "node": "22.x" },
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
@@ -16,7 +18,9 @@
     "@resvg/resvg-js": "^2.6.2",
     "better-sqlite3": "^13.0.3",
     "express": "^5.3.0",
+    "onnxruntime-node": "^1.30.0",
     "pdfkit": "^0.20.2",
+    "sharp": "^0.35.5",
     "stripe": "^23.0.0"
   }
 }

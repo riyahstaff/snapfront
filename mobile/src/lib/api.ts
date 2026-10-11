@@ -84,7 +84,7 @@ export type StoreTheme = {
 };
 /** Photo studio: a new background behind a product photo. */
 export type StudioStyle = { color: string } | { scene: string } | { prompt: string };
-export type StudioPresets = { enabled: boolean; colors: { id: string; name: string; hex: string }[]; scenes: { id: string; name: string }[] };
+export type StudioPresets = { enabled: boolean; custom: boolean; colors: { id: string; name: string; hex: string }[]; scenes: { id: string; name: string }[] };
 export type StudioResult = { image_file: string; image_url: string; source_file: string };
 export type PlanId = "free" | "launch" | "pro";
 export type PlanLimits = { name: string; liveStores: number; stores: number; photo: number; product: number; agent: number; research: number; studio: number };

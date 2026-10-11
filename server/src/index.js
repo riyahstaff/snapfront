@@ -20,6 +20,7 @@ import * as domains from "./domains.js";
 import { landingPage } from "./landing.js";
 import { THEME_IDS, publicThemes } from "./themes.js";
 import * as studio from "./studio.js";
+import { ensureModel as ensureCutoutModel } from "./cutout.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, esc } from "./render.js";
 
 export const app = express();
@@ -255,7 +256,6 @@ app.post("/api/ai/generate", auth, aiLimit, wrap(async (req, res) => {
 app.get("/api/studio", auth, (_req, res) => res.json(studio.presets()));
 app.post("/api/studio", auth, aiLimit, wrap(async (req, res) => {
   const { imageBase64, mediaType = "image/jpeg", image_file, style } = req.body || {};
-  if (!studio.enabled()) throw httpError(503, "The photo studio isn't switched on yet.");
   studio.fieldsFor(style);   // check the choice before using an allowance
   plans.assertAllowance(req.account, "studio");
   const source = imageBase64 ? saveImage(imageBase64, mediaType) : image_file;
@@ -506,6 +506,8 @@ app.use((err, _req, res, _next) => {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   app.listen(config.port, () => console.log(`Snapfront API on ${config.publicUrl} (port ${config.port})`));
+  // Photo studio: fetch the cut-out model in the background so the first seller doesn't wait for it.
+  ensureCutoutModel().catch((e) => console.error("[cutout] model", e.message));
   // Pick up tracking numbers for orders at CJ.
   setInterval(() => dropship.syncDue().catch((e) => console.error("[supplier] sync", e.message)), 30 * 60e3).unref();
   // Sellers' own domains: set up Cloudflare once, then switch domains on as their DNS goes live.

@@ -9,9 +9,9 @@ import * as suppliers from "./suppliers.js";
 import { freeSlug } from "./urls.js";
 
 const DEFAULTS = {
-  free:   { name: "Free",   liveStores: 0,  stores: 1,  photo: 3,   product: 1,  agent: 0,  research: 3,   studio: 3 },
-  launch: { name: "Launch", liveStores: 1,  stores: 1,  photo: 30,  product: 5,  agent: 0,  research: 30,  studio: 30 },
-  pro:    { name: "Pro",    liveStores: 10, stores: 10, photo: 300, product: 50, agent: 40, research: 300, studio: 150 },
+  free:   { name: "Free",   liveStores: 0,  stores: 1,  photo: 3,   product: 1,  agent: 0,  research: 3,   studio: 10 },
+  launch: { name: "Launch", liveStores: 1,  stores: 1,  photo: 30,  product: 5,  agent: 0,  research: 30,  studio: 100 },
+  pro:    { name: "Pro",    liveStores: 10, stores: 10, photo: 300, product: 50, agent: 40, research: 300, studio: 500 },
 };
 // Allowances can be tuned without a code change: PLAN_LIMITS='{"pro":{"agent":60}}'
 let overrides = {};
