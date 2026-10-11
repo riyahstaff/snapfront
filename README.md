@@ -11,10 +11,20 @@ server/   Node API + public storefronts                               — Expres
 
 1. **Snap** – the seller takes or picks a photo. The app sends it to `POST /api/ai/product-from-photo`, where Claude reads the image and writes the title, tagline, description, bullets, FAQ, tags, SEO text and a suggested price.
 2. **Create** – `POST /api/ai/generate` writes a whole digital product for a niche, renders a cover (PNG) and a print-ready PDF, and saves it as a draft listing.
-3. **Get paid** – sellers connect their own full Stripe account (Stripe Connect with Stripe-managed losses: Stripe covers refunds, chargebacks and negative balances; sellers pay their own Stripe fees). Buyers fill a cart on the storefront; checkout creates a Stripe Checkout Session on the seller's account (a direct charge) from prices re-read on the server. Snapfront keeps `PLATFORM_FEE_PERCENT` of the goods total (after discounts, before shipping and tax) as an application fee.
+3. **Get paid** – sellers connect their own full Stripe account (Stripe Connect with Stripe-managed losses: Stripe covers refunds, chargebacks and negative balances; sellers pay their own Stripe fees). Buyers fill a cart on the storefront; checkout creates a Stripe Checkout Session on the seller's account (a direct charge) from prices re-read on the server. Snapfront takes no cut of sales by default (`PLATFORM_FEE_PERCENT=0`); it earns from plans instead.
 4. **Run the store** – products can have options (sizes, colours) each with its own price and stock, stock counts that drop with each sale and show "sold out" at zero, discount codes (percent or amount off, minimum order, use limit, expiry), flat-rate shipping with an optional free-shipping threshold and country list, and automatic sales tax through Stripe Tax. Sellers can set up tax in their Stripe Dashboard, or from Store settings → Set up sales tax, which opens `/stripe/tax`, a page hosting Stripe's embedded tax settings and registrations components (needs `STRIPE_PUBLISHABLE_KEY`); tax can only be turned on once the seller's tax settings are active and they have at least one registration. Orders record items, totals, tax, buyer and shipping address; sellers mark physical orders shipped from the app.
 5. **Ask the assistant** – the Assistant tab talks to a store agent running on Claude Fable 5.1 (`AGENT_MODEL`). It has tools that act on the seller's own store (check the store, research what sells, generate digital products, create and edit listings, set prices, stock and options, publish, manage discount codes, shipping and tax settings, read and fulfil orders) and runs the multi-step job itself, reporting progress back to the app (`POST /api/agent/runs`, then poll `GET /api/agent/runs/:id`). Limits: 10 tool rounds per request, 15 requests per seller per hour, one at a time.
 6. **Sell** – every store lives at `/s/<store>` with product pages at `/s/<store>/<product>` (Open Graph tags + Product schema for search and social previews) and a cart at `/s/<store>/cart`. After payment, buyers land on `/thanks?o=<order>`, which confirms the order with Stripe if the webhook hasn't arrived yet and gives digital buyers signed, 7-day download links (also emailed if Resend is configured).
+
+## Pricing
+
+| Plan | Price | Live stores | AI pages / products / assistant |
+|---|---|---|---|
+| Free | $0 | 0 (build and preview 1 store) | 3 / 1 / – in total |
+| Launch | $29 once | 1 | 30 / 5 / – a month |
+| Pro | $14.99 a month | up to 10 | 300 / 50 / 40 a month |
+
+People buy in the app through Google Play Billing (and the App Store), handled by RevenueCat. The app identifies each person by their Snapfront account id; RevenueCat entitlements `launch` (lifetime) and `pro` (monthly) map to plans. The server never trusts the phone: it reads entitlements from RevenueCat (`REVENUECAT_SECRET_KEY`) when the app calls `POST /api/billing/sync` and when RevenueCat's webhook (`POST /api/revenuecat/webhook`, `Authorization` = `REVENUECAT_WEBHOOK_AUTH`) reports a purchase, renewal or expiry. Allowances can be tuned with `PLAN_LIMITS` (JSON) without a code change. Accounts own stores; the app sends `X-Store` to pick which one. Email sign-in (6-digit codes via Resend) moves an account to a new phone.
 
 ## Run it locally
 

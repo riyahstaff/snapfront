@@ -11,7 +11,7 @@ process.env.DATA_DIR = tmp;
 process.env.PUBLIC_URL = "https://shop.example";
 process.env.STRIPE_SECRET_KEY = "sk_test_fake";
 process.env.STRIPE_WEBHOOK_SECRET = "whsec_fake";
-process.env.PLATFORM_FEE_PERCENT = "5";
+process.env.PLATFORM_FEE_PERCENT = "5";  // the fee code path stays covered even though production runs at 0%
 
 const { app } = await import("../src/index.js");
 const pay = await import("../src/payments.js");
@@ -55,6 +55,7 @@ test("seller sets up variants, stock, shipping, tax and a code", async () => {
   const reg = await json(await call("POST", "/api/sellers", { store_name: "Loop Studio" }), 201);
   token = reg.token; slug = reg.seller.store_slug;
   db.prepare("UPDATE sellers SET stripe_account_id='acct_123', stripe_ready=1 WHERE id=?").run(reg.seller.id);
+  db.prepare("UPDATE accounts SET plan = 'launch' WHERE id = ?").run(reg.account.id);
 
   tee = await json(await call("POST", "/api/products", { title: "Loop Tee", kind: "physical", price: 30, option_name: "Size",
     variants: [{ name: "S", inventory: 2 }, { name: "M", inventory: 0 }, { name: "XL", price: 34 }] }), 201);

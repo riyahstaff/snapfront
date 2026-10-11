@@ -8,6 +8,7 @@ import { db } from "./db.js";
 import { httpError, PRODUCT_TYPES } from "./claude.js";
 import * as store from "./store.js";
 import * as commerce from "./commerce.js";
+import * as plans from "./plans.js";
 
 const MAX_ROUNDS = 10;          // tool-use rounds per request
 const MAX_TOKENS = 16000;       // per model turn
@@ -71,7 +72,8 @@ const TOOLS = [
     },
     label: (i) => `Writing a ${PRODUCT_TYPES[i.type]?.name?.toLowerCase() || "digital product"} for ${String(i.niche || "").slice(0, 60)}`,
     product: true,
-    run: async (seller, i) => brief(await store.generateProduct(fresh(seller.id), { type: i.type, niche: i.niche, price: i.price, color: i.color })),
+    run: async (seller, i, ctx) => brief(await plans.withAllowance(plans.getAccount(ctx.accountId), "product",
+      () => store.generateProduct(fresh(seller.id), { type: i.type, niche: i.niche, price: i.price, color: i.color }))),
   },
   {
     name: "create_product_listing",
@@ -210,7 +212,7 @@ function sweep() {
   for (const [id, r] of runs) if (now - r.createdAt > RUN_TTL_MS) runs.delete(id);
 }
 
-export function startRun(seller, messages) {
+export function startRun(seller, messages, account) {
   sweep();
   if (activeBySeller.get(seller.id)) throw httpError(409, "The assistant is still working on your last request.");
   const now = Date.now(), hour = 60 * 60 * 1000;
@@ -220,7 +222,7 @@ export function startRun(seller, messages) {
   recent.push(now); recentBySeller.set(seller.id, recent);
   const run = { id: crypto.randomUUID(), sellerId: seller.id, status: "running", events: [], reply: null, error: null, createdAt: now };
   runs.set(run.id, run); activeBySeller.set(seller.id, run.id);
-  runAgent(seller, convo, (e) => run.events.push({ ...e, at: Date.now() }))
+  runAgent(seller, convo, (e) => run.events.push({ ...e, at: Date.now() }), { accountId: account?.id || seller.account_id })
     .then((reply) => { run.reply = reply; run.status = "done"; })
     .catch((e) => { run.error = e.status && e.status !== 500 && !e.headers ? e.message : "The assistant hit a problem. Try again."; run.status = "error"; if (!e.status) console.error("[agent]", e); })
     .finally(() => activeBySeller.delete(seller.id));
@@ -245,7 +247,7 @@ function cleanMessages(messages) {
 }
 
 /** The tool-use loop. Returns the final reply text. */
-export async function runAgent(seller, messages, emit = () => {}) {
+export async function runAgent(seller, messages, emit = () => {}, ctx = { accountId: seller.account_id }) {
   const ai = anthropic();
   const convo = messages.map((m) => ({ role: m.role, content: m.content }));
   for (let round = 0; round < MAX_ROUNDS; round++) {
@@ -271,7 +273,7 @@ export async function runAgent(seller, messages, emit = () => {}) {
       if (!tool) { results.push({ type: "tool_result", tool_use_id: call.id, content: `Unknown tool ${call.name}`, is_error: true }); continue; }
       emit({ type: "step", tool: call.name, label: tool.label(input) });
       try {
-        const out = await tool.run(seller, input);
+        const out = await tool.run(seller, input, ctx);
         if (tool.product && out?.id) emit({ type: "product", product: out });
         results.push({ type: "tool_result", tool_use_id: call.id, content: JSON.stringify(out).slice(0, 30000) });
       } catch (e) {

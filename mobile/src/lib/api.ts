@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 
 const API_URL: string = (Constants.expoConfig?.extra?.apiUrl as string) || "http://localhost:8080";
 const TOKEN_KEY = "snapfront.token";
+const STORE_KEY = "snapfront.store";
 
 export type Faq = { q: string; a: string };
 export type Draft = {
@@ -57,6 +58,20 @@ export type Seller = {
   ship_countries: string[];
   tax_enabled: boolean;
 };
+export type PlanId = "free" | "launch" | "pro";
+export type PlanLimits = { name: string; liveStores: number; stores: number; photo: number; product: number; agent: number };
+export type Account = {
+  id: string;
+  email: string | null;
+  plan: PlanId;
+  plan_name: string;
+  limits: PlanLimits;
+  period: string;  // "YYYY-MM", or "trial" on the free plan
+  usage: { photo: number; product: number; agent: number };
+  stores: { id: string; store_name: string; store_slug: string; live_allowed: boolean; current: boolean }[];
+  can_add_store: boolean;
+};
+export type Me = Seller & { account: Account };
 export type StorePatch = Partial<Pick<Seller, "store_name" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled">>;
 export type OrderItem = { title: string; variant: string | null; qty: number; kind: "physical" | "digital"; unit: number };
 export type Address = { line1?: string; line2?: string | null; city?: string; state?: string | null; postal_code?: string; country?: string };
@@ -90,12 +105,21 @@ export type AgentEvent =
 export type AgentRun = { id: string; status: "running" | "done" | "error"; events: AgentEvent[]; next: number; reply: string | null; error: string | null };
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number) {
+  constructor(message: string, public status: number, public upgrade: PlanId | null = null) {
     super(message);
   }
 }
 
+/** Called when the server says a feature needs a paid plan, so the app can show the plans screen. */
+let upgradeListener: ((plan: PlanId, message: string) => void) | null = null;
+export function onUpgradeNeeded(fn: typeof upgradeListener) { upgradeListener = fn; }
+
 let tokenCache: string | null = null;
+let storeCache: string | null | undefined;
+async function currentStore(): Promise<string | null> {
+  if (storeCache === undefined) storeCache = await SecureStore.getItemAsync(STORE_KEY);
+  return storeCache ?? null;
+}
 async function token(): Promise<string> {
   if (tokenCache) return tokenCache;
   tokenCache = await SecureStore.getItemAsync(TOKEN_KEY);
@@ -116,9 +140,10 @@ async function token(): Promise<string> {
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
+    const store = await currentStore();
     res = await fetch(`${API_URL}${path}`, {
       method,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await token()}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await token()}`, ...(store ? { "X-Store": store } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (e) {
@@ -127,17 +152,51 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
   if (res.status === 204) return undefined as T;
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError((data as { error?: string }).error || "Something went wrong. Try again.", res.status);
+  if (!res.ok) {
+    const { error, upgrade } = data as { error?: string; upgrade?: PlanId | null };
+    const err = new ApiError(error || "Something went wrong. Try again.", res.status, upgrade ?? null);
+    if (res.status === 402 && upgrade && upgradeListener) upgradeListener(upgrade, err.message);
+    throw err;
+  }
   return data as T;
 }
 
+async function setStore(id: string | null) {
+  storeCache = id;
+  if (id) await SecureStore.setItemAsync(STORE_KEY, id); else await SecureStore.deleteItemAsync(STORE_KEY);
+}
+
 export const api = {
-  me: () => request<Seller>("GET", "/api/me"),
-  updateStore: (patch: StorePatch) => request<Seller>("PATCH", "/api/me", patch),
+  me: () => request<Me>("GET", "/api/me"),
+  updateStore: (patch: StorePatch) => request<Me>("PATCH", "/api/me", patch),
   async deleteAccount() {
     await request<void>("DELETE", "/api/me");
     await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await setStore(null);
     tokenCache = null;
+  },
+  /** Work on another of this account's stores. */
+  switchStore: (id: string) => setStore(id),
+  async createStore(store_name: string) {
+    const s = await request<Me>("POST", "/api/stores", { store_name });
+    await setStore(s.id);
+    return s;
+  },
+  async deleteStore(id: string) {
+    await request<void>("DELETE", `/api/stores/${id}`);
+    if (storeCache === id) await setStore(null);
+  },
+  billingSync: () => request<Me>("POST", "/api/billing/sync"),
+  plans: () => request<Record<PlanId, PlanLimits>>("GET", "/api/plans"),
+  emailStart: (email: string) => request<{ sent: boolean; email: string }>("POST", "/api/auth/email/start", { email }),
+  async emailVerify(email: string, code: string) {
+    const r = await request<{ status: "linked" | "switched"; email: string; token?: string }>("POST", "/api/auth/email/verify", { email, code });
+    if (r.status === "switched" && r.token) {
+      await SecureStore.setItemAsync(TOKEN_KEY, r.token);
+      tokenCache = r.token;
+      await setStore(null);
+    }
+    return r;
   },
   legalUrl: (page: "privacy" | "terms") => `${API_URL}/${page}`,
   productFromPhoto: (input: { imageBase64: string; mediaType: string; kind: string; hint?: string; price?: string; tone?: string }) =>

@@ -3,11 +3,15 @@ import { Switch, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import { Body, Button, Field, H2, Notice, Screen } from "@/components/ui";
-import { api, ApiError, type Seller } from "@/lib/api";
+import { api, ApiError, type Me } from "@/lib/api";
+import { account } from "@/lib/account-store";
+import { AccountSection } from "@/components/account-section";
 import { space, type, useColors } from "@/lib/theme";
 
 export default function SettingsScreen() {
-  const [seller, setSeller] = useState<Seller | null>(null);
+  const [seller, setSellerState] = useState<Me | null>(null);
+  const setSeller = (s: Me) => { setSellerState(s); account.set(s); };
+  const [confirmStore, setConfirmStore] = useState(false);
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
   const [msg, setMsg] = useState<{ text: string; tone: "error" | "ok" } | null>(null);
@@ -71,7 +75,9 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <H2>Your store</H2>
+      <AccountSection />
+      <View style={{ height: space.md }} />
+      <H2>{seller && seller.account.stores.length > 1 ? `This store: ${seller.store_name}` : "Your store"}</H2>
       <Field label="Store name" value={name} onChangeText={setName} />
       <Field label="Tagline" hint="One line under your store name." value={tagline} onChangeText={setTagline} />
       <Button label="Save store details" onPress={save} loading={saving} />
@@ -112,14 +118,24 @@ export default function SettingsScreen() {
         <Button label="Terms of use" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("terms"))} />
         {confirm ? (
           <>
-            <Body>This deletes your store, products and photos for good. Your Stripe account and past payouts aren’t affected.</Body>
-            <Button label="Delete my store" variant="danger" onPress={async () => {
-              try { await api.deleteAccount(); router.replace("/"); }
+            <Body>This deletes your account and every store, product and photo on it, for good. Your Stripe account and past payouts aren’t affected. A Pro subscription keeps renewing until you cancel it in Google Play.</Body>
+            <Button label="Delete my account" variant="danger" onPress={async () => {
+              try { await api.deleteAccount(); account.clear(); router.replace("/"); }
               catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't delete your store.", tone: "error" }); }
             }} />
-            <Button label="Keep my store" variant="ghost" onPress={() => setConfirm(false)} />
+            <Button label="Keep my account" variant="ghost" onPress={() => setConfirm(false)} />
           </>
-        ) : <Button label="Delete my store" variant="danger" onPress={() => setConfirm(true)} />}
+        ) : <Button label="Delete my account" variant="danger" onPress={() => setConfirm(true)} />}
+        {seller && seller.account.stores.length > 1 ? (confirmStore ? (
+          <>
+            <Body>Delete {seller.store_name} and its products? Your other stores aren’t affected.</Body>
+            <Button label={`Delete ${seller.store_name}`} variant="danger" onPress={async () => {
+              try { await api.deleteStore(seller.id); await account.refresh(); router.back(); }
+              catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't delete the store.", tone: "error" }); }
+            }} />
+            <Button label="Keep it" variant="ghost" onPress={() => setConfirmStore(false)} />
+          </>
+        ) : <Button label="Delete this store only" variant="ghost" onPress={() => setConfirmStore(true)} />) : null}
       </View>
     </Screen>
   );

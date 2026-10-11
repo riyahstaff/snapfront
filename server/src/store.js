@@ -7,6 +7,7 @@ import { db, newId, slugify, uniqueSlug, rowToProduct } from "./db.js";
 import { generateDigitalProduct, httpError, PRODUCT_TYPES } from "./claude.js";
 import { renderCover, renderProductPdf, COVER_COLORS, writeFileSafe } from "./artwork.js";
 import * as pay from "./payments.js";
+import * as plans from "./plans.js";
 
 export const clampStr = (v, n) => String(v ?? "").slice(0, n);
 export const strList = (v, n, len = 200) => (Array.isArray(v) ? v : []).map((x) => clampStr(x, len)).filter(Boolean).slice(0, n);
@@ -161,6 +162,7 @@ export function deleteProduct(seller, id) {
 export async function publishProduct(sellerIn, id) {
   let seller = fresh(sellerIn.id);
   const row = productRow(seller, id);
+  plans.assertCanPublish(seller);
   if (!seller.stripe_account_id) throw httpError(409, "Connect Stripe first so you can get paid.");
   if (!seller.stripe_ready) {
     const ready = await pay.accountReady(seller.stripe_account_id);

@@ -10,6 +10,8 @@ import * as store from "./store.js";
 import * as agent from "./agent.js";
 import * as pay from "./payments.js";
 import * as commerce from "./commerce.js";
+import * as plans from "./plans.js";
+import * as auth2 from "./auth.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage } from "./render.js";
 
 export const app = express();
@@ -58,8 +60,14 @@ const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).cat
 
 function auth(req, _res, next) {
   const token = (req.get("authorization") || "").replace(/^Bearer\s+/i, "");
-  const seller = token && db.prepare("SELECT * FROM sellers WHERE token_hash = ?").get(hashToken(token));
-  if (!seller) return next(httpError(401, "Sign in again: this device isn't recognised."));
+  const account = plans.accountForToken(token);
+  if (!account) return next(httpError(401, "Sign in again: this device isn't recognised."));
+  const stores = plans.storesOf(account.id);
+  // The app says which of the person's stores it is working on; default to their first store.
+  const wanted = req.get("x-store");
+  const seller = (wanted && stores.find((s) => s.id === wanted)) || stores[0];
+  if (!seller) return next(httpError(404, "This account has no store yet."));
+  req.account = account;
   req.seller = seller;
   next();
 }
@@ -67,9 +75,9 @@ function auth(req, _res, next) {
 const hits = new Map(); // naive per-seller rate limit for AI calls
 function aiLimit(req, _res, next) {
   const now = Date.now(), win = 60 * 60 * 1000, max = 40;
-  const list = (hits.get(req.seller.id) || []).filter((t) => now - t < win);
+  const list = (hits.get(req.account.id) || []).filter((t) => now - t < win);
   if (list.length >= max) return next(httpError(429, "You've hit the hourly AI limit. Try again in a little while."));
-  list.push(now); hits.set(req.seller.id, list); next();
+  list.push(now); hits.set(req.account.id, list); next();
 }
 
 const IMAGE_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
@@ -87,29 +95,62 @@ const clampStr = store.clampStr, strList = store.strList, faqList = store.faqLis
 /* ---------- account ---------- */
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-app.post("/api/sellers", wrap(async (req, res) => {
-  const token = crypto.randomBytes(32).toString("base64url");
-  const name = clampStr(req.body?.store_name || "My Snapfront Store", 80);
-  const id = newId("sel");
-  const slug = uniqueSlug("sellers", "store_slug", slugify(name, 40));
-  db.prepare("INSERT INTO sellers (id, token_hash, store_name, store_slug) VALUES (?,?,?,?)").run(id, hashToken(token), name, slug);
-  res.status(201).json({ token, seller: store.publicSeller(db.prepare("SELECT * FROM sellers WHERE id = ?").get(id)) });
-}));
+app.post("/api/sellers", (req, res) => {
+  const { token, account, store: seller } = plans.createAccountWithStore(clampStr(req.body?.store_name || "My Snapfront Store", 80));
+  res.status(201).json({ token, seller: store.publicSeller(seller), account: plans.publicAccount(account, seller.id) });
+});
 
-app.get("/api/me", auth, (req, res) => res.json(store.publicSeller(req.seller)));
-app.patch("/api/me", auth, wrap(async (req, res) => res.json(await store.updateStoreChecked(req.seller, req.body || {}))));
+const me = (req) => ({ ...store.publicSeller(plans.storesOf(req.account.id).find((s) => s.id === req.seller.id)), account: plans.publicAccount(plans.getAccount(req.account.id), req.seller.id) });
+app.get("/api/me", auth, (req, res) => res.json(me(req)));
+app.patch("/api/me", auth, wrap(async (req, res) => { await store.updateStoreChecked(req.seller, req.body || {}); res.json(me(req)); }));
 
+const removeFiles = (rows) => { for (const r of rows) for (const [dir, f] of [[dirs.images, r.image_file], [dirs.files, r.delivery_file]]) if (f) fs.rm(path.join(dir, f), { force: true }, () => {}); };
 // App Store guideline 5.1.1(v): apps that create accounts must let people delete them in-app.
+// This deletes the whole account: every store, product and photo.
 app.delete("/api/me", auth, (req, res) => {
-  const rows = db.prepare("SELECT image_file, delivery_file FROM products WHERE seller_id = ?").all(req.seller.id);
-  db.prepare("DELETE FROM sellers WHERE id = ?").run(req.seller.id);
-  for (const r of rows) for (const [dir, f] of [[dirs.images, r.image_file], [dirs.files, r.delivery_file]]) if (f) fs.rm(path.join(dir, f), { force: true }, () => {});
+  const rows = db.prepare("SELECT p.image_file, p.delivery_file FROM products p JOIN sellers s ON s.id = p.seller_id WHERE s.account_id = ?").all(req.account.id);
+  db.prepare("DELETE FROM accounts WHERE id = ?").run(req.account.id);
+  removeFiles(rows);
   res.status(204).end();
 });
+
+/* ---------- stores (Pro runs up to 10) ---------- */
+app.post("/api/stores", auth, (req, res) => {
+  const s = plans.createStore(req.account, clampStr(req.body?.store_name, 80));
+  res.status(201).json({ ...store.publicSeller(s), account: plans.publicAccount(plans.getAccount(req.account.id), s.id) });
+});
+app.delete("/api/stores/:id", auth, (req, res) => {
+  const stores = plans.storesOf(req.account.id);
+  const target = stores.find((s) => s.id === req.params.id);
+  if (!target) throw httpError(404, "That store doesn't exist.");
+  if (stores.length === 1) throw httpError(409, "This is your only store. To remove everything, delete your account in Settings.");
+  const rows = db.prepare("SELECT image_file, delivery_file FROM products WHERE seller_id = ?").all(target.id);
+  db.prepare("DELETE FROM sellers WHERE id = ?").run(target.id);
+  removeFiles(rows);
+  res.status(204).end();
+});
+
+/* ---------- plans and purchases ---------- */
+app.get("/api/plans", (_req, res) => res.json(plans.PLANS));
+// The app calls this right after a purchase or restore; the webhook below catches renewals and expiries.
+app.post("/api/billing/sync", auth, wrap(async (req, res) => {
+  req.account = await plans.syncPlan(req.account);
+  res.json(me(req));
+}));
+app.post("/api/revenuecat/webhook", wrap(async (req, res) => {
+  if (!config.revenuecatWebhookAuth || req.get("authorization") !== config.revenuecatWebhookAuth) throw httpError(401, "Unauthorized");
+  for (const id of plans.accountIdsInEvent(req.body?.event)) await plans.syncPlan(plans.getAccount(id)).catch((e) => console.error("[revenuecat]", id, e.message));
+  res.json({ received: true });
+}));
+
+/* ---------- email sign-in, so purchases and stores follow the person to a new phone ---------- */
+app.post("/api/auth/email/start", auth, wrap(async (req, res) => res.json(await auth2.startEmailLogin(req.account, req.body?.email))));
+app.post("/api/auth/email/verify", auth, (req, res) => res.json(auth2.verifyEmailLogin(req.account, req.body?.email, req.body?.code)));
 
 /* ---------- AI ---------- */
 app.post("/api/ai/product-from-photo", auth, aiLimit, wrap(async (req, res) => {
   const { imageBase64, mediaType = "image/jpeg", kind = "physical", hint, price, tone } = req.body || {};
+  plans.assertAllowance(req.account, "photo");
   const image_file = saveImage(imageBase64, mediaType);
   const r = await productFromPhoto({ imageBase64, mediaType, kind, hint: clampStr(hint, 300), price: price ? Number(price) : null, tone: clampStr(tone, 40) });
   res.json({
@@ -119,17 +160,20 @@ app.post("/api/ai/product-from-photo", auth, aiLimit, wrap(async (req, res) => {
     category: clampStr(r.category, 60), price: price ? Number(price) : Number(r.suggested_price) || 0,
     alt_text: clampStr(r.alt_text, 200), seo_description: clampStr(r.seo_description, 160),
   });
+  plans.recordUsage(req.account, "photo");
 }));
 
 app.post("/api/ai/generate", auth, aiLimit, wrap(async (req, res) => {
-  res.status(201).json(await store.generateProduct(req.seller, req.body || {}));
+  res.status(201).json(await plans.withAllowance(req.account, "product", () => store.generateProduct(req.seller, req.body || {})));
 }));
 
 app.get("/api/product-types", (_req, res) => res.json(Object.entries(PRODUCT_TYPES).map(([id, t]) => ({ id, name: t.name, sub: t.sub, price: t.price }))));
 
 /* ---------- Fable store agent ---------- */
 app.post("/api/agent/runs", auth, aiLimit, (req, res) => {
-  const run = agent.startRun(req.seller, req.body?.messages);
+  plans.assertAllowance(req.account, "agent");
+  const run = agent.startRun(req.seller, req.body?.messages, req.account);
+  plans.recordUsage(req.account, "agent");
   res.status(202).json({ id: run.id, status: run.status });
 });
 app.get("/api/agent/runs/:id", auth, (req, res) => res.json(agent.getRun(req.seller, req.params.id, Number(req.query.after) || 0)));
@@ -153,12 +197,13 @@ app.delete("/api/discounts/:id", auth, (req, res) => { commerce.deleteDiscount(r
 /* ---------- Stripe Connect ---------- */
 app.post("/api/stripe/onboard", auth, wrap(async (req, res) => {
   const { accountId, url } = await pay.onboardingLink(req.seller);
-  db.prepare("UPDATE sellers SET stripe_account_id = ? WHERE id = ?").run(accountId, req.seller.id);
+  // One Stripe account per person: every store on the account gets paid into it.
+  db.prepare("UPDATE sellers SET stripe_account_id = ? WHERE id = ? OR (account_id = ? AND stripe_account_id IS NULL)").run(accountId, req.seller.id, req.account.id);
   res.json({ url });
 }));
 app.get("/api/stripe/status", auth, wrap(async (req, res) => {
   const ready = await pay.accountReady(req.seller.stripe_account_id);
-  db.prepare("UPDATE sellers SET stripe_ready = ? WHERE id = ?").run(ready ? 1 : 0, req.seller.id);
+  if (req.seller.stripe_account_id) db.prepare("UPDATE sellers SET stripe_ready = ? WHERE stripe_account_id = ?").run(ready ? 1 : 0, req.seller.stripe_account_id);
   res.json({ connected: Boolean(req.seller.stripe_account_id), ready });
 }));
 app.post("/api/stripe/dashboard", auth, wrap(async (req, res) => {
@@ -280,7 +325,7 @@ app.get("/api/trends", (_req, res) => res.json(store.TRENDS));
 app.use((err, _req, res, _next) => {
   const status = err.status || err.statusCode || (err.type === "StripeInvalidRequestError" ? 400 : 500);
   if (status >= 500) console.error(err);
-  res.status(status).json({ error: status >= 500 && !err.status ? "Something went wrong on our side. Try again." : err.message });
+  res.status(status).json({ error: status >= 500 && !err.status ? "Something went wrong on our side. Try again." : err.message, ...(err.extra || {}) });
 });
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {

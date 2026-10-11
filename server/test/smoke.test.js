@@ -17,6 +17,7 @@ process.env.SNAPFRONT_FAKE_AI = JSON.stringify({
 });
 
 const { app } = await import("../src/index.js");
+const { db } = await import("../src/db.js");
 let server, base, token;
 before(async () => { server = app.listen(0); await new Promise((r) => server.once("listening", r)); base = `http://127.0.0.1:${server.address().port}`; });
 after(() => { server.close(); fs.rmSync(tmp, { recursive: true, force: true }); });
@@ -57,7 +58,15 @@ test("register, photo → draft, save, storefront", async () => {
   assert.match(html, /Fig &amp; Cedar Soy Candle/);
   assert.match(html, /application\/ld\+json/);
 
-  // Publishing without Stripe is refused with a clear message
+  // On the free plan, publishing asks for the Launch purchase
+  r = await call("POST", `/api/products/${prod.id}/publish`);
+  assert.equal(r.status, 402);
+  const up = await r.json();
+  assert.equal(up.upgrade, "launch");
+  assert.match(up.error, /Launch/);
+
+  // With Launch but no Stripe, publishing is refused with a clear message
+  db.prepare("UPDATE accounts SET plan = 'launch'").run();
   r = await call("POST", `/api/products/${prod.id}/publish`);
   assert.equal(r.status, 409);
   assert.match((await r.json()).error, /Connect Stripe/);

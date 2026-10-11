@@ -10,7 +10,6 @@
     "description": "Snap a photo of a product and get a full product page with Stripe checkout, or generate best-selling digital products and sell them from your own storefront.",
     "ios": {
       "bundleIdentifier": "com.sidebanc.snapfront",
-      "buildNumber": "1",
       "supportsTablet": true,
       "config": {
         "usesNonExemptEncryption": false
@@ -28,7 +27,6 @@
     },
     "android": {
       "package": "com.sidebanc.snapfront",
-      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#2C47F5",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -73,7 +71,9 @@
       "eas": {
         "projectId": "d9ef2157-0771-455a-b3c4-867036f70222"
       },
-      "router": {}
+      "router": {},
+      "revenuecatGoogleKey": "",
+      "revenuecatAppleKey": ""
     },
     "owner": "snapfront"
   }

@@ -12,6 +12,7 @@ process.env.STRIPE_SECRET_KEY = "";
 
 const { app } = await import("../src/index.js");
 const agent = await import("../src/agent.js");
+const { db } = await import("../src/db.js");
 const { TOOL_DEFS } = agent;
 
 // Scripted model: turn 1 checks the store and creates a listing, turn 2 tries to publish it, turn 3 answers.
@@ -58,7 +59,13 @@ test("tool definitions are valid for the Messages API", () => {
 });
 
 test("a run plans, uses tools, reports progress and answers", async () => {
-  token = (await (await call("POST", "/api/sellers", { store_name: "Pup Shop" })).json()).token;
+  const reg = await (await call("POST", "/api/sellers", { store_name: "Pup Shop" })).json();
+  token = reg.token;
+  // The assistant is a Pro feature
+  const refused = await call("POST", "/api/agent/runs", { messages: [{ role: "user", content: "hi" }] });
+  assert.equal(refused.status, 402);
+  assert.equal((await refused.json()).upgrade, "pro");
+  db.prepare("UPDATE accounts SET plan = 'pro' WHERE id = ?").run(reg.account.id);
   const start = await call("POST", "/api/agent/runs", { messages: [{ role: "user", content: "Make a dog gift guide and put it on sale for $9" }] });
   assert.equal(start.status, 202);
   const { id } = await start.json();

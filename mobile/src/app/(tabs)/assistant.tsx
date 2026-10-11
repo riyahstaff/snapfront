@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { assistant, useAssistant, type Turn } from "@/lib/assistant-store";
 import { money } from "@/lib/api";
+import { useMe } from "@/lib/account-store";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
 
 const SUGGESTIONS = [
@@ -16,6 +17,8 @@ const SUGGESTIONS = [
 export default function AssistantScreen() {
   const c = useColors();
   const { turns, busy } = useAssistant();
+  const me = useMe();
+  const locked = me != null && me.account.plan !== "pro";
   const [text, setText] = useState("");
   const scroll = useRef<ScrollView>(null);
 
@@ -26,7 +29,27 @@ export default function AssistantScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
       <ScrollView ref={scroll} contentContainerStyle={{ padding: space.lg, gap: space.lg, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-        {turns.length === 0 ? (
+        {locked && turns.length === 0 ? (
+          <View style={{ gap: space.lg, flex: 1, justifyContent: "flex-end" }}>
+            <View style={{ gap: space.sm }}>
+              <Text style={[type.hero, { color: c.ink }]}>Your store,{"\n"}on autopilot.</Text>
+              <Text style={[type.body, { color: c.muted }]}>
+                With Pro, the store assistant researches what’s selling, writes and designs digital products, sets prices, stock and sizes, creates discount codes and checks your orders. You just ask.
+              </Text>
+            </View>
+            <View style={{ gap: space.sm }}>
+              {SUGGESTIONS.map((s) => (
+                <View key={s} style={{ borderColor: c.line, borderWidth: 1, borderStyle: "dashed", borderRadius: radius.md, padding: space.md }}>
+                  <Text style={[type.body, { color: c.muted }]}>“{s}”</Text>
+                </View>
+              ))}
+            </View>
+            <Pressable onPress={() => router.push("/plans")} accessibilityRole="button"
+              style={({ pressed }) => ({ backgroundColor: c.accent, borderRadius: radius.pill, minHeight: 52, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.85 : 1 })}>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: c.onAccent }}>Get Pro to use the assistant</Text>
+            </Pressable>
+          </View>
+        ) : turns.length === 0 ? (
           <View style={{ gap: space.lg, flex: 1, justifyContent: "flex-end" }}>
             <View style={{ gap: space.sm }}>
               <Text style={[type.hero, { color: c.ink }]}>Tell me what{"\n"}to make.</Text>
@@ -46,7 +69,7 @@ export default function AssistantScreen() {
         ) : turns.map((t) => <Bubble key={t.id} turn={t} />)}
       </ScrollView>
 
-      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: space.sm, padding: space.md, borderTopWidth: 1, borderColor: c.line, backgroundColor: c.surface }}>
+      {locked ? null : <View style={{ flexDirection: "row", alignItems: "flex-end", gap: space.sm, padding: space.md, borderTopWidth: 1, borderColor: c.line, backgroundColor: c.surface }}>
         <TextInput
           value={text} onChangeText={setText} placeholder={busy ? "Working on it…" : "Ask your store assistant"} placeholderTextColor={c.muted}
           multiline editable={!busy} accessibilityLabel="Message"
@@ -56,7 +79,7 @@ export default function AssistantScreen() {
           style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.accent, alignItems: "center", justifyContent: "center", opacity: busy || !text.trim() ? 0.5 : 1 }}>
           {busy ? <ActivityIndicator color={c.onAccent} /> : <Ionicons name="arrow-up" size={22} color={c.onAccent} />}
         </Pressable>
-      </View>
+      </View>}
     </KeyboardAvoidingView>
   );
 }

@@ -4,6 +4,7 @@ import { config } from "./config.js";
 import { db, newId, rowToProduct } from "./db.js";
 import { httpError } from "./claude.js";
 import * as pay from "./payments.js";
+import * as plans from "./plans.js";
 
 const DIGITAL_TAX_CODE = "txcd_10302000";   // Digital Books - downloaded - non subscription - with permanent rights
 const PHYSICAL_TAX_CODE = "txcd_99999999";  // General - Tangible Goods
@@ -112,7 +113,7 @@ export function quote(seller, items, code) {
 
 /* ---------- checkout ---------- */
 export async function startCheckout(seller, items, code) {
-  if (!seller.stripe_account_id || !seller.stripe_ready) throw httpError(409, "This store isn't taking payments yet.");
+  if (!seller.stripe_account_id || !seller.stripe_ready || !plans.storeCanSell(seller)) throw httpError(409, "This store isn't taking orders right now.");
   const p = priceCart(seller, items, code);
   if (p.subtotal - p.discountCents + p.shipping < 50) throw httpError(400, "The order total must be at least $0.50.");
   const orderId = newId("ord");

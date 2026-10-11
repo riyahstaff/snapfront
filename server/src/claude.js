@@ -8,9 +8,10 @@ function anthropic() {
   return client;
 }
 
-export function httpError(status, message) {
+export function httpError(status, message, extra) {
   const e = new Error(message);
   e.status = status;
+  if (extra) e.extra = extra;   // e.g. { upgrade: "launch" } so the app can show the right plan
   return e;
 }
 

@@ -1,10 +1,13 @@
 import React, { useEffect } from "react";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold } from "@expo-google-fonts/bricolage-grotesque";
 import { Figtree_400Regular, Figtree_500Medium, Figtree_700Bold } from "@expo-google-fonts/figtree";
 import { fonts, useColors } from "@/lib/theme";
+import { onUpgradeNeeded } from "@/lib/api";
+import { account } from "@/lib/account-store";
+import { startBilling } from "@/lib/billing";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -15,6 +18,13 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});
   }, [loaded, error]);
+
+  useEffect(() => {
+    // Anything that needs a paid plan opens the plans screen with the server's reason.
+    onUpgradeNeeded((plan, reason) => router.push({ pathname: "/plans", params: { highlight: plan, reason } }));
+    account.refresh().then((m) => startBilling(m.account.id)).catch(() => {});
+    return () => onUpgradeNeeded(null);
+  }, []);
   if (!loaded && !error) return null;
 
   return (
@@ -35,6 +45,7 @@ export default function RootLayout() {
         <Stack.Screen name="settings" options={{ title: "Store settings", presentation: "modal" }} />
         <Stack.Screen name="orders" options={{ title: "Orders" }} />
         <Stack.Screen name="discounts" options={{ title: "Discount codes" }} />
+        <Stack.Screen name="plans" options={{ title: "Plans", presentation: "modal" }} />
       </Stack>
     </>
   );

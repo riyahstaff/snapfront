@@ -110,7 +110,54 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 CREATE INDEX IF NOT EXISTS orders_seller ON orders (seller_id, created_at);
 CREATE INDEX IF NOT EXISTS variants_product ON product_variants (product_id, position);
+
+-- Pricing: an account (a person) owns one or more stores and holds the plan.
+CREATE TABLE IF NOT EXISTS accounts (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE,
+  plan TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free','launch','pro')),  -- from purchases
+  comp_plan TEXT CHECK (comp_plan IN ('launch','pro')),                     -- granted by hand
+  plan_synced_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS usage (
+  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  period TEXT NOT NULL,          -- 'YYYY-MM', or 'trial' for the free plan
+  kind TEXT NOT NULL,            -- photo | product | agent
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (account_id, period, kind)
+);
+CREATE TABLE IF NOT EXISTS login_codes (
+  email TEXT PRIMARY KEY,
+  code_hash TEXT NOT NULL,
+  account_id TEXT NOT NULL,      -- the device account that asked for the code
+  expires_at TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0
+);
 `);
+
+addCol("sellers", "account_id", "TEXT REFERENCES accounts(id) ON DELETE CASCADE");
+db.exec("CREATE INDEX IF NOT EXISTS sellers_account ON sellers (account_id, created_at)");
+
+// Stores made before accounts existed: give each its own account and keep its device token working.
+// Stores already taking payments at that moment were set up before pricing existed, so they keep Pro.
+{
+  const orphans = db.prepare("SELECT * FROM sellers WHERE account_id IS NULL").all();
+  const mk = db.transaction(() => {
+    for (const s of orphans) {
+      const id = `acc_${crypto.randomBytes(9).toString("base64url")}`;
+      db.prepare("INSERT INTO accounts (id, comp_plan, created_at) VALUES (?,?,?)").run(id, s.stripe_ready ? "pro" : null, s.created_at);
+      db.prepare("INSERT OR IGNORE INTO sessions (token_hash, account_id) VALUES (?,?)").run(s.token_hash, id);
+      db.prepare("UPDATE sellers SET account_id = ? WHERE id = ?").run(id, s.id);
+    }
+  });
+  if (orphans.length) mk();
+}
 
 export const newId = (prefix) => `${prefix}_${crypto.randomBytes(9).toString("base64url")}`;
 export const hashToken = (t) => crypto.createHash("sha256").update(t).digest("hex");
