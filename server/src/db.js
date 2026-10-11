@@ -142,6 +142,26 @@ CREATE TABLE IF NOT EXISTS login_codes (
 `);
 
 addCol("sellers", "account_id", "TEXT REFERENCES accounts(id) ON DELETE CASCADE");
+
+// Dropshipping: where a product comes from, what it costs the seller, and the supplier side of each order.
+addCol("products", "source", "TEXT");              // 'cj' for CJdropshipping imports
+addCol("products", "source_id", "TEXT");           // CJ product id (pid)
+addCol("products", "source_vid", "TEXT");          // CJ variant id when the product has no options
+addCol("products", "cost_cents", "INTEGER");       // supplier price, before shipping
+addCol("product_variants", "source_vid", "TEXT");
+addCol("product_variants", "cost_cents", "INTEGER");
+addCol("accounts", "cj_key_enc", "TEXT");          // the seller's own CJ API key, encrypted
+addCol("accounts", "cj_auto_pay", "INTEGER NOT NULL DEFAULT 0");
+addCol("orders", "supplier_status", "TEXT");       // needs_key | sending | awaiting_payment | sent | shipped | delivered | failed | canceled
+addCol("orders", "supplier_order_id", "TEXT");
+addCol("orders", "supplier_error", "TEXT");
+addCol("orders", "supplier_checked_at", "TEXT");
+addCol("orders", "tracking_number", "TEXT");
+addCol("orders", "tracking_carrier", "TEXT");
+db.exec(`CREATE TABLE IF NOT EXISTS cj_tokens (
+  key_hash TEXT PRIMARY KEY, access_token TEXT NOT NULL, access_expires TEXT, refresh_token TEXT, refresh_expires TEXT,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+)`);
 db.exec("CREATE INDEX IF NOT EXISTS sellers_account ON sellers (account_id, created_at)");
 
 // Stores made before accounts existed: give each its own account and keep its device token working.
@@ -183,6 +203,7 @@ export function rowToProduct(r) {
   p.price = r.price_cents / 100;
   p.image_url = r.image_file ? `${config.publicUrl}/img/${r.image_file}` : null;
   p.has_delivery = Boolean(r.delivery_file || r.delivery_url);
+  p.cost = r.cost_cents == null ? null : r.cost_cents / 100;
   delete p.delivery_file;
   p.variants = db.prepare("SELECT id, name, price_cents, inventory, sku FROM product_variants WHERE product_id = ? ORDER BY position").all(r.id)
     .map((v) => ({ ...v, price: (v.price_cents ?? r.price_cents) / 100 }));

@@ -91,7 +91,7 @@ export function priceCart(seller, rawItems, code) {
     const existing = lines.find((l) => l.key === key);
     if (existing) { existing.qty = row.kind === "digital" ? 1 : Math.min(MAX_QTY, existing.qty + qty); continue; }
     lines.push({ key, product_id: row.id, variant_id: variant?.id || null, title: row.title, variant: variant?.name || null,
-      option_name: row.option_name || null, kind: row.kind, qty, unit_cents: unit, image_file: row.image_file, tax_code: row.tax_code });
+      option_name: row.option_name || null, kind: row.kind, qty, unit_cents: unit, image_file: row.image_file, tax_code: row.tax_code, source: row.source || null });
   }
   const subtotal = lines.reduce((s, l) => s + l.unit_cents * l.qty, 0);
   const { discount, cents: discountCents } = applyDiscount(seller, code, subtotal);
@@ -145,6 +145,8 @@ export async function startCheckout(seller, items, code) {
   if (tax) params.automatic_tax = { enabled: true };
   if (p.physical) {
     params.shipping_address_collection = { allowed_countries: String(seller.ship_countries || "US").split(",").map((c) => c.trim()).filter(Boolean) };
+    // Couriers for dropshipped items need a phone number.
+    if (p.lines.some((l) => l.source === "cj")) params.phone_number_collection = { enabled: true };
     params.shipping_options = [{ shipping_rate_data: {
       type: "fixed_amount", fixed_amount: { amount: p.shipping, currency: "usd" },
       display_name: p.shipping ? "Standard shipping" : "Free shipping", ...(tax ? { tax_behavior: "exclusive" } : {}),
@@ -171,7 +173,7 @@ export function finalizeOrder(orderId, session) {
     db.prepare(`UPDATE orders SET status='paid', paid_at=datetime('now'), email=?, customer_name=?, shipping_address=?, checkout_session_id=?,
       subtotal_cents=COALESCE(?, subtotal_cents), discount_cents=COALESCE(?, discount_cents), shipping_cents=COALESCE(?, shipping_cents),
       tax_cents=COALESCE(?, 0), total_cents=COALESCE(?, total_cents) WHERE id=?`)
-      .run(session.customer_details?.email || null, ship?.name || session.customer_details?.name || null, ship ? JSON.stringify(ship.address || ship) : null,
+      .run(session.customer_details?.email || null, ship?.name || session.customer_details?.name || null, ship ? JSON.stringify({ ...(ship.address || ship), ...(session.customer_details?.phone ? { phone: session.customer_details.phone } : {}) }) : null,
         session.id, session.amount_subtotal ?? null, t.amount_discount ?? null, t.amount_shipping ?? null, t.amount_tax ?? null, session.amount_total ?? null, order.id);
     for (const l of JSON.parse(order.items)) {
       if (l.variant_id) db.prepare("UPDATE product_variants SET inventory = MAX(inventory - ?, 0) WHERE id = ? AND inventory IS NOT NULL").run(l.qty, l.variant_id);
@@ -195,6 +197,8 @@ export const publicOrder = (o) => ({
   subtotal: o.subtotal_cents / 100, discount: o.discount_cents / 100, shipping: o.shipping_cents / 100, tax: o.tax_cents / 100, total: o.total_cents / 100,
   discount_code: o.discount_code, email: o.email, customer_name: o.customer_name,
   shipping_address: o.shipping_address ? JSON.parse(o.shipping_address) : null, paid_at: o.paid_at, fulfilled_at: o.fulfilled_at, created_at: o.created_at,
+  supplier: o.supplier_status ? { name: "CJdropshipping", status: o.supplier_status, order_id: o.supplier_order_id, error: o.supplier_error } : null,
+  tracking: o.tracking_number ? { number: o.tracking_number, carrier: o.tracking_carrier, url: `https://t.17track.net/en#nums=${encodeURIComponent(o.tracking_number)}` } : null,
 });
 
 export function listOrders(seller) {

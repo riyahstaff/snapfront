@@ -13,6 +13,8 @@ import * as commerce from "./commerce.js";
 import * as plans from "./plans.js";
 import * as research from "./research.js";
 import * as auth2 from "./auth.js";
+import * as cj from "./cj.js";
+import * as dropship from "./dropship.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage } from "./render.js";
 
 export const app = express();
@@ -53,6 +55,8 @@ async function completeOrder(orderId, session) {
     await pay.emailOrder(order.email, {
       storeName: seller.store_name, orderUrl: `${config.publicUrl}/thanks?o=${order.id}`, downloads: commerce.downloadsFor(order),
     }).catch(() => false);
+    // Dropshipped items go to the supplier straight away.
+    dropship.sendOrder(order.id).catch((e) => console.error("[cj] send", order.id, e.message));
   }
   return order;
 }
@@ -182,6 +186,21 @@ app.post("/api/research/price-check", auth, aiLimit, wrap(async (req, res) => {
   res.json({ image_url: url, ...out });
 }));
 
+/* ---------- dropshipping: CJdropshipping catalog and the seller's CJ account ---------- */
+app.get("/api/catalog/search", auth, wrap(async (req, res) => res.json(await cj.search({ q: req.query.q, page: req.query.page, categoryId: req.query.category }))));
+app.get("/api/catalog/products/:pid", auth, wrap(async (req, res) => res.json(await dropship.preview(req.params.pid))));
+app.post("/api/catalog/products/:pid/import", auth, aiLimit, wrap(async (req, res) => {
+  const b = req.body || {};
+  const out = await dropship.importProduct(req.account, req.seller, req.params.pid, {
+    price: b.price, vids: Array.isArray(b.vids) ? b.vids.map(String).slice(0, 100) : undefined, priceCheck: b.price_check !== false,
+  });
+  res.status(201).json(out);
+}));
+app.get("/api/suppliers", auth, (req, res) => res.json(dropship.supplierStatus(req.account)));
+app.put("/api/suppliers/cj", auth, wrap(async (req, res) => res.json(await dropship.connect(req.account, req.body?.api_key, req.body?.auto_pay === true))));
+app.patch("/api/suppliers/cj", auth, (req, res) => res.json(dropship.setAutoPay(req.account, req.body?.auto_pay === true)));
+app.delete("/api/suppliers/cj", auth, (req, res) => res.json(dropship.disconnect(req.account)));
+
 app.get("/api/product-types", (_req, res) => res.json(Object.entries(PRODUCT_TYPES).map(([id, t]) => ({ id, name: t.name, sub: t.sub, price: t.price }))));
 
 /* ---------- Fable store agent ---------- */
@@ -203,6 +222,14 @@ app.post("/api/products/:id/publish", auth, wrap(async (req, res) => res.json(aw
 
 /* ---------- orders and discount codes ---------- */
 app.get("/api/orders", auth, (req, res) => res.json(commerce.listOrders(req.seller)));
+// Send to CJ (or retry), or refresh tracking if it's already there.
+app.post("/api/orders/:id/supplier", auth, wrap(async (req, res) => {
+  const o = db.prepare("SELECT * FROM orders WHERE id = ? AND seller_id = ?").get(String(req.params.id), req.seller.id);
+  if (!o) throw httpError(404, "That order doesn't exist.");
+  if (o.supplier_order_id) await dropship.syncOrder(o.id);
+  else await dropship.sendOrder(o.id);
+  res.json(commerce.publicOrder(db.prepare("SELECT * FROM orders WHERE id = ?").get(o.id)));
+}));
 app.post("/api/orders/:id/fulfill", auth, (req, res) => res.json(commerce.setOrderStatus(req.seller, req.params.id, "fulfilled")));
 app.get("/api/discounts", auth, (req, res) => res.json(commerce.listDiscounts(req.seller)));
 app.post("/api/discounts", auth, (req, res) => res.status(201).json(commerce.createDiscount(req.seller, req.body || {})));
@@ -345,4 +372,6 @@ app.use((err, _req, res, _next) => {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   app.listen(config.port, () => console.log(`Snapfront API on ${config.publicUrl} (port ${config.port})`));
+  // Pick up tracking numbers for orders at CJ.
+  setInterval(() => dropship.syncDue().catch((e) => console.error("[cj] sync", e.message)), 30 * 60e3).unref();
 }

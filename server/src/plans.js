@@ -120,6 +120,7 @@ export function publicAccount(account, currentStoreId) {
     usage: Object.fromEntries(["photo", "product", "agent", "research"].map((k) => [k, used(account.id, p, k)])),
     stores: stores.map((s, i) => ({ id: s.id, store_name: s.store_name, store_slug: s.store_slug, live_allowed: i < plan.liveStores, current: s.id === currentStoreId })),
     can_add_store: stores.length < plan.stores,
+    suppliers: { cj: { connected: Boolean(account.cj_key_enc), auto_pay: Boolean(account.cj_auto_pay) } },
   };
 }
 

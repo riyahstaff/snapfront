@@ -27,7 +27,10 @@ const storeOf = (source, link) => {
 const median = (xs) => { const s = [...xs].sort((a, b) => a - b); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const r2 = (n) => Math.round(n * 100) / 100;
 /** Retail-style price just under a target: 23.40 -> 22.99. */
-const charm = (n) => Math.max(0.99, Math.floor(n) - 0.01 + (n - Math.floor(n) >= 0.99 ? 1 : 0));
+export const charm = (n) => Math.max(0.99, Math.floor(n) - 0.01 + (n - Math.floor(n) >= 0.99 ? 1 : 0));
+
+// Refurbished or second-hand listings are shown but don't set the price for a new item.
+const USED = /refurb|renewed|restored|pre-?owned|\bused\b|open[- ]box|like[- ]new|second[- ]hand/i;
 
 /** Normalise whatever SerpApi's Google Lens returns into a list of priced offers. */
 export function parseLens(body) {
@@ -44,20 +47,23 @@ export function parseLens(body) {
     out.push({
       title: String(m.title || "").slice(0, 200), link: m.link, thumbnail: m.thumbnail || m.image || null,
       price: r2(price), in_stock: m.in_stock ?? null, ...storeOf(m.source, m.link),
+      used: USED.test(String(m.title || "")) || Boolean(m.condition && !/^new/i.test(String(m.condition))),
     });
   }
   return out.sort((a, b) => Number(MAJOR.has(b.store)) - Number(MAJOR.has(a.store)) || a.price - b.price).slice(0, 30);
 }
 
 /** Summary and a suggested price that undercuts the big retailers while keeping a margin over cost. */
-export function suggest(matches, cost) {
+export function suggest(all, cost) {
+  const fresh = all.filter((m) => !m.used);
+  const matches = fresh.length ? fresh : all;
   const prices = matches.map((m) => m.price);
   const major = matches.filter((m) => MAJOR.has(m.store));
   const byStore = {};
   for (const m of matches) if (!byStore[m.store] || m.price < byStore[m.store].price) byStore[m.store] = { store_name: m.store_name, price: m.price, link: m.link };
   const summary = prices.length ? {
     count: prices.length, lowest: Math.min(...prices), median: r2(median(prices)), highest: Math.max(...prices),
-    lowest_major: major.length ? Math.min(...major.map((m) => m.price)) : null, by_store: byStore,
+    lowest_major: major.length ? Math.min(...major.map((m) => m.price)) : null, by_store: byStore, used_skipped: all.length - matches.length,
   } : { count: 0, lowest: null, median: null, highest: null, lowest_major: null, by_store: {} };
 
   const c = Number(cost) > 0 ? Number(cost) : null;
