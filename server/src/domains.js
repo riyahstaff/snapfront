@@ -67,8 +67,11 @@ const WORKER_SOURCE = `// Forwards a seller's own domain to Snapfront, saying wh
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const host = url.hostname.toLowerCase();
+    // Snapfront's own addresses (snapfront.app, <store>.snapfront.app) go straight through untouched.
+    if (host === env.ZONE || host.endsWith("." + env.ZONE)) return fetch(request);
     const headers = new Headers(request.headers);
-    headers.set("X-Snapfront-Host", url.hostname.toLowerCase());
+    headers.set("X-Snapfront-Host", host);
     headers.set("X-Snapfront-Edge", env.EDGE_SECRET);
     headers.set("X-Forwarded-Proto", "https");
     const target = "https://" + env.ORIGIN_HOST + url.pathname + url.search;
@@ -101,7 +104,7 @@ export function ensureEdge() {
     const form = new FormData();
     form.append("metadata", new Blob([JSON.stringify({
       main_module: "worker.js", compatibility_date: "2025-01-01",
-      bindings: [{ type: "secret_text", name: "EDGE_SECRET", text: edgeSecret() }, { type: "plain_text", name: "ORIGIN_HOST", text: originHost() }],
+      bindings: [{ type: "secret_text", name: "EDGE_SECRET", text: edgeSecret() }, { type: "plain_text", name: "ORIGIN_HOST", text: originHost() }, { type: "plain_text", name: "ZONE", text: config.storeDomain }],
     })], { type: "application/json" }));
     form.append("worker.js", new Blob([WORKER_SOURCE], { type: "application/javascript+module" }), "worker.js");
     await cf("PUT", `/accounts/${z.account}/workers/scripts/${WORKER_NAME}`, null, { form });

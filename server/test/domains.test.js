@@ -81,7 +81,8 @@ test("adding a domain sets up Cloudflare once and tells the seller which record 
   assert.equal(calls.find((c) => c.path.endsWith("/fallback_origin") && c.method === "PUT").body.origin, "edge.shopdomain.test");
   const worker = calls.find((c) => c.path.endsWith("/workers/scripts/snapfront-domains"));
   assert.equal(worker.body.metadata.main_module, "worker.js");
-  assert.deepEqual(worker.body.metadata.bindings.map((b) => [b.type, b.name]), [["secret_text", "EDGE_SECRET"], ["plain_text", "ORIGIN_HOST"]]);
+  assert.deepEqual(worker.body.metadata.bindings.map((b) => [b.type, b.name]), [["secret_text", "EDGE_SECRET"], ["plain_text", "ORIGIN_HOST"], ["plain_text", "ZONE"]]);
+  assert.match(worker.body.worker, /host\.endsWith\("\." \+ env\.ZONE\)\) return fetch\(request\)/);
   assert.equal(worker.body.metadata.bindings[1].text, "edge-origin.shopdomain.test");
   assert.match(worker.body.worker, /X-Snapfront-Host/);
   assert.deepEqual(calls.find((c) => c.path === "/zones/z1/workers/routes" && c.method === "POST").body, { pattern: "*/*", script: "snapfront-domains" });
