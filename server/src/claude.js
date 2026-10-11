@@ -38,15 +38,31 @@ async function askJson(content, maxTokens) {
   // Test hook: lets the smoke tests run without an API key.
   if (process.env.SNAPFRONT_FAKE_AI) return JSON.parse(process.env.SNAPFRONT_FAKE_AI);
   const ai = anthropic();
-  let msg;
-  try {
-    msg = await ai.messages.create({ model: config.claudeModel, max_tokens: maxTokens, messages: [{ role: "user", content }] });
-  } catch (e) {
-    console.error("[claude]", e.status, e.message);
-    throw httpError(e.status === 429 ? 429 : 502, e.status === 400 ? (Array.isArray(content) && content.some((c) => c.type === "image") ? "The AI couldn't read that photo. Try a different one." : "The AI couldn't handle that request. Try different wording.") : "The AI writer is busy right now. Try again in a minute.");
+  const hasImage = Array.isArray(content) && content.some((c) => c.type === "image");
+  // The answer comes back through a tool call, so the API hands us well-formed JSON even for long
+  // e-books whose text is full of quotation marks. One retry covers a reply that was cut short.
+  for (let attempt = 1; ; attempt++) {
+    let msg;
+    try {
+      msg = await ai.messages.create({
+        model: config.claudeModel, max_tokens: maxTokens,
+        messages: [{ role: "user", content }],
+        tools: [{ name: "submit", description: "Submit the finished JSON object described in the request.", input_schema: { type: "object", additionalProperties: true } }],
+        tool_choice: { type: "tool", name: "submit" },
+      });
+    } catch (e) {
+      console.error("[claude]", e.status, e.message);
+      throw httpError(e.status === 429 ? 429 : 502, e.status === 400 ? (hasImage ? "The AI couldn't read that photo. Try a different one." : "The AI couldn't handle that request. Try different wording.") : "The AI writer is busy right now. Try again in a minute.");
+    }
+    const call = msg.content.find((b) => b.type === "tool_use");
+    const out = call?.input && typeof call.input === "object" ? call.input : null;
+    if (out && msg.stop_reason !== "max_tokens" && Object.keys(out).length) return out;
+    // Fall back to any JSON written as text, then retry once.
+    const text = msg.content.filter((b) => b.type === "text").map((b) => b.text).join("");
+    try { if (text) return parseJson(text); } catch { /* retry below */ }
+    console.error("[claude] unusable reply", { attempt, stop: msg.stop_reason, keys: out ? Object.keys(out) : null });
+    if (attempt >= 2) throw httpError(502, "The AI's answer came back incomplete. Try again.");
   }
-  const text = msg.content.filter((b) => b.type === "text").map((b) => b.text).join("");
-  return parseJson(text);
 }
 
 const PAGE_SHAPE = `{"title": string (max 70 chars, no emoji), "tagline": string (max 100 chars),
