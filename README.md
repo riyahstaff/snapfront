@@ -30,13 +30,19 @@ People buy in the app through Google Play Billing (and the App Store), handled b
 
 `POST /api/research/price-check` takes a photo or supplier screenshot (base64, an uploaded image, or an https image link), runs a Google Lens product search through SerpApi (`SERPAPI_KEY`), and returns US-priced matches from Amazon, Walmart, Target, eBay and others, the lowest price per store, and a suggested price about 5% under the cheapest big retailer while keeping at least a 30% margin over the seller's cost.
 
-## Dropshipping (CJdropshipping)
+## Dropshipping (sellers' own supplier accounts)
 
-Sellers find products in the app's **Find** tab. Search and product details use Snapfront's own CJ key (`CJ_API_KEY`); results are cached (searches 1 hour, products and shipping quotes 6 hours) and calls are spaced one per second, CJ's limit.
+Each seller connects their own supplier accounts in **Store settings → Suppliers**; credentials are stored per account, AES-GCM encrypted (`supplier_accounts`). Products are found in the app's **Find** tab and orders for them are placed in the seller's own account, so the supplier bills the seller and ships to the buyer.
 
-- **Add to my store** (`POST /api/catalog/products/:pid/import`) downloads the photo, writes fresh copy with Claude (one AI product page from the plan), and prices it: the seller's price if given, otherwise a price check against Amazon/Walmart/Target (one price check from the plan), otherwise about 2.5 times the cost including shipping. Options keep their CJ variant ids and costs.
-- **Orders**: each seller connects their own CJ account (Store settings, `PUT /api/suppliers/cj`, key stored AES-GCM encrypted). When an order with CJ items is paid, Snapfront picks CJ's cheapest shipping method and creates the order in the seller's CJ account: paid from their CJ wallet if they turned on automatic payment, otherwise left for them to pay in CJ. Orders paid before CJ is connected are sent as soon as it is.
-- **Tracking** is checked every 30 minutes (and on demand from the order); once CJ ships, the order is marked fulfilled and the tracking number shows on the buyer's order page.
+| Supplier | What the seller pastes | Find tab | Orders |
+| --- | --- | --- | --- |
+| CJdropshipping | API key (My CJ → Authorization → API) | Keyword search of CJ's catalog (works before connecting, using `CJ_API_KEY`) | `createOrderV2`, paid from CJ wallet or left for the seller to pay |
+| Printful | Private token (developers.printful.com → Your tokens) | The seller's own Printful store products | `POST /orders`, auto-confirmed or left as a draft |
+| AliExpress | App Key + App Secret of their own Open Platform app, then approve Snapfront (OAuth; callback `/suppliers/aliexpress/callback`) | Paste a product link | `aliexpress.ds.order.create`, paid automatically or left for the seller |
+
+- **Add to my store** (`POST /api/catalog/products/:pid/import?source=…`) downloads the photo, writes fresh copy with Claude (one AI product page from the plan) and prices it: the seller's price, else their Printful price, else a price check against Amazon/Walmart/Target (not for Printful designs), else about 2.5 times cost including shipping.
+- **Orders**: when an order is paid, each supplier's items go to that supplier (`order_fulfillments`, one row per supplier). Orders paid before a supplier is connected are sent as soon as it is.
+- **Tracking** is checked every 30 minutes and on demand; the order is marked fulfilled once every supplier has shipped, and tracking shows on the buyer's order page.
 
 ## Run it locally
 
