@@ -59,7 +59,7 @@ export type Seller = {
   tax_enabled: boolean;
 };
 export type PlanId = "free" | "launch" | "pro";
-export type PlanLimits = { name: string; liveStores: number; stores: number; photo: number; product: number; agent: number };
+export type PlanLimits = { name: string; liveStores: number; stores: number; photo: number; product: number; agent: number; research: number };
 export type Account = {
   id: string;
   email: string | null;
@@ -67,11 +67,19 @@ export type Account = {
   plan_name: string;
   limits: PlanLimits;
   period: string;  // "YYYY-MM", or "trial" on the free plan
-  usage: { photo: number; product: number; agent: number };
+  usage: { photo: number; product: number; agent: number; research: number };
   stores: { id: string; store_name: string; store_slug: string; live_allowed: boolean; current: boolean }[];
   can_add_store: boolean;
 };
 export type Me = Seller & { account: Account };
+export type PriceMatch = { title: string; link: string; thumbnail: string | null; price: number; in_stock: boolean | null; store: string; store_name: string };
+export type PriceCheck = {
+  image_url: string;
+  matches: PriceMatch[];
+  summary: { count: number; lowest: number | null; median: number | null; highest: number | null; lowest_major: number | null; by_store: Record<string, { store_name: string; price: number; link: string }> };
+  suggestion: null | { price: number; basis: string; cost?: number; profit?: number; margin_percent?: number; warning?: string };
+};
+export type PriceCheckInput = { imageBase64?: string; mediaType?: string; image_file?: string; image_url?: string; cost?: number };
 export type StorePatch = Partial<Pick<Seller, "store_name" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled">>;
 export type OrderItem = { title: string; variant: string | null; qty: number; kind: "physical" | "digital"; unit: number };
 export type Address = { line1?: string; line2?: string | null; city?: string; state?: string | null; postal_code?: string; country?: string };
@@ -187,6 +195,7 @@ export const api = {
     if (storeCache === id) await setStore(null);
   },
   billingSync: () => request<Me>("POST", "/api/billing/sync"),
+  priceCheck: (input: PriceCheckInput) => request<PriceCheck>("POST", "/api/research/price-check", input),
   plans: () => request<Record<PlanId, PlanLimits>>("GET", "/api/plans"),
   emailStart: (email: string) => request<{ sent: boolean; email: string }>("POST", "/api/auth/email/start", { email }),
   async emailVerify(email: string, code: string) {

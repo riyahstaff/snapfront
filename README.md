@@ -20,11 +20,15 @@ server/   Node API + public storefronts                               — Expres
 
 | Plan | Price | Live stores | AI pages / products / assistant |
 |---|---|---|---|
-| Free | $0 | 0 (build and preview 1 store) | 3 / 1 / – in total |
-| Launch | $29 once | 1 | 30 / 5 / – a month |
-| Pro | $14.99 a month | up to 10 | 300 / 50 / 40 a month |
+| Free | $0 | 0 (build and preview 1 store) | 3 / 1 / – in total, 3 price checks |
+| Launch | $29 once | 1 | 30 / 5 / – a month, 30 price checks |
+| Pro | $14.99 a month | up to 10 | 300 / 50 / 40 a month, 300 price checks |
 
 People buy in the app through Google Play Billing (and the App Store), handled by RevenueCat. The app identifies each person by their Snapfront account id; RevenueCat entitlements `launch` (lifetime) and `pro` (monthly) map to plans. The server never trusts the phone: it reads entitlements from RevenueCat (`REVENUECAT_SECRET_KEY`) when the app calls `POST /api/billing/sync` and when RevenueCat's webhook (`POST /api/revenuecat/webhook`, `Authorization` = `REVENUECAT_WEBHOOK_AUTH`) reports a purchase, renewal or expiry. Allowances can be tuned with `PLAN_LIMITS` (JSON) without a code change. Accounts own stores; the app sends `X-Store` to pick which one. Email sign-in (6-digit codes via Resend) moves an account to a new phone.
+
+## Price check
+
+`POST /api/research/price-check` takes a photo or supplier screenshot (base64, an uploaded image, or an https image link), runs a Google Lens product search through SerpApi (`SERPAPI_KEY`), and returns US-priced matches from Amazon, Walmart, Target, eBay and others, the lowest price per store, and a suggested price about 5% under the cheapest big retailer while keeping at least a 30% margin over the seller's cost.
 
 ## Run it locally
 

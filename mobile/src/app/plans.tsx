@@ -13,8 +13,8 @@ const FALLBACK_PRICE = { launch: "$29", pro: "$14.99" };
 function features(plan: "launch" | "pro", l?: PlanLimits): string[] {
   if (!l) return [];
   return plan === "launch"
-    ? ["Publish your store and take payments", "Hosting included, for good", `${l.photo} AI product pages a month`, `${l.product} AI digital products a month`]
-    : [`Up to ${l.liveStores} live stores`, `${l.photo} AI product pages a month`, `${l.product} AI digital products a month`, `Store assistant: ${l.agent} requests a month`];
+    ? ["Publish your store and take payments", "Hosting included, for good", `${l.photo} AI product pages a month`, `${l.product} AI digital products a month`, `${l.research} price checks against Amazon, Walmart and more a month`]
+    : [`Up to ${l.liveStores} live stores`, `${l.photo} AI product pages a month`, `${l.product} AI digital products a month`, `${l.research} price checks a month`, `Store assistant: ${l.agent} requests a month`];
 }
 
 export default function PlansScreen() {

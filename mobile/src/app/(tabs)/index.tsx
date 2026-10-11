@@ -6,6 +6,7 @@ import { Body, Button, Field, H1, Notice, Screen, Segmented } from "@/components
 import { Viewfinder } from "@/components/viewfinder";
 import { api, ApiError } from "@/lib/api";
 import { draftStore } from "@/lib/draft-store";
+import { priceCheckPhoto } from "@/lib/price-check-store";
 import { space } from "@/lib/theme";
 
 type Photo = { uri: string; base64: string; mimeType: string };
@@ -65,6 +66,10 @@ export default function SnapScreen() {
       <Field label="Price (USD)" hint="Leave blank for a suggested price." value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="e.g. 24" />
       <Notice text={error} tone="error" />
       <Button label={busy ? "Writing your page…" : "Build product page"} onPress={build} loading={busy} disabled={!photo} />
+      <Button label="Check market price first" variant="ghost" onPress={() => {
+        if (photo) priceCheckPhoto.set(photo);
+        router.push("/price-check");
+      }} />
     </Screen>
   );
 }

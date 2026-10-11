@@ -53,6 +53,9 @@ export default function ProductScreen() {
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
       <View style={{ gap: space.md }}>
         <H2>Price</H2>
+        {p.image_file ? (
+          <Button label="Compare with Amazon and Walmart" variant="ghost" onPress={() => router.push({ pathname: "/price-check", params: { image_file: p.image_file!, preview: p.image_url ?? undefined } })} />
+        ) : null}
         <Field label="Price (USD)" hint={live ? "New prices apply to your store right away." : undefined} value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
         <Button label="Save price" variant="secondary" loading={busy === "price"} onPress={() => run("price", async () => {
           const next = await api.updateProduct(p.id, { price: Number(price) || 0 }); setP({ ...p, ...next }); setMsg({ text: "Price saved.", tone: "ok" });

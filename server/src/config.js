@@ -23,6 +23,7 @@ export const config = {
   stripePublishableKey: env.STRIPE_PUBLISHABLE_KEY || "",
   platformFeePercent: Math.max(0, Math.min(50, Number(env.PLATFORM_FEE_PERCENT ?? 0))),
   revenuecatSecretKey: env.REVENUECAT_SECRET_KEY || "",
+  serpapiKey: env.SERPAPI_KEY || "",
   revenuecatWebhookAuth: env.REVENUECAT_WEBHOOK_AUTH || "",
   downloadSecret: env.DOWNLOAD_SIGNING_SECRET || "dev-only-secret-change-me",
   resendKey: env.RESEND_API_KEY || "",

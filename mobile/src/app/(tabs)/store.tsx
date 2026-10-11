@@ -152,7 +152,7 @@ function PlanCard({ me }: { me: Me }) {
             {a.plan === "launch" ? <Text style={[type.label, { color: c.accent }]}>Upgrade</Text> : null}
           </View>
           <Text style={[type.small, { color: c.muted }]}>
-            This month: {meter(a.usage.photo, a.limits.photo, "AI pages")} · {meter(a.usage.product, a.limits.product, "AI products")}{a.limits.agent ? ` · ${meter(a.usage.agent, a.limits.agent, "assistant requests")}` : ""}
+            This month: {meter(a.usage.photo, a.limits.photo, "AI pages")} · {meter(a.usage.product, a.limits.product, "AI products")} · {meter(a.usage.research, a.limits.research, "price checks")}{a.limits.agent ? ` · ${meter(a.usage.agent, a.limits.agent, "assistant requests")}` : ""}
           </Text>
         </>
       )}

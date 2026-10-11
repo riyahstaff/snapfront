@@ -11,6 +11,7 @@ import * as agent from "./agent.js";
 import * as pay from "./payments.js";
 import * as commerce from "./commerce.js";
 import * as plans from "./plans.js";
+import * as research from "./research.js";
 import * as auth2 from "./auth.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage } from "./render.js";
 
@@ -165,6 +166,20 @@ app.post("/api/ai/product-from-photo", auth, aiLimit, wrap(async (req, res) => {
 
 app.post("/api/ai/generate", auth, aiLimit, wrap(async (req, res) => {
   res.status(201).json(await plans.withAllowance(req.account, "product", () => store.generateProduct(req.seller, req.body || {})));
+}));
+
+/* ---------- price check: the same item at Amazon, Walmart, Target... from a photo ---------- */
+app.post("/api/research/price-check", auth, aiLimit, wrap(async (req, res) => {
+  const { imageBase64, mediaType = "image/jpeg", image_file, image_url, cost } = req.body || {};
+  plans.assertAllowance(req.account, "research");
+  let url;
+  if (imageBase64) url = `${config.publicUrl}/img/${saveImage(imageBase64, mediaType)}`;
+  else if (image_file && /^[\w-]+\.(jpg|png|webp|gif)$/.test(image_file)) url = `${config.publicUrl}/img/${image_file}`;
+  else if (image_url && /^https:\/\//.test(image_url)) url = String(image_url).slice(0, 1000);
+  else throw httpError(400, "Add a photo or screenshot of the product.");
+  const out = await research.priceCheck(url, cost);
+  plans.recordUsage(req.account, "research");
+  res.json({ image_url: url, ...out });
 }));
 
 app.get("/api/product-types", (_req, res) => res.json(Object.entries(PRODUCT_TYPES).map(([id, t]) => ({ id, name: t.name, sub: t.sub, price: t.price }))));
