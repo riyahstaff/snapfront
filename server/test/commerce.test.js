@@ -177,8 +177,12 @@ test("checkout creates a Stripe session; the webhook marks the order paid and up
 test("a failed bank payment cancels the pending order", async () => {
   const XL = tee.variants[2];
   const r = await json(await call("POST", `/s/${slug}/checkout`, { items: [{ product_id: tee.id, variant_id: XL.id, qty: 1 }] }, false), 200);
-  await fetch(`${base}/api/stripe/webhook`, { method: "POST", headers: { "Content-Type": "application/json", "stripe-signature": "t=1" },
-    body: JSON.stringify({ type: "checkout.session.async_payment_failed", data: { object: { object: "checkout.session", id: "cs_x", metadata: { snapfront_order: r.order_id } } } }) });
+  const hook = (id) => fetch(`${base}/api/stripe/webhook`, { method: "POST", headers: { "Content-Type": "application/json", "stripe-signature": "t=1" },
+    body: JSON.stringify({ type: "checkout.session.async_payment_failed", data: { object: { object: "checkout.session", id, metadata: { snapfront_order: r.order_id } } } }) });
+  // A session from somewhere else that copies the order id can't touch the order.
+  await hook("cs_someone_else");
+  assert.equal(db.prepare("SELECT status FROM orders WHERE id = ?").get(r.order_id).status, "pending");
+  await hook(db.prepare("SELECT checkout_session_id FROM orders WHERE id = ?").get(r.order_id).checkout_session_id);
   const page = await (await fetch(`${base}/thanks?o=${r.order_id}`)).text();
   assert.match(page, /Payment didn't go through/);
 });

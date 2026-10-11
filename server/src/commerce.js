@@ -171,6 +171,7 @@ export function finalizeOrder(orderId, session) {
     const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId);
     if (!order) return null;
     if (order.status !== "pending" || session.payment_status !== "paid") return order;
+    if (order.checkout_session_id && session.id !== order.checkout_session_id) return order;   // not this order's checkout
     const ship = session.collected_information?.shipping_details || session.shipping_details || null;
     const t = session.total_details || {};
     db.prepare(`UPDATE orders SET status='paid', paid_at=datetime('now'), email=?, customer_name=?, shipping_address=?, checkout_session_id=?,

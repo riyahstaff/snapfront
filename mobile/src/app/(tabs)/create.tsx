@@ -43,7 +43,7 @@ export default function CreateScreen() {
     <Screen>
       <View style={{ gap: space.sm }}>
         <H1>Make something{"\n"}people already buy.</H1>
-        <Body muted>Pick a best-selling format and a niche. Snapfront writes the product, designs the cover, builds the PDF and drafts the listing.</Body>
+        <Body muted>Pick a best-selling format and a niche. Snapfront writes the product, designs the cover, builds the PDF and drafts the listing. Prices are what buyers usually pay; you set your own and keep the sales.</Body>
         <Button label="See which formats sell best" variant="ghost" style={{ alignSelf: "flex-start", paddingHorizontal: 0, minHeight: 36 }} onPress={() => router.push("/trends")} />
       </View>
       <View style={{ gap: space.sm }} accessibilityRole="radiogroup">
@@ -56,7 +56,10 @@ export default function CreateScreen() {
                 <Text style={[type.heading, { color: c.ink }]}>{t.name}</Text>
                 <Text style={[type.small, { color: c.muted }]}>{t.sub}</Text>
               </View>
-              <Text style={{ fontFamily: fonts.display, fontSize: 16, color: c.ink }}>from ${t.price}</Text>
+              <View style={{ alignItems: "flex-end" }} accessible accessibilityLabel={`Usually sells for about ${t.price} dollars`}>
+                <Text style={[type.small, { color: c.muted }]}>Sells for</Text>
+                <Text style={{ fontFamily: fonts.display, fontSize: 16, color: c.ink }}>~${t.price}</Text>
+              </View>
             </Pressable>
           );
         })}

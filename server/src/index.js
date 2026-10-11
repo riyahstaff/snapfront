@@ -69,7 +69,13 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   catch (e) { console.error("[webhook] rejected:", e.message); return res.status(400).send(`Webhook error: ${e.message}`); }
   try {
     const obj = event.data.object;
-    const orderId = obj.object === "checkout.session" ? obj.metadata?.snapfront_order : null;
+    // Only the checkout session we opened for an order can change it: a session with a copied
+    // order id in its metadata (from any other Stripe account) is ignored.
+    let orderId = obj.object === "checkout.session" ? obj.metadata?.snapfront_order : null;
+    if (orderId) {
+      const o = db.prepare("SELECT checkout_session_id FROM orders WHERE id = ?").get(String(orderId));
+      if (!o || o.checkout_session_id !== obj.id) { console.warn("[webhook] session doesn't match order", orderId, obj.id); orderId = null; }
+    }
     if (orderId && (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")) {
       await completeOrder(orderId, obj);
     }
@@ -143,7 +149,16 @@ const clampStr = store.clampStr, strList = store.strList, faqList = store.faqLis
 app.get("/health", (_req, res) => res.json({ ok: true }));
 app.get("/", (_req, res) => res.send(landingPage()));
 
-app.post("/api/sellers", (req, res) => {
+const signups = new Map();
+function signupLimit(req, _res, next) {
+  const now = Date.now(), list = (signups.get(req.ip) || []).filter((t) => now - t < 60 * 60e3);
+  // Generous enough for a family or office on one Wi-Fi, or a phone carrier sharing addresses.
+  if (list.length >= 20) return next(httpError(429, "Too many new stores from this network. Try again in an hour."));
+  list.push(now); signups.set(req.ip, list);
+  if (signups.size > 20000) signups.clear();
+  next();
+}
+app.post("/api/sellers", signupLimit, (req, res) => {
   const { token, account, store: seller } = plans.createAccountWithStore(clampStr(req.body?.store_name || "My Snapfront Store", 80));
   res.status(201).json({ token, seller: store.publicSeller(seller), account: plans.publicAccount(account, seller.id) });
 });
@@ -168,12 +183,28 @@ app.get("/api/themes", (req, res) => res.json({ themes: publicThemes() }));
 app.get("/api/me", auth, (req, res) => res.json(me(req)));
 app.patch("/api/me", auth, wrap(async (req, res) => { await store.updateStoreChecked(req.seller, req.body || {}); res.json(me(req)); }));
 
+/** Things kept per store outside the cascading tables: visit counts and AI photos/clips. */
+function purgeStores(sellerIds) {
+  for (const id of sellerIds) {
+    for (const j of db.prepare("SELECT result FROM media_jobs WHERE seller_id = ? AND result IS NOT NULL").all(id)) {
+      try {
+        const r = JSON.parse(j.result);
+        if (r.file && /^[\w-]+\.\w+$/.test(r.file)) fs.rm(path.join(dirs.media, r.file), { force: true }, () => {});
+        if (r.image_file && /^[\w-]+\.\w+$/.test(r.image_file)) fs.rm(path.join(dirs.images, r.image_file), { force: true }, () => {});
+      } catch { /* unreadable result: nothing to remove */ }
+    }
+    db.prepare("DELETE FROM media_jobs WHERE seller_id = ?").run(id);
+    db.prepare("DELETE FROM store_visits WHERE seller_id = ?").run(id);
+  }
+}
 const removeFiles = (rows) => { for (const r of rows) for (const [dir, f] of [[dirs.images, r.image_file], [dirs.files, r.delivery_file]]) if (f) fs.rm(path.join(dir, f), { force: true }, () => {}); };
 // App Store guideline 5.1.1(v): apps that create accounts must let people delete them in-app.
 // This deletes the whole account: every store, product and photo.
 app.delete("/api/me", auth, (req, res) => {
   const rows = db.prepare("SELECT p.image_file, p.delivery_file FROM products p JOIN sellers s ON s.id = p.seller_id WHERE s.account_id = ?").all(req.account.id);
-  for (const st of plans.storesOf(req.account.id)) if (st.custom_domain_id) domains.removeDomain(st).catch(() => {});
+  const stores = plans.storesOf(req.account.id);
+  for (const st of stores) if (st.custom_domain_id) domains.removeDomain(st).catch(() => {});
+  purgeStores(stores.map((st) => st.id));
   db.prepare("DELETE FROM accounts WHERE id = ?").run(req.account.id);
   removeFiles(rows);
   res.status(204).end();
@@ -200,6 +231,7 @@ app.delete("/api/stores/:id", auth, (req, res) => {
   if (stores.length === 1) throw httpError(409, "This is your only store. To remove everything, delete your account in Settings.");
   const rows = db.prepare("SELECT image_file, delivery_file FROM products WHERE seller_id = ?").all(target.id);
   if (target.custom_domain_id) domains.removeDomain(target).catch(() => {});
+  purgeStores([target.id]);
   db.prepare("DELETE FROM sellers WHERE id = ?").run(target.id);
   removeFiles(rows);
   res.status(204).end();
@@ -230,7 +262,7 @@ app.post("/api/billing/sync", auth, wrap(async (req, res) => {
   res.json(me(req));
 }));
 app.post("/api/revenuecat/webhook", wrap(async (req, res) => {
-  if (!config.revenuecatWebhookAuth || req.get("authorization") !== config.revenuecatWebhookAuth) throw httpError(401, "Unauthorized");
+  if (!config.revenuecatWebhookAuth || !sameSecret(req.get("authorization"), config.revenuecatWebhookAuth)) throw httpError(401, "Unauthorized");
   for (const id of plans.accountIdsInEvent(req.body?.event)) await plans.syncPlan(plans.getAccount(id)).catch((e) => console.error("[revenuecat]", id, e.message));
   res.json({ received: true });
 }));
@@ -523,6 +555,7 @@ app.get("/s/:store/review", (req, res) => {
 });
 app.post("/s/:store/review", buyerLimit, express.urlencoded({ extended: false, limit: "20kb" }), (req, res) => {
   const store = storeBySlug(req.params.store);
+  if (!store) throw httpError(404, "Store not found");
   const order = growth.orderForReview(req.body?.t);
   if (order.seller_id !== store.id) throw httpError(404, "That review link isn't valid.");
   growth.addReview(order, req.body || {});
@@ -563,15 +596,30 @@ app.get("/d/:token", (req, res) => {
 const legal = (title, body) => (_req, res) => res.send(`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>${title} · Snapfront</title>
 <body style="font:16px/1.6 system-ui;max-width:720px;margin:0 auto;padding:32px 16px;color:#16152E"><h1>${title}</h1>${body}<p style="color:#5D5F78">Last updated ${new Date().toISOString().slice(0, 10)}</p></body>`);
 app.get("/privacy", legal("Privacy policy", `
-<p>Snapfront lets you create product pages and sell through your own Stripe account. This policy explains what we collect.</p>
-<h2>What we collect</h2><ul><li>Store details you enter: store name, tagline, product text and prices.</li>
-<li>Photos you choose to upload, used to write your product page and shown on your storefront.</li>
-<li>A random device token that identifies your store. We do not collect your name, contacts or location.</li>
-<li>Order records for your sales: what was bought, amounts, the buyer's name, email and shipping address, so we can deliver digital downloads and you can ship physical orders.</li>
-<li>If you connect a CJdropshipping account, your CJ API key (stored encrypted) so we can place orders there for you.</li></ul>
-<h2>How we use it</h2><p>To generate product pages (photos and text are sent to Anthropic's Claude API for this purpose only), to host your storefront, and to process sales through Stripe. For products you add from CJdropshipping, we send the buyer's name, shipping address and phone number to CJdropshipping so it can ship the order, and we use product photos to look up prices at other stores through SerpApi (Google Lens). We don't sell your data or use it for advertising.</p>
-<h2>Third parties</h2><p>Anthropic (AI writing), Stripe (payments and seller verification), CJdropshipping (order fulfilment for its products), SerpApi (price comparison), and our hosting provider.</p>
-<h2>Deleting your data</h2><p>Open Store settings in the app and tap "Delete my store". This removes your store, products and photos from our servers.</p>
+<p>Snapfront lets you build an online store from photos and sell through your own Stripe account. This policy explains what we collect and who we share it with.</p>
+<h2>What we collect from sellers</h2><ul>
+<li>Store details you enter: store name, tagline, about text, links, product text, prices and settings.</li>
+<li>Photos you upload, and pictures and videos you make in the app (photo studio, posts, AI photos and clips).</li>
+<li>A random device token that signs you in. If you choose to sign in with email, your email address.</li>
+<li>Your plan and purchase status from Google Play or the App Store (through RevenueCat). We never see your card.</li>
+<li>If you connect a supplier (CJdropshipping, AliExpress or Printful), the key or sign-in token for that account, stored encrypted, so we can place orders there for you.</li></ul>
+<h2>What we collect about your buyers</h2><ul>
+<li>Order records: what was bought, amounts, and the buyer's name, email, shipping address and phone number, so digital downloads can be delivered and physical orders shipped.</li>
+<li>Reviews buyers choose to leave: their name, star rating and comment.</li>
+<li>Store visit counts for your insights. We count visits with a code that changes every day and don't store visitors' IP addresses or build profiles of them.</li></ul>
+<p>Card details are entered on Stripe's checkout page and never reach Snapfront.</p>
+<h2>How we use it</h2><p>To write your product pages and marketing posts, edit your photos, host your storefront, take payments, send order and review emails, and fulfil dropshipped orders. We don't sell data or use it for advertising.</p>
+<h2>Who we share it with</h2><ul>
+<li>Anthropic (Claude): photos and text, to write product pages, posts and answers.</li>
+<li>Runpod: product photos, when you make AI lifestyle photos or video clips.</li>
+<li>Stripe: payments, seller identity checks and sales tax.</li>
+<li>RevenueCat, Google Play and the App Store: plan purchases.</li>
+<li>Resend: sending sign-in codes, order confirmations, review requests and checkout reminders.</li>
+<li>CJdropshipping, AliExpress and Printful: the buyer's name, address and phone number for orders of their products.</li>
+<li>SerpApi (Google Lens): product photos, to compare prices at other stores.</li>
+<li>Cloudflare and Railway: hosting, including stores on their own domains.</li></ul>
+<h2>Deleting your data</h2><p>In the app, open Settings and tap "Delete my account". This removes your account, every store, product and photo from our servers. Order records your buyers need (for example, download links) are removed with the store. You can also email us to ask for deletion.</p>
+<h2>Children</h2><p>Snapfront is for adults running a business and isn't meant for children under 13.</p>
 <h2>Contact</h2><p><a href="mailto:torrey@troosec.com">torrey@troosec.com</a></p>`));
 app.get("/terms", legal("Terms of use", `
 <p>By using Snapfront you agree to sell only products you have the right to sell, to describe them honestly, and to follow Stripe's terms and restricted-business list. You're responsible for fulfilling orders, taxes and refunds. Snapfront may remove listings that break these rules. Snapfront doesn't take a fee on your sales; Stripe's own processing fees apply, and paid plans are billed through Google Play or the App Store.</p>
