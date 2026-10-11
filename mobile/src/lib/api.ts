@@ -38,6 +38,8 @@ export type Product = Draft & {
   sku: string;
   variants: Variant[];
   in_stock: boolean;
+  source: "cj" | null;
+  cost: number | null;
 };
 export type ProductPatch = Partial<Draft> & {
   inventory?: number | null;
@@ -70,7 +72,9 @@ export type Account = {
   usage: { photo: number; product: number; agent: number; research: number };
   stores: { id: string; store_name: string; store_slug: string; live_allowed: boolean; current: boolean }[];
   can_add_store: boolean;
+  suppliers: Suppliers;
 };
+export type Suppliers = { cj: { connected: boolean; auto_pay: boolean } };
 export type Me = Seller & { account: Account };
 export type PriceMatch = { title: string; link: string; thumbnail: string | null; price: number; in_stock: boolean | null; store: string; store_name: string };
 export type PriceCheck = {
@@ -95,6 +99,22 @@ export type Order = {
   paid_at: string | null;
   fulfilled_at: string | null;
   created_at: string;
+  supplier: null | { name: string; status: SupplierStatus; order_id: string | null; error: string | null };
+  tracking: null | { number: string; carrier: string | null; url: string };
+};
+export type SupplierStatus = "needs_key" | "sending" | "awaiting_payment" | "sent" | "shipped" | "delivered" | "failed" | "canceled";
+export type CatalogItem = { pid: string; title: string; image: string | null; cost: number | null; sku: string | null };
+export type CatalogPage = { page: number; total: number; pages: number; products: CatalogItem[] };
+export type CatalogVariant = { vid: string; sku: string; name: string; cost: number; image: string | null };
+export type ShippingQuote = { name: string; price: number; days: string; from: string };
+export type CatalogProduct = {
+  pid: string; title: string; description: string; images: string[]; option_name: string; cost: number | null;
+  variants: CatalogVariant[]; shipping: ShippingQuote | null; landed_cost: number | null;
+};
+export type ImportResult = {
+  product: Product;
+  pricing: { price: number; cost: number; shipping: ShippingQuote | null; landed_cost: number; profit: number; basis: string; warning: string | null };
+  market: null | { summary: PriceCheck["summary"]; matches: PriceMatch[] };
 };
 export type Discount = {
   id: string; code: string; kind: "percent" | "amount"; value: number; active: boolean; uses: number;
@@ -220,6 +240,14 @@ export const api = {
   deleteProduct: (id: string) => request<void>("DELETE", `/api/products/${id}`),
   publish: (id: string) => request<Product>("POST", `/api/products/${id}/publish`),
   orders: () => request<Order[]>("GET", "/api/orders"),
+  orderSupplier: (id: string) => request<Order>("POST", `/api/orders/${id}/supplier`),
+  catalogSearch: (q: string, page = 1) => request<CatalogPage>("GET", `/api/catalog/search?q=${encodeURIComponent(q)}&page=${page}`),
+  catalogProduct: (pid: string) => request<CatalogProduct>("GET", `/api/catalog/products/${encodeURIComponent(pid)}`),
+  importProduct: (pid: string, body: { price?: number; vids?: string[]; price_check?: boolean }) =>
+    request<ImportResult>("POST", `/api/catalog/products/${encodeURIComponent(pid)}/import`, body),
+  connectCj: (api_key: string, auto_pay: boolean) => request<Suppliers>("PUT", "/api/suppliers/cj", { api_key, auto_pay }),
+  setCjAutoPay: (auto_pay: boolean) => request<Suppliers>("PATCH", "/api/suppliers/cj", { auto_pay }),
+  disconnectCj: () => request<Suppliers>("DELETE", "/api/suppliers/cj"),
   fulfillOrder: (id: string) => request<Order>("POST", `/api/orders/${id}/fulfill`),
   discounts: () => request<Discount[]>("GET", "/api/discounts"),
   createDiscount: (d: DiscountInput) => request<Discount>("POST", "/api/discounts", d),

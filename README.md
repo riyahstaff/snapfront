@@ -30,6 +30,14 @@ People buy in the app through Google Play Billing (and the App Store), handled b
 
 `POST /api/research/price-check` takes a photo or supplier screenshot (base64, an uploaded image, or an https image link), runs a Google Lens product search through SerpApi (`SERPAPI_KEY`), and returns US-priced matches from Amazon, Walmart, Target, eBay and others, the lowest price per store, and a suggested price about 5% under the cheapest big retailer while keeping at least a 30% margin over the seller's cost.
 
+## Dropshipping (CJdropshipping)
+
+Sellers find products in the app's **Find** tab. Search and product details use Snapfront's own CJ key (`CJ_API_KEY`); results are cached (searches 1 hour, products and shipping quotes 6 hours) and calls are spaced one per second, CJ's limit.
+
+- **Add to my store** (`POST /api/catalog/products/:pid/import`) downloads the photo, writes fresh copy with Claude (one AI product page from the plan), and prices it: the seller's price if given, otherwise a price check against Amazon/Walmart/Target (one price check from the plan), otherwise about 2.5 times the cost including shipping. Options keep their CJ variant ids and costs.
+- **Orders**: each seller connects their own CJ account (Store settings, `PUT /api/suppliers/cj`, key stored AES-GCM encrypted). When an order with CJ items is paid, Snapfront picks CJ's cheapest shipping method and creates the order in the seller's CJ account: paid from their CJ wallet if they turned on automatic payment, otherwise left for them to pay in CJ. Orders paid before CJ is connected are sent as soon as it is.
+- **Tracking** is checked every 30 minutes (and on demand from the order); once CJ ships, the order is marked fulfilled and the tracking number shows on the buyer's order page.
+
 ## Run it locally
 
 ```bash

@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 import { Button, Notice, Pill, Segmented } from "@/components/ui";
 import { api, ApiError, money, type Address, type Order } from "@/lib/api";
@@ -36,6 +37,13 @@ export default function OrdersScreen() {
     setBusy(o.id); setError(null);
     try { const next = await api.fulfillOrder(o.id); setOrders((list) => list.map((x) => (x.id === o.id ? next : x))); }
     catch (e) { setError(e instanceof ApiError ? e.message : "Couldn't update the order."); }
+    finally { setBusy(null); }
+  }
+
+  async function supplier(o: Order) {
+    setBusy(`s:${o.id}`); setError(null);
+    try { const next = await api.orderSupplier(o.id); setOrders((list) => list.map((x) => (x.id === o.id ? next : x))); }
+    catch (e) { setError(e instanceof ApiError ? e.message : "Couldn't reach CJ. Try again."); }
     finally { setBusy(null); }
   }
 
@@ -104,13 +112,46 @@ export default function OrdersScreen() {
                   </View>
                 ) : null}
                 {o.email ? <Text selectable style={[type.small, { color: c.muted }]}>{o.email}</Text> : null}
-                {needsShipping(o) ? <Button label="Mark as shipped" loading={busy === o.id} onPress={() => fulfill(o)} /> : null}
+                {o.supplier ? <SupplierBox o={o} busy={busy === `s:${o.id}`} onAction={() => supplier(o)} /> : null}
+                {o.tracking && !o.supplier ? (
+                  <Button label={`Track package ${o.tracking.number}`} variant="secondary" onPress={() => WebBrowser.openBrowserAsync(o.tracking!.url)} />
+                ) : null}
+                {needsShipping(o) ? <Button label="Mark as shipped" variant={o.supplier ? "ghost" : "primary"} loading={busy === o.id} onPress={() => fulfill(o)} /> : null}
               </View>
             ) : null}
           </View>
         );
       }}
     />
+  );
+}
+
+const SUPPLIER_TEXT: Record<string, string> = {
+  needs_key: "Waiting for your CJ account. Connect CJ in Store settings and this order is sent to CJ automatically.",
+  sending: "Sending this order to CJ…",
+  awaiting_payment: "Placed at CJ and waiting for payment. Pay for it in CJ (My CJ, then Orders) so it ships.",
+  sent: "Paid at CJ. CJ is packing it; tracking appears here once it ships.",
+  shipped: "CJ shipped it to your buyer.",
+  delivered: "Delivered to your buyer.",
+  failed: "CJ didn’t accept this order.",
+  canceled: "CJ canceled this order. Check your CJ account for details.",
+};
+
+function SupplierBox({ o, busy, onAction }: { o: Order; busy: boolean; onAction: () => void }) {
+  const c = useColors();
+  const s = o.supplier!;
+  const action = s.status === "needs_key" ? null : s.status === "failed" ? "Try sending again" : ["awaiting_payment", "sent", "shipped"].includes(s.status) ? "Check for updates" : null;
+  return (
+    <View style={{ gap: space.sm, backgroundColor: c.sunk, borderRadius: radius.md, padding: space.md }}>
+      <Text style={[type.label, { color: c.ink }]}>Fulfilled by CJdropshipping{s.order_id ? ` · CJ order ${s.order_id}` : ""}</Text>
+      <Text style={[type.small, { color: s.status === "failed" ? c.bad : c.ink }]}>{SUPPLIER_TEXT[s.status] ?? s.status}{s.status === "failed" && s.error ? ` ${s.error}` : ""}</Text>
+      {o.tracking ? (
+        <Button label={`Track package ${o.tracking.number}`} variant="secondary" onPress={() => WebBrowser.openBrowserAsync(o.tracking!.url)} />
+      ) : null}
+      {s.status === "needs_key" ? <Button label="Connect CJ" variant="secondary" onPress={() => router.push("/settings")} /> : null}
+      {s.status === "awaiting_payment" ? <Button label="Open CJ to pay" variant="secondary" onPress={() => WebBrowser.openBrowserAsync("https://cjdropshipping.com/")} /> : null}
+      {action ? <Button label={action} variant="ghost" loading={busy} onPress={onAction} /> : null}
+    </View>
   );
 }
 

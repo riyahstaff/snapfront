@@ -185,7 +185,7 @@ export function orderPage(store, o, downloads) {
     : `<h1>${pending ? "Almost there" : "Thank you!"}</h1>
 <p>${pending ? "We're waiting for Stripe to confirm your payment. This page refreshes on its own." : `Your order is confirmed${o.email ? ` and a receipt is on its way to <strong>${esc(o.email)}</strong>` : ""}.`}</p>
 ${downloads.length ? `<div class="dl">${downloads.map((d) => `<a class="buy" href="${esc(d.url)}">Download ${esc(d.title)}</a>`).join("")}<p class="fine">Download links work for 7 days. Bookmark this page to get fresh ones.</p></div>` : ""}
-${o.items.some((l) => l.kind === "physical") && !pending ? `<p>${o.status === "fulfilled" ? "Your order has shipped." : `${esc(store.store_name)} will ship your order soon.`}</p>` : ""}
+${o.items.some((l) => l.kind === "physical") && !pending ? `<p>${o.status === "fulfilled" ? "Your order has shipped." : `${esc(store.store_name)} will ship your order soon.`}${o.tracking ? ` Tracking number: <a href="${esc(o.tracking.url)}" rel="noopener">${esc(o.tracking.number)}</a>${o.tracking.carrier ? ` (${esc(o.tracking.carrier)})` : ""}.` : ""}</p>` : ""}
 <div class="sum" style="position:static">${rows}
 <div class="row"><span>Subtotal</span><span>${money$(o.subtotal)}</span></div>
 ${o.discount ? `<div class="row"><span>Discount${o.discount_code ? ` (${esc(o.discount_code)})` : ""}</span><span>−${money$(o.discount)}</span></div>` : ""}

@@ -44,6 +44,7 @@ export default function CreateScreen() {
       <View style={{ gap: space.sm }}>
         <H1>Make something{"\n"}people already buy.</H1>
         <Body muted>Pick a best-selling format and a niche. Snapfront writes the product, designs the cover, builds the PDF and drafts the listing.</Body>
+        <Button label="See which formats sell best" variant="ghost" style={{ alignSelf: "flex-start", paddingHorizontal: 0, minHeight: 36 }} onPress={() => router.push("/trends")} />
       </View>
       <View style={{ gap: space.sm }} accessibilityRole="radiogroup">
         {types.map((t) => {

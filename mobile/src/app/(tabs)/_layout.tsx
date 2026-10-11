@@ -21,6 +21,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Snap", headerTitle: "Snapfront", tabBarIcon: ({ color, size }) => <Ionicons name="scan" color={color} size={size} /> }} />
+      <Tabs.Screen name="find" options={{ title: "Find", headerTitle: "Find products", tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} /> }} />
       <Tabs.Screen name="assistant" options={{
         title: "Assistant", headerTitle: "Store assistant",
         tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} />,
@@ -32,7 +33,7 @@ export default function TabsLayout() {
       }} />
       <Tabs.Screen name="create" options={{ title: "Create", headerTitle: "Create a digital product", tabBarIcon: ({ color, size }) => <Ionicons name="sparkles-outline" color={color} size={size} /> }} />
       <Tabs.Screen name="store" options={{ title: "My store", headerTitle: "My store", tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" color={color} size={size} /> }} />
-      <Tabs.Screen name="trends" options={{ title: "Trending", headerTitle: "What's selling", tabBarIcon: ({ color, size }) => <Ionicons name="trending-up" color={color} size={size} /> }} />
+      <Tabs.Screen name="trends" options={{ href: null, headerTitle: "What's selling" }} />
     </Tabs>
   );
 }

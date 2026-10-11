@@ -6,6 +6,7 @@ import { Body, Button, Field, H2, Notice, Screen } from "@/components/ui";
 import { api, ApiError, type Me } from "@/lib/api";
 import { account } from "@/lib/account-store";
 import { AccountSection } from "@/components/account-section";
+import { SupplierSection } from "@/components/supplier-section";
 import { space, type, useColors } from "@/lib/theme";
 
 export default function SettingsScreen() {
@@ -111,6 +112,9 @@ export default function SettingsScreen() {
         <H2>Payments</H2>
         <Body muted>{seller?.stripe_ready ? "Stripe is connected. Open your dashboard to see sales and payouts." : "Connect Stripe so buyers can pay you. Money goes straight to your account."}</Body>
         <Button label={seller?.stripe_ready ? "Open Stripe dashboard" : "Connect Stripe"} variant={seller?.stripe_ready ? "secondary" : "primary"} onPress={stripe} />
+      </View>
+      <View style={{ marginTop: space.lg }}>
+        <SupplierSection />
       </View>
       <View style={{ gap: space.sm, marginTop: space.lg }}>
         <H2>About</H2>

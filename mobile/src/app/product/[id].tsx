@@ -6,7 +6,7 @@ import * as Clipboard from "expo-clipboard";
 import { StockEditor } from "@/components/stock-editor";
 import { Body, Button, Field, H2, Notice, Pill, Screen } from "@/components/ui";
 import { ProductPreview } from "@/components/product-preview";
-import { api, ApiError, type Product } from "@/lib/api";
+import { api, ApiError, money, type Product } from "@/lib/api";
 import { space } from "@/lib/theme";
 
 export default function ProductScreen() {
@@ -53,6 +53,9 @@ export default function ProductScreen() {
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
       <View style={{ gap: space.md }}>
         <H2>Price</H2>
+        {p.source === "cj" && p.cost != null ? (
+          <Body muted>CJdropshipping ships this for you. You pay CJ {money(p.cost)}{p.variants.length ? " or more, depending on the option," : ""} plus shipping for each one sold.</Body>
+        ) : null}
         {p.image_file ? (
           <Button label="Compare with Amazon and Walmart" variant="ghost" onPress={() => router.push({ pathname: "/price-check", params: { image_file: p.image_file!, preview: p.image_url ?? undefined } })} />
         ) : null}

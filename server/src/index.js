@@ -351,9 +351,10 @@ app.get("/privacy", legal("Privacy policy", `
 <h2>What we collect</h2><ul><li>Store details you enter: store name, tagline, product text and prices.</li>
 <li>Photos you choose to upload, used to write your product page and shown on your storefront.</li>
 <li>A random device token that identifies your store. We do not collect your name, contacts or location.</li>
-<li>Order records for your sales: what was bought, amounts, the buyer's name, email and shipping address, so we can deliver digital downloads and you can ship physical orders.</li></ul>
-<h2>How we use it</h2><p>To generate product pages (photos and text are sent to Anthropic's Claude API for this purpose only), to host your storefront, and to process sales through Stripe. We don't sell your data or use it for advertising.</p>
-<h2>Third parties</h2><p>Anthropic (AI writing), Stripe (payments and seller verification), and our hosting provider.</p>
+<li>Order records for your sales: what was bought, amounts, the buyer's name, email and shipping address, so we can deliver digital downloads and you can ship physical orders.</li>
+<li>If you connect a CJdropshipping account, your CJ API key (stored encrypted) so we can place orders there for you.</li></ul>
+<h2>How we use it</h2><p>To generate product pages (photos and text are sent to Anthropic's Claude API for this purpose only), to host your storefront, and to process sales through Stripe. For products you add from CJdropshipping, we send the buyer's name, shipping address and phone number to CJdropshipping so it can ship the order, and we use product photos to look up prices at other stores through SerpApi (Google Lens). We don't sell your data or use it for advertising.</p>
+<h2>Third parties</h2><p>Anthropic (AI writing), Stripe (payments and seller verification), CJdropshipping (order fulfilment for its products), SerpApi (price comparison), and our hosting provider.</p>
 <h2>Deleting your data</h2><p>Open Store settings in the app and tap "Delete my store". This removes your store, products and photos from our servers.</p>
 <h2>Contact</h2><p><a href="mailto:torrey@troosec.com">torrey@troosec.com</a></p>`));
 app.get("/terms", legal("Terms of use", `
