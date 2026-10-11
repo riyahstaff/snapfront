@@ -27,6 +27,8 @@ export const publicSeller = (s) => ({
   ship_countries: String(s.ship_countries || "").split(",").filter(Boolean),
   tax_enabled: Boolean(s.tax_enabled),
   theme: THEME_IDS.has(s.theme) ? s.theme : "classic",
+  about: s.about || "", announcement: s.announcement || "",
+  banner_url: s.banner_file ? `${config.publicUrl}/img/${s.banner_file}` : null,
 });
 
 /** NULL/blank means unlimited stock; otherwise a whole number >= 0. */
@@ -66,6 +68,8 @@ export function updateStore(seller, b) {
     db.prepare("UPDATE sellers SET ship_countries = ? WHERE id = ?").run([...new Set(list)].slice(0, 60).join(","), seller.id);
   }
   if (b.tax_enabled != null) db.prepare("UPDATE sellers SET tax_enabled = ? WHERE id = ?").run(b.tax_enabled ? 1 : 0, seller.id);
+  if (b.about != null) db.prepare("UPDATE sellers SET about = ? WHERE id = ?").run(clampStr(b.about, 600).trim(), seller.id);
+  if (b.announcement != null) db.prepare("UPDATE sellers SET announcement = ? WHERE id = ?").run(clampStr(b.announcement, 90).replace(/\s+/g, " ").trim(), seller.id);
   if (b.theme != null) {
     if (!THEME_IDS.has(b.theme)) throw httpError(400, "That store look doesn't exist.");
     db.prepare("UPDATE sellers SET theme = ? WHERE id = ?").run(b.theme, seller.id);

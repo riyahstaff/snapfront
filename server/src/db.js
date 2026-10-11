@@ -56,6 +56,9 @@ addCol("products", "option_name", "TEXT NOT NULL DEFAULT ''"); // e.g. "Size"; v
 addCol("products", "tax_code", "TEXT");
 addCol("products", "sku", "TEXT NOT NULL DEFAULT ''");
 addCol("sellers", "theme", "TEXT NOT NULL DEFAULT 'classic'");   // storefront look, see themes.js
+addCol("sellers", "about", "TEXT NOT NULL DEFAULT ''");           // "About us" on the storefront
+addCol("sellers", "announcement", "TEXT NOT NULL DEFAULT ''");    // strip above the storefront header
+addCol("sellers", "banner_file", "TEXT");                         // storefront cover photo
 addCol("sellers", "shipping_flat_cents", "INTEGER NOT NULL DEFAULT 0");
 addCol("sellers", "free_shipping_over_cents", "INTEGER");
 addCol("sellers", "ship_countries", "TEXT NOT NULL DEFAULT 'US,CA,GB,AU,NZ,IE'");

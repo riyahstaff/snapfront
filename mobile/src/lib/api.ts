@@ -64,13 +64,21 @@ export type Seller = {
   tax_enabled: boolean;
   /** Storefront look, one of the ids from api.themes() */
   theme: string;
+  /** "About us" text on the storefront */
+  about: string;
+  /** Short line in the strip above the storefront header; blank = shipping info */
+  announcement: string;
+  /** Storefront cover photo */
+  banner_url: string | null;
 };
 /** A storefront look the seller can pick (server/src/themes.js). */
 export type StoreTheme = {
   id: string; name: string; for: string; vibe: string; dark: boolean;
   fonts: { display: string; body: string };
-  colors: { bg: string; surface: string; ink: string; muted: string; accent: string; onAccent: string; badge: string; onBadge: string; line: string };
-  shape: { radius: number; button: number; ratio: string; card: string; header: "bar" | "center" | "block" };
+  colors: { bg: string; surface: string; ink: string; muted: string; accent: string; onAccent: string; badge: string; onBadge: string; line: string;
+    panel: string; onPanel: string; bar: string; onBar: string; foot: string };
+  shape: { radius: number; button: number; ratio: string; card: string; header: "split" | "center" | "stack";
+    hero: "overlay" | "split" | "collage" | "editorial" | "type" | "spotlight"; upper: string | null };
 };
 export type PlanId = "free" | "launch" | "pro";
 export type PlanLimits = { name: string; liveStores: number; stores: number; photo: number; product: number; agent: number; research: number };
@@ -107,7 +115,7 @@ export type PriceCheck = {
   suggestion: null | { price: number; basis: string; cost?: number; profit?: number; margin_percent?: number; warning?: string };
 };
 export type PriceCheckInput = { imageBase64?: string; mediaType?: string; image_file?: string; image_url?: string; cost?: number };
-export type StorePatch = Partial<Pick<Seller, "store_name" | "store_slug" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled" | "theme">>;
+export type StorePatch = Partial<Pick<Seller, "store_name" | "store_slug" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled" | "theme" | "about" | "announcement">>;
 export type OrderItem = { title: string; variant: string | null; qty: number; kind: "physical" | "digital"; unit: number };
 export type Address = { line1?: string; line2?: string | null; city?: string; state?: string | null; postal_code?: string; country?: string };
 export type Order = {
@@ -226,6 +234,8 @@ async function setStore(id: string | null) {
 export const api = {
   me: () => request<Me>("GET", "/api/me"),
   updateStore: (patch: StorePatch) => request<Me>("PATCH", "/api/me", patch),
+  setBanner: (imageBase64: string, mediaType = "image/jpeg") => request<Me>("PUT", "/api/me/banner", { imageBase64, mediaType }),
+  removeBanner: () => request<Me>("DELETE", "/api/me/banner"),
   themes: () => request<{ themes: StoreTheme[] }>("GET", "/api/themes").then((r) => r.themes),
   async deleteAccount() {
     await request<void>("DELETE", "/api/me");

@@ -88,7 +88,7 @@ export default function SettingsScreen() {
       <View style={{ height: space.md }} />
       <H2>{seller && seller.account.stores.length > 1 ? `This store: ${seller.store_name}` : "Your store"}</H2>
       <Field label="Store name" value={name} onChangeText={setName} />
-      <Field label="Tagline" hint="One line under your store name." value={tagline} onChangeText={setTagline} />
+      <Field label="Tagline" hint="The big headline at the top of your store." value={tagline} onChangeText={setTagline} />
       <Field label="Store address" value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} keyboardType="url"
         hint={seller ? `Your store’s link: ${seller.store_domain ? `${address.trim() || seller.store_slug}.${seller.store_domain}` : displayAddress(seller)}. Letters, numbers and dashes.` : undefined} />
       <Button label="Save store details" onPress={save} loading={saving} />

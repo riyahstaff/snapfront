@@ -1,141 +1,171 @@
-// Server-rendered public storefront pages. Plain HTML + one inline stylesheet: fast, SEO-friendly,
-// and shareable from a link-in-bio.
+// Server-rendered public storefront pages: plain HTML and one inline stylesheet, so stores load fast,
+// rank in search and share well from a link in bio. The look comes from the store's theme (themes.js).
 import { storeUrl } from "./urls.js";
+import { config } from "./config.js";
 import { themeOf, themeCss, fontsUrl, bodyClass } from "./themes.js";
+import { CSS } from "./storefront-css.js";
+
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const money = (cents, cur = "usd") => new Intl.NumberFormat("en-US", { style: "currency", currency: cur.toUpperCase() }).format(cents / 100);
 
-const CSS = `
-*{box-sizing:border-box}[hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);-webkit-font-smoothing:antialiased}
-a{color:inherit}h1,h2,h3{font-family:var(--display);font-weight:var(--dw);letter-spacing:var(--dt);line-height:1.08;margin:0;text-wrap:balance;overflow-wrap:break-word}
-:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.bar{border-bottom:1px solid var(--line);background:var(--surface)}
-.bar>div{max-width:1120px;margin:0 auto;padding:16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
-.bar .sp{display:none}.brand{font-family:var(--display);font-weight:var(--dw);letter-spacing:var(--dt);font-size:calc(22px*var(--ts));text-decoration:none;line-height:1.1;min-width:0;overflow-wrap:break-word}
-.bar nav{display:flex;gap:16px;align-items:center;flex:none}
-.cartlink{font:600 15px var(--body);display:inline-flex;gap:6px;align-items:center;text-decoration:none;border:1px solid var(--line);border-radius:var(--r-btn);padding:6px 14px;background:var(--bg);color:var(--ink)}
-.cartlink b{background:var(--accent);color:var(--on-accent);border-radius:99px;min-width:22px;height:22px;display:inline-grid;place-items:center;font-size:12px;padding:0 6px}.cartlink b:empty{display:none}
-.hd-center .bar{background:var(--bg)}.hd-center .brand{font-size:calc(26px*var(--ts))}
-@media(min-width:560px){.hd-center .bar>div{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.hd-center .bar .sp{display:block}.hd-center .brand{text-align:center}.hd-center .bar nav{justify-self:end}}
-.hd-block .bar{background:var(--accent);color:var(--on-accent);border:0}.hd-block .cartlink{background:var(--on-accent);color:var(--accent);border-color:transparent}
-.hd-block .cartlink b{background:var(--accent);color:var(--on-accent)}.hd-block .bar :focus-visible{outline-color:var(--on-accent)}
-.rules .bar{border-bottom:3px double var(--ink)}
-main{max-width:1120px;margin:0 auto;padding:28px 16px 64px}
-.hero{display:grid;gap:10px;margin-bottom:32px}.hero h1{font-size:calc(clamp(34px,6vw,64px)*var(--hero))}.hero p{color:var(--muted);margin:0;max-width:60ch;font-size:17px}
-.hero-center .hero{justify-items:center;text-align:center;padding-block:20px 8px}.hero-center .card .m{text-align:center}
-.hero-banner .hero{background:var(--panel);color:var(--on-panel);padding:clamp(28px,6vw,64px) clamp(20px,5vw,56px);border-radius:var(--r-card)}.hero-banner .hero p{color:inherit;opacity:.82}
-.hero-split .hero{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:end;gap:24px;padding-bottom:24px;border-bottom:1px solid var(--line)}
-@media(max-width:700px){.hero-split .hero{grid-template-columns:1fr;gap:10px}}
-.ital .hero h1{font-style:italic;font-weight:500}
-.up-titles h1,.up-titles h2,.up-all h1,.up-all h2,.up-all .brand{text-transform:uppercase}
-.up-buttons .buy,.up-buttons .cartlink,.up-buttons .cat,.up-all .buy,.up-all .cartlink,.up-all .cat{text-transform:uppercase;letter-spacing:.08em;font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr));gap:24px 20px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;text-decoration:none;display:grid;align-content:start}
-.card:hover{border-color:var(--accent)}.card:focus-visible{outline-offset:3px}
-.ph{aspect-ratio:var(--ratio);background:var(--line);position:relative;max-width:100%}.ph img{width:100%;height:100%;object-fit:cover;display:block}
-.tagp{position:absolute;left:12px;bottom:12px;background:var(--badge);color:var(--on-badge);font-weight:700;padding:4px 10px;border-radius:var(--r-chip);font-variant-numeric:tabular-nums}
-.card .m{padding:14px 16px;display:grid;gap:4px}.card h2{font-size:calc(18px*var(--ts))}
-.card .pr{display:none;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
-.pr-inline .tagp{display:none}.pr-inline .card .pr{display:block}
-.cd-shadow .card{border:0;box-shadow:0 1px 2px color-mix(in srgb,var(--ink) 7%,transparent),0 10px 28px color-mix(in srgb,var(--ink) 9%,transparent)}
-.cd-shadow .card:hover{box-shadow:0 0 0 2px var(--accent),0 10px 28px color-mix(in srgb,var(--ink) 12%,transparent)}
-.cd-flat .card{background:none;border:0;border-radius:0;overflow:visible}.cd-flat .ph{border-radius:var(--r-card);overflow:hidden}.cd-flat .card .m{padding:12px 0 0}.cd-flat .card:hover h2{text-decoration:underline;text-underline-offset:4px}
-.cd-frame .card{padding:10px;border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}.cd-frame .ph{border-radius:max(0px,calc(var(--r-card) - 4px));overflow:hidden}.cd-frame .card .m{padding:14px 6px 6px}
-.cd-pop .card{border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);transition:transform .12s,box-shadow .12s}.cd-pop .ph{border-bottom:2px solid var(--ink)}
-.cd-pop .card:hover{border-color:var(--ink);transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--ink)}
-.cd-glow .card{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent),0 0 18px color-mix(in srgb,var(--accent) 10%,transparent)}
-.cd-glow .card:hover{box-shadow:0 0 0 1px var(--accent),0 0 28px color-mix(in srgb,var(--accent) 45%,transparent)}
-.cd-pastel .card{border:0;padding:10px}.cd-pastel .ph{border-radius:calc(var(--r-card) - 8px);overflow:hidden;background:#fff6}.cd-pastel .card .m{padding:12px 8px 6px}
-.cd-pastel .card:nth-child(5n+1){background:#FFE1E8}.cd-pastel .card:nth-child(5n+2){background:#DDEFFF}.cd-pastel .card:nth-child(5n+3){background:#FFF1BF}.cd-pastel .card:nth-child(5n+4){background:#DDF5E4}.cd-pastel .card:nth-child(5n){background:#ECE2FF}
-.cd-pastel .card:hover{box-shadow:0 0 0 2px var(--ink)}
-@media(prefers-reduced-motion:reduce){.cd-pop .card{transition:none}.cd-pop .card:hover{transform:none}}
-.pp{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:40px;align-items:start}@media(max-width:760px){.pp{grid-template-columns:1fr;gap:20px}}
-.frame{position:relative;border-radius:var(--r-card);overflow:hidden;background:var(--line);aspect-ratio:var(--ratio);max-width:100%}.frame img{width:100%;height:100%;object-fit:cover;display:block}
-.cd-frame .frame{outline:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));outline-offset:8px;margin:9px}.cd-pop .frame{border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
-.frame i{display:none;position:absolute;width:30px;height:30px;border:0 solid #fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}.corners .frame i{display:block}
-.frame i:nth-of-type(1){top:16px;left:16px;border-top-width:3px;border-left-width:3px}.frame i:nth-of-type(2){top:16px;right:16px;border-top-width:3px;border-right-width:3px}
-.frame i:nth-of-type(3){bottom:16px;left:16px;border-bottom-width:3px;border-left-width:3px}.frame i:nth-of-type(4){bottom:16px;right:16px;border-bottom-width:3px;border-right-width:3px}
-.info{display:grid;gap:16px}.cat{color:var(--accent);font-weight:700;font-size:14px}.info h1{font-size:calc(clamp(30px,4vw,44px)*var(--ts))}
-.tl{color:var(--muted);font-size:18px;margin:0}.price{font-family:var(--display);font-weight:var(--dw);font-size:calc(32px*var(--ts));font-variant-numeric:tabular-nums}
-.buy{display:inline-flex;justify-content:center;background:var(--accent);color:var(--on-accent);text-decoration:none;font-weight:700;font-size:17px;padding:15px 30px;border-radius:var(--r-btn);min-width:220px}
-.buy.off{opacity:.45;pointer-events:none}.fine{font-size:13px;color:var(--muted)}
-ul.b{list-style:none;padding:0;margin:0;display:grid;gap:8px}ul.b li{padding-left:24px;position:relative}ul.b li::before{content:"";position:absolute;left:0;top:7px;width:10px;height:10px;border:2px solid var(--accent);border-radius:2px}
-details{border-top:1px solid var(--line);padding:12px 0}summary{font-weight:600;cursor:pointer}details p{color:var(--muted);margin:8px 0 0}
-.tags{display:flex;flex-wrap:wrap;gap:6px}.tags span{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:13px;color:var(--muted)}
-.note{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:28px;max-width:640px;margin:40px auto;display:grid;gap:14px;text-align:center;justify-items:center}
-footer{text-align:center;color:var(--muted);font-size:13px;padding:32px 16px}
-.soldp{position:absolute;right:12px;top:12px;background:var(--ink);color:var(--bg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:var(--r-chip)}
-fieldset{border:0;padding:0;margin:0;display:grid;gap:8px}legend{font-weight:700;margin-bottom:8px;padding:0}
-.opts{display:flex;flex-wrap:wrap;gap:8px}.opts label{position:relative}.opts input{position:absolute;opacity:0;inset:0}
-.opts span{display:inline-block;border:1.5px solid var(--line);background:var(--surface);border-radius:var(--r-in);padding:9px 16px;font-weight:600;cursor:pointer}
-.opts input:checked+span{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}.opts input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
-.opts input:disabled+span{opacity:.45;text-decoration:line-through;cursor:not-allowed}
-.qty{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:var(--r-btn);background:var(--surface)}
-.qty button{all:unset;cursor:pointer;width:40px;height:40px;display:grid;place-items:center;font-size:20px;font-weight:700}.qty button:focus-visible{outline:3px solid var(--accent);border-radius:99px}
-.qty output{min-width:28px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
-.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.actions .buy{min-width:0;flex:1 1 150px}
-button.buy{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:17px}button.buy:disabled{opacity:.45;cursor:not-allowed}
-.up-buttons button.buy,.up-all button.buy{font-size:14px}
-.buy.alt{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
-.stock{font-size:14px;font-weight:600}.stock.low{color:var(--danger)}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:var(--r-in);font-weight:600;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px)}
-.toast a{color:inherit;font-weight:800;text-underline-offset:3px}
-.cartw{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:32px;align-items:start}@media(max-width:760px){.cartw{grid-template-columns:1fr}}
-.lines{display:grid;gap:12px}.line{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-in);padding:12px}
-.line img,.line .noimg{width:72px;height:72px;border-radius:min(10px,var(--r-in));object-fit:cover;background:var(--line)}.line h3{margin:0;font-size:16px}.line .v{color:var(--muted);font-size:14px}
-.line .r{display:grid;justify-items:end;gap:6px}.rm{all:unset;cursor:pointer;color:var(--muted);font-size:13px;text-decoration:underline}.rm:focus-visible{outline:2px solid var(--accent)}
-.sum{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:20px;display:grid;gap:12px;position:sticky;top:16px}
-.sum h2{font-size:22px}.row{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}.row.t{font-weight:800;font-size:20px;border-top:1px solid var(--line);padding-top:12px}
-.code{display:flex;gap:8px}.code input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--r-in);background:var(--bg);color:var(--ink);text-transform:uppercase}.code input::placeholder{text-transform:none;color:var(--muted)}
-.code button{font:inherit;font-weight:700;border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:var(--r-in);padding:0 14px;cursor:pointer}
-.err{color:var(--danger);font-weight:600;margin:0}.ok{color:var(--good);font-weight:600;margin:0}
-.order{max-width:640px;margin:0 auto;display:grid;gap:18px}.order h1{font-size:clamp(32px,5vw,48px)}.dl{display:grid;gap:10px}
-.pv{position:sticky;top:0;z-index:5;background:var(--ink);color:var(--bg);font:600 14px/1.4 var(--body);padding:10px 16px;text-align:center}`;
-
-// Cart lives in the buyer's browser (per store). Only ids and quantities are trusted by the server.
-const CART_JS = (slug) => `<script>
-(function(){var K="sf_cart_${slug}";
-function read(){try{return JSON.parse(localStorage.getItem(K))||[]}catch(e){return[]}}
-function write(c){try{localStorage.setItem(K,JSON.stringify(c))}catch(e){}badge()}
-function badge(){var n=read().reduce(function(s,l){return s+l.qty},0);document.querySelectorAll("[data-cart-count]").forEach(function(b){b.textContent=n?String(n):""})}
-window.sfCart={read:read,write:write,add:function(item){var c=read(),k=item.product_id+":"+(item.variant_id||"");var f=c.find(function(l){return l.product_id+":"+(l.variant_id||"")===k});
-if(f){f.qty=item.kind==="digital"?1:Math.min(20,f.qty+item.qty)}else c.push(item);write(c)}};badge();})();</script>`;
+const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  bag: svg('<path d="M5 8h14l-1.2 12.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'),
+  truck: svg('<path d="M2.5 6.5h11v10h-11z"/><path d="M13.5 9.5h4l3 3.2v3.8h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>'),
+  lock: svg('<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>'),
+  download: svg('<path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/>'),
+  globe: svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"/>'),
+};
 
 /** Path prefix for links inside a store: "" on its own address (pawplace.snapfront.app), "/s/<slug>" otherwise. */
 const base = (store) => (store._base ?? `/s/${store.store_slug}`);
+const home = (store) => base(store) || "/";
+const catHref = (store, cat) => `${base(store)}/?c=${encodeURIComponent(cat)}#shop`;
+const bannerUrl = (store) => (store.banner_file ? `${config.publicUrl}/img/${store.banner_file}` : null);
 
-function shell({ title, description, store, image, body, canonical }) {
+/* ---------- facts the page can state truthfully ---------- */
+/** $75 rather than $75.00 in marketing copy. */
+const short = (cents) => money(cents).replace(/\.00$/, "");
+const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+function shipping(store) {
+  const free = store.free_shipping_over_cents, flat = store.shipping_flat_cents ?? 0;
+  const title = free != null ? (free === 0 ? "Free shipping" : `Free shipping over ${short(free)}`) : flat === 0 ? "Free shipping" : `${short(flat)} flat-rate shipping`;
+  const codes = String(store.ship_countries || "").split(",").filter(Boolean);
+  const names = codes.map((c) => { try { return c === "US" ? "the US" : c === "GB" ? "the UK" : regionNames.of(c); } catch { return c; } });
+  const where = !names.length ? "" : names.length <= 3 ? `Ships to ${names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0]}` : `Ships to ${names.length} countries`;
+  return { title, where };
+}
+function storeFacts(store, products) {
+  const physical = !products.length || products.some((p) => p.kind === "physical");
+  const digital = products.some((p) => p.kind === "digital");
+  const ship = shipping(store);
+  const perks = [];
+  if (physical) perks.push([ICON.truck, ship.title, ship.where || "Packed and shipped by us"]);
+  if (digital) perks.push([ICON.download, "Instant download", "Your files arrive as soon as you pay"]);
+  perks.push([ICON.lock, "Secure checkout", "Payments handled safely by Stripe"]);
+  const notes = [store.announcement, physical ? `${ship.title}${ship.where ? ` · ${ship.where.replace("Ships", "ships")}` : ""}` : null, digital ? "Instant download after checkout" : null, "Secure checkout with Stripe"]
+    .filter(Boolean);
+  return { perks, notes, ship, physical };
+}
+function categories(products) {
+  const m = new Map();
+  for (const p of products) {
+    const c = String(p.category || "").trim();
+    if (!c) continue;
+    const e = m.get(c.toLowerCase()) || { name: c, count: 0, image: null };
+    e.count++; e.image ||= p.image_url; m.set(c.toLowerCase(), e);
+  }
+  return [...m.values()].sort((a, b) => b.count - a.count);
+}
+const priceLabel = (p) => {
+  const prices = (p.variants || []).map((v) => v.price_cents ?? p.price_cents);
+  return `${prices.length && new Set(prices).size > 1 ? "From " : ""}${money(Math.min(p.price_cents, ...prices), p.currency)}`;
+};
+const img = (src, alt, extra = "") => (src ? `<img src="${esc(src)}" alt="${esc(alt)}"${extra}>` : `<div class="noimg"></div>`);
+
+/* ---------- the frame every page shares ---------- */
+function shell({ title, description, store, image, body, canonical, cats = [], facts = null, current = null }) {
   const t = themeOf(store._theme || store.theme);
   const preview = Boolean(store._theme);
+  const notes = facts?.notes || [store.announcement || "Secure checkout with Stripe"];
+  const ann = t.announce === "marquee"
+    ? `<div class="ann mq" aria-label="${esc(notes.join(". "))}"><div class="trk" aria-hidden="true">${[0, 1].map(() => notes.concat(notes).map((n) => `<span>${esc(n)}</span><i>✦</i>`).join("")).join("")}</div></div>`
+    : `<div class="ann">${esc(notes[0])}</div>`;
+  const nav = [`<a href="${esc(base(store))}/#shop"${current === "all" ? ' aria-current="page"' : ""}>Shop all</a>`,
+    ...cats.slice(0, 3).map((c) => `<a href="${esc(catHref(store, c.name))}"${current === c.name ? ' aria-current="page"' : ""}>${esc(c.name)}</a>`),
+    store.about ? `<a href="${esc(base(store))}/#about">About</a>` : ""].join("");
+  const year = new Date().getFullYear();
+  const ship = facts?.ship || shipping(store);
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}">${preview ? `<meta name="robots" content="noindex">` : ""}
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}">${image ? `<meta property="og:image" content="${esc(image)}">` : ""}
 ${canonical ? `<link rel="canonical" href="${esc(canonical)}">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="${t.c.bg}">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${esc(fontsUrl(t))}">
-<style>${themeCss(t)}${CSS}</style></head><body class="${bodyClass(t)}" data-theme="${t.id}">
-${preview ? `<div class="pv" role="note">Previewing the ${esc(t.name)} look. Buyers still see your current look until you choose this one in the app.</div>` : ""}
-<header class="bar"><div><span class="sp"></span><a class="brand" href="${esc(base(store) || "/")}">${esc(store.store_name)}</a><nav><a class="cartlink" href="${esc(base(store))}/cart">Cart <b data-cart-count></b></a></nav></div></header>
-${CART_JS(store.store_slug)}<main>${body}</main><footer>© ${new Date().getFullYear()} ${esc(store.store_name)} · Secure checkout by Stripe · Made with Snapfront</footer>
-${preview ? `<script>document.querySelectorAll('a[href^="/"]').forEach(function(a){var u=new URL(a.href);u.searchParams.set("theme",${JSON.stringify(t.id)});a.href=u.pathname+u.search})</script>` : ""}</body></html>`;
+<style>${themeCss(t)}${CSS}</style></head><body class="${bodyClass(t)}">
+${preview ? `<div class="pv" role="note">Previewing the ${esc(t.name)} look. Buyers still see your current look until you choose this one in the app.</div>` : ""}${ann}
+<header class="hd"><div class="wrap"><a class="brand" href="${esc(home(store))}">${esc(store.store_name)}</a><nav class="nav" aria-label="Shop">${nav}</nav>
+<div class="acts"><a class="cart" href="${esc(base(store))}/cart" aria-label="Cart">${ICON.bag}<b data-cart-count></b></a></div></div></header>
+${CART_JS(store.store_slug)}<main>${body}</main>
+<footer class="ft"><div class="wrap top"><div><a class="brand" href="${esc(home(store))}">${esc(store.store_name)}</a>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</div>
+<nav aria-label="Shop links"><h4>Shop</h4><a href="${esc(base(store))}/#shop">All products</a>${cats.slice(0, 5).map((c) => `<a href="${esc(catHref(store, c.name))}">${esc(c.name)}</a>`).join("")}</nav>
+<nav aria-label="Help"><h4>Help</h4><a href="${esc(base(store))}/cart">Your cart</a>${store.about ? `<a href="${esc(base(store))}/#about">About us</a>` : ""}${facts?.physical !== false ? `<span>${esc(ship.title)}</span>${ship.where ? `<span>${esc(ship.where)}</span>` : ""}` : ""}<span>Secure checkout by Stripe</span></nav></div>
+<div class="wrap bot"><span>© ${year} ${esc(store.store_name)}</span><span>Made with Snapfront</span></div></footer>
+${preview ? `<script>document.querySelectorAll('a[href^="/"]').forEach(function(a){var u=new URL(a.href);u.searchParams.set("theme",${JSON.stringify(t.id)});a.href=u.pathname+u.search+u.hash})</script>` : ""}</body></html>`;
 }
 
-export function storePage(store, products, baseUrl) {
-  const cards = products.map((p) => {
-    const prices = p.variants.map((v) => v.price_cents ?? p.price_cents);
-    const price = `${prices.length && new Set(prices).size > 1 ? "From " : ""}${money(Math.min(p.price_cents, ...prices), p.currency)}`;
-    return `<a class="card" href="${esc(base(store))}/${esc(p.slug)}"><div class="ph">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" loading="lazy">` : ""}<span class="tagp">${price}</span>${p.in_stock ? "" : `<span class="soldp">Sold out</span>`}</div><div class="m"><h2>${esc(p.title)}</h2><span class="pr">${price}</span></div></a>`;
-  }).join("");
-  return shell({
-    title: store.store_name, description: store.tagline || `Shop ${store.store_name}`, store,
-    image: products[0]?.image_url, canonical: storeUrl(store.store_slug),
-    body: `<section class="hero"><h1>${esc(store.store_name)}</h1>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</section>
-<div class="grid">${cards || `<p class="fine">New products are on the way.</p>`}</div>`,
-  });
+/* ---------- sections ---------- */
+function card(store, p) {
+  return `<a class="pc" href="${esc(base(store))}/${esc(p.slug)}"><div class="im">${img(p.image_url, p.alt_text || p.title, ' loading="lazy"')}
+${!p.in_stock ? `<span class="tag out">Sold out</span>` : p.kind === "digital" ? `<span class="tag">Digital</span>` : ""}<span class="go" aria-hidden="true">View product</span></div>
+<div class="bd"><h3>${esc(p.title)}</h3><span class="pr">${priceLabel(p)}</span></div></a>`;
 }
 
-export function productPage(store, p, baseUrl) {
+function hero(store, t, products) {
+  const pics = [bannerUrl(store), ...products.map((p) => p.image_url)].filter(Boolean);
+  const head = store.tagline || store.store_name;
+  const long = head.length > (t.hero === "type" ? 26 : 56);
+  const sub = store.tagline ? (store.about ? store.about.split(/(?<=[.!?])\s/)[0].slice(0, 180) : "") : "";
+  const ctas = `<div class="ctas"><a class="btn" href="#shop">Shop now</a>${store.about ? `<a class="btn ghost" href="#about">Our story</a>` : ""}</div>`;
+  const txt = (h = "h1") => `<div class="txt"><${h}${long ? ' class="long"' : ""}>${esc(head)}</${h}>${sub ? `<p class="sub">${esc(sub)}</p>` : ""}${ctas}</div>`;
+  const alt = `${store.store_name}`;
+  let kind = t.hero;
+  if (!pics.length) kind = t.hero === "type" ? "type" : "plain";
+  else if (kind === "collage" && pics.length < 2) kind = "editorial";
+  switch (kind) {
+    case "overlay": return `<section class="hero h-ov ${t.heroAlign === "center" ? "center" : ""}">${img(pics[0], alt, ' fetchpriority="high"')}<div class="wrap">${txt()}</div></section>`;
+    case "split": return `<section class="hero h-sp">${txt()}<div class="pic">${img(pics[0], alt, ' fetchpriority="high"')}</div></section>`;
+    case "collage": return `<section class="hero h-co"><div class="wrap">${txt()}<div class="pics${pics.length === 2 ? " n2" : ""}">${pics.slice(0, 3).map((u, i) => img(u, i ? "" : alt, i ? ' loading="lazy"' : "")).join("")}</div></div></section>`;
+    case "editorial": return `<section class="hero h-ed"><div class="wrap">${txt()}<div class="pic">${img(pics[0], alt, ' fetchpriority="high"')}</div></div></section>`;
+    case "spotlight": return `<section class="hero h-spot"><div class="wrap">${txt()}<div class="pic">${img(products.find((p) => p.image_url)?.image_url || pics[0], alt, ' fetchpriority="high"')}</div></div></section>`;
+    case "type": return `<section class="hero h-ty"><div class="wrap"><h1${long ? ' class="long"' : ""}>${esc(head)}</h1><div class="row">${sub ? `<p class="sub">${esc(sub)}</p>` : `<span></span>`}${ctas}</div></div>
+${products.length ? `<div class="strip">${products.slice(0, 8).map((p) => `<a href="${esc(base(store))}/${esc(p.slug)}">${img(p.image_url, p.alt_text || p.title, ' loading="lazy"')}<span><span>${esc(p.title)}</span><span>${priceLabel(p)}</span></span></a>`).join("")}</div>` : ""}</section>`;
+    default: return `<section class="hero h-plain"><div class="wrap">${txt()}</div></section>`;
+  }
+}
+
+function catsSection(store, t, cats) {
+  if (cats.length < 2 || t.cats === "pill") return "";
+  const body = t.cats === "tile"
+    ? `<div class="cats-t">${cats.slice(0, 4).map((c) => `<a class="cat-t" href="${esc(catHref(store, c.name))}">${c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy">` : ""}<span>${esc(c.name)}<small>${c.count} ${c.count === 1 ? "product" : "products"}</small></span></a>`).join("")}</div>`
+    : `<div class="cats-c">${cats.slice(0, 8).map((c) => `<a class="cat-c" href="${esc(catHref(store, c.name))}">${img(c.image, "", ' loading="lazy"')}<span>${esc(c.name)}</span></a>`).join("")}</div>`;
+  return `<section class="sec tight"><div class="wrap"><div class="sec-h"><h2>Shop by category</h2></div>${body}</div></section>`;
+}
+
+const chips = (store, cats, current) => (cats.length < 2 ? "" : `<nav class="chips" aria-label="Categories"><a class="chip" href="${esc(base(store))}/#shop"${!current ? ' aria-current="page"' : ""}>All</a>${cats.map((c) =>
+  `<a class="chip" href="${esc(catHref(store, c.name))}"${current === c.name ? ' aria-current="page"' : ""}>${esc(c.name)}</a>`).join("")}</nav>`);
+
+export function storePage(store, products, baseUrl, { category } = {}) {
+  const t = themeOf(store._theme || store.theme);
+  const cats = categories(products);
+  const facts = storeFacts(store, products);
+  const current = category ? cats.find((c) => c.name.toLowerCase() === String(category).toLowerCase())?.name : null;
+  const shown = current ? products.filter((p) => String(p.category || "").trim().toLowerCase() === current.toLowerCase()) : products;
+  const grid = shown.length ? `<div class="grid">${shown.map((p) => card(store, p)).join("")}</div>` : `<div class="empty">New products are on the way. Check back soon.</div>`;
+  const meta = { title: current ? `${current} · ${store.store_name}` : store.store_name, description: store.tagline || store.about || `Shop ${store.store_name}`, store, cats, facts,
+    image: bannerUrl(store) || products[0]?.image_url, canonical: storeUrl(store.store_slug) };
+  if (current) {
+    return shell({ ...meta, current, body: `<div class="wrap"><section class="pagehead"><h1>${esc(current)}</h1><p>${shown.length} ${shown.length === 1 ? "product" : "products"}</p></section>
+<section id="shop" class="sec tight">${cats.length > 1 ? `<div class="sec-h">${chips(store, cats, current)}</div>` : ""}${grid}</section></div>` });
+  }
+  const feat = products.length >= 4 ? products.find((p) => p.image_url && p.in_stock) : null;
+  const band = t.band ? `<div class="band" aria-hidden="true"><div class="trk">${[0, 1].map(() => [store.tagline || store.store_name, store.store_name, facts.perks[0][1]].concat([store.tagline || store.store_name, store.store_name, facts.perks[0][1]])
+    .map((x) => `<span>${esc(x)}</span><i>✦</i>`).join("")).join("")}</div></div>` : "";
+  const aboutPic = bannerUrl(store) && t.hero !== "overlay" && t.hero !== "split" && t.hero !== "editorial" ? bannerUrl(store) : (products[1] || products[0])?.image_url;
+  const body = `${hero(store, t, products)}
+<section class="perks" aria-label="Why shop here"><div class="wrap">${facts.perks.map(([i, b, s]) => `<div class="perk">${i}<div><b>${esc(b)}</b><span>${esc(s)}</span></div></div>`).join("")}</div></section>
+${catsSection(store, t, cats).replace('class="sec tight"', 'class="sec"')}
+<section id="shop" class="sec${cats.length >= 2 && t.cats !== "pill" ? " tight" : ""}"><div class="wrap"><div class="sec-h"><h2>${products.length > 8 ? "Latest arrivals" : "Shop all"}</h2>${chips(store, cats, null)}</div>${grid}</div></section>
+${feat ? `<section class="sec feat"><div class="wrap"><div class="pic">${img(feat.image_url, feat.alt_text || feat.title, ' loading="lazy"')}</div><div class="txt">${feat.category ? `<span class="kick">${esc(feat.category)}</span>` : ""}<h2>${esc(feat.title)}</h2>
+${feat.tagline ? `<p class="tl">${esc(feat.tagline)}</p>` : ""}<div class="price">${priceLabel(feat)}</div><a class="btn" href="${esc(base(store))}/${esc(feat.slug)}">Shop now</a></div></div></section>` : ""}
+${band}
+${store.about ? `<section id="about" class="sec story${aboutPic ? "" : " solo"}"><div class="wrap">${aboutPic ? `<div class="pic">${img(aboutPic, "", ' loading="lazy"')}</div>` : ""}<div class="txt"><h2>About ${esc(store.store_name)}</h2><p>${esc(store.about)}</p></div></div></section>` : ""}`;
+  return shell({ ...meta, current: null, body });
+}
+
+export function productPage(store, p, baseUrl, others = []) {
   const sellable = p.status === "live" && store.stripe_ready;
+  const cats = categories([p, ...others]);
+  const facts = storeFacts(store, [p, ...others]);
   const variants = p.variants || [];
   const firstAvail = variants.find((v) => v.inventory == null || v.inventory > 0);
   const startPrice = firstAvail?.price_cents ?? variants[0]?.price_cents ?? p.price_cents;
@@ -146,7 +176,7 @@ export function productPage(store, p, baseUrl) {
   const qty = p.kind === "physical" ? `<div class="qty" role="group" aria-label="Quantity"><button type="button" data-q="-1" aria-label="Fewer">−</button><output id="q" aria-live="polite">1</output><button type="button" data-q="1" aria-label="More">+</button></div>` : "";
   const buy = !sellable ? `<span class="buy off">Available soon</span>`
     : !p.in_stock ? `<span class="buy off">Sold out</span>`
-    : `<div class="actions">${qty}<button class="buy" type="button" id="add">Add to cart</button><button class="buy alt" type="button" id="now">Buy now</button></div>`;
+    : `<div class="actions">${qty}<button class="buy" type="button" id="add">Add to cart</button></div><button class="buy alt" type="button" id="now">Buy it now</button>`;
   const item = { product_id: p.id, title: p.title, kind: p.kind, image: p.image_url || "", unit: p.price_cents, inventory: p.inventory };
   const script = sellable && p.in_stock ? `<script>(function(){var P=${JSON.stringify(item).replace(/</g, "\\u003c")},OPT=${JSON.stringify(p.option_name || "Option").replace(/</g, "\\u003c")},q=1,cur=${JSON.stringify(p.currency)};
 var fmt=function(c){return new Intl.NumberFormat("en-US",{style:"currency",currency:cur.toUpperCase()}).format(c/100)};
@@ -161,27 +191,40 @@ document.getElementById("add").addEventListener("click",function(){add();var t=d
 document.getElementById("now").addEventListener("click",function(){add();location.href="${esc(base(store))}/cart"});sync()})();</script>` : "";
   const jsonLd = { "@context": "https://schema.org", "@type": "Product", name: p.title, description: p.seo_description || p.tagline, image: p.image_url || undefined, sku: p.sku || undefined,
     offers: { "@type": "Offer", price: (startPrice / 100).toFixed(2), priceCurrency: p.currency.toUpperCase(), availability: `https://schema.org/${p.in_stock ? "InStock" : "OutOfStock"}`, url: storeUrl(store.store_slug, `/${p.slug}`) } };
+  const mini = [p.kind === "digital" ? [ICON.download, "Instant download after you pay"] : [ICON.truck, `${facts.ship.title}${facts.ship.where ? `. ${facts.ship.where}.` : ""}`], [ICON.lock, "Secure checkout by Stripe"]];
+  const related = others.filter((o) => o.id !== p.id).sort((a, b) => (b.category === p.category) - (a.category === p.category)).slice(0, 4);
   return shell({
-    title: `${p.title} · ${store.store_name}`, description: p.seo_description || p.tagline, store, image: p.image_url,
+    title: `${p.title} · ${store.store_name}`, description: p.seo_description || p.tagline, store, image: p.image_url, cats, facts,
     canonical: storeUrl(store.store_slug, `/${p.slug}`),
     body: `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>
-<article class="pp"><div class="frame">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}">` : ""}<i></i><i></i><i></i><i></i></div>
-<div class="info"><div class="cat">${p.kind === "digital" ? "Digital download" : esc(p.category || "Product")}</div><h1>${esc(p.title)}</h1>
-${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}<div class="price" id="price">${money(startPrice, p.currency)}</div>${opts}<div>${buy}</div><div id="stock" class="stock" aria-live="polite"></div>
-<div class="fine">Secure checkout by Stripe${p.kind === "digital" ? " · instant download after payment" : ""}</div>
-${String(p.description || "").split(/\n\s*\n/).filter(Boolean).map((t) => `<p style="margin:0">${esc(t)}</p>`).join("")}
-${p.bullets.length ? `<h2 style="font-size:20px">What you get</h2><ul class="b">${p.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
-${p.tags.length ? `<div class="tags">${p.tags.map((t) => `<span>#${esc(t)}</span>`).join("")}</div>` : ""}
-<div>${p.faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}</div></div></article>
+<div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="${esc(home(store))}">Home</a><span>/</span>${p.category ? `<a href="${esc(catHref(store, p.category))}">${esc(p.category)}</a><span>/</span>` : ""}<span aria-current="page">${esc(p.title)}</span></nav>
+<article class="pd"><div class="media"><div class="pic">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" fetchpriority="high">` : ""}</div></div>
+<div class="info"><div class="cat">${p.kind === "digital" ? "Digital download" : esc(p.category || store.store_name)}</div><h1>${esc(p.title)}</h1>
+<div class="price" id="price">${money(startPrice, p.currency)}</div>${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}${opts}${buy}<div id="stock" class="stock" aria-live="polite"></div>
+<div class="mini">${mini.map(([i, t]) => `<div>${i}<span>${esc(t)}</span></div>`).join("")}</div>
+${p.description ? `<div class="desc">${String(p.description).split(/\n\s*\n/).filter(Boolean).map((t) => `<p>${esc(t)}</p>`).join("")}</div>` : ""}
+${p.bullets.length ? `<ul class="b">${p.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
+<div>${p.faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}${p.kind === "physical" ? `<details><summary>Shipping</summary><p>${esc(facts.ship.title)}.${facts.ship.where ? ` ${esc(facts.ship.where)}.` : ""} You'll see the shipping cost before you pay.</p></details>` : ""}</div>
+${p.tags.length ? `<div class="tags">${p.tags.map((t) => `<span>#${esc(t)}</span>`).join("")}</div>` : ""}</div></article></div>
+${related.length ? `<section class="sec feat"><div class="wrap" style="display:block"><div class="sec-h"><h2>You may also like</h2><a class="more" href="${esc(base(store))}/#shop">Shop all</a></div><div class="grid">${related.map((o) => card(store, o)).join("")}</div></div></section>` : ""}
 <div class="toast" id="toast" role="status" hidden>Added to your cart <a href="${esc(base(store))}/cart">View cart</a></div>${script}`,
   });
 }
+
+// Cart lives in the buyer's browser (per store). Only ids and quantities are trusted by the server.
+const CART_JS = (slug) => `<script>
+(function(){var K="sf_cart_${slug}";
+function read(){try{return JSON.parse(localStorage.getItem(K))||[]}catch(e){return[]}}
+function write(c){try{localStorage.setItem(K,JSON.stringify(c))}catch(e){}badge()}
+function badge(){var n=read().reduce(function(s,l){return s+l.qty},0);document.querySelectorAll("[data-cart-count]").forEach(function(b){b.textContent=n?String(n):""})}
+window.sfCart={read:read,write:write,add:function(item){var c=read(),k=item.product_id+":"+(item.variant_id||"");var f=c.find(function(l){return l.product_id+":"+(l.variant_id||"")===k});
+if(f){f.qty=item.kind==="digital"?1:Math.min(20,f.qty+item.qty)}else c.push(item);write(c)}};badge();})();</script>`;
 
 export function cartPage(store, baseUrl) {
   const slug = esc(store.store_slug);
   return shell({
     title: `Your cart · ${store.store_name}`, description: `Your cart at ${store.store_name}`, store, canonical: storeUrl(store.store_slug, "/cart"),
-    body: `<section class="hero"><h1>Your cart</h1></section>
+    body: `<div class="wrap page"><section class="pagehead"><h1>Your cart</h1></section>
 <div id="empty" hidden><p>Your cart is empty.</p><p><a class="buy" href="${esc(base(store) || "/")}">Keep shopping</a></p></div>
 <div class="cartw" id="full" hidden><div class="lines" id="lines"></div>
 <aside class="sum" aria-labelledby="sumh"><h2 id="sumh">Order summary</h2>
@@ -192,7 +235,7 @@ export function cartPage(store, baseUrl) {
 <form class="code" id="codef"><label for="code" class="fine" style="position:absolute;left:-9999px">Discount code</label><input id="code" placeholder="Discount code" autocomplete="off" maxlength="32"><button type="submit">Apply</button></form>
 <p id="msg" role="status" class="fine" hidden></p>
 <button class="buy" type="button" id="go">Check out</button><p class="fine">You'll pay on Stripe's secure checkout.</p></aside></div>
-<script>(function(){var S="${esc(base(store))}",code="",fmt=function(d){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(d)};
+</div><script>(function(){var S="${esc(base(store))}",code="",fmt=function(d){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(d)};
 try{code=sessionStorage.getItem("sf_code_${slug}")||""}catch(e){}document.getElementById("code").value=code;
 function msg(t,ok){var m=document.getElementById("msg");m.hidden=!t;m.textContent=t||"";m.className=ok?"ok":"err"}
 function items(){return sfCart.read().map(function(l){return{product_id:l.product_id,variant_id:l.variant_id,qty:l.qty}})}
@@ -239,14 +282,14 @@ ${o.tax ? `<div class="row"><span>Tax</span><span>${money$(o.tax)}</span></div>`
 <div class="row t"><span>Total</span><span>${money$(o.total)}</span></div><p class="fine">Order ${esc(o.id)}</p></div>`;
   const clear = !pending && o.status !== "canceled" ? `<script>sfCart.write([]);try{sessionStorage.removeItem("sf_code_${esc(store.store_slug)}")}catch(e){}</script>` : "";
   return shell({ title: pending ? "Confirming payment" : "Thank you", description: `Your order from ${store.store_name}`, store,
-    body: `${pending ? `<meta http-equiv="refresh" content="4">` : ""}<div class="order">${body}</div>${clear}` });
+    body: `${pending ? `<meta http-equiv="refresh" content="4">` : ""}<div class="wrap page"><div class="order">${body}</div></div>${clear}` });
 }
 
 /** Stripe's embedded tax settings + registrations components, opened from the app. */
 export function taxSetupPage(store, token, publishableKey) {
   return shell({
     title: "Set up sales tax", description: "Sales tax setup", store,
-    body: `<div class="order" style="max-width:760px"><h1>Set up sales tax</h1>
+    body: `<div class="wrap page"><div class="order" style="max-width:760px"><h1>Set up sales tax</h1>
 <p>Stripe works out the right tax for each order from your business address and the places you're registered to collect tax. Add both below, then go back to Snapfront and turn on automatic sales tax.</p>
 <p class="fine">Not sure where you're registered? Your accountant or state tax agency can tell you. In the US you usually register in your home state first.</p>
 <h2 style="font-size:22px">1. Business address</h2><div id="settings"><p class="fine" id="l1">Loading…</p></div>
@@ -258,11 +301,11 @@ var T=${JSON.stringify(token)};function fail(m){var e=document.getElementById("e
 var sc=StripeConnect.init({publishableKey:${JSON.stringify(publishableKey)},fetchClientSecret:function(){return fetch("/stripe/tax/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({t:T})}).then(function(r){return r.json().then(function(j){if(!r.ok){fail(j.error||"Couldn't start tax setup.");return undefined}return j.client_secret})})},
 appearance:{variables:{colorPrimary:${JSON.stringify(themeOf(store.theme).c.accent)},fontFamily:${JSON.stringify(themeOf(store.theme).fonts.body[0] + ", system-ui, sans-serif")},borderRadius:"10px"}},fonts:[{cssSrc:${JSON.stringify(fontsUrl(themeOf(store.theme)))}}]});
 [["tax-settings","settings","l1"],["tax-registrations","regs","l2"]].forEach(function(c){var el=sc.create(c[0]);el.setOnLoaderStart&&el.setOnLoaderStart(function(){var l=document.getElementById(c[2]);l&&l.remove()});
-el.setOnLoadError&&el.setOnLoadError(function(e){fail("Stripe couldn't load this section: "+(e.error&&e.error.message||"try again."))});document.getElementById(c[1]).appendChild(el)})};</script>`,
+el.setOnLoadError&&el.setOnLoadError(function(e){fail("Stripe couldn't load this section: "+(e.error&&e.error.message||"try again."))});document.getElementById(c[1]).appendChild(el)})};</script></div>`,
   });
 }
 
 export function notePage(store, title, html) {
-  return shell({ title, description: title, store, body: `<div class="note">${html}</div>` });
+  return shell({ title, description: title, store, body: `<div class="wrap"><div class="note">${html}</div></div>` });
 }
 export { esc, money };

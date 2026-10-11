@@ -142,6 +142,19 @@ app.post("/api/sellers", (req, res) => {
 });
 
 const me = (req) => ({ ...store.publicSeller(plans.storesOf(req.account.id).find((s) => s.id === req.seller.id)), account: plans.publicAccount(plans.getAccount(req.account.id), req.seller.id) });
+// Storefront cover photo: the big picture at the top of the store.
+app.put("/api/me/banner", auth, (req, res) => {
+  const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg");
+  const old = req.seller.banner_file;
+  db.prepare("UPDATE sellers SET banner_file = ? WHERE id = ?").run(file, req.seller.id);
+  if (old) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
+  res.json(me(req));
+});
+app.delete("/api/me/banner", auth, (req, res) => {
+  if (req.seller.banner_file) fs.rm(path.join(dirs.images, req.seller.banner_file), { force: true }, () => {});
+  db.prepare("UPDATE sellers SET banner_file = NULL WHERE id = ?").run(req.seller.id);
+  res.json(me(req));
+});
 app.get("/api/themes", (req, res) => res.json({ themes: publicThemes() }));
 app.get("/api/me", auth, (req, res) => res.json(me(req)));
 app.patch("/api/me", auth, wrap(async (req, res) => { await store.updateStoreChecked(req.seller, req.body || {}); res.json(me(req)); }));
@@ -394,7 +407,7 @@ app.get(["/s/:store", "/s/:store/*rest"], (req, res, next) => {
 app.get("/s/:store", (req, res) => {
   const store = storeBySlug(req.params.store);
   const rows = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' ORDER BY created_at DESC").all(store.id);
-  res.send(storePage(view(req, store), rows.map(rowToProduct), config.publicUrl));
+  res.send(storePage(view(req, store), rows.map(rowToProduct), config.publicUrl, { category: typeof req.query.c === "string" ? req.query.c.slice(0, 60) : null }));
 });
 app.get("/s/:store/cart", (req, res) => {
   const store = storeBySlug(req.params.store);
@@ -423,7 +436,8 @@ app.get("/s/:store/:product", (req, res) => {
   const store = storeBySlug(req.params.store);
   const row = store && db.prepare("SELECT * FROM products WHERE seller_id = ? AND slug = ?").get(store.id, req.params.product);
   if (!row || (row.status !== "live" && req.query.preview !== "1")) return res.status(404).send(notePage(view(req, store), "Not found", `<h1>That product isn’t here</h1><p><a href="${esc(view(req, store)._base || "/")}">See everything in ${esc(store.store_name)}</a></p>`));
-  res.send(productPage(view(req, store), rowToProduct(row), config.publicUrl));
+  const others = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' AND id != ? ORDER BY created_at DESC LIMIT 24").all(store.id, row.id).map(rowToProduct);
+  res.send(productPage(view(req, store), rowToProduct(row), config.publicUrl, others));
 });
 app.get("/thanks", wrap(async (req, res) => {
   let order = db.prepare("SELECT * FROM orders WHERE id = ?").get(String(req.query.o || ""));

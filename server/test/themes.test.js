@@ -38,7 +38,8 @@ test("there are 20 distinct, complete themes", () => {
     for (const k of ["bg", "surface", "ink", "muted", "line", "accent", "onAccent", "badge", "onBadge"]) assert.match(t.c[k], hex, `${t.id}.${k}`);
     assert.match(fontsUrl(t), /^https:\/\/fonts\.googleapis\.com\/css2\?family=/);
     assert.match(themeCss(t), /--accent:#/);
-    assert.match(bodyClass(t), new RegExp(`th-${t.id} hd-\\w+ hero-\\w+ cd-\\w+ pr-\\w+`));
+    assert.match(bodyClass(t), new RegExp(`th-${t.id} hd-\\w+ cd-\\w+`));
+    assert.ok(["overlay", "split", "collage", "editorial", "type", "spotlight"].includes(t.hero), t.id);
   }
 });
 
@@ -59,6 +60,7 @@ test("sellers choose a look; buyers see it; ?theme= previews another without sav
   const list = (await req("themes.test", "GET", "/api/themes")).json().themes;
   assert.equal(list.length, 20);
   assert.deepEqual(Object.keys(list[1]).sort(), ["colors", "dark", "fonts", "for", "id", "name", "shape", "vibe"]);
+  assert.equal(new Set(list.map((t) => t.shape.hero)).size, 6);
 
   const s = (await req("themes.test", "POST", "/api/sellers", { body: { store_name: "Fern Shop" } })).json();
   let me = (await req("themes.test", "PATCH", "/api/me", { token: s.token, body: { store_name: "Fern Shop" } })).json();
@@ -80,4 +82,36 @@ test("sellers choose a look; buyers see it; ?theme= previews another without sav
   assert.match((await req(host, "GET", "/cart?theme=volt")).text, /<body class="th-volt /);
   assert.match((await req(host, "GET", "/?theme=nope")).text, /<body class="th-noir /);
   assert.equal((await req("themes.test", "GET", "/api/me", { token: s.token })).json().theme, "noir");
+});
+
+test("cover photo, announcement, about, categories and related products show on the storefront", async () => {
+  const s = (await req("themes.test", "POST", "/api/sellers", { body: { store_name: "Lark Goods" } })).json();
+  let me = (await req("themes.test", "PATCH", "/api/me", { token: s.token, body: { store_name: "Lark Goods", tagline: "Things for slow mornings", about: "Two of us, one kiln.", announcement: "  Holiday orders ship by Dec 18  ", theme: "grove" } })).json();
+  assert.equal(me.announcement, "Holiday orders ship by Dec 18");
+  assert.equal(me.about, "Two of us, one kiln.");
+  const png = Buffer.from("89504E470D0A1A0A0000000D4948445200000001000000010806000000" + "1F15C4890000000D49444154789C6300010000050001" + "0D0A2DB40000000049454E44AE426082", "hex");
+  me = (await req("themes.test", "PUT", "/api/me/banner", { token: s.token, body: { imageBase64: Buffer.concat([png, Buffer.alloc(200)]).toString("base64"), mediaType: "image/png" } })).json();
+  assert.match(me.banner_url, /^https:\/\/themes\.test\/img\/[\w-]+\.png$/);
+  const { db } = await import("../src/db.js");
+  const ins = db.prepare("INSERT INTO products (id, seller_id, slug, title, category, price_cents, status) VALUES (?,?,?,?,?,?, 'live')");
+  ins.run("prd_a", s.seller?.id ?? me.id, "mug", "Mug", "Kitchen", 3200);
+  ins.run("prd_b", me.id, "bowl", "Bowl", "Kitchen", 2800);
+  ins.run("prd_c", me.id, "candle", "Candle", "Home", 2600);
+  const host = new URL(me.store_url).host;
+  let html = (await req(host, "GET", "/")).text;
+  assert.match(html, /<div class="ann">Holiday orders ship by Dec 18<\/div>/);
+  assert.match(html, /class="hero h-ov /);
+  assert.ok(html.includes(me.banner_url));
+  assert.match(html, /<h1>Things for slow mornings<\/h1>/);
+  assert.match(html, /id="about"[\s\S]*Two of us, one kiln\./);
+  assert.match(html, /Shop by category/);
+  assert.match(html, /Free shipping/);
+  html = (await req(host, "GET", "/?c=Home")).text;
+  assert.match(html, /<h1>Home<\/h1><p>1 product<\/p>/);
+  assert.match(html, /Candle/); assert.doesNotMatch(html, /href="\/mug"/);
+  html = (await req(host, "GET", "/mug")).text;
+  assert.match(html, /You may also like/);
+  assert.match(html, /href="\/bowl"/);
+  me = (await req("themes.test", "DELETE", "/api/me/banner", { token: s.token })).json();
+  assert.equal(me.banner_url, null);
 });
