@@ -67,7 +67,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "https://snapfront-api-production.up.railway.app",
+      "apiUrl": "https://snapfront.app",
       "eas": {
         "projectId": "d9ef2157-0771-455a-b3c4-867036f70222"
       },
