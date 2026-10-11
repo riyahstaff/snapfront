@@ -160,12 +160,16 @@ export async function search({ q = "", page = 1, size = 20, categoryId } = {}) {
   });
 }
 
+// Options in a sensible order: colours together, sizes small to large, 40cm before 65cm.
+const SIZES = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "XXXL", "3XL", "4XL", "5XL"];
+const sizeKey = (n) => n.replace(/\b(XXS|XS|S|M|L|XL|XXL|2XL|XXXL|3XL|4XL|5XL)\b/gi, (t) => `~${String(SIZES.indexOf(t.toUpperCase())).padStart(2, "0")}`);
+
 function normalizeProduct(d) {
   const variants = (Array.isArray(d?.variants) ? d.variants : []).map((v) => ({
     vid: String(v.vid || ""), sku: String(v.variantSku || ""),
     name: String(v.variantKey || v.variantNameEn || v.variantSku || "").replace(/\s+/g, " ").trim().slice(0, 60),
     cost: lowPrice(v.variantSellPrice), image: https(v.variantImage), weight: Number(v.variantWeight) || null,
-  })).filter((v) => v.vid && v.cost > 0);
+  })).filter((v) => v.vid && v.cost > 0).sort((x, y) => sizeKey(x.name).localeCompare(sizeKey(y.name), "en", { numeric: true }));
   const images = [...new Set([d?.bigImage, ...imageList(d?.productImageSet), d?.productImage].map(https).filter(Boolean))].slice(0, 12);
   const costs = variants.map((v) => v.cost);
   return {

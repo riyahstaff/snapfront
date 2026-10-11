@@ -31,7 +31,8 @@ const markup = (landed) => research.charm(Math.max(landed * 2.5, landed + 4));
 /** What a seller sees before importing: CJ details plus shipping to the US. */
 export async function preview(pid) {
   const p = await cj.product(pid);
-  const ship = p.variants[0] ? await cj.shippingEstimate(p.variants[0].vid) : null;
+  const cheapest = [...p.variants].sort((x, y) => x.cost - y.cost)[0];
+  const ship = cheapest ? await cj.shippingEstimate(cheapest.vid) : null;
   return { ...p, shipping: ship, landed_cost: p.cost != null ? r2(p.cost + (ship?.price || 0)) : null };
 }
 
