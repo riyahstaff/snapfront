@@ -57,7 +57,9 @@ cj.setCjFetch(async (url, init) => {
   if (p === "/shopping/order/getOrderDetail") return ok({ orderId: "CJ-ORDER-9", orderStatus, trackNumber: track, logisticName: "CJPacket Ordinary" });
   throw new Error(`unexpected CJ call ${p}`);
 });
-dropship.setImageFetch(async () => ({ ok: true, headers: new Headers({ "content-type": "image/jpeg" }), arrayBuffer: async () => new Uint8Array(500).fill(7).buffer }));
+// CJ's CDN really does label JPEG files as image/png; the server must go by the bytes.
+const JPEG = new Uint8Array(500).fill(7); JPEG.set([0xff, 0xd8, 0xff, 0xe0]);
+dropship.setImageFetch(async () => ({ ok: true, headers: new Headers({ "content-type": "image/png" }), arrayBuffer: async () => JPEG.buffer }));
 research.setLensFetch(async () => ({ ok: true, json: async () => ({ visual_matches: [
   { title: "Donut pet bed", link: "https://www.amazon.com/dp/1", source: "Amazon.com", price: { extracted_value: 32.99, currency: "$" } },
   { title: "Calming dog bed", link: "https://www.walmart.com/ip/2", source: "Walmart", price: { extracted_value: 29.88, currency: "$" } },
@@ -74,6 +76,14 @@ before(async () => { server = app.listen(0); await new Promise((r) => server.onc
 after(() => { server.close(); fs.rmSync(tmp, { recursive: true, force: true }); });
 const call = (method, url, body) => fetch(base + url, { method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: body ? JSON.stringify(body) : undefined });
 const json = async (r, status) => { const j = r.status === 204 ? null : await r.json(); assert.equal(r.status, status, JSON.stringify(j)); return j; };
+
+test("image type comes from the file, not the label", async () => {
+  const { sniffImage } = await import("../src/claude.js");
+  assert.equal(sniffImage(Buffer.from(JPEG)), "image/jpeg");
+  assert.equal(sniffImage(Buffer.from(JPEG).toString("base64")), "image/jpeg");
+  assert.equal(sniffImage(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0])), "image/png");
+  assert.equal(sniffImage(Buffer.from("hello")), null);
+});
 
 test("research: refurbished listings don't set the price", () => {
   const m = research.parseLens({ visual_matches: [

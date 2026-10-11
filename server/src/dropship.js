@@ -3,7 +3,7 @@
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
 import { db } from "./db.js";
-import { httpError, productFromPhoto } from "./claude.js";
+import { httpError, productFromPhoto, sniffImage } from "./claude.js";
 import { writeFileSafe } from "./artwork.js";
 import * as cj from "./cj.js";
 import * as plans from "./plans.js";
@@ -18,11 +18,12 @@ const IMAGE_EXT = { "image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png",
 
 async function downloadImage(url) {
   const res = await fetchImage(url).catch(() => null);
-  const type = String(res?.headers?.get?.("content-type") || "").split(";")[0].trim().toLowerCase();
-  if (!res?.ok || !IMAGE_EXT[type]) throw httpError(502, "Couldn't download this product's photo from CJ. Try another product.");
+  if (!res?.ok) throw httpError(502, "Couldn't download this product's photo from CJ. Try another product.");
   const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length < 100 || buf.length > 10 * 1024 * 1024) throw httpError(502, "This product's photo is unusable. Try another product.");
-  return { buf, type: type === "image/jpg" ? "image/jpeg" : type, ext: IMAGE_EXT[type] };
+  // CJ's image server often labels JPEGs as PNG, so go by the file itself.
+  const type = sniffImage(buf);
+  if (!type || buf.length < 100 || buf.length > 10 * 1024 * 1024) throw httpError(502, "This product's photo is unusable. Try another product.");
+  return { buf, type, ext: IMAGE_EXT[type] };
 }
 
 /** Retail price from a landed cost when there's no market data: about 2.5x, at least $4 over cost. */

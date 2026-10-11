@@ -15,6 +15,16 @@ export function httpError(status, message, extra) {
   return e;
 }
 
+/** The real image type from the file's first bytes; servers and phones often mislabel photos. */
+export function sniffImage(buf) {
+  const b = Buffer.isBuffer(buf) ? buf : Buffer.from(String(buf || "").slice(0, 64), "base64");
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return "image/png";
+  if (b.subarray(0, 4).toString("ascii") === "RIFF" && b.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
+  if (b.subarray(0, 4).toString("ascii") === "GIF8") return "image/gif";
+  return null;
+}
+
 /** Pull one JSON object out of a model reply (tolerates code fences or a stray sentence). */
 export function parseJson(text) {
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -27,11 +37,14 @@ export function parseJson(text) {
 async function askJson(content, maxTokens) {
   // Test hook: lets the smoke tests run without an API key.
   if (process.env.SNAPFRONT_FAKE_AI) return JSON.parse(process.env.SNAPFRONT_FAKE_AI);
-  const msg = await anthropic().messages.create({
-    model: config.claudeModel,
-    max_tokens: maxTokens,
-    messages: [{ role: "user", content }],
-  });
+  const ai = anthropic();
+  let msg;
+  try {
+    msg = await ai.messages.create({ model: config.claudeModel, max_tokens: maxTokens, messages: [{ role: "user", content }] });
+  } catch (e) {
+    console.error("[claude]", e.status, e.message);
+    throw httpError(e.status === 429 ? 429 : 502, e.status === 400 ? (Array.isArray(content) && content.some((c) => c.type === "image") ? "The AI couldn't read that photo. Try a different one." : "The AI couldn't handle that request. Try different wording.") : "The AI writer is busy right now. Try again in a minute.");
+  }
   const text = msg.content.filter((b) => b.type === "text").map((b) => b.text).join("");
   return parseJson(text);
 }
@@ -52,7 +65,7 @@ Tone: ${tone || "warm and friendly"}.
 Only make claims a buyer could see in the photo or that the seller stated. Never invent certifications, awards, reviews, or materials you cannot see. FAQ answers should cover shipping or delivery, care or use, and returns in general terms the seller can edit.
 Reply with only one JSON object of this shape: ${PAGE_SHAPE}`;
   return askJson([
-    { type: "image", source: { type: "base64", media_type: mediaType, data: imageBase64 } },
+    { type: "image", source: { type: "base64", media_type: sniffImage(imageBase64) || mediaType, data: imageBase64 } },
     { type: "text", text: prompt },
   ], 2000);
 }

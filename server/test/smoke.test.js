@@ -97,7 +97,8 @@ test("auth and validation errors are clear", async () => {
   const saved = token; token = "nope";
   let r = await call("GET", "/api/products"); assert.equal(r.status, 401);
   token = saved;
-  r = await call("POST", "/api/ai/product-from-photo", { imageBase64: PNG, mediaType: "image/tiff" });
+  // Not an image we can use, whatever it's labelled
+  r = await call("POST", "/api/ai/product-from-photo", { imageBase64: Buffer.from("II*\u0000 tiff file".padEnd(200, "x")).toString("base64"), mediaType: "image/tiff" });
   assert.equal(r.status, 400);
   r = await call("POST", "/api/products", { title: "x", delivery_url: "http://insecure" });
   assert.equal(r.status, 400);

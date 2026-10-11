@@ -4,7 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
 import { db, newId, hashToken, slugify, uniqueSlug, rowToProduct } from "./db.js";
-import { productFromPhoto, httpError, PRODUCT_TYPES } from "./claude.js";
+import { productFromPhoto, httpError, PRODUCT_TYPES, sniffImage } from "./claude.js";
 import { writeFileSafe } from "./artwork.js";
 import * as store from "./store.js";
 import * as agent from "./agent.js";
@@ -87,9 +87,9 @@ function aiLimit(req, _res, next) {
 
 const IMAGE_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
 function saveImage(base64, mediaType) {
-  const ext = IMAGE_TYPES[mediaType];
-  if (!ext) throw httpError(400, "Use a JPG, PNG, WebP or GIF photo.");
   const buf = Buffer.from(String(base64 || ""), "base64");
+  const ext = IMAGE_TYPES[sniffImage(buf) || mediaType];
+  if (!ext) throw httpError(400, "Use a JPG, PNG, WebP or GIF photo.");
   if (buf.length < 100) throw httpError(400, "The photo didn't come through. Try again.");
   if (buf.length > 8 * 1024 * 1024) throw httpError(413, "That photo is over 8 MB. Choose a smaller one.");
   return writeFileSafe(dirs.images, `${crypto.randomUUID()}.${ext}`, buf);
