@@ -56,6 +56,7 @@ addCol("products", "option_name", "TEXT NOT NULL DEFAULT ''"); // e.g. "Size"; v
 addCol("products", "tax_code", "TEXT");
 addCol("products", "sku", "TEXT NOT NULL DEFAULT ''");
 addCol("sellers", "theme", "TEXT NOT NULL DEFAULT 'classic'");   // storefront look, see themes.js
+addCol("products", "label", "TEXT NOT NULL DEFAULT ''");          // short text on the product photo: "New", "20% off"
 addCol("sellers", "about", "TEXT NOT NULL DEFAULT ''");           // "About us" on the storefront
 addCol("sellers", "announcement", "TEXT NOT NULL DEFAULT ''");    // strip above the storefront header
 addCol("sellers", "banner_file", "TEXT");                         // storefront cover photo

@@ -21,6 +21,8 @@ export type Draft = {
   alt_text?: string;
   seo_description?: string;
   delivery_url?: string | null;
+  /** Short text shown on the product photo in the store, like "New" or "20% off" */
+  label?: string;
 };
 export type Variant = { id: string; name: string; price_cents: number | null; price: number; inventory: number | null; sku: string };
 /** What the app sends when editing variants: keep `id` to update one, omit it to add one. */
@@ -80,8 +82,12 @@ export type StoreTheme = {
   shape: { radius: number; button: number; ratio: string; card: string; header: "split" | "center" | "stack";
     hero: "overlay" | "split" | "collage" | "editorial" | "type" | "spotlight"; upper: string | null };
 };
+/** Photo studio: a new background behind a product photo. */
+export type StudioStyle = { color: string } | { scene: string } | { prompt: string };
+export type StudioPresets = { enabled: boolean; colors: { id: string; name: string; hex: string }[]; scenes: { id: string; name: string }[] };
+export type StudioResult = { image_file: string; image_url: string; source_file: string };
 export type PlanId = "free" | "launch" | "pro";
-export type PlanLimits = { name: string; liveStores: number; stores: number; photo: number; product: number; agent: number; research: number };
+export type PlanLimits = { name: string; liveStores: number; stores: number; photo: number; product: number; agent: number; research: number; studio: number };
 export type Account = {
   id: string;
   email: string | null;
@@ -89,7 +95,7 @@ export type Account = {
   plan_name: string;
   limits: PlanLimits;
   period: string;  // "YYYY-MM", or "trial" on the free plan
-  usage: { photo: number; product: number; agent: number; research: number };
+  usage: { photo: number; product: number; agent: number; research: number; studio: number };
   stores: { id: string; store_name: string; store_slug: string; live_allowed: boolean; current: boolean }[];
   can_add_store: boolean;
   suppliers: Suppliers;
@@ -236,6 +242,8 @@ export const api = {
   updateStore: (patch: StorePatch) => request<Me>("PATCH", "/api/me", patch),
   setBanner: (imageBase64: string, mediaType = "image/jpeg") => request<Me>("PUT", "/api/me/banner", { imageBase64, mediaType }),
   removeBanner: () => request<Me>("DELETE", "/api/me/banner"),
+  studioPresets: () => request<StudioPresets>("GET", "/api/studio"),
+  studio: (input: { image_file?: string; imageBase64?: string; mediaType?: string; style: StudioStyle }) => request<StudioResult>("POST", "/api/studio", input),
   themes: () => request<{ themes: StoreTheme[] }>("GET", "/api/themes").then((r) => r.themes),
   async deleteAccount() {
     await request<void>("DELETE", "/api/me");

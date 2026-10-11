@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { FlatList, Pressable, RefreshControl, ScrollView, Share, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, RefreshControl, ScrollView, Share, Text, View } from "react-native";
 import { Link, router, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import * as WebBrowser from "expo-web-browser";
@@ -35,6 +35,16 @@ export default function StoreScreen() {
       const s = await api.stripeStatus();
       setSeller((prev) => (prev ? { ...prev, stripe_connected: s.connected, stripe_ready: s.ready } : prev));
     } catch (e) { setError(e instanceof ApiError ? e.message : "Couldn't open Stripe."); }
+  }
+
+  const drafts = items.filter((p) => p.status !== "live").length;
+  function addProduct() {
+    Alert.alert("Add a product", "How do you want to add it?", [
+      { text: "Snap or upload a photo", onPress: () => router.navigate("/") },
+      { text: "Create a digital product", onPress: () => router.navigate("/create") },
+      { text: "Find a product to dropship", onPress: () => router.navigate("/find") },
+      { text: "Cancel", style: "cancel" },
+    ]);
   }
 
   const header = (
@@ -76,6 +86,15 @@ export default function StoreScreen() {
           <Button label={seller.stripe_connected ? "Continue setup" : "Connect Stripe"} onPress={connectStripe} style={{ alignSelf: "flex-start" }} />
         </View>
       ) : null}
+      <Button label="Add a product" icon={<Ionicons name="add-circle-outline" size={20} color={c.onAccent} />} onPress={addProduct} />
+      {drafts > 0 ? (
+        <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start", backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, padding: space.md }}>
+          <Ionicons name="information-circle-outline" size={20} color={c.accent} />
+          <Text style={[type.small, { color: c.ink, flex: 1 }]}>
+            {drafts === 1 ? "1 product is a draft and isn’t in your store yet." : `${drafts} products are drafts and aren’t in your store yet.`} Open one to publish it.
+          </Text>
+        </View>
+      ) : null}
       <View style={{ flexDirection: "row", gap: space.sm }}>
         <Shortcut icon="receipt-outline" label="Orders" onPress={() => router.push("/orders")} />
         <Shortcut icon="pricetag-outline" label="Discounts" onPress={() => router.push("/discounts")} />
@@ -99,8 +118,7 @@ export default function StoreScreen() {
       ListEmptyComponent={loading ? null : (
         <View style={{ alignItems: "center", gap: space.md, padding: space.xl, borderWidth: 2, borderStyle: "dashed", borderColor: c.line, borderRadius: radius.lg }}>
           <Text style={[type.heading, { color: c.ink }]}>Your store is empty</Text>
-          <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Snap a product photo or create a digital product to add your first listing.</Text>
-          <Button label="Snap a product" onPress={() => router.navigate("/")} />
+          <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Tap Add a product above: snap a photo of something you sell, create a digital product, or pick one to dropship.</Text>
         </View>
       )}
       renderItem={({ item }) => (

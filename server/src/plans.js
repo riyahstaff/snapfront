@@ -9,16 +9,16 @@ import * as suppliers from "./suppliers.js";
 import { freeSlug } from "./urls.js";
 
 const DEFAULTS = {
-  free:   { name: "Free",   liveStores: 0,  stores: 1,  photo: 3,   product: 1,  agent: 0,  research: 3 },
-  launch: { name: "Launch", liveStores: 1,  stores: 1,  photo: 30,  product: 5,  agent: 0,  research: 30 },
-  pro:    { name: "Pro",    liveStores: 10, stores: 10, photo: 300, product: 50, agent: 40, research: 300 },
+  free:   { name: "Free",   liveStores: 0,  stores: 1,  photo: 3,   product: 1,  agent: 0,  research: 3,   studio: 3 },
+  launch: { name: "Launch", liveStores: 1,  stores: 1,  photo: 30,  product: 5,  agent: 0,  research: 30,  studio: 30 },
+  pro:    { name: "Pro",    liveStores: 10, stores: 10, photo: 300, product: 50, agent: 40, research: 300, studio: 150 },
 };
 // Allowances can be tuned without a code change: PLAN_LIMITS='{"pro":{"agent":60}}'
 let overrides = {};
 try { overrides = JSON.parse(process.env.PLAN_LIMITS || "{}"); } catch { console.warn("[plans] PLAN_LIMITS is not valid JSON; using defaults"); }
 export const PLANS = Object.fromEntries(Object.entries(DEFAULTS).map(([k, v]) => [k, { ...v, ...(overrides[k] || {}) }]));
 const RANK = { free: 0, launch: 1, pro: 2 };
-export const KIND_LABEL = { photo: "AI product pages", product: "AI digital products", agent: "store assistant requests", research: "price checks" };
+export const KIND_LABEL = { photo: "AI product pages", product: "AI digital products", agent: "store assistant requests", research: "price checks", studio: "photo studio edits" };
 
 /* ---------- accounts and sessions ---------- */
 export const getAccount = (id) => db.prepare("SELECT * FROM accounts WHERE id = ?").get(id);
@@ -119,7 +119,7 @@ export function publicAccount(account, currentStoreId) {
   return {
     id: account.id, email: account.email, plan: planId, plan_name: plan.name,
     limits: plan, period: p,
-    usage: Object.fromEntries(["photo", "product", "agent", "research"].map((k) => [k, used(account.id, p, k)])),
+    usage: Object.fromEntries(["photo", "product", "agent", "research", "studio"].map((k) => [k, used(account.id, p, k)])),
     stores: stores.map((s, i) => ({ id: s.id, store_name: s.store_name, store_slug: s.store_slug, live_allowed: i < plan.liveStores, current: s.id === currentStoreId })),
     can_add_store: stores.length < plan.stores,
     suppliers: suppliers.status(account.id),

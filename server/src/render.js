@@ -96,7 +96,7 @@ ${preview ? `<script>document.querySelectorAll('a[href^="/"]').forEach(function(
 /* ---------- sections ---------- */
 function card(store, p) {
   return `<a class="pc" href="${esc(base(store))}/${esc(p.slug)}"><div class="im">${img(p.image_url, p.alt_text || p.title, ' loading="lazy"')}
-${!p.in_stock ? `<span class="tag out">Sold out</span>` : p.kind === "digital" ? `<span class="tag">Digital</span>` : ""}<span class="go" aria-hidden="true">View product</span></div>
+${!p.in_stock ? `<span class="tag out">Sold out</span>` : p.label ? `<span class="tag">${esc(p.label)}</span>` : p.kind === "digital" ? `<span class="tag">Digital</span>` : ""}<span class="go" aria-hidden="true">View product</span></div>
 <div class="bd"><h3>${esc(p.title)}</h3><span class="pr">${priceLabel(p)}</span></div></a>`;
 }
 
@@ -198,7 +198,7 @@ document.getElementById("now").addEventListener("click",function(){add();locatio
     canonical: storeUrl(store.store_slug, `/${p.slug}`),
     body: `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>
 <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="${esc(home(store))}">Home</a><span>/</span>${p.category ? `<a href="${esc(catHref(store, p.category))}">${esc(p.category)}</a><span>/</span>` : ""}<span aria-current="page">${esc(p.title)}</span></nav>
-<article class="pd"><div class="media"><div class="pic">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" fetchpriority="high">` : ""}</div></div>
+<article class="pd"><div class="media"><div class="pic">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" fetchpriority="high">` : ""}${p.label && p.in_stock ? `<span class="tag">${esc(p.label)}</span>` : ""}</div></div>
 <div class="info"><div class="cat">${p.kind === "digital" ? "Digital download" : esc(p.category || store.store_name)}</div><h1>${esc(p.title)}</h1>
 <div class="price" id="price">${money(startPrice, p.currency)}</div>${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}${opts}${buy}<div id="stock" class="stock" aria-live="polite"></div>
 <div class="mini">${mini.map(([i, t]) => `<div>${i}<span>${esc(t)}</span></div>`).join("")}</div>

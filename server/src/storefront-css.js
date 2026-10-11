@@ -217,6 +217,7 @@ h1,h2,h3{font-family:var(--display);font-weight:var(--dw);letter-spacing:var(--d
 .crumbs a{text-decoration:none}.crumbs a:hover{text-decoration:underline}
 .pd{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(28px,5vw,80px);align-items:start;padding-bottom:clamp(56px,7vw,104px)}
 .pd .media{position:sticky;top:100px}
+.pd .pic .tag{position:absolute;top:16px;left:16px;padding:6px 14px;border-radius:var(--r-chip);background:var(--badge);color:var(--on-badge);font:700 14px/1.4 var(--body)}
 .pd .pic{position:relative;aspect-ratio:var(--ratio);border-radius:var(--r-card);overflow:hidden;background:var(--surface)}.pd .pic img{width:100%;height:100%;object-fit:cover}
 .pd .info{display:grid;gap:22px;align-content:start}
 .pd .cat{color:var(--muted);font-size:14px;font-weight:500}

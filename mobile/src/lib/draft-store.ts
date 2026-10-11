@@ -11,7 +11,7 @@ export const draftStore = {
     current = next;
     listeners.forEach((l) => l());
   },
-  patch(p: Partial<Draft>) {
+  patch(p: Partial<Draft & { localUri?: string }>) {
     if (!current) return;
     current = { ...current, ...p };
     listeners.forEach((l) => l());

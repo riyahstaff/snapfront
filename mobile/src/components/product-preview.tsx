@@ -15,6 +15,11 @@ export function ProductPreview({ product, imageUri, badge }: { product: Draft; i
       <View style={[styles.photo, { backgroundColor: c.sunk }]}>
         {imageUri ? <Image source={{ uri: imageUri }} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityLabel={product.alt_text || product.title} /> : null}
         <Brackets color="#FFFFFF" size={22} inset={12} />
+        {product.label ? (
+          <View style={{ position: "absolute", top: 14, left: 14, backgroundColor: c.ink, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: c.bg }}>{product.label}</Text>
+          </View>
+        ) : null}
         <View style={[styles.price, { backgroundColor: c.flash }]}>
           <Text style={{ fontFamily: fonts.display, fontSize: 18, color: c.onFlash }}>{money(product.price)}</Text>
         </View>

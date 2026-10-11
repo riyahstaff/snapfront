@@ -25,6 +25,7 @@ export const config = {
   revenuecatSecretKey: env.REVENUECAT_SECRET_KEY || "",
   serpapiKey: env.SERPAPI_KEY || "",
   cjApiKey: env.CJ_API_KEY || "",
+  photoroomKey: env.PHOTOROOM_API_KEY || "",   // photo studio backgrounds; a sandbox_ key gives free watermarked results
   // Stores get https://<slug>.<STORE_DOMAIN> (e.g. snapfront.app) once its wildcard DNS is in place.
   cloudflareToken: env.CLOUDFLARE_API_TOKEN || "",
   adminToken: env.ADMIN_TOKEN || "",

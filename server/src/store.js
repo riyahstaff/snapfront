@@ -120,6 +120,11 @@ export function updateProduct(seller, id, b) {
   if (next.price_cents < 50 && row.status === "live") throw httpError(400, "Live products need a price of at least $0.50.");
   db.prepare("UPDATE products SET title=?, tagline=?, description=?, category=?, price_cents=?, delivery_url=?, bullets=?, tags=?, faq=? WHERE id=?")
     .run(next.title, next.tagline, next.description, next.category, next.price_cents, next.delivery_url, next.bullets, next.tags, next.faq, row.id);
+  if (b.image_file !== undefined && b.image_file !== null) {
+    // A new photo from the photo studio (or swapping back to the original). Old files are kept so the seller can switch back.
+    if (!/^[\w-]+\.(jpg|png|webp|gif)$/.test(b.image_file) || !fs.existsSync(path.join(dirs.images, b.image_file))) throw httpError(400, "Invalid image reference.");
+    db.prepare("UPDATE products SET image_file = ? WHERE id = ?").run(b.image_file, row.id);
+  }
   applyCommerceFields(row.id, b);
   if (b.status === "draft" && row.status === "live") db.prepare("UPDATE products SET status='draft' WHERE id=?").run(row.id);
   return withPage(seller, db.prepare("SELECT * FROM products WHERE id = ?").get(row.id));
@@ -127,6 +132,7 @@ export function updateProduct(seller, id, b) {
 
 /** Inventory, SKU, tax code and the option/variant list. Prices are re-read at checkout, so edits apply immediately. */
 function applyCommerceFields(id, b) {
+  if (b.label != null) db.prepare("UPDATE products SET label = ? WHERE id = ?").run(clampStr(b.label, 24).replace(/\s+/g, " ").trim(), id);
   if (b.inventory !== undefined) db.prepare("UPDATE products SET inventory = ? WHERE id = ?").run(stock(b.inventory), id);
   if (b.sku != null) db.prepare("UPDATE products SET sku = ? WHERE id = ?").run(clampStr(b.sku, 64), id);
   if (b.tax_code !== undefined) {

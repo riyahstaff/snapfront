@@ -19,6 +19,7 @@ import * as urls from "./urls.js";
 import * as domains from "./domains.js";
 import { landingPage } from "./landing.js";
 import { THEME_IDS, publicThemes } from "./themes.js";
+import * as studio from "./studio.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, esc } from "./render.js";
 
 export const app = express();
@@ -248,6 +249,19 @@ app.post("/api/ai/product-from-photo", auth, aiLimit, wrap(async (req, res) => {
 
 app.post("/api/ai/generate", auth, aiLimit, wrap(async (req, res) => {
   res.status(201).json(await plans.withAllowance(req.account, "product", () => store.generateProduct(req.seller, req.body || {})));
+}));
+
+/* ---------- photo studio: a new background for a product photo ---------- */
+app.get("/api/studio", auth, (_req, res) => res.json(studio.presets()));
+app.post("/api/studio", auth, aiLimit, wrap(async (req, res) => {
+  const { imageBase64, mediaType = "image/jpeg", image_file, style } = req.body || {};
+  if (!studio.enabled()) throw httpError(503, "The photo studio isn't switched on yet.");
+  studio.fieldsFor(style);   // check the choice before using an allowance
+  plans.assertAllowance(req.account, "studio");
+  const source = imageBase64 ? saveImage(imageBase64, mediaType) : image_file;
+  studio.sourcePath(source);
+  const file = await plans.withAllowance(req.account, "studio", () => studio.restyle(source, style));
+  res.json({ image_file: file, image_url: `${config.publicUrl}/img/${file}`, source_file: source });
 }));
 
 /* ---------- price check: the same item at Amazon, Walmart, Target... from a photo ---------- */

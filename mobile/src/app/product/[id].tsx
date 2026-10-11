@@ -7,18 +7,26 @@ import { StockEditor } from "@/components/stock-editor";
 import { Body, Button, Field, H2, Notice, Pill, Screen } from "@/components/ui";
 import { ProductPreview } from "@/components/product-preview";
 import { api, ApiError, money, type Product } from "@/lib/api";
-import { space } from "@/lib/theme";
+import { space, useColors } from "@/lib/theme";
+import { account, useMe } from "@/lib/account-store";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ProductScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const c = useColors();
+  const me = useMe();
+  const { id, note } = useLocalSearchParams<{ id: string; note?: string }>();
   const [p, setP] = useState<Product | null>(null);
   const [price, setPrice] = useState("");
-  const [msg, setMsg] = useState<{ text: string; tone: "error" | "ok" | "info" } | null>(null);
+  const [words, setWords] = useState({ title: "", tagline: "", label: "", category: "", description: "" });
+  const [msg, setMsg] = useState<{ text: string; tone: "error" | "ok" | "info" } | null>(note ? { text: note, tone: /^Saved as a draft/.test(note) ? "info" : "ok" } : null);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const load = useCallback(() => {
-    api.product(id).then((x) => { setP(x); setPrice(String(x.price)); }).catch((e) => setMsg({ text: e instanceof ApiError ? e.message : "Couldn't load this product.", tone: "error" }));
+    api.product(id).then((x) => {
+      setP(x); setPrice(String(x.price));
+      setWords({ title: x.title, tagline: x.tagline, label: x.label ?? "", category: x.category, description: x.description });
+    }).catch((e) => setMsg({ text: e instanceof ApiError ? e.message : "Couldn't load this product.", tone: "error" }));
   }, [id]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -43,7 +51,21 @@ export default function ProductScreen() {
         </View>
       ) : (
         <View style={{ gap: space.sm }}>
-          <Body muted>Publishing puts it in your storefront. Buyers add it to their cart and pay through Stripe, straight into your account.</Body>
+          {me?.account.plan === "free" ? (
+            <>
+              <Body muted>This product isn’t in your store yet. Putting products in your store comes with Launch ($29, one time), with no fees on your sales.</Body>
+              <Button label="See plans" variant="flash" onPress={() => router.push({ pathname: "/plans", params: { highlight: "launch" } })} />
+            </>
+          ) : me && !me.stripe_ready ? (
+            <>
+              <Body muted>This product isn’t in your store yet. Connect Stripe first so buyers can pay you, then publish. It takes about five minutes.</Body>
+              <Button label={me.stripe_connected ? "Finish Stripe setup" : "Connect Stripe"} variant="flash" loading={busy === "stripe"} onPress={() => run("stripe", async () => {
+                const { url } = await api.stripeOnboard(); await WebBrowser.openBrowserAsync(url); await api.stripeStatus(); await account.refresh();
+              })} />
+            </>
+          ) : (
+            <Body muted>Publishing puts it in your storefront. Buyers add it to their cart and pay through Stripe, straight into your account.</Body>
+          )}
           <Button label="Publish and start selling" loading={busy === "publish"} onPress={() => run("publish", async () => {
             const next = await api.publish(p.id); setP(next); setMsg({ text: "Published. Share the link to start selling.", tone: "ok" });
           })} />
@@ -51,6 +73,24 @@ export default function ProductScreen() {
         </View>
       )}
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
+      {p.image_file ? (
+        <Button label="Change the background" variant="secondary" icon={<Ionicons name="color-wand-outline" size={18} color={c.ink} />}
+          onPress={() => router.push({ pathname: "/studio", params: { target: p.id, image_file: p.image_file!, image_url: p.image_url ?? "" } })} />
+      ) : null}
+      <View style={{ gap: space.md }}>
+        <H2>Words</H2>
+        <Field label="Title" value={words.title} onChangeText={(title) => setWords({ ...words, title })} maxLength={120} />
+        <Field label="Tagline" hint="One line under the title." value={words.tagline} onChangeText={(tagline) => setWords({ ...words, tagline })} maxLength={160} />
+        <Field label="Photo label" hint="Optional. A few words shown on the photo in your store, like New, Best seller or 20% off." value={words.label} maxLength={24}
+          onChangeText={(label) => setWords({ ...words, label })} placeholder="New" />
+        <Field label="Category" hint="Groups products in your store menu, like Sneakers or Candles." value={words.category} onChangeText={(category) => setWords({ ...words, category })} maxLength={60} />
+        <Field label="Description" value={words.description} onChangeText={(description) => setWords({ ...words, description })} multiline maxLength={3000} />
+        <Button label="Save words" variant="secondary" loading={busy === "words"}
+          disabled={!words.title.trim() || (words.title === p.title && words.tagline === p.tagline && words.label === (p.label ?? "") && words.category === p.category && words.description === p.description)}
+          onPress={() => run("words", async () => {
+            const next = await api.updateProduct(p.id, { ...words, title: words.title.trim() }); setP({ ...p, ...next }); setMsg({ text: live ? "Saved. Your store shows the new words now." : "Saved.", tone: "ok" });
+          })} />
+      </View>
       <View style={{ gap: space.md }}>
         <H2>Price</H2>
         {p.source === "cj" && p.cost != null ? (
