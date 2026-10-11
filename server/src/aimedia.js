@@ -59,7 +59,7 @@ async function rp(pathname, body) {
   try {
     res = await fetchImpl(`${API}/${pathname}`, {
       method: body ? "POST" : "GET", signal: AbortSignal.timeout(60_000),
-      headers: { Authorization: `Bearer ${config.runpodKey}`, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined,
+      headers: { Authorization: `Bearer ${config.runpodKey.trim()}`, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined,
     });
   } catch { throw httpError(502, "The AI studio didn't answer. Try again in a moment."); }
   const data = await res.json().catch(() => ({}));
@@ -70,8 +70,11 @@ async function rp(pathname, body) {
 
 /** Whether the key works (logged at startup). */
 export async function check() {
-  const r = await fetchImpl(`${API}/${EP.scene}/health`, { headers: { Authorization: `Bearer ${config.runpodKey}` }, signal: AbortSignal.timeout(15_000) });
-  return r.status;
+  const k = config.runpodKey;
+  console.log(`[runpod] key from ${process.env.RUNPOD_API_KEY ? "RUNPOD_API_KEY" : "SNAPFRONT_KEY"}: ${k.length} characters, ${k.startsWith("rpa_") ? "starts like a Runpod key" : "does not start with rpa_"}${/\s/.test(k) ? ", contains spaces" : ""}`);
+  const r = await fetchImpl(`${API}/${EP.scene}/status/snapfront-key-check`, { headers: { Authorization: `Bearer ${k.trim()}` }, signal: AbortSignal.timeout(15_000) });
+  if (r.status === 401 || r.status === 403) console.warn(`[runpod] key rejected (${r.status}): ${(await r.text()).slice(0, 200)}`);
+  return r.status === 401 || r.status === 403 ? r.status : 200;
 }
 
 const publicImage = (file) => {
