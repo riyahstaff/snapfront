@@ -33,7 +33,7 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 /* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
-const SHARED_PATHS = /^\/(api|img|d|thanks|stripe|suppliers|health|privacy|terms)(\/|$)/;
+const SHARED_PATHS = /^\/(api|img|d|thanks|stripe|suppliers|health|privacy|terms|builds)(\/|$)/;
 const sameSecret = (a, b) => { const x = Buffer.from(String(a || "")), y = Buffer.from(String(b || "")); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 app.use((req, res, next) => {
   if (!config.storeDomain) return next();
@@ -266,6 +266,26 @@ app.get("/api/admin/play", adminOnly, wrap(async (_req, res) => {
   res.json({ enabled: true, subscriptions: subs.status, launch: { status: launch.status, body: launch.body }, pro: { status: pro.status, body: pro.body } });
 }));
 app.post("/api/admin/play/products", adminOnly, wrap(async (req, res) => res.json({ log: await playbilling.createProducts(req.body || {}) })));
+// App builds for the owner to upload to Play Console (too big to send by chat): a private link
+// with a random id, kept 7 days.
+const BUILDS = path.join(config.dataDir, "builds");
+app.post("/api/admin/builds", adminOnly, express.raw({ type: "application/octet-stream", limit: "250mb" }), (req, res) => {
+  const name = String(req.query.name || "snapfront.aab").replace(/[^\w.-]/g, "").slice(0, 80) || "snapfront.aab";
+  if (!Buffer.isBuffer(req.body) || req.body.length < 1000) throw httpError(400, "Send the file as application/octet-stream.");
+  const id = crypto.randomBytes(18).toString("base64url");
+  fs.mkdirSync(path.join(BUILDS, id), { recursive: true });
+  fs.writeFileSync(path.join(BUILDS, id, name), req.body);
+  res.status(201).json({ url: `${config.publicUrl}/builds/${id}/${name}`, bytes: req.body.length });
+});
+app.get("/builds/:id/:name", (req, res) => {
+  const { id, name } = req.params;
+  if (!/^[\w-]{20,40}$/.test(id) || !/^[\w.-]+$/.test(name)) return res.status(404).end();
+  const file = path.join(BUILDS, id, name);
+  let st;
+  try { st = fs.statSync(file); } catch { return res.status(404).send("This download link has expired."); }
+  if (Date.now() - st.mtimeMs > 7 * 864e5) { fs.rm(path.join(BUILDS, id), { recursive: true, force: true }, () => {}); return res.status(410).send("This download link has expired."); }
+  res.download(file, name);
+});
 // The app calls this when it opens and after a restore; a background check catches renewals and expiries.
 app.post("/api/billing/sync", auth, wrap(async (req, res) => {
   req.account = await plans.syncPlan(req.account);
