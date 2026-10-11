@@ -74,7 +74,8 @@
             "video"
           ]
         }
-      ]
+      ],
+      "expo-iap"
     ],
     "experiments": {
       "typedRoutes": true
@@ -84,9 +85,7 @@
       "eas": {
         "projectId": "d9ef2157-0771-455a-b3c4-867036f70222"
       },
-      "router": {},
-      "revenuecatGoogleKey": "",
-      "revenuecatAppleKey": ""
+      "router": {}
     },
     "owner": "snapfront"
   }

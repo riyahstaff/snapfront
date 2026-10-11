@@ -25,6 +25,7 @@ import * as supplierDirectory from "./supplier-directory.js";
 import * as marketing from "./marketing.js";
 import * as aimedia from "./aimedia.js";
 import * as growth from "./growth.js";
+import * as playbilling from "./playbilling.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, esc } from "./render.js";
 
 export const app = express();
@@ -256,15 +257,24 @@ app.post("/api/admin/comp", adminOnly, (req, res) => {
   const a = plans.getAccount(acc.id);
   res.json({ account: acc.id, plan: plans.effectivePlan(a), comp_plan: a.comp_plan, stores: plans.storesOf(acc.id).map((s) => s.store_slug) });
 });
-// The app calls this right after a purchase or restore; the webhook below catches renewals and expiries.
+// Owner tools for Google Play: check the service account works, and create the two plans in Play.
+app.get("/api/admin/play", adminOnly, wrap(async (_req, res) => {
+  if (!playbilling.enabled()) return res.json({ enabled: false });
+  const subs = await playbilling.play("GET", "/subscriptions");
+  const once = await playbilling.play("GET", "/onetimeproducts");
+  res.json({ enabled: true, subscriptions: subs, one_time: once });
+}));
+app.post("/api/admin/play/products", adminOnly, wrap(async (req, res) => res.json({ log: await playbilling.createProducts(req.body || {}) })));
+// The app calls this when it opens and after a restore; a background check catches renewals and expiries.
 app.post("/api/billing/sync", auth, wrap(async (req, res) => {
   req.account = await plans.syncPlan(req.account);
   res.json(me(req));
 }));
-app.post("/api/revenuecat/webhook", wrap(async (req, res) => {
-  if (!config.revenuecatWebhookAuth || !sameSecret(req.get("authorization"), config.revenuecatWebhookAuth)) throw httpError(401, "Unauthorized");
-  for (const id of plans.accountIdsInEvent(req.body?.event)) await plans.syncPlan(plans.getAccount(id)).catch((e) => console.error("[revenuecat]", id, e.message));
-  res.json({ received: true });
+// The app bought a plan (or is restoring one): check it with Google Play and unlock it.
+app.post("/api/billing/google", auth, wrap(async (req, res) => {
+  await playbilling.recordPurchase(req.account, { productId: req.body?.product_id, purchaseToken: req.body?.purchase_token });
+  req.account = plans.getAccount(req.account.id);
+  res.json(me(req));
 }));
 
 /* ---------- email sign-in, so purchases and stores follow the person to a new phone ---------- */
@@ -601,7 +611,7 @@ app.get("/privacy", legal("Privacy policy", `
 <li>Store details you enter: store name, tagline, about text, links, product text, prices and settings.</li>
 <li>Photos you upload, and pictures and videos you make in the app (photo studio, posts, AI photos and clips).</li>
 <li>A random device token that signs you in. If you choose to sign in with email, your email address.</li>
-<li>Your plan and purchase status from Google Play or the App Store (through RevenueCat). We never see your card.</li>
+<li>Your plan and purchase status from Google Play or the App Store. We never see your card.</li>
 <li>If you connect a supplier (CJdropshipping, AliExpress or Printful), the key or sign-in token for that account, stored encrypted, so we can place orders there for you.</li></ul>
 <h2>What we collect about your buyers</h2><ul>
 <li>Order records: what was bought, amounts, and the buyer's name, email, shipping address and phone number, so digital downloads can be delivered and physical orders shipped.</li>
@@ -613,7 +623,7 @@ app.get("/privacy", legal("Privacy policy", `
 <li>Anthropic (Claude): photos and text, to write product pages, posts and answers.</li>
 <li>Runpod: product photos, when you make AI lifestyle photos or video clips.</li>
 <li>Stripe: payments, seller identity checks and sales tax.</li>
-<li>RevenueCat, Google Play and the App Store: plan purchases.</li>
+<li>Google Play and the App Store: plan purchases.</li>
 <li>Resend: sending sign-in codes, order confirmations, review requests and checkout reminders.</li>
 <li>CJdropshipping, AliExpress and Printful: the buyer's name, address and phone number for orders of their products.</li>
 <li>SerpApi (Google Lens): product photos, to compare prices at other stores.</li>
@@ -646,6 +656,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   setInterval(() => growth.sendReviewRequests().catch((e) => console.error("[reviews] email", e.message)), 60 * 60e3).unref();
   // Photo studio: fetch the cut-out model in the background so the first seller doesn't wait for it.
   ensureCutoutModel().catch((e) => console.error("[cutout] model", e.message));
+  // Google Play subscriptions: notice renewals, cancellations and refunds.
+  setInterval(() => playbilling.sweep().catch((e) => console.error("[play] sweep", e.message)), 30 * 60e3).unref();
   // Pick up tracking numbers for orders at CJ.
   setInterval(() => dropship.syncDue().catch((e) => console.error("[supplier] sync", e.message)), 30 * 60e3).unref();
   // Sellers' own domains: set up Cloudflare once, then switch domains on as their DNS goes live.

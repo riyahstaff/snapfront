@@ -1,11 +1,12 @@
 // Pricing: Free (try it), Launch ($29 once: one live store), Pro ($14.99/month: up to 10 stores,
-// bigger AI allowances and the store assistant). Purchases happen in the app through Google Play /
-// the App Store via RevenueCat; the server only trusts what RevenueCat reports.
+// bigger AI allowances and the store assistant). Purchases happen in the app through Google Play
+// Billing; the server checks every purchase with Google itself (playbilling.js).
 import crypto from "node:crypto";
 import { config } from "./config.js";
 import { db, newId, hashToken, slugify, uniqueSlug } from "./db.js";
 import { httpError } from "./claude.js";
 import * as suppliers from "./suppliers.js";
+import * as playbilling from "./playbilling.js";
 import { freeSlug } from "./urls.js";
 
 const DEFAULTS = {
@@ -133,31 +134,10 @@ export function publicAccount(account, currentStoreId) {
   };
 }
 
-/* ---------- RevenueCat ---------- */
-// Entitlement identifiers configured in RevenueCat: "launch" (one-time) and "pro" (subscription).
-export function planFromEntitlements(entitlements = {}, now = Date.now()) {
-  const active = (e) => e && (!e.expires_date || new Date(e.expires_date).getTime() > now);
-  return active(entitlements.pro) ? "pro" : active(entitlements.launch) ? "launch" : "free";
-}
-
-let fetchImpl = (...a) => fetch(...a);
-export function setRevenueCatFetch(f) { fetchImpl = f; }   // used by tests
-
-/** Ask RevenueCat what this account has paid for, and store it. */
+/* ---------- purchases ---------- */
+/** Look again at what this account bought with Google Play, and store the plan it adds up to. */
 export async function syncPlan(account) {
-  if (!config.revenuecatSecretKey) return account;
-  const res = await fetchImpl(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(account.id)}`, {
-    headers: { Authorization: `Bearer ${config.revenuecatSecretKey}`, Accept: "application/json" },
-  });
-  if (!res.ok) throw httpError(502, "Couldn't check your purchases just now. Try again in a minute.");
-  const body = await res.json();
-  const plan = planFromEntitlements(body?.subscriber?.entitlements);
-  db.prepare("UPDATE accounts SET plan = ?, plan_synced_at = datetime('now') WHERE id = ?").run(plan, account.id);
+  if (!playbilling.enabled()) return account;
+  await playbilling.refreshAccount(account.id, { olderThanMinutes: 10 });
   return getAccount(account.id);
-}
-
-/** Account ids a RevenueCat webhook event refers to (purchases, renewals, expirations, transfers). */
-export function accountIdsInEvent(event) {
-  const ids = new Set([event?.app_user_id, event?.original_app_user_id, ...(event?.aliases || []), ...(event?.transferred_from || []), ...(event?.transferred_to || [])]);
-  return [...ids].filter((id) => typeof id === "string" && id.startsWith("acc_") && getAccount(id));
 }

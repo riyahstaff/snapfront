@@ -297,6 +297,7 @@ export const api = {
     if (storeCache === id) await setStore(null);
   },
   billingSync: () => request<Me>("POST", "/api/billing/sync"),
+  billingGoogle: (product_id: string, purchase_token: string) => request<Me>("POST", "/api/billing/google", { product_id, purchase_token }),
   priceCheck: (input: PriceCheckInput) => request<PriceCheck>("POST", "/api/research/price-check", input),
   plans: () => request<Record<PlanId, PlanLimits>>("GET", "/api/plans"),
   emailStart: (email: string) => request<{ sent: boolean; email: string }>("POST", "/api/auth/email/start", { email }),

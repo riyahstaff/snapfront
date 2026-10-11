@@ -11,6 +11,13 @@ if (fs.existsSync(envFile)) {
 }
 
 const env = process.env;
+/** A JSON value pasted as-is, or base64 of it (easier to paste in some dashboards). */
+function decodeJson(v) {
+  const t = String(v || "").trim();
+  if (!t) return "";
+  if (t.startsWith("{")) return t;
+  try { const d = Buffer.from(t, "base64").toString("utf8"); return d.trim().startsWith("{") ? d : ""; } catch { return ""; }
+}
 export const config = {
   port: Number(env.PORT || 8080),
   publicUrl: (env.PUBLIC_URL || `http://localhost:${env.PORT || 8080}`).replace(/\/$/, ""),
@@ -22,7 +29,9 @@ export const config = {
   stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || "",
   stripePublishableKey: env.STRIPE_PUBLISHABLE_KEY || "",
   platformFeePercent: Math.max(0, Math.min(50, Number(env.PLATFORM_FEE_PERCENT ?? 0))),
-  revenuecatSecretKey: env.REVENUECAT_SECRET_KEY || "",
+  // Google Play: the service account JSON (pasted whole, or base64) that checks purchases, and the app id.
+  googlePlayServiceAccount: decodeJson(env.GOOGLE_PLAY_SERVICE_ACCOUNT),
+  playPackage: env.PLAY_PACKAGE || "com.sidebanc.snapfront",
   serpapiKey: env.SERPAPI_KEY || "",
   cjApiKey: env.CJ_API_KEY || "",
   photoroomKey: env.PHOTOROOM_API_KEY || "",
@@ -31,7 +40,6 @@ export const config = {
   cloudflareToken: env.CLOUDFLARE_API_TOKEN || "",
   adminToken: env.ADMIN_TOKEN || "",
   storeDomain: String(env.STORE_DOMAIN || "").trim().toLowerCase().replace(/^\.+|\/+$/g, ""),
-  revenuecatWebhookAuth: env.REVENUECAT_WEBHOOK_AUTH || "",
   downloadSecret: env.DOWNLOAD_SIGNING_SECRET || "dev-only-secret-change-me",
   resendKey: env.RESEND_API_KEY || "",
   emailFrom: env.EMAIL_FROM || "Snapfront <orders@example.com>",

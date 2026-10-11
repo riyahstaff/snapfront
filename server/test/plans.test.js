@@ -1,18 +1,20 @@
-// Pricing: free trial limits, Launch and Pro allowances, store limits, purchases via RevenueCat,
+// Pricing: free trial limits, Launch and Pro allowances, store limits, purchases checked with Google Play,
 // and email sign-in that carries stores and purchases to a new phone.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import os from "node:os";
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "snapfront-plans-"));
 process.env.ADMIN_TOKEN = "admin_test_secret";
 process.env.DATA_DIR = tmp;
 process.env.PUBLIC_URL = "http://localhost";
 process.env.STRIPE_SECRET_KEY = "";
-process.env.REVENUECAT_SECRET_KEY = "sk_test_rc";
-process.env.REVENUECAT_WEBHOOK_AUTH = "Bearer hook-secret";
+const { privateKey } = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
+process.env.GOOGLE_PLAY_SERVICE_ACCOUNT = Buffer.from(JSON.stringify({ client_email: "billing@snapfront.iam.gserviceaccount.com",
+  private_key: privateKey.export({ type: "pkcs8", format: "pem" }) })).toString("base64");   // base64 form, as it may be pasted
 process.env.SNAPFRONT_FAKE_AI = JSON.stringify({
   title: "Mug", tagline: "A mug.", description: "One.\n\nTwo.", bullets: ["12 oz"], suggested_price: 18, category: "Home", tags: ["mug"],
   faq: [], alt_text: "A mug", seo_description: "A mug.", content: { chapters: [{ heading: "Start", paragraphs: ["Go."], tip: "Tip." }] },
@@ -23,13 +25,29 @@ const plans = await import("../src/plans.js");
 const auth = await import("../src/auth.js");
 const { db } = await import("../src/db.js");
 
-// RevenueCat stand-in: entitlements per app user id
-const entitlements = new Map();
-plans.setRevenueCatFetch(async (url, opts) => {
-  assert.equal(opts.headers.Authorization, "Bearer sk_test_rc");
-  const id = decodeURIComponent(url.split("/subscribers/")[1]);
-  return { ok: true, json: async () => ({ subscriber: { entitlements: entitlements.get(id) || {} } }) };
+const playbilling = await import("../src/playbilling.js");
+
+// Google Play stand-in: purchase tokens and what Google says about each.
+const purchases = new Map();   // token -> { kind: "once" | "sub", ...fields }
+const acks = [];
+playbilling.setPlayFetch(async (url, opts = {}) => {
+  const reply = (status, body) => ({ ok: status < 300, status, json: async () => body, text: async () => JSON.stringify(body) });
+  if (url === "https://oauth2.googleapis.com/token") {
+    const jwt = new URLSearchParams(opts.body).get("assertion");
+    assert.equal(JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString()).iss, "billing@snapfront.iam.gserviceaccount.com");
+    return reply(200, { access_token: "ya29.test", expires_in: 3600 });
+  }
+  assert.equal(opts.headers.Authorization, "Bearer ya29.test");
+  const m = url.match(/applications\/com\.sidebanc\.snapfront\/purchases\/(products\/snapfront_launch|subscriptionsv2|subscriptions\/snapfront_pro)\/tokens\/([^:]+)(:acknowledge)?$/);
+  if (!m) return reply(404, { error: "unexpected " + url });
+  const tok = decodeURIComponent(m[2]), p = purchases.get(tok);
+  if (m[3]) { acks.push(tok); if (p) p.ack = true; return reply(204, {}); }
+  if (!p) return reply(404, { error: { message: "not found" } });
+  if (p.kind === "once") return reply(200, { purchaseState: p.state ?? 0, acknowledgementState: p.ack ? 1 : 0, orderId: "GPA.1", obfuscatedExternalAccountId: p.owner });
+  return reply(200, { subscriptionState: p.state || "SUBSCRIPTION_STATE_ACTIVE", acknowledgementState: p.ack ? "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED" : "ACKNOWLEDGEMENT_STATE_PENDING",
+    lineItems: [{ productId: "snapfront_pro", expiryTime: p.expiry }], externalAccountIdentifiers: { obfuscatedExternalAccountId: p.owner } });
 });
+const buy = (t, product_id, purchase_token) => call(t, "POST", "/api/billing/google", { product_id, purchase_token });
 const sent = [];
 auth.setEmailSender(async (to, code) => { sent.push({ to, code }); });
 
@@ -67,10 +85,17 @@ test("free plan: a taste of the AI, one store, no publishing", async () => {
   assert.equal((await json(await call(A.token, "POST", "/api/stripe/onboard"), 402)).upgrade, "launch");
 });
 
-test("buying Launch through RevenueCat unlocks publishing and resets to monthly allowances", async () => {
-  entitlements.set(A.account.id, { launch: { expires_date: null } });
-  const me = await json(await call(A.token, "POST", "/api/billing/sync"), 200);
+test("buying Launch through Google Play unlocks publishing and resets to monthly allowances", async () => {
+  // A token Google doesn't know, and one bought for a different Snapfront account, unlock nothing.
+  await json(await buy(A.token, "snapfront_launch", "tok-unknown"), 400);
+  purchases.set("tok-someone-else", { kind: "once", owner: "acc_other" });
+  await json(await buy(A.token, "snapfront_launch", "tok-someone-else"), 409);
+  await json(await buy(A.token, "snapfront_gold", "tok-launch"), 400);
+
+  purchases.set("tok-launch", { kind: "once", owner: A.account.id });
+  const me = await json(await buy(A.token, "snapfront_launch", "tok-launch"), 200);
   assert.equal(me.account.plan, "launch");
+  assert.ok(acks.includes("tok-launch"), "the server acknowledges the purchase so Google doesn't refund it");
   assert.equal(me.account.usage.photo, 0, "monthly allowance starts fresh");
   assert.match(me.account.period, /^\d{4}-\d{2}$/);
   assert.equal(me.account.stores[0].live_allowed, true);
@@ -82,12 +107,10 @@ test("buying Launch through RevenueCat unlocks publishing and resets to monthly 
 });
 
 test("Pro: up to 10 stores, picked per request; extra stores stop selling if Pro lapses", async () => {
-  // The webhook (with its shared secret) is how renewals and upgrades arrive
-  await json(await call(null, "POST", "/api/revenuecat/webhook", { event: { type: "INITIAL_PURCHASE", app_user_id: A.account.id } }), 401);
-  entitlements.set(A.account.id, { launch: { expires_date: null }, pro: { expires_date: new Date(Date.now() + 864e5).toISOString() } });
-  await json(await call(null, "POST", "/api/revenuecat/webhook", { event: { type: "INITIAL_PURCHASE", app_user_id: A.account.id } }, { Authorization: "Bearer hook-secret" }), 200);
-  let me = await json(await call(A.token, "GET", "/api/me"), 200);
+  purchases.set("tok-pro", { kind: "sub", owner: A.account.id, expiry: new Date(Date.now() + 30 * 864e5).toISOString() });
+  let me = await json(await buy(A.token, "snapfront_pro", "tok-pro"), 200);
   assert.equal(me.account.plan, "pro");
+  assert.ok(acks.includes("tok-pro"));
 
   const ids = [me.id];
   for (let i = 2; i <= 10; i++) ids.push((await json(await call(A.token, "POST", "/api/stores", { store_name: `Shop ${i}` }), 201)).id);
@@ -100,9 +123,12 @@ test("Pro: up to 10 stores, picked per request; extra stores stop selling if Pro
   assert.equal((await json(await call(A.token, "GET", "/api/products", null, { "X-Store": ids[4] }), 200)).length, 1);
   assert.equal((await json(await call(A.token, "GET", "/api/products"), 200)).length, 1, "first store keeps its own products");
 
-  // Pro expires: back to Launch, only the first store may sell
-  entitlements.set(A.account.id, { launch: { expires_date: null }, pro: { expires_date: new Date(Date.now() - 1000).toISOString() } });
-  await json(await call(null, "POST", "/api/revenuecat/webhook", { event: { type: "EXPIRATION", app_user_id: A.account.id } }, { Authorization: "Bearer hook-secret" }), 200);
+  // Pro isn't renewed: the background check notices once its paid-up date passes; back to Launch,
+  // and only the first store may sell
+  purchases.get("tok-pro").state = "SUBSCRIPTION_STATE_EXPIRED";
+  purchases.get("tok-pro").expiry = new Date(Date.now() - 1000).toISOString();
+  db.prepare("UPDATE play_purchases SET expires_at = ?, checked_at = datetime('now', '-1 hour') WHERE token = 'tok-pro'").run(new Date(Date.now() - 1000).toISOString());
+  assert.equal(await playbilling.sweep(), 1);
   me = await json(await call(A.token, "GET", "/api/me"), 200);
   assert.equal(me.account.plan, "launch");
   assert.deepEqual(me.account.stores.map((s) => s.live_allowed), [true, ...Array(9).fill(false)]);
@@ -116,7 +142,7 @@ test("Pro: up to 10 stores, picked per request; extra stores stop selling if Pro
 test("comp plans beat purchases, and allowances are enforced inside the agent too", async () => {
   const B = await json(await call(null, "POST", "/api/sellers", { store_name: "Comped" }), 201);
   db.prepare("UPDATE accounts SET comp_plan = 'pro' WHERE id = ?").run(B.account.id);
-  const me = await json(await call(B.token, "POST", "/api/billing/sync"), 200);  // RevenueCat says nothing was bought
+  const me = await json(await call(B.token, "POST", "/api/billing/sync"), 200);  // nothing bought on Google Play
   assert.equal(me.account.plan, "pro");
   db.prepare("INSERT INTO usage (account_id, period, kind, count) VALUES (?,?,?,?)").run(B.account.id, new Date().toISOString().slice(0, 7), "product", 50);
   await assert.rejects(() => plans.withAllowance(plans.getAccount(B.account.id), "product", async () => "x"), (e) => e.status === 402);
