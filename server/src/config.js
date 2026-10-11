@@ -25,7 +25,8 @@ export const config = {
   revenuecatSecretKey: env.REVENUECAT_SECRET_KEY || "",
   serpapiKey: env.SERPAPI_KEY || "",
   cjApiKey: env.CJ_API_KEY || "",
-  photoroomKey: env.PHOTOROOM_API_KEY || "",   // photo studio backgrounds; a sandbox_ key gives free watermarked results
+  photoroomKey: env.PHOTOROOM_API_KEY || "",
+  runpodKey: env.RUNPOD_API_KEY || env.SNAPFRONT_KEY || "",   // AI video and lifestyle photos (Runpod public endpoints)   // photo studio backgrounds; a sandbox_ key gives free watermarked results
   // Stores get https://<slug>.<STORE_DOMAIN> (e.g. snapfront.app) once its wildcard DNS is in place.
   cloudflareToken: env.CLOUDFLARE_API_TOKEN || "",
   adminToken: env.ADMIN_TOKEN || "",
@@ -39,8 +40,9 @@ export const config = {
 export const dirs = {
   images: path.join(config.dataDir, "images"),
   files: path.join(config.dataDir, "files"),
+  media: path.join(config.dataDir, "media"),   // marketing posts and videos
 };
-for (const d of [config.dataDir, dirs.images, dirs.files]) fs.mkdirSync(d, { recursive: true });
+for (const d of [config.dataDir, dirs.images, dirs.files, dirs.media]) fs.mkdirSync(d, { recursive: true });
 
 if (config.downloadSecret === "dev-only-secret-change-me" && env.NODE_ENV === "production") {
   console.warn("[snapfront] DOWNLOAD_SIGNING_SECRET is not set; download links are not secure.");

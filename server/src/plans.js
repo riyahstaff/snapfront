@@ -9,16 +9,17 @@ import * as suppliers from "./suppliers.js";
 import { freeSlug } from "./urls.js";
 
 const DEFAULTS = {
-  free:   { name: "Free",   liveStores: 0,  stores: 1,  photo: 3,   product: 1,  agent: 0,  research: 3,   studio: 10 },
-  launch: { name: "Launch", liveStores: 1,  stores: 1,  photo: 30,  product: 5,  agent: 0,  research: 30,  studio: 100 },
-  pro:    { name: "Pro",    liveStores: 10, stores: 10, photo: 300, product: 50, agent: 40, research: 300, studio: 500 },
+  free:   { name: "Free",   liveStores: 0,  stores: 1,  photo: 3,   product: 1,  agent: 0,  research: 3,   studio: 10,  post: 5,   scene: 2,   video: 0 },
+  launch: { name: "Launch", liveStores: 1,  stores: 1,  photo: 30,  product: 5,  agent: 0,  research: 30,  studio: 100, post: 60,  scene: 20,  video: 0 },
+  pro:    { name: "Pro",    liveStores: 10, stores: 10, photo: 300, product: 50, agent: 40, research: 300, studio: 500, post: 300, scene: 100, video: 10 },
 };
 // Allowances can be tuned without a code change: PLAN_LIMITS='{"pro":{"agent":60}}'
 let overrides = {};
 try { overrides = JSON.parse(process.env.PLAN_LIMITS || "{}"); } catch { console.warn("[plans] PLAN_LIMITS is not valid JSON; using defaults"); }
 export const PLANS = Object.fromEntries(Object.entries(DEFAULTS).map(([k, v]) => [k, { ...v, ...(overrides[k] || {}) }]));
 const RANK = { free: 0, launch: 1, pro: 2 };
-export const KIND_LABEL = { photo: "AI product pages", product: "AI digital products", agent: "store assistant requests", research: "price checks", studio: "photo studio edits" };
+export const KIND_LABEL = { photo: "AI product pages", product: "AI digital products", agent: "store assistant requests", research: "price checks", studio: "photo studio edits",
+  post: "AI marketing posts", scene: "AI lifestyle photos", video: "AI video clips" };
 
 /* ---------- accounts and sessions ---------- */
 export const getAccount = (id) => db.prepare("SELECT * FROM accounts WHERE id = ?").get(id);
@@ -75,6 +76,7 @@ export function assertAllowance(account, kind) {
   const planId = effectivePlan(account);
   const limit = PLANS[planId][kind];
   if (kind === "agent" && !limit) throw httpError(402, "The store assistant comes with Pro.", { upgrade: "pro" });
+  if (kind === "video" && !limit) throw httpError(402, "AI video clips come with Pro: 10 a month.", { upgrade: "pro" });
   if (used(account.id, period(planId), kind) >= limit) {
     const upgrade = planId === "free" ? "launch" : planId === "launch" ? "pro" : null;
     const msg = planId === "free"
@@ -87,6 +89,11 @@ export function assertAllowance(account, kind) {
 export function recordUsage(account, kind) {
   db.prepare("INSERT INTO usage (account_id, period, kind, count) VALUES (?,?,?,1) ON CONFLICT(account_id, period, kind) DO UPDATE SET count = count + 1")
     .run(account.id, period(effectivePlan(account)), kind);
+}
+/** Give one back (a job that failed after it was counted). */
+export function refundUsage(account, kind) {
+  if (!account) return;
+  db.prepare("UPDATE usage SET count = MAX(count - 1, 0) WHERE account_id = ? AND period = ? AND kind = ?").run(account.id, period(effectivePlan(account)), kind);
 }
 /** Check, run, and count only if the work succeeded. */
 export async function withAllowance(account, kind, fn) {
@@ -119,7 +126,7 @@ export function publicAccount(account, currentStoreId) {
   return {
     id: account.id, email: account.email, plan: planId, plan_name: plan.name,
     limits: plan, period: p,
-    usage: Object.fromEntries(["photo", "product", "agent", "research", "studio"].map((k) => [k, used(account.id, p, k)])),
+    usage: Object.fromEntries(["photo", "product", "agent", "research", "studio", "post", "scene", "video"].map((k) => [k, used(account.id, p, k)])),
     stores: stores.map((s, i) => ({ id: s.id, store_name: s.store_name, store_slug: s.store_slug, live_allowed: i < plan.liveStores, current: s.id === currentStoreId })),
     can_add_store: stores.length < plan.stores,
     suppliers: suppliers.status(account.id),

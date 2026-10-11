@@ -166,4 +166,5 @@ export function themeCss(t) {
 }
 
 /** Classes on <body> that switch the page's structure. */
-export const bodyClass = (t) => [`th-${t.id}`, `hd-${t.header}`, `cd-${t.card}`, t.upper ? `up-${t.upper}` : "", t.italicHero ? "ital" : "", t.dark ? "dark" : ""].filter(Boolean).join(" ");
+const LIVELY = new Set(["citrus", "candy", "arcade", "volt", "street", "market", "sorbet"]);
+export const bodyClass = (t) => [`th-${t.id}`, `hd-${t.header}`, `cd-${t.card}`, LIVELY.has(t.id) ? "mo-lively" : "mo-calm", t.upper ? `up-${t.upper}` : "", t.italicHero ? "ital" : "", t.dark ? "dark" : ""].filter(Boolean).join(" ");

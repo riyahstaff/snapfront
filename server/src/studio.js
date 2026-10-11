@@ -12,6 +12,7 @@ import { config, dirs } from "./config.js";
 import { httpError } from "./claude.js";
 import { writeFileSafe } from "./artwork.js";
 import { cutout as realCutout } from "./cutout.js";
+import { editNow, markAi } from "./aimedia.js";
 
 let cutout = realCutout;
 export function setCutout(f) { cutout = f; }   // used by tests
@@ -48,7 +49,7 @@ export const SCENES = [
   { id: "stone", name: "Stone pedestal", at: { cx: 0.5, base: 0.59, w: 0.27, h: 0.38, shadow: 0.45 } },
 ];
 
-const customEnabled = () => Boolean(config.photoroomKey);
+const customEnabled = () => Boolean(config.runpodKey || config.photoroomKey);
 export const enabled = () => true;
 export const presets = () => ({ enabled: true, custom: customEnabled(), colors: COLORS, scenes: SCENES.map(({ id, name }) => ({ id, name })) });
 
@@ -84,8 +85,13 @@ export function sourcePath(imageFile) {
 export async function restyle(imageFile, style) {
   const src = sourcePath(imageFile);
   const f = fieldsFor(style);
-  const jpeg = f.kind === "prompt" ? await photoroom(src, f.prompt) : await compose(await cutout(src), f);
-  return writeFileSafe(dirs.images, `${crypto.randomUUID()}.jpg`, jpeg);
+  let jpeg;
+  if (f.kind !== "prompt") jpeg = await compose(await cutout(src), f);
+  else if (config.runpodKey) jpeg = await sharp(await editNow(path.basename(src), f.prompt)).jpeg({ quality: 88 }).toBuffer();
+  else jpeg = await photoroom(src, f.prompt);
+  const name = writeFileSafe(dirs.images, `${crypto.randomUUID()}.jpg`, jpeg);
+  if (f.kind === "prompt") markAi(name);
+  return name;
 }
 
 /* ---------- composing ---------- */

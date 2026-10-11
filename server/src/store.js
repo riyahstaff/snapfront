@@ -10,6 +10,7 @@ import * as pay from "./payments.js";
 import * as plans from "./plans.js";
 import * as urls from "./urls.js";
 import { THEME_IDS } from "./themes.js";
+import * as growth from "./growth.js";
 
 export const clampStr = (v, n) => String(v ?? "").slice(0, n);
 export const strList = (v, n, len = 200) => (Array.isArray(v) ? v : []).map((x) => clampStr(x, len)).filter(Boolean).slice(0, n);
@@ -29,6 +30,7 @@ export const publicSeller = (s) => ({
   theme: THEME_IDS.has(s.theme) ? s.theme : "classic",
   about: s.about || "", announcement: s.announcement || "",
   banner_url: s.banner_file ? `${config.publicUrl}/img/${s.banner_file}` : null,
+  links: growth.linksOf(s), abandoned_emails: s.abandoned_emails !== 0, ...(({ links, feeds }) => ({ links_url: links, feeds }))(growth.storeLinks(s)),
 });
 
 /** NULL/blank means unlimited stock; otherwise a whole number >= 0. */
@@ -70,6 +72,8 @@ export function updateStore(seller, b) {
   if (b.tax_enabled != null) db.prepare("UPDATE sellers SET tax_enabled = ? WHERE id = ?").run(b.tax_enabled ? 1 : 0, seller.id);
   if (b.about != null) db.prepare("UPDATE sellers SET about = ? WHERE id = ?").run(clampStr(b.about, 600).trim(), seller.id);
   if (b.announcement != null) db.prepare("UPDATE sellers SET announcement = ? WHERE id = ?").run(clampStr(b.announcement, 90).replace(/\s+/g, " ").trim(), seller.id);
+  if (b.links != null) db.prepare("UPDATE sellers SET links = ? WHERE id = ?").run(JSON.stringify(growth.cleanLinks(b.links)), seller.id);
+  if (b.abandoned_emails != null) db.prepare("UPDATE sellers SET abandoned_emails = ? WHERE id = ?").run(b.abandoned_emails ? 1 : 0, seller.id);
   if (b.theme != null) {
     if (!THEME_IDS.has(b.theme)) throw httpError(400, "That store look doesn't exist.");
     db.prepare("UPDATE sellers SET theme = ? WHERE id = ?").run(b.theme, seller.id);

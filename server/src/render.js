@@ -4,6 +4,8 @@ import { storeUrl } from "./urls.js";
 import { config } from "./config.js";
 import { themeOf, themeCss, fontsUrl, bodyClass } from "./themes.js";
 import { CSS } from "./storefront-css.js";
+import { reviewsFor, ratingsBySeller, reviewToken, linksOf } from "./growth.js";
+import { isAiImage } from "./aimedia.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const money = (cents, cur = "usd") => new Intl.NumberFormat("en-US", { style: "currency", currency: cur.toUpperCase() }).format(cents / 100);
@@ -90,14 +92,21 @@ ${CART_JS(store.store_slug)}<main>${body}</main>
 <nav aria-label="Shop links"><h4>Shop</h4><a href="${esc(base(store))}/#shop">All products</a>${cats.slice(0, 5).map((c) => `<a href="${esc(catHref(store, c.name))}">${esc(c.name)}</a>`).join("")}</nav>
 <nav aria-label="Help"><h4>Help</h4><a href="${esc(base(store))}/cart">Your cart</a>${store.about ? `<a href="${esc(base(store))}/#about">About us</a>` : ""}${facts?.physical !== false ? `<span>${esc(ship.title)}</span>${ship.where ? `<span>${esc(ship.where)}</span>` : ""}` : ""}<span>Secure checkout by Stripe</span></nav></div>
 <div class="wrap bot"><span>© ${year} ${esc(store.store_name)}</span><span>Made with Snapfront</span></div></footer>
+<script>(function(){if(!("IntersectionObserver" in window)||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+var els=document.querySelectorAll(".sec-h,.pc,.cat-c,.cat-t,.perk,.feat .pic,.feat .txt,.story .pic,.story .txt,.rev,.lk,.strip a");
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{rootMargin:"0px 0px -8% 0px"});
+els.forEach(function(el){var sib=el.parentElement?Array.prototype.indexOf.call(el.parentElement.children,el):0;el.style.setProperty("--d",Math.min(sib,6)*0.07+"s");el.classList.add("rv");io.observe(el)});
+var hero=document.querySelector(".h-ov>img");if(hero){var tick=false;addEventListener("scroll",function(){if(tick)return;tick=true;requestAnimationFrame(function(){hero.style.transform="translateY("+Math.min(scrollY*0.25,200)+"px) scale(1.06)";tick=false})},{passive:true})}})();</script>
 ${preview ? `<script>document.querySelectorAll('a[href^="/"]').forEach(function(a){var u=new URL(a.href);u.searchParams.set("theme",${JSON.stringify(t.id)});a.href=u.pathname+u.search+u.hash})</script>` : ""}</body></html>`;
 }
 
 /* ---------- sections ---------- */
+const stars = (avg) => `<span class="stars" aria-label="${avg} out of 5 stars">${[1, 2, 3, 4, 5].map((i) => `<i class="${avg >= i - 0.25 ? "on" : avg >= i - 0.75 ? "half" : ""}">★</i>`).join("")}</span>`;
 function card(store, p) {
+  const r = store._ratings?.get(p.id);
   return `<a class="pc" href="${esc(base(store))}/${esc(p.slug)}"><div class="im">${img(p.image_url, p.alt_text || p.title, ' loading="lazy"')}
 ${!p.in_stock ? `<span class="tag out">Sold out</span>` : p.label ? `<span class="tag">${esc(p.label)}</span>` : p.kind === "digital" ? `<span class="tag">Digital</span>` : ""}<span class="go" aria-hidden="true">View product</span></div>
-<div class="bd"><h3>${esc(p.title)}</h3><span class="pr">${priceLabel(p)}</span></div></a>`;
+<div class="bd"><h3>${esc(p.title)}</h3><span class="pr">${priceLabel(p)}</span>${r ? `<span class="rt">${stars(r.avg)} <small>${r.count}</small></span>` : ""}</div></a>`;
 }
 
 function hero(store, t, products) {
@@ -136,6 +145,7 @@ const chips = (store, cats, current) => (cats.length < 2 ? "" : `<nav class="chi
 
 export function storePage(store, products, baseUrl, { category } = {}) {
   const t = themeOf(store._theme || store.theme);
+  if (store.id) store = { ...store, _ratings: ratingsBySeller(store.id) };
   const cats = categories(products);
   const facts = storeFacts(store, products);
   const current = category ? cats.find((c) => c.name.toLowerCase() === String(category).toLowerCase())?.name : null;
@@ -189,8 +199,13 @@ document.querySelectorAll("[data-q]").forEach(function(b){b.addEventListener("cl
 function add(){var v=sel();sfCart.add({product_id:P.id||P.product_id,variant_id:v?v.value:null,variant:v?OPT+": "+v.dataset.name:null,qty:P.kind==="digital"?1:q,title:P.title,kind:P.kind,image:P.image,unit:v?Number(v.dataset.price):P.unit})}
 document.getElementById("add").addEventListener("click",function(){add();var t=document.getElementById("toast");t.hidden=false;clearTimeout(t._h);t._h=setTimeout(function(){t.hidden=true},4000)});
 document.getElementById("now").addEventListener("click",function(){add();location.href="${esc(base(store))}/cart"});sync()})();</script>` : "";
+  const rv = p.id ? reviewsFor(p.id) : { count: 0, list: [] };
+  if (store.id) store = { ...store, _ratings: ratingsBySeller(store.id) };
   const jsonLd = { "@context": "https://schema.org", "@type": "Product", name: p.title, description: p.seo_description || p.tagline, image: p.image_url || undefined, sku: p.sku || undefined,
+    ...(rv.count ? { aggregateRating: { "@type": "AggregateRating", ratingValue: rv.avg, reviewCount: rv.count } } : {}),
     offers: { "@type": "Offer", price: (startPrice / 100).toFixed(2), priceCurrency: p.currency.toUpperCase(), availability: `https://schema.org/${p.in_stock ? "InStock" : "OutOfStock"}`, url: storeUrl(store.store_slug, `/${p.slug}`) } };
+  const reviewsHtml = rv.count ? `<section class="sec tight" id="reviews"><div class="wrap"><div class="sec-h"><h2>Reviews</h2><span class="rt big">${stars(rv.avg)} ${rv.avg} · ${rv.count} ${rv.count === 1 ? "review" : "reviews"}</span></div>
+<div class="revs">${rv.list.map((r) => `<figure class="rev">${stars(r.rating)}${r.body ? `<blockquote>${esc(r.body)}</blockquote>` : ""}<figcaption>${esc(r.name)} · Verified buyer</figcaption></figure>`).join("")}</div></div></section>` : "";
   const mini = [p.kind === "digital" ? [ICON.download, "Instant download after you pay"] : [ICON.truck, `${facts.ship.title}${facts.ship.where ? `. ${facts.ship.where}.` : ""}`], [ICON.lock, "Secure checkout by Stripe"]];
   const related = others.filter((o) => o.id !== p.id).sort((a, b) => (b.category === p.category) - (a.category === p.category)).slice(0, 4);
   return shell({
@@ -198,8 +213,8 @@ document.getElementById("now").addEventListener("click",function(){add();locatio
     canonical: storeUrl(store.store_slug, `/${p.slug}`),
     body: `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>
 <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="${esc(home(store))}">Home</a><span>/</span>${p.category ? `<a href="${esc(catHref(store, p.category))}">${esc(p.category)}</a><span>/</span>` : ""}<span aria-current="page">${esc(p.title)}</span></nav>
-<article class="pd"><div class="media"><div class="pic">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" fetchpriority="high">` : ""}${p.label && p.in_stock ? `<span class="tag">${esc(p.label)}</span>` : ""}</div></div>
-<div class="info"><div class="cat">${p.kind === "digital" ? "Digital download" : esc(p.category || store.store_name)}</div><h1>${esc(p.title)}</h1>
+<article class="pd"><div class="media"><div class="pic">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" fetchpriority="high">` : ""}${p.label && p.in_stock ? `<span class="tag">${esc(p.label)}</span>` : ""}</div>${isAiImage(p.image_file) ? `<p class="fine ai">Photo created with AI. The product is shown as sold.</p>` : ""}</div>
+<div class="info"><div class="cat">${p.kind === "digital" ? "Digital download" : esc(p.category || store.store_name)}</div><h1>${esc(p.title)}</h1>${rv.count ? `<a class="rt" href="#reviews">${stars(rv.avg)} ${rv.avg} (${rv.count})</a>` : ""}
 <div class="price" id="price">${money(startPrice, p.currency)}</div>${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}${opts}${buy}<div id="stock" class="stock" aria-live="polite"></div>
 <div class="mini">${mini.map(([i, t]) => `<div>${i}<span>${esc(t)}</span></div>`).join("")}</div>
 ${p.description ? `<div class="desc">${String(p.description).split(/\n\s*\n/).filter(Boolean).map((t) => `<p>${esc(t)}</p>`).join("")}</div>` : ""}
@@ -207,6 +222,7 @@ ${p.bullets.length ? `<ul class="b">${p.bullets.map((b) => `<li>${esc(b)}</li>`)
 <div>${p.faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}${p.kind === "physical" ? `<details><summary>Shipping</summary><p>${esc(facts.ship.title)}.${facts.ship.where ? ` ${esc(facts.ship.where)}.` : ""} You'll see the shipping cost before you pay.</p></details>` : ""}</div>
 ${p.tags.length ? `<div class="tags">${p.tags.map((t) => `<span>#${esc(t)}</span>`).join("")}</div>` : ""}</div></article></div>
 ${related.length ? `<section class="sec feat"><div class="wrap" style="display:block"><div class="sec-h"><h2>You may also like</h2><a class="more" href="${esc(base(store))}/#shop">Shop all</a></div><div class="grid">${related.map((o) => card(store, o)).join("")}</div></div></section>` : ""}
+${reviewsHtml}
 <div class="toast" id="toast" role="status" hidden>Added to your cart <a href="${esc(base(store))}/cart">View cart</a></div>${script}`,
   });
 }
@@ -272,6 +288,7 @@ export function orderPage(store, o, downloads) {
     ? `<h1>Payment didn't go through</h1><p>Your order wasn't charged. <a href="${esc(base(store))}/cart">Return to your cart</a> to try again.</p>`
     : `<h1>${pending ? "Almost there" : "Thank you!"}</h1>
 <p>${pending ? "We're waiting for Stripe to confirm your payment. This page refreshes on its own." : `Your order is confirmed${o.email ? ` and a receipt is on its way to <strong>${esc(o.email)}</strong>` : ""}.`}</p>
+${!pending && o.status !== "canceled" && o._reviewToken ? `<p><a href="${esc(base(store))}/review?t=${esc(o._reviewToken)}">Leave a review</a> when it arrives. It helps a small shop a lot.</p>` : ""}
 ${downloads.length ? `<div class="dl">${downloads.map((d) => `<a class="buy" href="${esc(d.url)}">Download ${esc(d.title)}</a>`).join("")}<p class="fine">Download links work for 7 days. Bookmark this page to get fresh ones.</p></div>` : ""}
 ${o.items.some((l) => l.kind === "physical") && !pending ? `<p>${o.status === "fulfilled" ? "Your order has shipped." : `${esc(store.store_name)} will ship your order soon.`}${o.tracking ? ` Tracking number: <a href="${esc(o.tracking.url)}" rel="noopener">${esc(o.tracking.number)}</a>${o.tracking.carrier ? ` (${esc(o.tracking.carrier)})` : ""}.` : ""}</p>` : ""}
 <div class="sum" style="position:static">${rows}
@@ -303,6 +320,28 @@ appearance:{variables:{colorPrimary:${JSON.stringify(themeOf(store.theme).c.acce
 [["tax-settings","settings","l1"],["tax-registrations","regs","l2"]].forEach(function(c){var el=sc.create(c[0]);el.setOnLoaderStart&&el.setOnLoaderStart(function(){var l=document.getElementById(c[2]);l&&l.remove()});
 el.setOnLoadError&&el.setOnLoadError(function(e){fail("Stripe couldn't load this section: "+(e.error&&e.error.message||"try again."))});document.getElementById(c[1]).appendChild(el)})};</script></div>`,
   });
+}
+
+/** Link-in-bio: one page for Instagram and TikTok bios. */
+export function linksPage(store, products, links) {
+  const btn = (href, label, cls = "") => `<a class="lk ${cls}" href="${esc(href)}"${/^https?:/.test(href) ? ' rel="noopener" target="_blank"' : ""}>${esc(label)}</a>`;
+  return shell({ title: `${store.store_name} · Links`, description: store.tagline || `Shop ${store.store_name}`, store, canonical: storeUrl(store.store_slug, "/links"),
+    body: `<div class="wrap links"><header>${store.banner_file ? `<img class="av" src="${esc(`${config.publicUrl}/img/${store.banner_file}`)}" alt="">` : ""}<h1>${esc(store.store_name)}</h1>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</header>
+${btn(`${home(store)}?utm_source=bio`, "Shop the store", "main")}
+${products.map((p) => `<a class="lk prod" href="${esc(base(store))}/${esc(p.slug)}?utm_source=bio">${img(p.image_url, "", ' loading="lazy"')}<span>${esc(p.title)}</span><b>${priceLabel(p)}</b></a>`).join("")}
+${links.map((l) => btn(l.url, l.label)).join("")}</div>` });
+}
+
+/** Review form for a buyer, from the link in their order page or email. */
+export function reviewPage(store, token, items, done) {
+  const open = items.filter((i) => !i.reviewed);
+  const form = (i) => `<form class="revf" method="post" action="${esc(base(store))}/review"><input type="hidden" name="t" value="${esc(token)}"><input type="hidden" name="product_id" value="${esc(i.product_id)}">
+<h2>${esc(i.title)}</h2><fieldset class="starpick"><legend>Your rating</legend>${[5, 4, 3, 2, 1].map((n) => `<input type="radio" id="s${n}-${esc(i.product_id)}" name="rating" value="${n}" required><label for="s${n}-${esc(i.product_id)}" title="${n} star${n > 1 ? "s" : ""}">★</label>`).join("")}</fieldset>
+<label>What did you think? <textarea name="body" rows="4" maxlength="1000" placeholder="How was the quality, the fit, the delivery?"></textarea></label>
+<label>Your first name <input name="name" maxlength="40" autocomplete="given-name" placeholder="Shown with your review"></label><button class="btn" type="submit">Post review</button></form>`;
+  return shell({ title: `Review · ${store.store_name}`, description: `Review your order from ${store.store_name}`, store,
+    body: `<div class="wrap page"><div class="order">${done ? `<p class="ok">Thank you! Your review is posted.</p>` : ""}<h1>${open.length ? "How was your order?" : "Thanks for your reviews"}</h1>
+${open.length ? open.map(form).join("") : `<p>You've reviewed everything in this order. <a href="${esc(home(store))}">Back to the store</a></p>`}</div></div>` });
 }
 
 export function notePage(store, title, html) {

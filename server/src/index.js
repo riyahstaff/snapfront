@@ -21,7 +21,11 @@ import { landingPage } from "./landing.js";
 import { THEME_IDS, publicThemes } from "./themes.js";
 import * as studio from "./studio.js";
 import { ensureModel as ensureCutoutModel } from "./cutout.js";
-import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, esc } from "./render.js";
+import * as supplierDirectory from "./supplier-directory.js";
+import * as marketing from "./marketing.js";
+import * as aimedia from "./aimedia.js";
+import * as growth from "./growth.js";
+import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, esc } from "./render.js";
 
 export const app = express();
 app.disable("x-powered-by");
@@ -71,6 +75,7 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
     }
     if (orderId && (event.type === "checkout.session.async_payment_failed" || event.type === "checkout.session.expired")) {
       db.prepare("UPDATE orders SET status='canceled' WHERE id=? AND status='pending'").run(orderId);
+      if (event.type === "checkout.session.expired") await growth.sendRecovery(orderId, obj).catch((e) => console.warn("[recovery]", e.message));
     }
     if (event.type === "account.updated") {
       const a = event.data.object;
@@ -157,6 +162,8 @@ app.delete("/api/me/banner", auth, (req, res) => {
   db.prepare("UPDATE sellers SET banner_file = NULL WHERE id = ?").run(req.seller.id);
   res.json(me(req));
 });
+// Free directory of places to source products (everyone, no sign-in).
+app.get("/api/sources", (_req, res) => res.json(supplierDirectory.directory()));
 app.get("/api/themes", (req, res) => res.json({ themes: publicThemes() }));
 app.get("/api/me", auth, (req, res) => res.json(me(req)));
 app.patch("/api/me", auth, wrap(async (req, res) => { await store.updateStoreChecked(req.seller, req.body || {}); res.json(me(req)); }));
@@ -262,6 +269,40 @@ app.post("/api/studio", auth, aiLimit, wrap(async (req, res) => {
   studio.sourcePath(source);
   const file = await plans.withAllowance(req.account, "studio", () => studio.restyle(source, style));
   res.json({ image_file: file, image_url: `${config.publicUrl}/img/${file}`, source_file: source });
+}));
+
+/* ---------- marketing: posts, carousels, reels, AI video and AI lifestyle photos ---------- */
+const ownProduct = (req, id) => rowToProduct(store.productRow(req.seller, id));
+app.get("/api/marketing", auth, (_req, res) => res.json({ templates: marketing.TEMPLATES, formats: Object.keys(marketing.FORMATS), ai: aimedia.presets() }));
+app.post("/api/marketing/copy", auth, aiLimit, wrap(async (req, res) => {
+  const b = req.body || {};
+  const product = ownProduct(req, b.product_id);
+  res.json(await plans.withAllowance(req.account, "post", () => marketing.writeCopy(req.seller, product, { platform: b.platform, tone: clampStr(b.tone, 60), offer: clampStr(b.offer, 60) })));
+}));
+app.post("/api/marketing/render", auth, aiLimit, wrap(async (req, res) => {
+  const b = req.body || {};
+  res.json(await marketing.renderPost(req.seller, ownProduct(req, b.product_id), { kind: b.kind, template: b.template, format: b.format, copy: b.copy, offer: b.offer, image_url: b.image_url }));
+}));
+app.get("/api/ai-media", auth, (req, res) => res.json({ ...aimedia.presets(), jobs: aimedia.jobsFor(req.seller) }));
+app.post("/api/ai-media", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await aimedia.start(req.account, req.seller, req.body || {}))));
+app.get("/api/ai-media/:id", auth, wrap(async (req, res) => {
+  aimedia.jobFor(req.seller, req.params.id);
+  await aimedia.poll(req.params.id).catch(() => {});
+  res.json(aimedia.view(aimedia.jobFor(req.seller, req.params.id)));
+}));
+
+/* ---------- growth: insights, reviews, QR codes ---------- */
+app.get("/api/insights", auth, (req, res) => {
+  if (plans.effectivePlan(req.account) !== "pro") throw httpError(402, "Store insights come with Pro.", { upgrade: "pro" });
+  res.json(growth.insights(req.seller, req.query.days));
+});
+app.get("/api/reviews", auth, (req, res) => res.json(growth.sellerReviews(req.seller)));
+app.patch("/api/reviews/:id", auth, (req, res) => { growth.setReviewStatus(req.seller, req.params.id, req.body?.status); res.json(growth.sellerReviews(req.seller)); });
+app.get("/api/qr", auth, wrap(async (req, res) => {
+  const target = String(req.query.target || "store");
+  let url = target === "links" ? growth.linksUrl(req.seller) : urls.storeUrl(req.seller.store_slug);
+  if (target === "product") url = store.withPage(req.seller, store.productRow(req.seller, req.query.id)).page_url;
+  res.type("png").set("Cache-Control", "no-store").send(await growth.qrPng(`${url}${url.includes("?") ? "&" : "?"}utm_source=qr`));
 }));
 
 /* ---------- price check: the same item at Amazon, Walmart, Target... from a photo ---------- */
@@ -396,6 +437,12 @@ app.get("/img/:file", (req, res) => {
   res.set("Cache-Control", "public, max-age=31536000, immutable");
   res.sendFile(path.join(dirs.images, req.params.file), (err) => err && !res.headersSent && res.status(404).end());
 });
+app.get("/media/:file", (req, res) => {
+  if (!/^[\w-]+\.(jpg|png|mp4)$/.test(req.params.file)) return res.status(404).end();
+  res.set("Cache-Control", "public, max-age=31536000, immutable");
+  if (req.query.download) res.attachment(req.params.file);
+  res.sendFile(path.join(dirs.media, req.params.file), (err) => err && !res.headersSent && res.status(404).end());
+});
 const storeBySlug = (slug) => db.prepare("SELECT * FROM sellers WHERE store_slug = ?").get(slug);
 /** Links inside a store page start at "" on its own address and at /s/<slug> anywhere else. */
 const view = (req, store) => ({ ...store, _base: req.storeHost === store.store_slug ? "" : `/s/${store.store_slug}`,
@@ -421,6 +468,7 @@ app.get(["/s/:store", "/s/:store/*rest"], (req, res, next) => {
 app.get("/s/:store", (req, res) => {
   const store = storeBySlug(req.params.store);
   const rows = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' ORDER BY created_at DESC").all(store.id);
+  growth.recordVisit(req, store, "");
   res.send(storePage(view(req, store), rows.map(rowToProduct), config.publicUrl, { category: typeof req.query.c === "string" ? req.query.c.slice(0, 60) : null }));
 });
 app.get("/s/:store/cart", (req, res) => {
@@ -446,11 +494,38 @@ app.post("/s/:store/checkout", buyerLimit, wrap(async (req, res) => {
   if (!store) throw httpError(404, "Store not found");
   res.json(await commerce.startCheckout(store, req.body?.items, req.body?.code));
 }));
+app.get("/s/:store/feeds/:file", (req, res) => {
+  const store = storeBySlug(req.params.store);
+  if (req.params.file === "google.xml") return res.type("application/xml").set("Cache-Control", "public, max-age=900").send(growth.googleFeed(store));
+  if (req.params.file === "meta.csv") return res.type("text/csv").set("Cache-Control", "public, max-age=900").send(growth.metaFeed(store));
+  res.status(404).end();
+});
+app.get("/s/:store/links", (req, res) => {
+  const store = storeBySlug(req.params.store);
+  growth.recordVisit(req, store, "");
+  const rows = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' ORDER BY created_at DESC LIMIT 4").all(store.id);
+  res.send(linksPage(view(req, store), rows.map(rowToProduct), growth.linksOf(store)));
+});
+app.get("/s/:store/review", (req, res) => {
+  const store = storeBySlug(req.params.store);
+  let order;
+  try { order = growth.orderForReview(req.query.t); } catch (e) { return res.status(404).send(notePage(view(req, store), "Review", `<h1>${esc(e.message)}</h1>`)); }
+  if (order.seller_id !== store.id) return res.status(404).send(notePage(view(req, store), "Review", "<h1>That review link isn't valid.</h1>"));
+  res.send(reviewPage(view(req, store), String(req.query.t), growth.reviewable(order), req.query.done === "1"));
+});
+app.post("/s/:store/review", buyerLimit, express.urlencoded({ extended: false, limit: "20kb" }), (req, res) => {
+  const store = storeBySlug(req.params.store);
+  const order = growth.orderForReview(req.body?.t);
+  if (order.seller_id !== store.id) throw httpError(404, "That review link isn't valid.");
+  growth.addReview(order, req.body || {});
+  res.redirect(303, `${view(req, store)._base}/review?t=${encodeURIComponent(req.body.t)}&done=1`);
+});
 app.get("/s/:store/:product", (req, res) => {
   const store = storeBySlug(req.params.store);
   const row = store && db.prepare("SELECT * FROM products WHERE seller_id = ? AND slug = ?").get(store.id, req.params.product);
   if (!row || (row.status !== "live" && req.query.preview !== "1")) return res.status(404).send(notePage(view(req, store), "Not found", `<h1>That product isn’t here</h1><p><a href="${esc(view(req, store)._base || "/")}">See everything in ${esc(store.store_name)}</a></p>`));
   const others = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' AND id != ? ORDER BY created_at DESC LIMIT 24").all(store.id, row.id).map(rowToProduct);
+  growth.recordVisit(req, store, row.id);
   res.send(productPage(view(req, store), rowToProduct(row), config.publicUrl, others));
 });
 app.get("/thanks", wrap(async (req, res) => {
@@ -464,7 +539,7 @@ app.get("/thanks", wrap(async (req, res) => {
     if (session && session.payment_status !== "paid") console.log("[thanks] session not paid yet", order.id, session.status, session.payment_status);
     if (session?.payment_status === "paid") order = await completeOrder(order.id, session);
   }
-  res.send(orderPage(view(req, store), commerce.publicOrder(order), commerce.downloadsFor(order)));
+  res.send(orderPage(view(req, store), { ...commerce.publicOrder(order), _reviewToken: ["paid", "fulfilled"].includes(order.status) ? growth.reviewToken(order.id) : null }, commerce.downloadsFor(order)));
 }));
 app.get("/d/:token", (req, res) => {
   const t = pay.readDownloadToken(req.params.token);
@@ -506,6 +581,13 @@ app.use((err, _req, res, _next) => {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   app.listen(config.port, () => console.log(`Snapfront API on ${config.publicUrl} (port ${config.port})`));
+  // AI video and lifestyle photos: check the Runpod key, then collect finished jobs.
+  if (aimedia.enabled()) {
+    aimedia.check().then((st) => console.log(`[runpod] key ${st === 200 ? "ok" : `check returned ${st}`}`)).catch((e) => console.error("[runpod] check", e.message));
+    setInterval(() => aimedia.poll().catch((e) => console.error("[runpod] poll", e.message)), 8_000).unref();
+  }
+  // Ask buyers for reviews a few days after they buy.
+  setInterval(() => growth.sendReviewRequests().catch((e) => console.error("[reviews] email", e.message)), 60 * 60e3).unref();
   // Photo studio: fetch the cut-out model in the background so the first seller doesn't wait for it.
   ensureCutoutModel().catch((e) => console.error("[cutout] model", e.message));
   // Pick up tracking numbers for orders at CJ.

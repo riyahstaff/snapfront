@@ -1,5 +1,6 @@
 // Cart pricing, discount codes, checkout and order finalisation.
 // Prices are always re-read from the database: the browser only sends ids and quantities.
+import { recoveryParams } from "./growth.js";
 import { config } from "./config.js";
 import { db, newId, rowToProduct } from "./db.js";
 import { httpError } from "./claude.js";
@@ -158,6 +159,7 @@ export async function startCheckout(seller, items, code) {
   const fee = Math.floor(((p.subtotal - p.discountCents) * config.platformFeePercent) / 100);
   if (fee > 0) params.payment_intent_data = { application_fee_amount: fee, metadata: { snapfront_order: orderId } };
 
+  Object.assign(params, recoveryParams(seller));   // Pro: remind buyers who leave checkout
   const session = await pay.createCheckout(seller, params, p.discountCents);
   db.prepare("UPDATE orders SET checkout_session_id = ? WHERE id = ?").run(session.id, orderId);
   return { url: session.url, order_id: orderId };

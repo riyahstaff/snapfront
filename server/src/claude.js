@@ -34,7 +34,7 @@ export function parseJson(text) {
   return JSON.parse(body.slice(start, end + 1));
 }
 
-async function askJson(content, maxTokens) {
+export async function askJson(content, maxTokens) {
   // Test hook: lets the smoke tests run without an API key.
   if (process.env.SNAPFRONT_FAKE_AI) return JSON.parse(process.env.SNAPFRONT_FAKE_AI);
   const ai = anthropic();
