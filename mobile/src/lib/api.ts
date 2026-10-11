@@ -55,6 +55,7 @@ export type Seller = {
   store_url: string;
   /** e.g. "snapfront.app" when every store has its own <slug>.snapfront.app address */
   store_domain: string | null;
+  custom_domain: null | { domain: string; status: "pending" | "active" | "failed" };
   stripe_connected: boolean;
   stripe_ready: boolean;
   shipping_flat: number;
@@ -75,6 +76,10 @@ export type Account = {
   stores: { id: string; store_name: string; store_slug: string; live_allowed: boolean; current: boolean }[];
   can_add_store: boolean;
   suppliers: Suppliers;
+};
+export type DomainView = {
+  enabled: boolean; domain: string | null; status?: "pending" | "active" | "failed";
+  record?: { type: "CNAME"; host: string; value: string }; url?: string;
 };
 export type SupplierId = "cj" | "printful" | "aliexpress";
 export type SupplierState = {
@@ -272,6 +277,10 @@ export const api = {
   deleteDiscount: (id: string) => request<void>("DELETE", `/api/discounts/${id}`),
   agentStart: (messages: ChatMessage[]) => request<{ id: string; status: string }>("POST", "/api/agent/runs", { messages }),
   agentRun: (id: string, after: number) => request<AgentRun>("GET", `/api/agent/runs/${id}?after=${after}`),
+  domain: () => request<DomainView>("GET", "/api/domain"),
+  setDomain: (domain: string) => request<DomainView>("PUT", "/api/domain", { domain }),
+  refreshDomain: () => request<DomainView>("POST", "/api/domain/refresh"),
+  removeDomain: () => request<DomainView>("DELETE", "/api/domain"),
   stripeOnboard: () => request<{ url: string }>("POST", "/api/stripe/onboard"),
   stripeStatus: () => request<{ connected: boolean; ready: boolean }>("GET", "/api/stripe/status"),
   taxSetup: () => request<{ url: string }>("POST", "/api/stripe/tax-setup"),

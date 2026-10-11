@@ -16,6 +16,7 @@ import * as auth2 from "./auth.js";
 import * as suppliers from "./suppliers.js";
 import * as dropship from "./dropship.js";
 import * as urls from "./urls.js";
+import * as domains from "./domains.js";
 import { landingPage } from "./landing.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, esc } from "./render.js";
 
@@ -25,8 +26,22 @@ app.set("trust proxy", 1);
 
 /* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
 const SHARED_PATHS = /^\/(api|img|d|thanks|stripe|suppliers|health|privacy|terms)(\/|$)/;
+const sameSecret = (a, b) => { const x = Buffer.from(String(a || "")), y = Buffer.from(String(b || "")); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 app.use((req, res, next) => {
   if (!config.storeDomain) return next();
+  // A seller's own domain, forwarded by our Cloudflare Worker (see domains.js).
+  const edgeHost = req.get("x-snapfront-host");
+  if (edgeHost && sameSecret(req.get("x-snapfront-edge"), domains.edgeSecret())) {
+    const s = urls.sellerForDomain(edgeHost);
+    if (!s) return res.status(404).send("This domain isn't connected to a Snapfront store.");
+    if (s.custom_domain_status !== "active") db.prepare("UPDATE sellers SET custom_domain_status = 'active' WHERE id = ?").run(s.id);
+    req.storeHost = s.store_slug;
+    req.customHost = s.custom_domain;
+    if (SHARED_PATHS.test(req.path)) return next();
+    if (req.path.startsWith("/s/")) return req.method === "GET" ? res.redirect(301, req.originalUrl.replace(/^\/s\/[^/?]+/, "") || "/") : next();
+    req.url = `/s/${s.store_slug}${req.url === "/" ? "" : req.url}`;
+    return next();
+  }
   const host = String(req.hostname || "").toLowerCase();
   if (host === `www.${config.storeDomain}`) return res.redirect(301, `https://${config.storeDomain}${req.originalUrl}`);
   const sub = urls.hostStoreSlug(host);
@@ -134,10 +149,20 @@ const removeFiles = (rows) => { for (const r of rows) for (const [dir, f] of [[d
 // This deletes the whole account: every store, product and photo.
 app.delete("/api/me", auth, (req, res) => {
   const rows = db.prepare("SELECT p.image_file, p.delivery_file FROM products p JOIN sellers s ON s.id = p.seller_id WHERE s.account_id = ?").all(req.account.id);
+  for (const st of plans.storesOf(req.account.id)) if (st.custom_domain_id) domains.removeDomain(st).catch(() => {});
   db.prepare("DELETE FROM accounts WHERE id = ?").run(req.account.id);
   removeFiles(rows);
   res.status(204).end();
 });
+
+/* ---------- a store's own domain (Pro) ---------- */
+app.get("/api/domain", auth, (req, res) => res.json(domains.view(req.seller)));
+app.put("/api/domain", auth, wrap(async (req, res) => {
+  if (plans.effectivePlan(req.account) !== "pro") throw httpError(402, "Using your own domain comes with Pro.", { upgrade: "pro" });
+  res.json(await domains.addDomain(req.seller, req.body?.domain));
+}));
+app.post("/api/domain/refresh", auth, wrap(async (req, res) => res.json(await domains.refreshDomain(req.seller))));
+app.delete("/api/domain", auth, wrap(async (req, res) => res.json(await domains.removeDomain(req.seller))));
 
 /* ---------- stores (Pro runs up to 10) ---------- */
 app.post("/api/stores", auth, (req, res) => {
@@ -150,6 +175,7 @@ app.delete("/api/stores/:id", auth, (req, res) => {
   if (!target) throw httpError(404, "That store doesn't exist.");
   if (stores.length === 1) throw httpError(409, "This is your only store. To remove everything, delete your account in Settings.");
   const rows = db.prepare("SELECT image_file, delivery_file FROM products WHERE seller_id = ?").all(target.id);
+  if (target.custom_domain_id) domains.removeDomain(target).catch(() => {});
   db.prepare("DELETE FROM sellers WHERE id = ?").run(target.id);
   removeFiles(rows);
   res.status(204).end();
@@ -339,7 +365,9 @@ app.get(["/s/:store", "/s/:store/*rest"], (req, res, next) => {
     const moved = urls.redirectFor(req.params.store);
     return moved ? res.redirect(301, urls.storeUrl(moved.store_slug, rest) + qs) : noStore(res);
   }
-  if (config.storeDomain && req.storeHost !== store.store_slug) return res.redirect(301, urls.storeUrl(store.store_slug, rest) + qs);
+  // One address per store: its own domain when it has one, else <slug>.snapfront.app.
+  const here = req.customHost || (req.storeHost === store.store_slug ? `${store.store_slug}.${config.storeDomain}` : null);
+  if (config.storeDomain && here !== new URL(urls.storeUrl(store.store_slug)).host) return res.redirect(301, urls.storeUrl(store.store_slug, rest) + qs);
   next();
 });
 app.get("/s/:store", (req, res) => {
@@ -431,4 +459,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   app.listen(config.port, () => console.log(`Snapfront API on ${config.publicUrl} (port ${config.port})`));
   // Pick up tracking numbers for orders at CJ.
   setInterval(() => dropship.syncDue().catch((e) => console.error("[supplier] sync", e.message)), 30 * 60e3).unref();
+  // Sellers' own domains: set up Cloudflare once, then switch domains on as their DNS goes live.
+  if (domains.enabled()) {
+    domains.ensureEdge().catch((e) => console.error("[domains] setup", e.message));
+    setInterval(() => domains.refreshPending().catch((e) => console.error("[domains] refresh", e.message)), 10 * 60e3).unref();
+  }
 }

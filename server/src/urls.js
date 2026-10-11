@@ -14,14 +14,26 @@ db.exec(`CREATE TABLE IF NOT EXISTS store_redirects (
 export const RESERVED = new Set(("www api app apps admin administrator root mail email smtp imap pop ftp ns ns1 ns2 dns cdn static assets img images media files " +
   "download downloads d s help support docs blog status dev staging test demo beta preview store stores shop shops checkout cart pay payment payments " +
   "billing account accounts login signin signup auth oauth secure security dashboard console stripe snapfront official legal privacy terms about " +
-  "contact team careers jobs press news webhook webhooks callback suppliers thanks health").split(" "));
+  "contact team careers jobs press news webhook webhooks callback suppliers thanks health domains edge edge-origin").split(" "));
 
 const DEFAULT_SLUG = /^(my-snapfront-store|store|item)(-\d+)?$/;
 export const isDefaultSlug = (slug) => DEFAULT_SLUG.test(String(slug || ""));
 
-export const storeUrl = (slug, path = "") => (config.storeDomain ? `https://${slug}.${config.storeDomain}${path}` : `${config.publicUrl}/s/${slug}${path}`);
+/** A Pro store's own domain (shop.pawplace.com) once it's live; null otherwise. */
+export function customDomainOf(slug) {
+  return db.prepare(`SELECT s.custom_domain FROM sellers s JOIN accounts a ON a.id = s.account_id
+    WHERE s.store_slug = ? AND s.custom_domain_status = 'active' AND (a.plan = 'pro' OR a.comp_plan = 'pro')`).get(slug)?.custom_domain || null;
+}
+/** The store whose own domain this is (any status: a request reaching us means its DNS works). */
+export const sellerForDomain = (host) => db.prepare("SELECT * FROM sellers WHERE custom_domain = ?").get(String(host || "").toLowerCase());
+
+export function storeUrl(slug, path = "") {
+  const custom = config.storeDomain ? customDomainOf(slug) : null;
+  if (custom) return `https://${custom}${path}`;
+  return config.storeDomain ? `https://${slug}.${config.storeDomain}${path}` : `${config.publicUrl}/s/${slug}${path}`;
+}
 /** Where a store's buyers return after checkout: the store's own address, so their cart is cleared there. */
-export const storeOrigin = (slug) => (config.storeDomain ? `https://${slug}.${config.storeDomain}` : config.publicUrl);
+export const storeOrigin = (slug) => (config.storeDomain ? new URL(storeUrl(slug)).origin : config.publicUrl);
 
 /** The store slug for a request to <slug>.snapfront.app, or null. */
 export function hostStoreSlug(host) {

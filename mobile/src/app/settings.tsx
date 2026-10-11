@@ -8,6 +8,7 @@ import { account } from "@/lib/account-store";
 import { AccountSection } from "@/components/account-section";
 import { displayAddress } from "@/lib/store-address";
 import { SupplierSection } from "@/components/supplier-section";
+import { DomainSection } from "@/components/domain-section";
 import { space, type, useColors } from "@/lib/theme";
 
 export default function SettingsScreen() {
@@ -92,6 +93,9 @@ export default function SettingsScreen() {
         hint={seller ? `Your store’s link: ${seller.store_domain ? `${address.trim() || seller.store_slug}.${seller.store_domain}` : displayAddress(seller)}. Letters, numbers and dashes.` : undefined} />
       <Button label="Save store details" onPress={save} loading={saving} />
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
+      <View style={{ marginTop: space.lg }}>
+        <DomainSection />
+      </View>
       <View style={{ gap: space.md, marginTop: space.lg }}>
         <H2>Shipping and tax</H2>
         <Body muted>Shipping is charged once per order that has a physical item. Digital-only orders never pay shipping.</Body>

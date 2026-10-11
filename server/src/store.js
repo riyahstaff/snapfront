@@ -19,7 +19,8 @@ const fresh = (id) => db.prepare("SELECT * FROM sellers WHERE id = ?").get(id);
 
 export const publicSeller = (s) => ({
   id: s.id, store_name: s.store_name, store_slug: s.store_slug, tagline: s.tagline,
-  store_url: urls.storeUrl(s.store_slug), store_domain: config.storeDomain || null, stripe_connected: Boolean(s.stripe_account_id), stripe_ready: Boolean(s.stripe_ready),
+  store_url: urls.storeUrl(s.store_slug), store_domain: config.storeDomain || null,
+  custom_domain: s.custom_domain ? { domain: s.custom_domain, status: s.custom_domain_status || "pending" } : null, stripe_connected: Boolean(s.stripe_account_id), stripe_ready: Boolean(s.stripe_ready),
   shipping_flat: s.shipping_flat_cents / 100,
   free_shipping_over: s.free_shipping_over_cents == null ? null : s.free_shipping_over_cents / 100,
   ship_countries: String(s.ship_countries || "").split(",").filter(Boolean),
