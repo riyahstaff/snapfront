@@ -231,3 +231,22 @@ async function makeProducts({ launchPrice = "29.00", proPrice = "14.99" } = {}, 
   }
   return log;
 }
+
+/**
+ * Make sure both plans exist and are on sale. Runs in the background until it succeeds, because a new
+ * service account can take a day or so before Google lets it create products.
+ */
+let productsReady = false;
+export async function ensureProducts() {
+  if (productsReady || !enabled()) return productsReady;
+  const sub = await play("GET", `/subscriptions/${PRO}`);
+  const once = await play("GET", `/onetimeproducts/${LAUNCH}`);
+  const subActive = sub.status === 200 && (sub.body.basePlans || []).some((b) => b.basePlanId === PRO_BASE_PLAN && b.state === "ACTIVE");
+  const onceActive = once.status === 200 && (once.body.purchaseOptions || []).some((o) => o.state === "ACTIVE");
+  if (subActive && onceActive) { productsReady = true; console.log("[play] Launch and Pro are on sale"); return true; }
+  const log = await createProducts();
+  const failed = log.filter((l) => l[1] >= 300 || l[0] === "error");
+  if (failed.length) console.warn("[play] products not ready yet:", JSON.stringify(failed).slice(0, 400));
+  else { productsReady = true; console.log("[play] created Launch and Pro:", JSON.stringify(log).slice(0, 300)); }
+  return productsReady;
+}

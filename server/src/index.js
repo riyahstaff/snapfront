@@ -261,8 +261,9 @@ app.post("/api/admin/comp", adminOnly, (req, res) => {
 app.get("/api/admin/play", adminOnly, wrap(async (_req, res) => {
   if (!playbilling.enabled()) return res.json({ enabled: false });
   const subs = await playbilling.play("GET", "/subscriptions");
-  const once = await playbilling.play("GET", "/onetimeproducts");
-  res.json({ enabled: true, subscriptions: subs, one_time: once });
+  const launch = await playbilling.play("GET", `/onetimeproducts/${playbilling.LAUNCH}`);
+  const pro = await playbilling.play("GET", `/subscriptions/${playbilling.PRO}`);
+  res.json({ enabled: true, subscriptions: subs.status, launch: { status: launch.status, body: launch.body }, pro: { status: pro.status, body: pro.body } });
 }));
 app.post("/api/admin/play/products", adminOnly, wrap(async (req, res) => res.json({ log: await playbilling.createProducts(req.body || {}) })));
 // The app calls this when it opens and after a restore; a background check catches renewals and expiries.
@@ -658,6 +659,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   ensureCutoutModel().catch((e) => console.error("[cutout] model", e.message));
   // Google Play subscriptions: notice renewals, cancellations and refunds.
   setInterval(() => playbilling.sweep().catch((e) => console.error("[play] sweep", e.message)), 30 * 60e3).unref();
+  // Create the Launch and Pro products in Play (retries hourly until Google allows it).
+  const products = () => playbilling.ensureProducts().catch((e) => console.error("[play] products", e.message));
+  setTimeout(products, 15e3).unref();
+  setInterval(products, 60 * 60e3).unref();
   // Pick up tracking numbers for orders at CJ.
   setInterval(() => dropship.syncDue().catch((e) => console.error("[supplier] sync", e.message)), 30 * 60e3).unref();
   // Sellers' own domains: set up Cloudflare once, then switch domains on as their DNS goes live.
