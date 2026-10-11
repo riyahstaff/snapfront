@@ -12,6 +12,9 @@ const MODEL_URL = process.env.CUTOUT_MODEL_URL || "https://github.com/danielgati
 const MODEL_BYTES = 178_648_008;
 const S = 1024;                       // the model's input size
 const IDLE_MS = 15 * 60_000;          // free the model's memory after 15 quiet minutes
+// The model's soft edge: below LO is background, above HI is product. A fairly steep ramp drops the
+// half-sure haze that shadows and carpet texture leave around the product.
+const LO = 0.3, HI = 0.8;
 
 const modelPath = () => path.join(config.dataDir, "models", "isnet-general-use.onnx");
 let downloading = null, session = null, loading = null, idleTimer = null, queue = Promise.resolve();
@@ -65,7 +68,8 @@ export function cutout(input) {
     for (let i = 0; i < S * S; i++) { if (p[i] < mi) mi = p[i]; if (p[i] > ma) ma = p[i]; }
     // Normalise, then firm up the edge so none of the old background bleeds through.
     const m = Buffer.alloc(S * S);
-    for (let i = 0; i < S * S; i++) { const v = (p[i] - mi) / (ma - mi || 1); m[i] = Math.max(0, Math.min(255, Math.round(((v - 0.1) / 0.8) * 255))); }
+    for (let i = 0; i < S * S; i++) { const v = (p[i] - mi) / (ma - mi || 1); m[i] = Math.max(0, Math.min(255, Math.round(((v - LO) / (HI - LO)) * 255))); }
+    dropSpecks(m, S);
     const { data: alpha } = await sharp(m, { raw: { width: S, height: S, channels: 1 } })
       .resize(info.width, info.height, { fit: "fill" }).extractChannel(0).raw().toBuffer({ resolveWithObject: true });
     const W = info.width, H = info.height, n = W * H;
@@ -91,11 +95,46 @@ export function cutout(input) {
     if (coverage < 0.004) throw httpError(400, "Couldn't find a product in that photo. Try a clearer shot of the item on its own.");
     const trimmed = await sharp(rgba, { raw: { width: W, height: H, channels: 4 } })
       .trim({ threshold: 8 }).png().toBuffer({ resolveWithObject: true });
-    return { png: trimmed.data, width: trimmed.info.width, height: trimmed.info.height, coverage };
+    return { png: trimmed.data, width: trimmed.info.width, height: trimmed.info.height, coverage, cut: cutSides(a, W, H) };
   });
 }
 
 const clamp = (v) => (v < 0 ? 0 : v > 255 ? 255 : Math.round(v));
+
+/** Clear small loose bits (a leaf, a carpet fleck) that aren't joined to the main product. */
+export function dropSpecks(m, S) {
+  const label = new Int32Array(S * S), sizes = [0], stack = [];
+  for (let i = 0; i < S * S; i++) {
+    if (m[i] < 40 || label[i]) continue;
+    const id = sizes.length; let size = 0;
+    label[i] = id; stack.push(i);
+    while (stack.length) {
+      const j = stack.pop(); size++;
+      const x = j % S, y = (j - x) / S;
+      if (x > 0 && m[j - 1] >= 40 && !label[j - 1]) { label[j - 1] = id; stack.push(j - 1); }
+      if (x < S - 1 && m[j + 1] >= 40 && !label[j + 1]) { label[j + 1] = id; stack.push(j + 1); }
+      if (y > 0 && m[j - S] >= 40 && !label[j - S]) { label[j - S] = id; stack.push(j - S); }
+      if (y < S - 1 && m[j + S] >= 40 && !label[j + S]) { label[j + S] = id; stack.push(j + S); }
+    }
+    sizes.push(size);
+  }
+  const keep = Math.max(...sizes) * 0.03;
+  for (let i = 0; i < S * S; i++) if (label[i] ? sizes[label[i]] < keep : m[i]) m[i] = 0;
+}
+
+/**
+ * Sides of the photo the product runs off: a solid run of product along the frame's edge means the
+ * photo cut it there (a dumbbell whose handle leaves the bottom of the shot). We look a couple of
+ * pixels in from the edge so a stray edge pixel doesn't count.
+ */
+export function cutSides(a, W, H) {
+  const inset = Math.max(1, Math.round(Math.min(W, H) / 400));
+  const share = (count, len) => count / len;
+  const row = (y) => { let c = 0; for (let x = 0; x < W; x++) if (a[y * W + x] > 160) c++; return share(c, W); };
+  const col = (x) => { let c = 0; for (let y = 0; y < H; y++) if (a[y * W + x] > 160) c++; return share(c, H); };
+  const sides = { top: row(inset), bottom: row(H - 1 - inset), left: col(inset), right: col(W - 1 - inset) };
+  return Object.keys(sides).filter((k) => sides[k] > 0.04);
+}
 /** Minimum filter over a (2r+1) square, done as two 1-D passes. */
 function erode(src, W, H, r) {
   const tmp = Buffer.alloc(W * H), out = Buffer.alloc(W * H);

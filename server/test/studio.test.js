@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "snapfront-studio-"));
 process.env.DATA_DIR = tmp;
@@ -20,6 +21,10 @@ studio.setCutout(async () => {
   const png = await sharp({ create: { width: 300, height: 200, channels: 4, background: { r: 200, g: 30, b: 40, alpha: 1 } } }).png().toBuffer();
   return { png, width: 300, height: 200, coverage: 0.4 };
 });
+// Stand-in for the AI look at how the photo was taken.
+let seenNext = { view: "side", cut: [] }, looks = 0;
+studio.setLook(async () => { looks++; return seenNext; });
+const { cutSides, dropSpecks } = await import("../src/cutout.js");
 const { db } = await import("../src/db.js");
 
 const calls = [];
@@ -132,4 +137,46 @@ test("a product takes the new photo and a label; the storefront shows the label"
   const html = await (await fetch(`${base}/s/${me.store_slug}`)).text();
   assert.match(html, /<span class="tag">New arrival<\/span>/);
   assert.ok(html.includes(white));
+});
+
+test("a photo taken from above lies flat on the surface; a cut-off product stays at the edge", async () => {
+  const me = (await call("GET", "/api/me")).body;
+  db.prepare("UPDATE accounts SET plan = 'pro' WHERE id = ?").run(me.account.id);
+  const fresh = async () => (await call("POST", "/api/studio", { imageBase64: Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), crypto.randomBytes(400)]).toString("base64"), style: { color: "white" } })).body.source_file;
+
+  seenNext = { view: "top", cut: [] };
+  const top = await fresh();
+  const before = looks;
+  let r = await call("POST", "/api/studio", { image_file: top, style: { scene: "beach" } });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.match(r.body.notice, /laid it flat on the sand/);
+  const flat = await imageOf(r.body.image_file);
+  const sky = px(flat, 800, 40);                 // sand seen from above all the way up, no sky or sea
+  assert.ok(sky[0] > sky[2] + 20, `sand at the top: ${sky}`);
+  const [r0, g0] = px(flat, 800, 800);
+  assert.ok(r0 > 150 && g0 < 80, "product in the middle");
+  r = await call("POST", "/api/studio", { image_file: top, style: { scene: "wood" } });
+  assert.equal(looks, before, "the look at a photo is remembered");
+  assert.match(r.body.notice, /flat on the wood/);
+
+  seenNext = { view: "side", cut: ["bottom"] };
+  const cut = await fresh();
+  r = await call("POST", "/api/studio", { image_file: cut, style: { scene: "beach" } });
+  assert.match(r.body.notice, /runs off the edge/);
+  const bleed = await imageOf(r.body.image_file);
+  const edge = px(bleed, 800, 1598);
+  assert.ok(edge[0] > 150 && edge[1] < 80, `product reaches the bottom edge: ${edge}`);
+  seenNext = { view: "side", cut: [] };
+});
+
+test("finding where the photo cuts the product, and clearing loose specks", () => {
+  const W = 100, H = 80, a = Buffer.alloc(W * H);
+  for (let y = 20; y < H; y++) for (let x = 40; x < 60; x++) a[y * W + x] = 255;     // runs off the bottom
+  assert.deepEqual(cutSides(a, W, H), ["bottom"]);
+  const S = 64, m = Buffer.alloc(S * S);
+  for (let y = 10; y < 50; y++) for (let x = 10; x < 50; x++) m[y * S + x] = 255;    // the product
+  m[60 * S + 60] = 200; m[60 * S + 61] = 200;                                         // a fleck
+  dropSpecks(m, S);
+  assert.equal(m[60 * S + 60], 0);
+  assert.equal(m[30 * S + 30], 255);
 });

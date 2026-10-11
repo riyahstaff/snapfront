@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,6 +43,7 @@ export default function StudioScreen() {
   const [busy, setBusy] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [msg, setMsg] = useState<{ text: string; tone: "error" | "ok" | "info" } | null>(null);
+  const scroller = useRef<ScrollView>(null);
 
   useEffect(() => { api.studioPresets().then(setPresets).catch(() => setPresets({ enabled: false, custom: false, colors: [], scenes: [] })); }, []);
 
@@ -54,9 +55,11 @@ export default function StudioScreen() {
     try {
       const r = await api.studio({ image_file: original.file, style });
       setShots((s) => { const next = [...s, { file: r.image_file, url: r.image_url, label }]; setSelected(next.length - 1); return next; });
+      if (r.notice) setMsg({ text: r.notice, tone: "info" });
+      scroller.current?.scrollTo({ y: 0, animated: true });
       account.refresh().catch(() => {});
     } catch (e) {
-      if (!(e instanceof ApiError && e.upgrade)) setMsg({ text: e instanceof ApiError ? e.message : "Couldn’t make that photo. Try again.", tone: "error" });
+      if (!(e instanceof ApiError && e.upgrade)) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn’t make that photo. Try again.", tone: "error" }); scroller.current?.scrollTo({ y: 0, animated: true }); }
     } finally { setBusy(null); }
   }
 
@@ -77,7 +80,7 @@ export default function StudioScreen() {
   const off = busy != null;
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: 120 + insets.bottom }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scroller} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: 120 + insets.bottom }} keyboardShouldPersistTaps="handled">
         <View style={{ aspectRatio: 1, borderRadius: radius.lg, overflow: "hidden", backgroundColor: c.sunk }}>
           {shot.url ? <Image source={{ uri: shot.url }} style={{ flex: 1 }} contentFit="cover" transition={200} accessibilityLabel={`${shot.label} photo`} /> : null}
           {busy && busy !== "use" ? (
@@ -102,6 +105,7 @@ export default function StudioScreen() {
             ))}
           </ScrollView>
         ) : null}
+        <Notice text={msg?.text ?? null} tone={msg?.tone} />
 
         {!presets ? <ActivityIndicator color={c.accent} /> : !presets.enabled ? (
           <Notice text="The photo studio is being switched on. Check back soon." tone="info" />
@@ -142,7 +146,6 @@ export default function StudioScreen() {
             </View> : null}
           </>
         )}
-        <Notice text={msg?.text ?? null} tone={msg?.tone} />
       </ScrollView>
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: space.lg, paddingBottom: space.lg + insets.bottom, backgroundColor: c.surface, borderTopWidth: 1, borderColor: c.line }}>
         <Button label={selected === 0 ? "Keep the original" : "Use this photo"} loading={busy === "use"} disabled={off && busy !== "use"} onPress={selected === 0 ? () => router.back() : use} />

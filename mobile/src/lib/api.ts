@@ -91,7 +91,7 @@ export type StoreTheme = {
 /** Photo studio: a new background behind a product photo. */
 export type StudioStyle = { color: string } | { scene: string } | { prompt: string };
 export type StudioPresets = { enabled: boolean; custom: boolean; colors: { id: string; name: string; hex: string }[]; scenes: { id: string; name: string }[] };
-export type StudioResult = { image_file: string; image_url: string; source_file: string };
+export type StudioResult = { image_file: string; image_url: string; source_file: string; notice?: string | null };
 /** Free directory of places to source products. */
 export type SourceSupplier = { id: string; name: string; url: string; sells: string; shipsFrom: string; cost: string; delivery: string; tip?: string; connect?: "cj" | "aliexpress" | "printful" };
 export type SourceDirectory = { updated: string; note: string; groups: { id: string; name: string; blurb: string; suppliers: SourceSupplier[] }[] };

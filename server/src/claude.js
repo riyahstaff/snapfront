@@ -34,7 +34,7 @@ export function parseJson(text) {
   return JSON.parse(body.slice(start, end + 1));
 }
 
-export async function askJson(content, maxTokens) {
+export async function askJson(content, maxTokens, model = config.claudeModel) {
   // Test hook: lets the smoke tests run without an API key.
   if (process.env.SNAPFRONT_FAKE_AI) return JSON.parse(process.env.SNAPFRONT_FAKE_AI);
   const ai = anthropic();
@@ -45,7 +45,7 @@ export async function askJson(content, maxTokens) {
     let msg;
     try {
       msg = await ai.messages.create({
-        model: config.claudeModel, max_tokens: maxTokens,
+        model, max_tokens: maxTokens,
         system: "Always deliver your answer by calling the submit tool with the finished object as its input. Do not write the answer as text.",
         messages: [{ role: "user", content }],
         tools: [{ name: "submit", description: "Submit the finished JSON object described in the request.", input_schema: { type: "object", additionalProperties: true } }],

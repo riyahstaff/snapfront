@@ -267,8 +267,8 @@ app.post("/api/studio", auth, aiLimit, wrap(async (req, res) => {
   plans.assertAllowance(req.account, "studio");
   const source = imageBase64 ? saveImage(imageBase64, mediaType) : image_file;
   studio.sourcePath(source);
-  const file = await plans.withAllowance(req.account, "studio", () => studio.restyle(source, style));
-  res.json({ image_file: file, image_url: `${config.publicUrl}/img/${file}`, source_file: source });
+  const { file, notice } = await plans.withAllowance(req.account, "studio", () => studio.restyle(source, style));
+  res.json({ image_file: file, image_url: `${config.publicUrl}/img/${file}`, source_file: source, notice });
 }));
 
 /* ---------- marketing: posts, carousels, reels, AI video and AI lifestyle photos ---------- */
@@ -339,13 +339,13 @@ app.post("/api/suppliers/:source/authorize", auth, (req, res) => res.json({ url:
 
 // The seller lands here after approving Snapfront on AliExpress.
 app.get("/suppliers/:source/callback", wrap(async (req, res) => {
-  const page = (title, body) => res.send(notePage({ store_slug: "", store_name: "Snapfront", tagline: "" }, title,
-    `${body}<p><a class="buy" href="snapfront://settings">Back to Snapfront</a></p>`));
+  const page = (title, body) => notePage({ store_slug: "", store_name: "Snapfront", tagline: "" }, title,
+    `${body}<p><a class="buy" href="snapfront://settings">Back to Snapfront</a></p>`);
   if (req.query.error || !req.query.code) return res.status(400).send(page("Not connected", "<h1>Not connected</h1><p>AliExpress didn't approve the connection. Go back to Snapfront and tap Authorize again.</p>"));
   try {
     const s = await suppliers.finishAuthorization(req.query.state, req.query.code);
     dropship.resendWaiting(s.accountId, s.supplier);
-    page("Connected", "<h1>AliExpress is connected</h1><p>Go back to Snapfront. You can now add AliExpress products, and orders for them go to your AliExpress account.</p>");
+    res.send(page("Connected", "<h1>AliExpress is connected</h1><p>Go back to Snapfront. You can now add AliExpress products, and orders for them go to your AliExpress account.</p>"));
   } catch (e) {
     console.error("[aliexpress] authorize", e.message);
     res.status(e.status || 500).send(page("Not connected", `<h1>Not connected</h1><p>${esc(e.message)}</p>`));

@@ -15,3 +15,9 @@ Kept here with thanks; the photographers are credited on each photo's page.
 | marble.jpg | https://www.pexels.com/photo/3847492/ | texture laid in perspective under a drawn wall |
 | concrete.jpg | https://www.pexels.com/photo/247719/ | texture laid in perspective under a drawn wall |
 | linen.jpg | https://www.pexels.com/photo/7794365/ | texture laid in perspective under a drawn wall |
+| beach-top.jpg | https://www.pexels.com/photo/18224812/ | sand seen from above (warmed), for photos taken looking down |
+| wood-top.jpg | https://www.pexels.com/photo/129731/ | planks seen from above, for photos taken looking down |
+| granite-top.jpg | https://www.pexels.com/photo/35690033/ | seen from above |
+| marble-top.jpg | https://www.pexels.com/photo/3847492/ | seen from above |
+| concrete-top.jpg | https://www.pexels.com/photo/247719/ | seen from above (also the stone pedestal's flat lay) |
+| linen-top.jpg | https://www.pexels.com/photo/7794365/ | seen from above |
