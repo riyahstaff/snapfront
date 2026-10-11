@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { config } from "./config.js";
 import { db, newId, hashToken, slugify, uniqueSlug } from "./db.js";
 import { httpError } from "./claude.js";
+import * as suppliers from "./suppliers.js";
 
 const DEFAULTS = {
   free:   { name: "Free",   liveStores: 0,  stores: 1,  photo: 3,   product: 1,  agent: 0,  research: 3 },
@@ -120,7 +121,7 @@ export function publicAccount(account, currentStoreId) {
     usage: Object.fromEntries(["photo", "product", "agent", "research"].map((k) => [k, used(account.id, p, k)])),
     stores: stores.map((s, i) => ({ id: s.id, store_name: s.store_name, store_slug: s.store_slug, live_allowed: i < plan.liveStores, current: s.id === currentStoreId })),
     can_add_store: stores.length < plan.stores,
-    suppliers: { cj: { connected: Boolean(account.cj_key_enc), auto_pay: Boolean(account.cj_auto_pay) } },
+    suppliers: suppliers.status(account.id),
   };
 }
 

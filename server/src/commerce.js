@@ -197,9 +197,25 @@ export const publicOrder = (o) => ({
   subtotal: o.subtotal_cents / 100, discount: o.discount_cents / 100, shipping: o.shipping_cents / 100, tax: o.tax_cents / 100, total: o.total_cents / 100,
   discount_code: o.discount_code, email: o.email, customer_name: o.customer_name,
   shipping_address: o.shipping_address ? JSON.parse(o.shipping_address) : null, paid_at: o.paid_at, fulfilled_at: o.fulfilled_at, created_at: o.created_at,
-  supplier: o.supplier_status ? { name: "CJdropshipping", status: o.supplier_status, order_id: o.supplier_order_id, error: o.supplier_error } : null,
-  tracking: o.tracking_number ? { number: o.tracking_number, carrier: o.tracking_carrier, url: `https://t.17track.net/en#nums=${encodeURIComponent(o.tracking_number)}` } : null,
+  ...fulfillmentView(o.id),
 });
+
+const SUPPLIER_NAMES = { cj: "CJdropshipping", printful: "Printful", aliexpress: "AliExpress" };
+const trackUrl = (n) => `https://t.17track.net/en#nums=${encodeURIComponent(n)}`;
+/** Each supplier's part of an order. `supplier` and `tracking` keep the shape older app builds read. */
+function fulfillmentView(orderId) {
+  const rows = db.prepare("SELECT * FROM order_fulfillments WHERE order_id = ? ORDER BY created_at, supplier").all(orderId);
+  const fulfillments = rows.map((f) => ({
+    supplier: f.supplier, name: SUPPLIER_NAMES[f.supplier] || f.supplier, status: f.status, order_id: f.supplier_order_id, error: f.error,
+    tracking: f.tracking_number ? { number: f.tracking_number, carrier: f.tracking_carrier, url: f.tracking_url || trackUrl(f.tracking_number) } : null,
+  }));
+  const first = fulfillments[0];
+  return {
+    fulfillments,
+    supplier: first ? { name: first.name, status: first.status, order_id: first.order_id, error: first.error } : null,
+    tracking: fulfillments.find((f) => f.tracking)?.tracking || null,
+  };
+}
 
 export function listOrders(seller) {
   return db.prepare("SELECT * FROM orders WHERE seller_id = ? AND status != 'pending' ORDER BY COALESCE(paid_at, created_at) DESC LIMIT 200").all(seller.id).map(publicOrder);

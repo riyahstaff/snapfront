@@ -150,6 +150,8 @@ addCol("products", "source_vid", "TEXT");          // CJ variant id when the pro
 addCol("products", "cost_cents", "INTEGER");       // supplier price, before shipping
 addCol("product_variants", "source_vid", "TEXT");
 addCol("product_variants", "cost_cents", "INTEGER");
+addCol("products", "source_meta", "TEXT");         // supplier detail needed to order, e.g. AliExpress sku_attr
+addCol("product_variants", "source_meta", "TEXT");
 addCol("accounts", "cj_key_enc", "TEXT");          // the seller's own CJ API key, encrypted
 addCol("accounts", "cj_auto_pay", "INTEGER NOT NULL DEFAULT 0");
 addCol("orders", "supplier_status", "TEXT");       // needs_key | sending | awaiting_payment | sent | shipped | delivered | failed | canceled

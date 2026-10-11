@@ -1,36 +1,22 @@
-// CJdropshipping: browse the catalog with Snapfront's own key, and send paid orders to CJ with each
-// seller's own key so CJ bills the seller and ships straight to the buyer.
+// CJdropshipping. The catalog can be browsed with Snapfront's key (CJ_API_KEY) or the seller's own;
+// orders always go through the seller's own key, so CJ bills the seller and ships to the buyer.
 // API: https://developers.cjdropshipping.com/en/api/introduction.html (QPS 1 per account, tokens last 180 days).
 import crypto from "node:crypto";
 import { config } from "./config.js";
 import { db } from "./db.js";
 import { httpError } from "./claude.js";
+import { byOptionName, https, lowPrice, makeCache, r2, regionName, sleep, stripHtml } from "./supplier-util.js";
+
+export { seal, unseal, lowPrice } from "./supplier-util.js";
 
 const BASE = "https://developers.cjdropshipping.com/api2.0/v1";
 let fetchImpl = (...a) => fetch(...a);
 let spacingMs = 1100;
+const cached = makeCache();
 /** Test hooks. */
-export function setCjFetch(f, spacing = 0) { fetchImpl = f; spacingMs = spacing; cache.clear(); nextAt.clear(); }
+export function setCjFetch(f, spacing = 0) { fetchImpl = f; spacingMs = spacing; cached.clear(); nextAt.clear(); }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const keyHash = (k) => crypto.createHash("sha256").update(`cj:${k}`).digest("hex");
-
-/* ---------- the seller's key, encrypted at rest ---------- */
-const sealKey = () => crypto.createHash("sha256").update(`cj-key:${config.downloadSecret}`).digest();
-export function seal(text) {
-  const iv = crypto.randomBytes(12);
-  const c = crypto.createCipheriv("aes-256-gcm", sealKey(), iv);
-  const ct = Buffer.concat([c.update(String(text), "utf8"), c.final()]);
-  return Buffer.concat([iv, c.getAuthTag(), ct]).toString("base64");
-}
-export function unseal(blob) {
-  try {
-    const b = Buffer.from(String(blob || ""), "base64");
-    const d = crypto.createDecipheriv("aes-256-gcm", sealKey(), b.subarray(0, 12));
-    d.setAuthTag(b.subarray(12, 28));
-    return Buffer.concat([d.update(b.subarray(28)), d.final()]).toString("utf8");
-  } catch { return null; }
-}
 
 /* ---------- rate limit: one call per second per CJ account ---------- */
 const nextAt = new Map();
@@ -78,8 +64,8 @@ async function token(apiKey, fresh = false) {
       const { j } = await raw(k, "POST", "/authentication/getAccessToken", { body: { apiKey } });
       if (!j?.result || !j.data?.accessToken) {
         console.error("[cj] token", j?.code, j?.message);
-        throw httpError(j?.code === 1601000 || /not find|invalid|apikey/i.test(j?.message || "") ? 400 : 502,
-          j?.code === 1601000 || /not find|invalid|apikey/i.test(j?.message || "") ? "CJ didn't accept that API key. Copy it again from CJ: My CJ > Authorization > API." : `CJ sign-in failed: ${j?.message || "no reply"}`);
+        const badKey = j?.code === 1601000 || /not find|invalid|apikey/i.test(j?.message || "");
+        throw httpError(badKey ? 400 : 502, badKey ? "CJ didn't accept that API key. Copy it again from CJ: My CJ > Authorization > API." : `CJ sign-in failed: ${j?.message || "no reply"}`);
       }
       data = j.data;
     }
@@ -103,47 +89,26 @@ async function call(apiKey, method, path, opts = {}, retried = false) {
   if (!retried && (res.status === 401 || j?.code === 1600001 || /token/i.test(msg))) return call(apiKey, method, path, opts, true);
   if (res.status === 429 || j?.code === 1600200 || /too many|frequen|limit/i.test(msg)) throw httpError(429, "CJ is busy right now. Try again in a few seconds.");
   console.error("[cj]", path, res.status, j?.code, msg);
-  const e = httpError(502, msg ? `CJ: ${msg}` : "CJdropshipping didn't answer. Try again in a minute.");
-  e.cjCode = j?.code;
-  throw e;
+  throw httpError(502, msg ? `CJ: ${msg}` : "CJdropshipping didn't answer. Try again in a minute.");
 }
 
 /** Check a key works (used when a seller connects their CJ account). */
 export async function verifyKey(apiKey) { await token(apiKey, true); return true; }
 
-/* ---------- catalog (Snapfront's key) ---------- */
-const cache = new Map();
-async function cached(key, ttlMs, fn) {
-  const hit = cache.get(key);
-  if (hit && hit.at > Date.now() - ttlMs) return hit.v;
-  const v = await fn();
-  cache.set(key, { at: Date.now(), v });
-  if (cache.size > 500) cache.delete(cache.keys().next().value);
-  return v;
-}
-const platformKey = () => {
-  if (!config.cjApiKey) throw httpError(503, "Product search isn't set up yet. Try again later.");
+/* ---------- catalog ---------- */
+const browseKey = (apiKey) => {
+  if (apiKey) return apiKey;
+  if (!config.cjApiKey) throw httpError(409, "Connect your CJ account in Store settings to search CJ's catalog.");
   return config.cjApiKey;
 };
-
-/** "1.20 -- 3.40" or "1.2" -> the lowest number. */
-export const lowPrice = (v) => {
-  if (typeof v === "number") return v;
-  const nums = String(v ?? "").replace(/,/g, "").match(/\d+(?:\.\d+)?/g);
-  return nums ? Math.min(...nums.map(Number)) : null;
-};
-const stripHtml = (h) => String(h || "").replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ").replace(/<br\s*\/?>|<\/p>|<\/li>|<\/div>/gi, "\n")
-  .replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"')
-  .replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n").trim();
 const imageList = (v) => {
   if (Array.isArray(v)) return v;
   if (typeof v === "string" && v.trim().startsWith("[")) { try { return JSON.parse(v); } catch { return []; } }
   return typeof v === "string" && v ? v.split(",") : [];
 };
-const https = (u) => (typeof u === "string" && /^https?:\/\//.test(u.trim()) ? u.trim().replace(/^http:/, "https:") : null);
 
-export async function search({ q = "", page = 1, size = 20, categoryId } = {}) {
-  const key = platformKey();
+export async function search({ q = "", page = 1, size = 20, categoryId, apiKey } = {}) {
+  const key = browseKey(apiKey);
   const pg = Math.max(1, Math.min(100, Math.floor(Number(page) || 1)));
   const sz = Math.max(1, Math.min(50, Math.floor(Number(size) || 20)));
   const keyWord = String(q || "").trim().slice(0, 100);
@@ -160,16 +125,12 @@ export async function search({ q = "", page = 1, size = 20, categoryId } = {}) {
   });
 }
 
-// Options in a sensible order: colours together, sizes small to large, 40cm before 65cm.
-const SIZES = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "XXXL", "3XL", "4XL", "5XL"];
-const sizeKey = (n) => n.replace(/\b(XXS|XS|S|M|L|XL|XXL|2XL|XXXL|3XL|4XL|5XL)\b/gi, (t) => `~${String(SIZES.indexOf(t.toUpperCase())).padStart(2, "0")}`);
-
 function normalizeProduct(d) {
   const variants = (Array.isArray(d?.variants) ? d.variants : []).map((v) => ({
     vid: String(v.vid || ""), sku: String(v.variantSku || ""),
     name: String(v.variantKey || v.variantNameEn || v.variantSku || "").replace(/\s+/g, " ").trim().slice(0, 60),
     cost: lowPrice(v.variantSellPrice), image: https(v.variantImage), weight: Number(v.variantWeight) || null,
-  })).filter((v) => v.vid && v.cost > 0).sort((x, y) => sizeKey(x.name).localeCompare(sizeKey(y.name), "en", { numeric: true }));
+  })).filter((v) => v.vid && v.cost > 0).sort(byOptionName);
   const images = [...new Set([d?.bigImage, ...imageList(d?.productImageSet), d?.productImage].map(https).filter(Boolean))].slice(0, 12);
   const costs = variants.map((v) => v.cost);
   return {
@@ -181,8 +142,8 @@ function normalizeProduct(d) {
   };
 }
 
-export async function product(pid) {
-  const key = platformKey();
+export async function product(pid, apiKey) {
+  const key = browseKey(apiKey);
   const id = String(pid || "").trim();
   if (!/^[\w-]{4,64}$/.test(id)) throw httpError(400, "That product id doesn't look right.");
   return cached(`p:${id}`, 6 * 60 * 60e3, async () => {
@@ -194,7 +155,7 @@ export async function product(pid) {
 
 /** Cheapest way to ship these CJ variants to a country, or null. */
 export async function freight({ apiKey = null, to = "US", zip, items, from }) {
-  const key = apiKey || platformKey();
+  const key = browseKey(apiKey);
   const products = items.map((i) => ({ vid: i.vid, quantity: i.qty || 1 }));
   for (const start of from ? [from] : ["CN", "US"]) {
     const data = await call(key, "POST", "/logistic/freightCalculate", { body: { startCountryCode: start, endCountryCode: to, zip: zip || undefined, products } })
@@ -207,10 +168,62 @@ export async function freight({ apiKey = null, to = "US", zip, items, from }) {
   return null;
 }
 
-export async function shippingEstimate(vid) {
-  return cached(`f:${vid}`, 6 * 60 * 60e3, () => freight({ items: [{ vid, qty: 1 }], to: "US" }).catch(() => null));
+export async function shippingEstimate(vid, apiKey) {
+  return cached(`f:${vid}`, 6 * 60 * 60e3, () => freight({ apiKey, items: [{ vid, qty: 1 }], to: "US" }).catch(() => null));
 }
 
 /* ---------- orders (the seller's key) ---------- */
 export function createOrder(apiKey, body) { return call(apiKey, "POST", "/shopping/order/createOrderV2", { body }); }
 export function orderDetail(apiKey, orderId) { return call(apiKey, "GET", "/shopping/order/getOrderDetail", { query: { orderId } }); }
+
+/* ---------- the common supplier interface (see suppliers.js) ---------- */
+export const adapter = {
+  id: "cj",
+  name: "CJdropshipping",
+  browseWithoutAccount: true,
+
+  async connect(input) {
+    const key = String(input?.api_key || "").trim();
+    if (key.length < 10 || key.length > 200) throw httpError(400, "Paste your CJ API key. Find it in CJ under My CJ > Authorization > API.");
+    await verifyKey(key);
+    return { creds: { apiKey: key }, info: {} };
+  },
+
+  search: (creds, { q, page }) => search({ q, page, apiKey: creds?.apiKey }),
+
+  async product(creds, pid) {
+    const p = await product(pid, creds?.apiKey);
+    const cheapest = [...p.variants].sort((x, y) => x.cost - y.cost)[0];
+    const shipping = cheapest ? await shippingEstimate(cheapest.vid, creds?.apiKey) : null;
+    return { ...p, shipping, landed_cost: p.cost != null ? r2(p.cost + (shipping?.price || 0)) : null };
+  },
+
+  async placeOrder(creds, { order, seller, address: a, lines, autoPay }) {
+    const ship = await freight({ apiKey: creds.apiKey, to: a.country, zip: a.postal_code, items: lines.map((l) => ({ vid: l.vid, qty: l.qty })) });
+    if (!ship) throw httpError(422, `CJ has no shipping method to ${regionName(a.country)} for these items.`);
+    const data = await createOrder(creds.apiKey, {
+      orderNumber: order.id,
+      shippingCountryCode: a.country, shippingCountry: regionName(a.country),
+      shippingProvince: String(a.state || a.city || "").slice(0, 50), shippingCity: String(a.city || "").slice(0, 50),
+      shippingZip: a.postal_code || undefined, shippingAddress: String(a.line1).slice(0, 500), shippingAddress2: a.line2 ? String(a.line2).slice(0, 500) : undefined,
+      shippingCustomerName: String(order.customer_name || "Customer").slice(0, 50), shippingPhone: a.phone ? String(a.phone).slice(0, 20) : undefined,
+      logisticName: ship.name, fromCountryCode: ship.from,
+      payType: autoPay ? 2 : 3,
+      storeName: String(seller.store_name || "").slice(0, 50), remark: `Snapfront order ${order.id}`,
+      products: lines.map((l) => ({ vid: l.vid, quantity: l.qty, storeLineItemId: `${order.id}:${l.line.variant_id || l.line.product_id}`.slice(0, 125) })),
+    });
+    return { supplier_order_id: data?.orderId || data?.orderNumber || null, status: autoPay ? "sent" : "awaiting_payment" };
+  },
+
+  async orderStatus(creds, supplierOrderId) {
+    const d = await orderDetail(creds.apiKey, supplierOrderId);
+    const st = String(d?.orderStatus || "").toUpperCase();
+    return {
+      status: st === "SHIPPED" ? "shipped" : st === "DELIVERED" ? "delivered" : st === "CANCELLED" ? "canceled"
+        : ["CREATED", "IN_CART", "UNPAID"].includes(st) ? "awaiting_payment" : st ? "sent" : null,
+      tracking_number: d?.trackNumber ? String(d.trackNumber) : null,
+      carrier: d?.trackingProvider || d?.logisticName || null,
+      tracking_url: null,
+    };
+  },
+};
