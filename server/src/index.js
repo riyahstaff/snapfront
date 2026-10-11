@@ -461,7 +461,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   setInterval(() => dropship.syncDue().catch((e) => console.error("[supplier] sync", e.message)), 30 * 60e3).unref();
   // Sellers' own domains: set up Cloudflare once, then switch domains on as their DNS goes live.
   if (domains.enabled()) {
-    domains.ensureEdge().catch((e) => console.error("[domains] setup", e.message));
+    domains.ensureEdge().catch(async (e) => {
+      console.error("[domains] setup", e.message);
+      const access = await domains.checkAccess().catch((x) => ({ zone: x.message }));
+      console.error("[domains] token access", JSON.stringify(access));
+    });
     setInterval(() => domains.refreshPending().catch((e) => console.error("[domains] refresh", e.message)), 10 * 60e3).unref();
   }
 }

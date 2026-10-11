@@ -90,6 +90,18 @@ async function ensureRecord(z, name, type, content) {
   else await cf("POST", `/zones/${z.id}/dns_records`, body);
 }
 
+/** Which of the token's permissions work, so a missing one can be named instead of guessed. */
+export async function checkAccess() {
+  const z = await getZone();
+  const probe = async (path) => cf("GET", path).then(() => "ok", (e) => (/auth/i.test(e.message) ? "missing" : `error: ${e.message}`));
+  return {
+    "Zone · DNS": await probe(`/zones/${z.id}/dns_records?per_page=1`),
+    "Zone · SSL and Certificates": await probe(`/zones/${z.id}/custom_hostnames?per_page=1`),
+    "Zone · Workers Routes": await probe(`/zones/${z.id}/workers/routes`),
+    "Account · Workers Scripts": await probe(`/accounts/${z.account}/workers/scripts`),
+  };
+}
+
 /** One-time Cloudflare setup; safe to run again (each step checks first). */
 let ready = null;
 export function ensureEdge() {
