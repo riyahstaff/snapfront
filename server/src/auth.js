@@ -21,7 +21,10 @@ let sendImpl = async (to, code) => {
       html: `<p>Your Snapfront sign-in code is</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p><p>It works for 10 minutes. If you didn't ask for it, you can ignore this email.</p>`,
     }),
   });
-  if (!res.ok) throw httpError(502, "We couldn't send the email. Check the address and try again.");
+  if (!res.ok) {
+    console.warn("[email] resend", res.status, (await res.text().catch(() => "")).slice(0, 300));
+    throw httpError(502, "We couldn't send the email. Check the address and try again.");
+  }
 };
 export function setEmailSender(f) { sendImpl = f; }   // used by tests
 

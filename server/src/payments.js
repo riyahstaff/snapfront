@@ -157,5 +157,6 @@ export async function emailOrder(to, { storeName, orderUrl, downloads }) {
       html: `<p>Thanks for your order from ${escHtml(storeName)}!</p>${links ? `<ul>${links}</ul><p>Download links work for 7 days.</p>` : ""}<p><a href="${escHtml(orderUrl)}">View your order</a></p>`,
     }),
   });
+  if (!res.ok) console.warn("[email] order", res.status, (await res.text().catch(() => "")).slice(0, 300));
   return res.ok;
 }
