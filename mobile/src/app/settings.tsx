@@ -6,6 +6,7 @@ import { Body, Button, Field, H2, Notice, Screen } from "@/components/ui";
 import { api, ApiError, type Me } from "@/lib/api";
 import { account } from "@/lib/account-store";
 import { AccountSection } from "@/components/account-section";
+import { displayAddress } from "@/lib/store-address";
 import { SupplierSection } from "@/components/supplier-section";
 import { space, type, useColors } from "@/lib/theme";
 
@@ -15,6 +16,7 @@ export default function SettingsScreen() {
   const [confirmStore, setConfirmStore] = useState(false);
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
+  const [address, setAddress] = useState("");
   const [msg, setMsg] = useState<{ text: string; tone: "error" | "ok" } | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -29,7 +31,7 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     api.me().then((s) => {
-      setSeller(s); setName(s.store_name); setTagline(s.tagline);
+      setSeller(s); setName(s.store_name); setTagline(s.tagline); setAddress(s.store_slug);
       setShipFlat(s.shipping_flat ? s.shipping_flat.toFixed(2) : ""); setFreeOver(s.free_shipping_over == null ? "" : String(s.free_shipping_over));
       setCountries(s.ship_countries.join(", ")); setTax(s.tax_enabled);
       if (s.stripe_connected) api.taxStatus().then(setTaxInfo).catch(() => {});
@@ -39,7 +41,12 @@ export default function SettingsScreen() {
 
   async function save() {
     setSaving(true); setMsg(null);
-    try { const s = await api.updateStore({ store_name: name, tagline }); setSeller(s); setMsg({ text: "Store details saved.", tone: "ok" }); }
+    try {
+      const slug = address.trim();
+      const s = await api.updateStore({ store_name: name, tagline, ...(slug && slug !== seller?.store_slug ? { store_slug: slug } : {}) });
+      setSeller(s); setAddress(s.store_slug);
+      setMsg({ text: s.store_slug !== seller?.store_slug ? `Saved. Your store is now at ${displayAddress(s)}. Old links still work.` : "Store details saved.", tone: "ok" });
+    }
     catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't save.", tone: "error" }); }
     finally { setSaving(false); }
   }
@@ -81,6 +88,8 @@ export default function SettingsScreen() {
       <H2>{seller && seller.account.stores.length > 1 ? `This store: ${seller.store_name}` : "Your store"}</H2>
       <Field label="Store name" value={name} onChangeText={setName} />
       <Field label="Tagline" hint="One line under your store name." value={tagline} onChangeText={setTagline} />
+      <Field label="Store address" value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} keyboardType="url"
+        hint={seller ? `Your store’s link: ${seller.store_domain ? `${address.trim() || seller.store_slug}.${seller.store_domain}` : displayAddress(seller)}. Letters, numbers and dashes.` : undefined} />
       <Button label="Save store details" onPress={save} loading={saving} />
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
       <View style={{ gap: space.md, marginTop: space.lg }}>

@@ -6,6 +6,7 @@ import { config } from "./config.js";
 import { db, newId, hashToken, slugify, uniqueSlug } from "./db.js";
 import { httpError } from "./claude.js";
 import * as suppliers from "./suppliers.js";
+import { freeSlug } from "./urls.js";
 
 const DEFAULTS = {
   free:   { name: "Free",   liveStores: 0,  stores: 1,  photo: 3,   product: 1,  agent: 0,  research: 3 },
@@ -36,7 +37,7 @@ export function newSession(accountId) {
 /** A store row. The legacy per-store token column just needs a unique value now that sessions hold tokens. */
 export function insertStore(accountId, name) {
   const id = newId("sel");
-  const slug = uniqueSlug("sellers", "store_slug", slugify(name, 40));
+  const slug = freeSlug(name);
   // A person's stores share their Stripe account, so a new store can take payments straight away.
   const sibling = db.prepare("SELECT stripe_account_id, stripe_ready FROM sellers WHERE account_id = ? AND stripe_account_id IS NOT NULL ORDER BY stripe_ready DESC LIMIT 1").get(accountId);
   db.prepare("INSERT INTO sellers (id, token_hash, store_name, store_slug, account_id, stripe_account_id, stripe_ready) VALUES (?,?,?,?,?,?,?)")

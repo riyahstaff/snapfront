@@ -8,6 +8,7 @@ import { generateDigitalProduct, httpError, PRODUCT_TYPES } from "./claude.js";
 import { renderCover, renderProductPdf, COVER_COLORS, writeFileSafe } from "./artwork.js";
 import * as pay from "./payments.js";
 import * as plans from "./plans.js";
+import * as urls from "./urls.js";
 
 export const clampStr = (v, n) => String(v ?? "").slice(0, n);
 export const strList = (v, n, len = 200) => (Array.isArray(v) ? v : []).map((x) => clampStr(x, len)).filter(Boolean).slice(0, n);
@@ -18,7 +19,7 @@ const fresh = (id) => db.prepare("SELECT * FROM sellers WHERE id = ?").get(id);
 
 export const publicSeller = (s) => ({
   id: s.id, store_name: s.store_name, store_slug: s.store_slug, tagline: s.tagline,
-  store_url: `${config.publicUrl}/s/${s.store_slug}`, stripe_connected: Boolean(s.stripe_account_id), stripe_ready: Boolean(s.stripe_ready),
+  store_url: urls.storeUrl(s.store_slug), store_domain: config.storeDomain || null, stripe_connected: Boolean(s.stripe_account_id), stripe_ready: Boolean(s.stripe_ready),
   shipping_flat: s.shipping_flat_cents / 100,
   free_shipping_over: s.free_shipping_over_cents == null ? null : s.free_shipping_over_cents / 100,
   ship_countries: String(s.ship_countries || "").split(",").filter(Boolean),
@@ -30,7 +31,7 @@ const stock = (v) => (v === null || v === undefined || v === "" ? null : Math.ma
 const TAX_CODE = /^txcd_\d{8}$/;
 const COUNTRY = /^[A-Z]{2}$/;
 
-export const withPage = (seller, row) => ({ ...rowToProduct(row), page_url: `${config.publicUrl}/s/${seller.store_slug}/${row.slug}` });
+export const withPage = (seller, row) => ({ ...rowToProduct(row), page_url: urls.storeUrl(seller.store_slug, `/${row.slug}`) });
 
 export function productRow(seller, id) {
   const row = db.prepare("SELECT * FROM products WHERE id = ? AND seller_id = ?").get(String(id || ""), seller.id);
@@ -45,9 +46,12 @@ export function listProducts(seller) {
 export function updateStore(seller, b) {
   const name = b.store_name != null ? clampStr(b.store_name, 80).trim() : seller.store_name;
   const tagline = b.tagline != null ? clampStr(b.tagline, 160) : seller.tagline;
+  // The address follows the name until the seller picks one; an address they type must be free.
   let slug = seller.store_slug;
-  if (b.store_slug) slug = uniqueSlug("sellers", "store_slug", slugify(b.store_slug, 40));
-  db.prepare("UPDATE sellers SET store_name = ?, tagline = ?, store_slug = ? WHERE id = ?").run(name || seller.store_name, tagline, slug, seller.id);
+  if (b.store_slug) slug = urls.checkSlug(b.store_slug, seller.id);
+  else if (name && name !== seller.store_name && urls.isDefaultSlug(seller.store_slug)) slug = urls.freeSlug(name, seller.id);
+  db.prepare("UPDATE sellers SET store_name = ?, tagline = ? WHERE id = ?").run(name || seller.store_name, tagline, seller.id);
+  urls.moveStore(seller, slug);
   if (b.shipping_flat != null) db.prepare("UPDATE sellers SET shipping_flat_cents = ? WHERE id = ?").run(Math.min(cents(b.shipping_flat), 100000), seller.id);
   if (b.free_shipping_over !== undefined) {
     db.prepare("UPDATE sellers SET free_shipping_over_cents = ? WHERE id = ?").run(b.free_shipping_over === null || b.free_shipping_over === "" ? null : cents(b.free_shipping_over), seller.id);

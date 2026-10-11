@@ -3,6 +3,7 @@
 import Stripe from "stripe";
 import crypto from "node:crypto";
 import { config } from "./config.js";
+import { storeUrl } from "./urls.js";
 import { httpError } from "./claude.js";
 
 let stripe = null;
@@ -30,7 +31,7 @@ export async function onboardingLink(seller) {
         requirement_collection: "stripe",
       },
       capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
-      business_profile: { name: seller.store_name, url: `${config.publicUrl}/s/${seller.store_slug}` },
+      business_profile: { name: seller.store_name, url: storeUrl(seller.store_slug) },
       metadata: { snapfront_seller: seller.id },
     });
     accountId = acct.id;

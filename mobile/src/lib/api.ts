@@ -53,6 +53,8 @@ export type Seller = {
   store_slug: string;
   tagline: string;
   store_url: string;
+  /** e.g. "snapfront.app" when every store has its own <slug>.snapfront.app address */
+  store_domain: string | null;
   stripe_connected: boolean;
   stripe_ready: boolean;
   shipping_flat: number;
@@ -91,7 +93,7 @@ export type PriceCheck = {
   suggestion: null | { price: number; basis: string; cost?: number; profit?: number; margin_percent?: number; warning?: string };
 };
 export type PriceCheckInput = { imageBase64?: string; mediaType?: string; image_file?: string; image_url?: string; cost?: number };
-export type StorePatch = Partial<Pick<Seller, "store_name" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled">>;
+export type StorePatch = Partial<Pick<Seller, "store_name" | "store_slug" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled">>;
 export type OrderItem = { title: string; variant: string | null; qty: number; kind: "physical" | "digital"; unit: number };
 export type Address = { line1?: string; line2?: string | null; city?: string; state?: string | null; postal_code?: string; country?: string };
 export type Order = {

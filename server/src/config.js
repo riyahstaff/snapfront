@@ -25,6 +25,8 @@ export const config = {
   revenuecatSecretKey: env.REVENUECAT_SECRET_KEY || "",
   serpapiKey: env.SERPAPI_KEY || "",
   cjApiKey: env.CJ_API_KEY || "",
+  // Stores get https://<slug>.<STORE_DOMAIN> (e.g. snapfront.app) once its wildcard DNS is in place.
+  storeDomain: String(env.STORE_DOMAIN || "").trim().toLowerCase().replace(/^\.+|\/+$/g, ""),
   revenuecatWebhookAuth: env.REVENUECAT_WEBHOOK_AUTH || "",
   downloadSecret: env.DOWNLOAD_SIGNING_SECRET || "dev-only-secret-change-me",
   resendKey: env.RESEND_API_KEY || "",

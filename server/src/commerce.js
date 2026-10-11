@@ -5,6 +5,7 @@ import { db, newId, rowToProduct } from "./db.js";
 import { httpError } from "./claude.js";
 import * as pay from "./payments.js";
 import * as plans from "./plans.js";
+import { storeOrigin, storeUrl } from "./urls.js";
 
 const DIGITAL_TAX_CODE = "txcd_10302000";   // Digital Books - downloaded - non subscription - with permanent rights
 const PHYSICAL_TAX_CODE = "txcd_99999999";  // General - Tangible Goods
@@ -139,8 +140,8 @@ export async function startCheckout(seller, items, code) {
     mode: "payment",
     line_items,
     metadata: { snapfront_order: orderId },
-    success_url: `${config.publicUrl}/thanks?o=${orderId}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${config.publicUrl}/s/${seller.store_slug}/cart`,
+    success_url: `${storeOrigin(seller.store_slug)}/thanks?o=${orderId}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: storeUrl(seller.store_slug, "/cart"),
   };
   if (tax) params.automatic_tax = { enabled: true };
   if (p.physical) {

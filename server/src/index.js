@@ -15,11 +15,30 @@ import * as research from "./research.js";
 import * as auth2 from "./auth.js";
 import * as suppliers from "./suppliers.js";
 import * as dropship from "./dropship.js";
+import * as urls from "./urls.js";
+import { landingPage } from "./landing.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, esc } from "./render.js";
 
 export const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
+
+/* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
+const SHARED_PATHS = /^\/(api|img|d|thanks|stripe|suppliers|health|privacy|terms)(\/|$)/;
+app.use((req, res, next) => {
+  if (!config.storeDomain) return next();
+  const host = String(req.hostname || "").toLowerCase();
+  if (host === `www.${config.storeDomain}`) return res.redirect(301, `https://${config.storeDomain}${req.originalUrl}`);
+  const sub = urls.hostStoreSlug(host);
+  if (!sub) return next();
+  req.storeHost = sub;
+  if (SHARED_PATHS.test(req.path)) return next();
+  if (req.path.startsWith("/s/")) {   // an old-style link opened on a store address
+    return req.method === "GET" ? res.redirect(301, req.originalUrl.replace(/^\/s\/[^/?]+/, "") || "/") : next();
+  }
+  req.url = `/s/${sub}${req.url === "/" ? "" : req.url}`;
+  next();
+});
 
 /* ---------- Stripe webhook needs the raw body, so it is mounted before the JSON parser ---------- */
 app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
@@ -53,7 +72,7 @@ async function completeOrder(orderId, session) {
   if (order && before?.status === "pending" && order.status === "paid") {
     const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(order.seller_id);
     await pay.emailOrder(order.email, {
-      storeName: seller.store_name, orderUrl: `${config.publicUrl}/thanks?o=${order.id}`, downloads: commerce.downloadsFor(order),
+      storeName: seller.store_name, orderUrl: `${urls.storeOrigin(seller.store_slug)}/thanks?o=${order.id}`, downloads: commerce.downloadsFor(order),
     }).catch(() => false);
     // Dropshipped items go to the supplier straight away.
     dropship.sendOrder(order.id).catch((e) => console.error("[supplier] send", order.id, e.message));
@@ -99,6 +118,7 @@ const clampStr = store.clampStr, strList = store.strList, faqList = store.faqLis
 
 /* ---------- account ---------- */
 app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/", (_req, res) => res.send(landingPage()));
 
 app.post("/api/sellers", (req, res) => {
   const { token, account, store: seller } = plans.createAccountWithStore(clampStr(req.body?.store_name || "My Snapfront Store", 80));
@@ -301,16 +321,31 @@ app.get("/img/:file", (req, res) => {
   res.sendFile(path.join(dirs.images, req.params.file), (err) => err && !res.headersSent && res.status(404).end());
 });
 const storeBySlug = (slug) => db.prepare("SELECT * FROM sellers WHERE store_slug = ?").get(slug);
+/** Links inside a store page start at "" on its own address and at /s/<slug> anywhere else. */
+const view = (req, store) => ({ ...store, _base: req.storeHost === store.store_slug ? "" : `/s/${store.store_slug}` });
+const noStore = (res) => res.status(404).send(notePage({ store_slug: "", store_name: "Snapfront", tagline: "", _base: "" }, "Store not found",
+  `<h1>There’s no store here</h1><p>Check the address, or <a href="https://${esc(config.storeDomain || new URL(config.publicUrl).host)}">make your own with Snapfront</a>.</p>`));
+
+// Page views of a store: send old addresses (and /s/<slug> links once stores have their own address) to the current one.
+app.get(["/s/:store", "/s/:store/*rest"], (req, res, next) => {
+  const store = storeBySlug(req.params.store);
+  const rest = req.params.rest ? `/${[].concat(req.params.rest).join("/")}` : "";
+  const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+  if (!store) {
+    const moved = urls.redirectFor(req.params.store);
+    return moved ? res.redirect(301, urls.storeUrl(moved.store_slug, rest) + qs) : noStore(res);
+  }
+  if (config.storeDomain && req.storeHost !== store.store_slug) return res.redirect(301, urls.storeUrl(store.store_slug, rest) + qs);
+  next();
+});
 app.get("/s/:store", (req, res) => {
   const store = storeBySlug(req.params.store);
-  if (!store) return res.status(404).send("Store not found");
   const rows = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' ORDER BY created_at DESC").all(store.id);
-  res.send(storePage(store, rows.map(rowToProduct), config.publicUrl));
+  res.send(storePage(view(req, store), rows.map(rowToProduct), config.publicUrl));
 });
 app.get("/s/:store/cart", (req, res) => {
   const store = storeBySlug(req.params.store);
-  if (!store) return res.status(404).send("Store not found");
-  res.send(cartPage(store, config.publicUrl));
+  res.send(cartPage(view(req, store), config.publicUrl));
 });
 // Buyers' carts live in their browser; the server prices them from the database every time.
 const buyerHits = new Map();
@@ -334,8 +369,8 @@ app.post("/s/:store/checkout", buyerLimit, wrap(async (req, res) => {
 app.get("/s/:store/:product", (req, res) => {
   const store = storeBySlug(req.params.store);
   const row = store && db.prepare("SELECT * FROM products WHERE seller_id = ? AND slug = ?").get(store.id, req.params.product);
-  if (!row || (row.status !== "live" && req.query.preview !== "1")) return res.status(404).send("Product not found");
-  res.send(productPage(store, rowToProduct(row), config.publicUrl));
+  if (!row || (row.status !== "live" && req.query.preview !== "1")) return res.status(404).send(notePage(view(req, store), "Not found", `<h1>That product isn’t here</h1><p><a href="${esc(view(req, store)._base || "/")}">See everything in ${esc(store.store_name)}</a></p>`));
+  res.send(productPage(view(req, store), rowToProduct(row), config.publicUrl));
 });
 app.get("/thanks", wrap(async (req, res) => {
   let order = db.prepare("SELECT * FROM orders WHERE id = ?").get(String(req.query.o || ""));
@@ -348,7 +383,7 @@ app.get("/thanks", wrap(async (req, res) => {
     if (session && session.payment_status !== "paid") console.log("[thanks] session not paid yet", order.id, session.status, session.payment_status);
     if (session?.payment_status === "paid") order = await completeOrder(order.id, session);
   }
-  res.send(orderPage(store, commerce.publicOrder(order), commerce.downloadsFor(order)));
+  res.send(orderPage(view(req, store), commerce.publicOrder(order), commerce.downloadsFor(order)));
 }));
 app.get("/d/:token", (req, res) => {
   const t = pay.readDownloadToken(req.params.token);
@@ -375,7 +410,7 @@ app.get("/privacy", legal("Privacy policy", `
 <h2>Deleting your data</h2><p>Open Store settings in the app and tap "Delete my store". This removes your store, products and photos from our servers.</p>
 <h2>Contact</h2><p><a href="mailto:torrey@troosec.com">torrey@troosec.com</a></p>`));
 app.get("/terms", legal("Terms of use", `
-<p>By using Snapfront you agree to sell only products you have the right to sell, to describe them honestly, and to follow Stripe's terms and restricted-business list. You're responsible for fulfilling orders, taxes and refunds. Snapfront may remove listings that break these rules. Snapfront keeps a platform fee shown in the app on each sale.</p>
+<p>By using Snapfront you agree to sell only products you have the right to sell, to describe them honestly, and to follow Stripe's terms and restricted-business list. You're responsible for fulfilling orders, taxes and refunds. Snapfront may remove listings that break these rules. Snapfront doesn't take a fee on your sales; Stripe's own processing fees apply, and paid plans are billed through Google Play or the App Store.</p>
 <h2>Contact</h2><p><a href="mailto:torrey@troosec.com">torrey@troosec.com</a></p>`));
 
 /* ---------- research list shown in the app's "What's selling" tab ---------- */

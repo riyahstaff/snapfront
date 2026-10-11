@@ -1,5 +1,6 @@
 // Server-rendered public storefront pages. Plain HTML + one inline stylesheet: fast, SEO-friendly,
 // and shareable from a link-in-bio.
+import { storeUrl } from "./urls.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const money = (cents, cur = "usd") => new Intl.NumberFormat("en-US", { style: "currency", currency: cur.toUpperCase() }).format(cents / 100);
 
@@ -68,6 +69,9 @@ function badge(){var n=read().reduce(function(s,l){return s+l.qty},0);document.q
 window.sfCart={read:read,write:write,add:function(item){var c=read(),k=item.product_id+":"+(item.variant_id||"");var f=c.find(function(l){return l.product_id+":"+(l.variant_id||"")===k});
 if(f){f.qty=item.kind==="digital"?1:Math.min(20,f.qty+item.qty)}else c.push(item);write(c)}};badge();})();</script>`;
 
+/** Path prefix for links inside a store: "" on its own address (pawplace.snapfront.app), "/s/<slug>" otherwise. */
+const base = (store) => (store._base ?? `/s/${store.store_slug}`);
+
 function shell({ title, description, store, image, body, canonical }) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}">
@@ -75,15 +79,15 @@ function shell({ title, description, store, image, body, canonical }) {
 ${canonical ? `<link rel="canonical" href="${esc(canonical)}">` : ""}<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Figtree:wght@400;600;700&display=swap">
 <style>${CSS}</style></head><body>
-<header class="bar"><div><a href="/s/${esc(store.store_slug)}">${esc(store.store_name)}</a><nav><a class="cartlink" href="/s/${esc(store.store_slug)}/cart">Cart <b data-cart-count></b></a></nav></div></header>
+<header class="bar"><div><a href="${esc(base(store) || "/")}">${esc(store.store_name)}</a><nav><a class="cartlink" href="${esc(base(store))}/cart">Cart <b data-cart-count></b></a></nav></div></header>
 ${CART_JS(store.store_slug)}<main>${body}</main><footer>© ${new Date().getFullYear()} ${esc(store.store_name)} · Secure checkout by Stripe · Made with Snapfront</footer></body></html>`;
 }
 
 export function storePage(store, products, baseUrl) {
-  const cards = products.map((p) => `<a class="card" href="/s/${esc(store.store_slug)}/${esc(p.slug)}"><div class="ph">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" loading="lazy">` : ""}<span class="tagp">${p.variants.length && new Set(p.variants.map((v) => v.price_cents ?? p.price_cents)).size > 1 ? "From " : ""}${money(Math.min(p.price_cents, ...p.variants.map((v) => v.price_cents ?? p.price_cents)), p.currency)}</span>${p.in_stock ? "" : `<span class="soldp">Sold out</span>`}</div><div class="m"><h2>${esc(p.title)}</h2></div></a>`).join("");
+  const cards = products.map((p) => `<a class="card" href="${esc(base(store))}/${esc(p.slug)}"><div class="ph">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" loading="lazy">` : ""}<span class="tagp">${p.variants.length && new Set(p.variants.map((v) => v.price_cents ?? p.price_cents)).size > 1 ? "From " : ""}${money(Math.min(p.price_cents, ...p.variants.map((v) => v.price_cents ?? p.price_cents)), p.currency)}</span>${p.in_stock ? "" : `<span class="soldp">Sold out</span>`}</div><div class="m"><h2>${esc(p.title)}</h2></div></a>`).join("");
   return shell({
     title: store.store_name, description: store.tagline || `Shop ${store.store_name}`, store,
-    image: products[0]?.image_url, canonical: `${baseUrl}/s/${store.store_slug}`,
+    image: products[0]?.image_url, canonical: storeUrl(store.store_slug),
     body: `<section class="hero"><h1>${esc(store.store_name)}</h1>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</section>
 <div class="grid">${cards || `<p class="fine">New products are on the way.</p>`}</div>`,
   });
@@ -113,12 +117,12 @@ document.querySelectorAll("input[name=variant]").forEach(function(r){r.addEventL
 document.querySelectorAll("[data-q]").forEach(function(b){b.addEventListener("click",function(){q=Math.max(1,Math.min(limit(),q+Number(b.dataset.q)));sync()})});
 function add(){var v=sel();sfCart.add({product_id:P.id||P.product_id,variant_id:v?v.value:null,variant:v?OPT+": "+v.dataset.name:null,qty:P.kind==="digital"?1:q,title:P.title,kind:P.kind,image:P.image,unit:v?Number(v.dataset.price):P.unit})}
 document.getElementById("add").addEventListener("click",function(){add();var t=document.getElementById("toast");t.hidden=false;clearTimeout(t._h);t._h=setTimeout(function(){t.hidden=true},4000)});
-document.getElementById("now").addEventListener("click",function(){add();location.href="/s/${esc(store.store_slug)}/cart"});sync()})();</script>` : "";
+document.getElementById("now").addEventListener("click",function(){add();location.href="${esc(base(store))}/cart"});sync()})();</script>` : "";
   const jsonLd = { "@context": "https://schema.org", "@type": "Product", name: p.title, description: p.seo_description || p.tagline, image: p.image_url || undefined, sku: p.sku || undefined,
-    offers: { "@type": "Offer", price: (startPrice / 100).toFixed(2), priceCurrency: p.currency.toUpperCase(), availability: `https://schema.org/${p.in_stock ? "InStock" : "OutOfStock"}`, url: `${baseUrl}/s/${store.store_slug}/${p.slug}` } };
+    offers: { "@type": "Offer", price: (startPrice / 100).toFixed(2), priceCurrency: p.currency.toUpperCase(), availability: `https://schema.org/${p.in_stock ? "InStock" : "OutOfStock"}`, url: storeUrl(store.store_slug, `/${p.slug}`) } };
   return shell({
     title: `${p.title} · ${store.store_name}`, description: p.seo_description || p.tagline, store, image: p.image_url,
-    canonical: `${baseUrl}/s/${store.store_slug}/${p.slug}`,
+    canonical: storeUrl(store.store_slug, `/${p.slug}`),
     body: `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>
 <article class="pp"><div class="frame">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}">` : ""}<i></i><i></i><i></i><i></i></div>
 <div class="info"><div class="cat">${p.kind === "digital" ? "Digital download" : esc(p.category || "Product")}</div><h1>${esc(p.title)}</h1>
@@ -128,16 +132,16 @@ ${String(p.description || "").split(/\n\s*\n/).filter(Boolean).map((t) => `<p st
 ${p.bullets.length ? `<h2 style="font-size:20px">What you get</h2><ul class="b">${p.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
 ${p.tags.length ? `<div class="tags">${p.tags.map((t) => `<span>#${esc(t)}</span>`).join("")}</div>` : ""}
 <div>${p.faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}</div></div></article>
-<div class="toast" id="toast" role="status" hidden>Added to your cart <a href="/s/${esc(store.store_slug)}/cart">View cart</a></div>${script}`,
+<div class="toast" id="toast" role="status" hidden>Added to your cart <a href="${esc(base(store))}/cart">View cart</a></div>${script}`,
   });
 }
 
 export function cartPage(store, baseUrl) {
   const slug = esc(store.store_slug);
   return shell({
-    title: `Your cart · ${store.store_name}`, description: `Your cart at ${store.store_name}`, store, canonical: `${baseUrl}/s/${store.store_slug}/cart`,
+    title: `Your cart · ${store.store_name}`, description: `Your cart at ${store.store_name}`, store, canonical: storeUrl(store.store_slug, "/cart"),
     body: `<section class="hero"><h1>Your cart</h1></section>
-<div id="empty" hidden><p>Your cart is empty.</p><p><a class="buy" href="/s/${slug}">Keep shopping</a></p></div>
+<div id="empty" hidden><p>Your cart is empty.</p><p><a class="buy" href="${esc(base(store) || "/")}">Keep shopping</a></p></div>
 <div class="cartw" id="full" hidden><div class="lines" id="lines"></div>
 <aside class="sum" aria-labelledby="sumh"><h2 id="sumh">Order summary</h2>
 <div class="row"><span>Subtotal</span><span id="sub"></span></div>
@@ -147,7 +151,7 @@ export function cartPage(store, baseUrl) {
 <form class="code" id="codef"><label for="code" class="fine" style="position:absolute;left:-9999px">Discount code</label><input id="code" placeholder="Discount code" autocomplete="off" maxlength="32"><button type="submit">Apply</button></form>
 <p id="msg" role="status" class="fine" hidden></p>
 <button class="buy" type="button" id="go">Check out</button><p class="fine">You'll pay on Stripe's secure checkout.</p></aside></div>
-<script>(function(){var S="/s/${slug}",code="",fmt=function(d){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(d)};
+<script>(function(){var S="${esc(base(store))}",code="",fmt=function(d){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(d)};
 try{code=sessionStorage.getItem("sf_code_${slug}")||""}catch(e){}document.getElementById("code").value=code;
 function msg(t,ok){var m=document.getElementById("msg");m.hidden=!t;m.textContent=t||"";m.className=ok?"ok":"err"}
 function items(){return sfCart.read().map(function(l){return{product_id:l.product_id,variant_id:l.variant_id,qty:l.qty}})}
@@ -181,7 +185,7 @@ export function orderPage(store, o, downloads) {
   const rows = o.items.map((l) => `<div class="row"><span>${esc(l.title)}${l.variant ? ` (${esc(l.variant)})` : ""}${l.qty > 1 ? ` × ${l.qty}` : ""}</span><span>${money(Math.round(l.unit * 100) * l.qty)}</span></div>`).join("");
   const money$ = (d) => money(Math.round(d * 100));
   const body = o.status === "canceled"
-    ? `<h1>Payment didn't go through</h1><p>Your order wasn't charged. <a href="/s/${esc(store.store_slug)}/cart">Return to your cart</a> to try again.</p>`
+    ? `<h1>Payment didn't go through</h1><p>Your order wasn't charged. <a href="${esc(base(store))}/cart">Return to your cart</a> to try again.</p>`
     : `<h1>${pending ? "Almost there" : "Thank you!"}</h1>
 <p>${pending ? "We're waiting for Stripe to confirm your payment. This page refreshes on its own." : `Your order is confirmed${o.email ? ` and a receipt is on its way to <strong>${esc(o.email)}</strong>` : ""}.`}</p>
 ${downloads.length ? `<div class="dl">${downloads.map((d) => `<a class="buy" href="${esc(d.url)}">Download ${esc(d.title)}</a>`).join("")}<p class="fine">Download links work for 7 days. Bookmark this page to get fresh ones.</p></div>` : ""}

@@ -8,6 +8,8 @@ import { fonts, useColors } from "@/lib/theme";
 import { onUpgradeNeeded } from "@/lib/api";
 import { account } from "@/lib/account-store";
 import { startBilling } from "@/lib/billing";
+import * as SecureStore from "expo-secure-store";
+import { DEFAULT_STORE_NAME, NAMED_KEY } from "@/lib/store-address";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -22,7 +24,11 @@ export default function RootLayout() {
   useEffect(() => {
     // Anything that needs a paid plan opens the plans screen with the server's reason.
     onUpgradeNeeded((plan, reason) => router.push({ pathname: "/plans", params: { highlight: plan, reason } }));
-    account.refresh().then((m) => startBilling(m.account.id)).catch(() => {});
+    account.refresh().then(async (m) => {
+      startBilling(m.account.id);
+      // New sellers name their store first; it also becomes the store's web address.
+      if (m.store_name === DEFAULT_STORE_NAME && !(await SecureStore.getItemAsync(NAMED_KEY).catch(() => null))) router.push("/welcome");
+    }).catch(() => {});
     return () => onUpgradeNeeded(null);
   }, []);
   if (!loaded && !error) return null;
@@ -48,6 +54,7 @@ export default function RootLayout() {
         <Stack.Screen name="plans" options={{ title: "Plans", presentation: "modal" }} />
         <Stack.Screen name="price-check" options={{ title: "Price check" }} />
         <Stack.Screen name="supplier/[pid]" options={{ title: "Product" }} />
+        <Stack.Screen name="welcome" options={{ title: "", presentation: "modal" }} />
       </Stack>
     </>
   );
