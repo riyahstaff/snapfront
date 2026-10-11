@@ -147,6 +147,10 @@ test("import makes a draft listing with options, CJ ids, costs and a market-chec
   // A set price skips the market check
   const r2 = await json(await call("POST", "/api/catalog/products/PID-1/import", { price: 35, vids: ["VID-L"] }), 201);
   assert.equal(r2.product.price, 35);
+  assert.equal(r2.pricing.basis, "the price you set");
+  assert.equal(r2.pricing.warning, null);   // $35 vs $13.90 landed is a healthy margin
+  const thin = await json(await call("POST", "/api/catalog/products/PID-1/import", { price: 12, vids: ["VID-S"] }), 201);
+  assert.match(thin.pricing.warning, /only \$0\.70 per sale/);
   assert.equal(r2.product.variants.length, 0);   // a single option is sold as a plain product
   assert.equal(db.prepare("SELECT source_vid FROM products WHERE id = ?").get(r2.product.id).source_vid, "VID-L");
   assert.equal(r2.market, null);

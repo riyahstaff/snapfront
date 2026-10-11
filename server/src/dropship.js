@@ -14,6 +14,7 @@ let fetchImage = (...a) => fetch(...a);
 export function setImageFetch(f) { fetchImage = f; }   // used by tests
 
 const r2 = (n) => Math.round(n * 100) / 100;
+const money = (n) => `$${n.toFixed(2)}`;
 const IMAGE_EXT = { "image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
 
 async function downloadImage(url) {
@@ -103,8 +104,10 @@ Write fresh copy in your own words for an independent shop. Never mention the su
   return {
     product,
     pricing: { price: finalPrice, cost: minCost, shipping: p.shipping, landed_cost: landed, profit: r2(finalPrice - landed),
-      basis: market?.suggestion ? market.suggestion.basis : "about 2.5 times your cost including shipping",
-      warning: market?.suggestion?.warning || null },
+      basis: Number(price) > 0 ? "the price you set" : market?.suggestion ? market.suggestion.basis : "about 2.5 times your cost including shipping",
+      warning: finalPrice <= landed ? "This price is at or below your cost, so you'd lose money on each sale. Raise it before publishing."
+        : finalPrice - landed < landed * 0.3 ? `That leaves only ${money(finalPrice - landed)} per sale, before payment fees. Most sellers aim for at least ${money(landed * 0.3)}.`
+        : market?.suggestion?.warning || null },
     market: market ? { summary: market.summary, matches: market.matches.slice(0, 8) } : null,
   };
 }
