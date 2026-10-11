@@ -174,17 +174,26 @@ const usd = (dollars) => { const [u, c = "0"] = String(dollars).split("."); retu
 /** Prices for every country Google sells in, from one US price (Google's own conversion). */
 async function prices(dollars) {
   const r = await play("POST", "/pricing:convertRegionPrices", { price: usd(dollars) });
-  if (r.status !== 200) throw new Error(`convertRegionPrices ${r.status}: ${JSON.stringify(r.body).slice(0, 300)}`);
+  if (r.status !== 200) {
+    // Google can refuse the conversion (e.g. before the payments profile is set up): sell in the US only.
+    console.warn("[play] convertRegionPrices", r.status, JSON.stringify(r.body).slice(0, 200));
+    return { regions: [{ regionCode: "US", price: usd(dollars) }], other: null, version: null, usOnly: true };
+  }
   const regions = Object.values(r.body.convertedRegionPrices || {});
   const us = regions.find((x) => x.regionCode === "US");
   if (us) us.price = usd(dollars);     // keep the US price exactly as set
   return { regions, other: r.body.convertedOtherRegionsPrice, version: r.body.regionVersion?.version };
 }
 
-export async function createProducts({ launchPrice = "29.00", proPrice = "14.99" } = {}) {
+export async function createProducts(opts = {}) {
   const log = [];
+  try { await makeProducts(opts, log); } catch (e) { log.push(["error", 0, e.message]); }
+  return log;
+}
+async function makeProducts({ launchPrice = "29.00", proPrice = "14.99" } = {}, log) {
   // Launch: a one-time product with one "buy" purchase option.
   const lp = await prices(launchPrice);
+  if (lp.usOnly) log.push(["prices", 0, "Google refused the currency conversion, so these are US-only for now"]);
   const once = {
     packageName: config.playPackage, productId: LAUNCH,
     listings: [{ languageCode: "en-US", title: "Snapfront Launch", description: "Put your store live and take orders. One payment, yours for good." }],
