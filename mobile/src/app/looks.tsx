@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Button, Field, H2, Notice } from "@/components/ui";
 import { api, ApiError, type StoreTheme } from "@/lib/api";
@@ -13,7 +14,7 @@ import { fonts, radius, space, type, useColors } from "@/lib/theme";
 type Msg = { text: string; tone: "ok" | "error" } | null;
 const errText = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 
-/** Store look: the cover photo and words at the top of the storefront, and 20 themes to choose from. */
+/** Store look: the classic editor plus a link to the premium builder and all 45 themes. */
 export default function LooksScreen() {
   const c = useColors();
   const me = useMe();
@@ -60,6 +61,11 @@ export default function LooksScreen() {
         ListHeaderComponent={
           <View style={{ gap: space.lg, marginBottom: space.sm }}>
             <StorefrontDetails />
+            <View style={{ gap: space.sm, backgroundColor: c.flash, borderRadius: radius.lg, padding: space.lg }}>
+              <Text style={[type.heading, { color: c.onFlash }]}>Build a premium storefront</Text>
+              <Text style={[type.small, { color: c.onFlash }]}>Choose a premium look, stage a cover, edit words and review everything before one final public apply.</Text>
+              <Button label="Open premium setup" variant="secondary" onPress={() => router.push("/storefront-setup")} />
+            </View>
             <View style={{ gap: 4 }}>
               <H2>Choose a look</H2>
               <Text style={[type.small, { color: c.muted }]}>Each look changes your store’s colours, fonts and layout. Your products and prices stay the same. Tap Preview to see any look on your real store.</Text>

@@ -66,6 +66,12 @@ export type Seller = {
   tax_enabled: boolean;
   /** Storefront look, one of the ids from api.themes() */
   theme: string;
+  /** Optional premium storefront copy; blank values use that look's defaults. */
+  hero_title: string;
+  hero_subtitle: string;
+  hero_eyebrow: string;
+  hero_cta: string;
+  hero_motion: "still" | "drift" | "pan";
   /** "About us" text on the storefront */
   about: string;
   /** Short line in the strip above the storefront header; blank = shipping info */
@@ -82,6 +88,12 @@ export type Seller = {
 /** A storefront look the seller can pick (server/src/themes.js). */
 export type StoreTheme = {
   id: string; name: string; for: string; vibe: string; dark: boolean;
+  /** Classic looks omit these fields; premium looks provide them for the setup wizard. */
+  collection?: "premium" | "classic";
+  category?: string;
+  family?: string;
+  motion?: "still" | "drift" | "pan";
+  copy?: { eyebrow?: string; collection?: string; cta?: string };
   fonts: { display: string; body: string };
   colors: { bg: string; surface: string; ink: string; muted: string; accent: string; onAccent: string; badge: string; onBadge: string; line: string;
     panel: string; onPanel: string; bar: string; onBar: string; foot: string };
@@ -126,6 +138,15 @@ export type DomainView = {
   enabled: boolean; domain: string | null; status?: "pending" | "active" | "failed";
   record?: { type: "CNAME"; host: string; value: string }; url?: string;
 };
+/** A seller-owned cover image that is safe to reference later in the final storefront PATCH. */
+export type StagedStorefrontPhoto = { image_file: string; image_url: string };
+/** An unauthenticated, temporary URL that renders a staged storefront without saving it. */
+export type StorefrontPreview = { url: string; expires_in: number };
+/** Suggestions are intentionally separate from saved seller data until the seller chooses to apply them. */
+export type StorefrontCopy = {
+  hero_title: string; hero_subtitle: string; hero_eyebrow: string; hero_cta: string;
+  tagline: string; about: string; announcement: string;
+};
 export type SupplierId = "cj" | "printful" | "aliexpress";
 export type SupplierState = {
   name: string; connected: boolean; auto_pay: boolean;
@@ -143,7 +164,10 @@ export type PriceCheck = {
   suggestion: null | { price: number; basis: string; cost?: number; profit?: number; margin_percent?: number; warning?: string };
 };
 export type PriceCheckInput = { imageBase64?: string; mediaType?: string; image_file?: string; image_url?: string; cost?: number };
-export type StorePatch = Partial<Pick<Seller, "store_name" | "store_slug" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled" | "theme" | "about" | "announcement" | "links" | "abandoned_emails">>;
+export type StorePatch = Partial<Pick<Seller, "store_name" | "store_slug" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled" | "theme" | "hero_title" | "hero_subtitle" | "hero_eyebrow" | "hero_cta" | "hero_motion" | "about" | "announcement" | "links" | "abandoned_emails">> & {
+  /** Only a staged storefront photo owned by this seller, or the current banner, is accepted by the server. */
+  banner_file?: string;
+};
 export type OrderItem = { title: string; variant: string | null; qty: number; kind: "physical" | "digital"; unit: number };
 export type Address = { line1?: string; line2?: string | null; city?: string; state?: string | null; postal_code?: string; country?: string };
 export type Order = {
@@ -262,6 +286,16 @@ async function setStore(id: string | null) {
 export const api = {
   me: () => request<Me>("GET", "/api/me"),
   updateStore: (patch: StorePatch) => request<Me>("PATCH", "/api/me", patch),
+  /** Create a 30-minute browser preview without changing the public storefront. */
+  previewStorefront: (patch: StorePatch) => request<StorefrontPreview>("POST", "/api/storefront/preview", patch),
+  /** Upload a cover photo without changing the live storefront. The returned file is applied only in updateStore. */
+  stageStorefrontPhoto: (imageBase64: string, mediaType = "image/jpeg") =>
+    request<StagedStorefrontPhoto>("POST", "/api/storefront/photo", { imageBase64, mediaType }),
+  /** Discard an unused staged cover; server protects the currently applied banner. */
+  discardStorefrontPhoto: (file: string) => request<void>("DELETE", `/api/storefront/photo/${encodeURIComponent(file)}`),
+  /** AI storefront wording is suggestions only; the caller decides whether to put it into an editable local draft. */
+  storefrontCopy: (input: { notes?: string; tone?: string; theme?: string; store_name?: string }) =>
+    request<StorefrontCopy>("POST", "/api/storefront/copy", input),
   setBanner: (imageBase64: string, mediaType = "image/jpeg") => request<Me>("PUT", "/api/me/banner", { imageBase64, mediaType }),
   removeBanner: () => request<Me>("DELETE", "/api/me/banner"),
   studioPresets: () => request<StudioPresets>("GET", "/api/studio"),

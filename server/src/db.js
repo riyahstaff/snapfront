@@ -60,6 +60,18 @@ addCol("products", "label", "TEXT NOT NULL DEFAULT ''");          // short text 
 addCol("sellers", "about", "TEXT NOT NULL DEFAULT ''");           // "About us" on the storefront
 addCol("sellers", "announcement", "TEXT NOT NULL DEFAULT ''");    // strip above the storefront header
 addCol("sellers", "banner_file", "TEXT");                         // storefront cover photo
+addCol("sellers", "hero_title", "TEXT NOT NULL DEFAULT ''");
+addCol("sellers", "hero_subtitle", "TEXT NOT NULL DEFAULT ''");
+addCol("sellers", "hero_eyebrow", "TEXT NOT NULL DEFAULT ''");
+addCol("sellers", "hero_cta", "TEXT NOT NULL DEFAULT ''");
+addCol("sellers", "hero_motion", "TEXT NOT NULL DEFAULT 'still'");
+// A setup photo is private to its seller and does not become the live banner until Apply.
+db.exec(`CREATE TABLE IF NOT EXISTS storefront_photos (
+  image_file TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS storefront_photos_seller ON storefront_photos (seller_id);`);
 addCol("sellers", "shipping_flat_cents", "INTEGER NOT NULL DEFAULT 0");
 addCol("sellers", "free_shipping_over_cents", "INTEGER");
 addCol("sellers", "ship_countries", "TEXT NOT NULL DEFAULT 'US,CA,GB,AU,NZ,IE'");
