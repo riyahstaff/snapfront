@@ -82,7 +82,7 @@ npm run build:ios && npm run submit:ios
 npm run build:android && npm run submit:android
 ```
 
-The app ID is `com.sidebanc.snapfront` (iOS and Android) and the support contact on the privacy and terms pages is torrey@troosec.com. Before the first iOS submission, add the App Store Connect app ID to `eas.json` under `submit.production.ios.ascAppId`. The full walkthrough is in the Snapfront publishing guide.
+The app ID is `com.sidebanc.snapfront` (iOS and Android) and the support contact on the privacy and terms pages is support@snapfront.app. Before the first iOS submission, add the App Store Connect app ID to `eas.json` under `submit.production.ios.ascAppId`. The full walkthrough is in the Snapfront publishing guide.
 
 ## App store notes
 

@@ -225,7 +225,7 @@ const deletionInfo = `<h1>Delete your Snapfront account</h1>
 <p>If you signed in to Snapfront with an email address, enter it below. We'll email you a 6-digit code to confirm it's you.</p>`;
 const retention = `<div class=box><strong>What's deleted:</strong> your account, your stores, products, product photos, digital product files, AI photos and videos, marketing posts, discount codes, reviews on your stores, visit statistics and saved supplier connections. Your store's web address stops working.<br><br>
 <strong>What's kept:</strong> nothing on Snapfront's servers. Payments and payouts stay in your own Stripe account, which you manage at stripe.com, and plan purchases stay in your Google Play order history, as those companies require. Copies in server backups are overwritten within 90 days.</div>
-<p class=muted>Didn't sign in with an email, or can't open the app? Email <a href="mailto:torrey@troosec.com">torrey@troosec.com</a> with your store's web address and we'll delete it within 7 days.</p>`;
+<p class=muted>Didn't sign in with an email, or can't open the app? Email <a href="mailto:support@snapfront.app">support@snapfront.app</a> with your store's web address and we'll delete it within 7 days.</p>`;
 const esc2 = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 app.get("/delete-account", (_req, res) => res.send(deletionPage(`${deletionInfo}
 <form method=post action="/delete-account"><input type=hidden name=step value=start><label for=e>Email address</label><input id=e name=email type=email required autocomplete=email><button>Email me a code</button></form>${retention}`)));
@@ -240,7 +240,7 @@ app.get("/delete-data", (_req, res) => res.send(deletionPage(`<h1>Delete some of
 <li><strong>A custom domain</strong>: Settings, Your own domain, then <strong>Remove domain</strong>.</li>
 </ul>
 <h2>By email</h2>
-<p>To have anything else deleted, such as your email address or a buyer's order details, email <a href="mailto:torrey@troosec.com">torrey@troosec.com</a> from the address on your account, or with your store's web address, and say what to delete. We do it within 7 days and reply when it's done.</p>
+<p>To have anything else deleted, such as your email address or a buyer's order details, email <a href="mailto:support@snapfront.app">support@snapfront.app</a> from the address on your account, or with your store's web address, and say what to delete. We do it within 7 days and reply when it's done.</p>
 <div class=box><strong>What's kept:</strong> everything you don't delete stays in your account. Payments and payouts stay in your own Stripe account, and plan purchases stay in your Google Play order history, as those companies require. Copies in server backups are overwritten within 90 days.</div>
 <p class=muted>To delete your whole account instead, see <a href="/delete-account">Delete your Snapfront account</a>.</p>`)));
 app.post("/delete-account", buyerLimit, express.urlencoded({ extended: false, limit: "4kb" }), wrap(async (req, res) => {
@@ -707,10 +707,10 @@ app.get("/privacy", legal("Privacy policy", `
 <li>Cloudflare and Railway: hosting, including stores on their own domains.</li></ul>
 <h2>Deleting your data</h2><p>In the app, open Settings and tap "Delete my account". This removes your account, every store, product and photo from our servers. Order records your buyers need (for example, download links) are removed with the store. You can also email us to ask for deletion.</p>
 <h2>Children</h2><p>Snapfront is for adults running a business and isn't meant for children under 13.</p>
-<h2>Contact</h2><p><a href="mailto:torrey@troosec.com">torrey@troosec.com</a></p>`));
+<h2>Contact</h2><p><a href="mailto:support@snapfront.app">support@snapfront.app</a></p>`));
 app.get("/terms", legal("Terms of use", `
 <p>By using Snapfront you agree to sell only products you have the right to sell, to describe them honestly, and to follow Stripe's terms and restricted-business list. You're responsible for fulfilling orders, taxes and refunds. Snapfront may remove listings that break these rules. Snapfront doesn't take a fee on your sales; Stripe's own processing fees apply, and paid plans are billed through Google Play or the App Store.</p>
-<h2>Contact</h2><p><a href="mailto:torrey@troosec.com">torrey@troosec.com</a></p>`));
+<h2>Contact</h2><p><a href="mailto:support@snapfront.app">support@snapfront.app</a></p>`));
 
 /* ---------- research list shown in the app's "What's selling" tab ---------- */
 app.get("/api/trends", (_req, res) => res.json(store.TRENDS));
