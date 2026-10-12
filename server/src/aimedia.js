@@ -94,7 +94,9 @@ export async function start(account, seller, { kind, image_file, preset, prompt 
   const image = publicImage(image_file);
   plans.assertAllowance(account, kind);
   const input = kind === "video"
-    ? { image, prompt: `${p ? p.prompt : custom}. The product itself stays exactly the same: same shape, colors, logo and label. No text.`, negative_prompt: "text, watermark, distorted product, extra limbs, blurry", size: "720*1280", duration: 5, seed: -1 }
+    ? { image, prompt: `${p ? p.prompt : custom}. The product itself stays exactly the same: same shape, colors, logo and label. No text.`, negative_prompt: "text, watermark, distorted product, extra limbs, blurry", size: "720*1280", duration: 5, seed: -1,
+        // Runpod's endpoint rejects the job unless these are all sent (their docs call them optional).
+        num_inference_steps: 30, guidance: 5, flow_shift: 5, enable_prompt_optimization: false, enable_safety_checker: true }
     : { images: [image], prompt: `Create a photorealistic lifestyle photo for an online store: ${p ? p.prompt : custom}. ${KEEP}`, size: "1024*1280", output_format: "jpeg", seed: -1 };
   const id = newId("job");
   db.prepare("INSERT INTO media_jobs (id, seller_id, account_id, kind, input) VALUES (?,?,?,?,?)").run(id, seller.id, account.id, kind, JSON.stringify({ ...input, preset: p?.id || null }));
