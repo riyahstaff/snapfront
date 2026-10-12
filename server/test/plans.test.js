@@ -187,3 +187,24 @@ test("owner tool: grant a free plan by store address; refused without the admin 
   assert.equal((await json(await call("admin_test_secret", "POST", "/api/admin/comp", { store_slug: slug, plan: "none" }), 200)).plan, "free");
   assert.equal((await call("admin_test_secret", "POST", "/api/admin/comp", { store_slug: "no-such-store", plan: "pro" })).status, 404);
 });
+
+test("an account can be deleted from the web with an emailed code", async () => {
+  const C = await json(await call(null, "POST", "/api/sellers", { store_name: "Web Delete" }), 201);
+  db.prepare("UPDATE accounts SET email = 'leaving@example.com' WHERE id = ?").run(C.account.id);
+  const codes = [];
+  auth.setDeleteSender(async (to, code) => { codes.push({ to, code }); });
+  const form = (body) => fetch(`${base}/delete-account`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(body) });
+  assert.match(await (await fetch(`${base}/delete-account`)).text(), /Delete my account/);
+  // An unknown email gets the same answer and no email.
+  assert.match(await (await form({ step: "start", email: "nobody@example.com" })).text(), /Check your email/);
+  assert.equal(codes.length, 0);
+  assert.match(await (await form({ step: "start", email: "Leaving@Example.com" })).text(), /Check your email/);
+  assert.equal(codes.at(-1).to, "leaving@example.com");
+  const bad = await form({ step: "confirm", email: "leaving@example.com", code: codes.at(-1).code === "000000" ? "111111" : "000000" });
+  assert.equal(bad.status, 400);
+  assert.ok(plans.getAccount(C.account.id), "a wrong code deletes nothing");
+  const ok = await form({ step: "confirm", email: "leaving@example.com", code: codes.at(-1).code });
+  assert.match(await ok.text(), /Your account is deleted/);
+  assert.equal(plans.getAccount(C.account.id), undefined);
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM sellers WHERE account_id = ?").get(C.account.id).n, 0);
+});

@@ -70,3 +70,53 @@ export function verifyEmailLogin(account, rawEmail, rawCode) {
   return { status: "switched", email, token };
 }
 
+
+/* ---------- deleting an account from the web (Google Play asks for a link that does this) ---------- */
+const deleteHash = (email, code) => hashCode(email, `delete:${code}`);
+let sendDeleteImpl = async (to, code) => {
+  if (!config.resendKey) throw httpError(503, "Email isn't working right now. Email us instead and we'll delete your account.");
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${config.resendKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: config.emailFrom, to, subject: `Your code to delete your Snapfront account: ${code}`,
+      html: `<p>Someone asked to delete the Snapfront account for this email address. If it was you, enter this code on the deletion page:</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p><p>It works for 10 minutes. If you didn't ask for this, ignore this email and nothing will be deleted.</p>`,
+    }),
+  });
+  if (!res.ok) { console.warn("[email] delete", res.status, (await res.text().catch(() => "")).slice(0, 300)); throw httpError(502, "We couldn't send the email. Try again in a minute."); }
+};
+export function setDeleteSender(f) { sendDeleteImpl = f; }   // tests
+
+/** Email a deletion code if an account uses this email. Says the same thing either way. */
+export async function startDeletion(rawEmail) {
+  const email = normEmail(rawEmail);
+  if (!EMAIL.test(email)) throw httpError(400, "Enter a valid email address.");
+  const now = Date.now();
+  const list = (recent.get(`del:${email}`) || []).filter((t) => now - t < 60 * 60 * 1000);
+  if (list.length >= 5) throw httpError(429, "Too many codes requested. Wait a little and try again.");
+  list.push(now); recent.set(`del:${email}`, list);
+  const account = db.prepare("SELECT id FROM accounts WHERE email = ?").get(email);
+  if (!account) return { email };
+  const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
+  db.prepare(`INSERT INTO login_codes (email, code_hash, account_id, expires_at, attempts) VALUES (?,?,?,?,0)
+    ON CONFLICT(email) DO UPDATE SET code_hash = excluded.code_hash, account_id = excluded.account_id, expires_at = excluded.expires_at, attempts = 0`)
+    .run(email, deleteHash(email, code), account.id, new Date(now + 10 * 60 * 1000).toISOString());
+  await sendDeleteImpl(email, code);
+  return { email };
+}
+
+/** Check the deletion code; returns the account id to delete. */
+export function confirmDeletion(rawEmail, rawCode) {
+  const email = normEmail(rawEmail);
+  const code = String(rawCode || "").replace(/\D/g, "");
+  const row = db.prepare("SELECT * FROM login_codes WHERE email = ?").get(email);
+  if (!row || new Date(row.expires_at) < new Date()) throw httpError(400, "That code has expired. Ask for a new one.");
+  if (row.attempts >= 5) throw httpError(429, "Too many wrong codes. Ask for a new one.");
+  const a = Buffer.from(row.code_hash), b = Buffer.from(deleteHash(email, code));
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    db.prepare("UPDATE login_codes SET attempts = attempts + 1 WHERE email = ?").run(email);
+    throw httpError(400, "That code isn't right. Check the email and try again.");
+  }
+  db.prepare("DELETE FROM login_codes WHERE email = ?").run(email);
+  return row.account_id;
+}

@@ -201,15 +201,52 @@ function purgeStores(sellerIds) {
 const removeFiles = (rows) => { for (const r of rows) for (const [dir, f] of [[dirs.images, r.image_file], [dirs.files, r.delivery_file]]) if (f) fs.rm(path.join(dir, f), { force: true }, () => {}); };
 // App Store guideline 5.1.1(v): apps that create accounts must let people delete them in-app.
 // This deletes the whole account: every store, product and photo.
-app.delete("/api/me", auth, (req, res) => {
-  const rows = db.prepare("SELECT p.image_file, p.delivery_file FROM products p JOIN sellers s ON s.id = p.seller_id WHERE s.account_id = ?").all(req.account.id);
-  const stores = plans.storesOf(req.account.id);
+function deleteAccount(accountId) {
+  const rows = db.prepare("SELECT p.image_file, p.delivery_file FROM products p JOIN sellers s ON s.id = p.seller_id WHERE s.account_id = ?").all(accountId);
+  const stores = plans.storesOf(accountId);
   for (const st of stores) if (st.custom_domain_id) domains.removeDomain(st).catch(() => {});
   purgeStores(stores.map((st) => st.id));
-  db.prepare("DELETE FROM accounts WHERE id = ?").run(req.account.id);
+  db.prepare("DELETE FROM accounts WHERE id = ?").run(accountId);
   removeFiles(rows);
-  res.status(204).end();
-});
+}
+app.delete("/api/me", auth, (req, res) => { deleteAccount(req.account.id); res.status(204).end(); });
+
+/* ---------- deleting an account from the web (the link Google Play shows on the store listing) ---------- */
+const deletionPage = (body) => `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Delete your Snapfront account</title>
+<style>body{font:16px/1.6 system-ui;max-width:640px;margin:0 auto;padding:32px 16px;color:#16152E}h1{font-size:28px;line-height:1.2}
+label{display:block;font-weight:600;margin-top:16px}input{font:inherit;width:100%;box-sizing:border-box;padding:12px;border:1px solid #C9CBDA;border-radius:10px;margin-top:6px}
+button{font:inherit;font-weight:600;margin-top:16px;padding:12px 18px;border:0;border-radius:10px;background:#B3261E;color:#fff;cursor:pointer}
+.box{background:#F4F5FA;border-radius:12px;padding:16px 20px;margin:20px 0}.err{color:#B3261E;font-weight:600}.muted{color:#5D5F78}</style><body>${body}</body>`;
+const deletionInfo = `<h1>Delete your Snapfront account</h1>
+<p>Deleting your account removes it for good, along with every store on it. It can't be undone.</p>
+<h2>In the app (fastest)</h2>
+<ol><li>Open Snapfront and go to <strong>Settings</strong>.</li><li>Tap <strong>Delete my account</strong>, then confirm.</li></ol>
+<h2>On this page</h2>
+<p>If you signed in to Snapfront with an email address, enter it below. We'll email you a 6-digit code to confirm it's you.</p>`;
+const retention = `<div class=box><strong>What's deleted:</strong> your account, your stores, products, product photos, digital product files, AI photos and videos, marketing posts, discount codes, reviews on your stores, visit statistics and saved supplier connections. Your store's web address stops working.<br><br>
+<strong>What's kept:</strong> nothing on Snapfront's servers. Payments and payouts stay in your own Stripe account, which you manage at stripe.com, and plan purchases stay in your Google Play order history, as those companies require. Copies in server backups are overwritten within 90 days.</div>
+<p class=muted>Didn't sign in with an email, or can't open the app? Email <a href="mailto:torrey@troosec.com">torrey@troosec.com</a> with your store's web address and we'll delete it within 7 days.</p>`;
+const esc2 = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+app.get("/delete-account", (_req, res) => res.send(deletionPage(`${deletionInfo}
+<form method=post action="/delete-account"><input type=hidden name=step value=start><label for=e>Email address</label><input id=e name=email type=email required autocomplete=email><button>Email me a code</button></form>${retention}`)));
+app.post("/delete-account", buyerLimit, express.urlencoded({ extended: false, limit: "4kb" }), wrap(async (req, res) => {
+  const email = String(req.body?.email || "").trim().slice(0, 200);
+  const codeForm = (msg = "") => `<h1>Check your email</h1><p>If a Snapfront account uses <strong>${esc2(email)}</strong>, we've sent it a 6-digit code. It works for 10 minutes.</p>${msg}
+<form method=post action="/delete-account"><input type=hidden name=step value=confirm><input type=hidden name=email value="${esc2(email)}"><label for=c>Code</label><input id=c name=code inputmode=numeric autocomplete=one-time-code required><button>Delete my account for good</button></form>${retention}`;
+  try {
+    if (req.body?.step === "confirm") {
+      const accountId = auth2.confirmDeletion(email, req.body?.code);
+      deleteAccount(accountId);
+      return res.send(deletionPage(`<h1>Your account is deleted</h1><p>Your Snapfront account and all of its stores have been removed. You can uninstall the app.</p>${retention}`));
+    }
+    await auth2.startDeletion(email);
+    res.send(deletionPage(codeForm()));
+  } catch (e) {
+    const msg = `<p class=err>${esc2(e.status ? e.message : "Something went wrong. Try again.")}</p>`;
+    res.status(e.status || 500).send(deletionPage(req.body?.step === "confirm" ? codeForm(msg) : `${deletionInfo}${msg}
+<form method=post action="/delete-account"><input type=hidden name=step value=start><label for=e>Email address</label><input id=e name=email type=email required value="${esc2(email)}"><button>Email me a code</button></form>${retention}`));
+  }
+}));
 
 /* ---------- a store's own domain (Pro) ---------- */
 app.get("/api/domain", auth, (req, res) => res.json(domains.view(req.seller)));
