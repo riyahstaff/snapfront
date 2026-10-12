@@ -229,6 +229,20 @@ const retention = `<div class=box><strong>What's deleted:</strong> your account,
 const esc2 = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 app.get("/delete-account", (_req, res) => res.send(deletionPage(`${deletionInfo}
 <form method=post action="/delete-account"><input type=hidden name=step value=start><label for=e>Email address</label><input id=e name=email type=email required autocomplete=email><button>Email me a code</button></form>${retention}`)));
+app.get("/delete-data", (_req, res) => res.send(deletionPage(`<h1>Delete some of your Snapfront data</h1>
+<p>You can delete parts of your data in the Snapfront app and keep your account. Each deletion is permanent.</p>
+<h2>In the app</h2>
+<ul>
+<li><strong>A product</strong> (its text, photos and any download file): My store, tap the product, then <strong>Delete product</strong>.</li>
+<li><strong>A whole store</strong> (its products, orders, reviews, visit statistics, and AI photos and videos): Settings, then <strong>Delete this store only</strong>. You need at least two stores; with one, delete your account instead.</li>
+<li><strong>Your store's cover photo</strong>: My store, Store look, then <strong>Remove</strong>.</li>
+<li><strong>A connected supplier</strong> (CJdropshipping, AliExpress or Printful, and the saved key or sign-in for it): Settings, Suppliers, then <strong>Disconnect</strong>.</li>
+<li><strong>A custom domain</strong>: Settings, Your own domain, then <strong>Remove domain</strong>.</li>
+</ul>
+<h2>By email</h2>
+<p>To have anything else deleted, such as your email address or a buyer's order details, email <a href="mailto:torrey@troosec.com">torrey@troosec.com</a> from the address on your account, or with your store's web address, and say what to delete. We do it within 7 days and reply when it's done.</p>
+<div class=box><strong>What's kept:</strong> everything you don't delete stays in your account. Payments and payouts stay in your own Stripe account, and plan purchases stay in your Google Play order history, as those companies require. Copies in server backups are overwritten within 90 days.</div>
+<p class=muted>To delete your whole account instead, see <a href="/delete-account">Delete your Snapfront account</a>.</p>`)));
 app.post("/delete-account", buyerLimit, express.urlencoded({ extended: false, limit: "4kb" }), wrap(async (req, res) => {
   const email = String(req.body?.email || "").trim().slice(0, 200);
   const codeForm = (msg = "") => `<h1>Check your email</h1><p>If a Snapfront account uses <strong>${esc2(email)}</strong>, we've sent it a 6-digit code. It works for 10 minutes.</p>${msg}
