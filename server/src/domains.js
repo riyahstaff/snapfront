@@ -204,3 +204,37 @@ export async function refreshPending(limit = 20) {
   for (const s of rows) await refreshDomain(s).catch((e) => console.error("[domains] refresh", s.custom_domain, e.message));
   return rows.length;
 }
+
+/**
+ * support@<store domain> forwarded to a real inbox, with Cloudflare Email Routing (free).
+ * Safe to run again. Cloudflare emails the destination a one-time link to confirm it owns it;
+ * forwarding starts once that link is clicked. Returns what happened at each step.
+ */
+export async function setupSupportEmail(to, local = "support") {
+  const z = await getZone();
+  const steps = {};
+  const step = async (name, fn) => { try { steps[name] = await fn(); } catch (e) { steps[name] = `error: ${e.message}`; } };
+  await step("routing", async () => {
+    const r = await cf("GET", `/zones/${z.id}/email/routing`).catch(() => null);
+    if (r?.enabled) return "already on";
+    await cf("POST", `/zones/${z.id}/email/routing/dns`, {}).catch(() => cf("POST", `/zones/${z.id}/email/routing/enable`, {}));
+    return "turned on";
+  });
+  await step("destination", async () => {
+    const list = await cf("GET", `/accounts/${z.account}/email/routing/addresses?per_page=50`);
+    const found = (list || []).find((a) => a.email.toLowerCase() === to.toLowerCase());
+    if (found) return found.verified ? "verified" : "waiting for the confirmation link";
+    await cf("POST", `/accounts/${z.account}/email/routing/addresses`, { email: to });
+    return "added: Cloudflare emailed a confirmation link";
+  });
+  await step("rule", async () => {
+    const address = `${local}@${config.storeDomain}`;
+    const rules = await cf("GET", `/zones/${z.id}/email/routing/rules?per_page=50`);
+    const existing = (rules || []).find((r) => (r.matchers || []).some((m) => m.field === "to" && m.value === address));
+    const body = { name: `Snapfront ${local}`, enabled: true, matchers: [{ type: "literal", field: "to", value: address }], actions: [{ type: "forward", value: [to] }] };
+    if (existing) { await cf("PUT", `/zones/${z.id}/email/routing/rules/${existing.id}`, body); return `updated: ${address} -> ${to}`; }
+    await cf("POST", `/zones/${z.id}/email/routing/rules`, body);
+    return `created: ${address} -> ${to}`;
+  });
+  return steps;
+}

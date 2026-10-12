@@ -316,6 +316,11 @@ app.get("/api/admin/play", adminOnly, wrap(async (_req, res) => {
   const pro = await playbilling.play("GET", `/subscriptions/${playbilling.PRO}`);
   res.json({ enabled: true, subscriptions: subs.status, launch: { status: launch.status, body: launch.body }, pro: { status: pro.status, body: pro.body } });
 }));
+app.post("/api/admin/support-email", adminOnly, wrap(async (req, res) => {
+  const to = String(req.body?.to || "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to)) throw httpError(400, "to must be an email address");
+  res.json(await domains.setupSupportEmail(to, String(req.body?.local || "support").replace(/[^\w.-]/g, "") || "support"));
+}));
 app.post("/api/admin/play/products", adminOnly, wrap(async (req, res) => res.json({ log: await playbilling.createProducts(req.body || {}) })));
 // App builds for the owner to upload to Play Console (too big to send by chat): a private link
 // with a random id, kept 7 days.
