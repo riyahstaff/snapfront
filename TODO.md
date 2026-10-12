@@ -6,7 +6,7 @@
 - [x] Add safe seller-owned staged photo uploads, additive optional hero fields and validation; preserve products, prices, checkout, plan gating and live stores until apply.
 - [x] Add a five-step portrait phone wizard: choose look, upload/select photo and motion, enter/edit/suggest words, add/review products, preview/apply. Store-scoped drafts resume, manual entry works without AI and preview is distinguished from apply.
 - [x] Add seller-facing numbered instructions and implementation documentation. Validate server tests, Node syntax, mobile TypeScript and Expo lint; clearly state native device and live AI verification gaps.
-- [ ] Deliver a reviewable GitHub pull request and guide without merging, deploying or submitting a new app release.
+- [x] Deliver a reviewable GitHub pull request and guide without merging, deploying or submitting a new app release. PR: https://github.com/riyahstaff/snapfront/pull/1
 
 ## Verification
 
