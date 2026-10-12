@@ -83,6 +83,32 @@ const publicImage = (file) => {
 };
 const kindOf = (k) => (k === "video" ? "video" : "scene");
 
+/**
+ * The file link in a finished Runpod job. Runpod has changed this shape before
+ * (output.video_url / output.image_url, a bare string, a list, output.result...), so look
+ * for the named fields first, then any http(s) link anywhere in the output.
+ */
+export function resultUrl(output, kind) {
+  if (!output) return null;
+  if (typeof output === "string") {
+    if (/^https?:\/\//.test(output)) return output;
+    try { return resultUrl(JSON.parse(output), kind); } catch { return null; }
+  }
+  const named = kind === "video" ? ["video_url", "video", "url", "result"] : ["image_url", "image", "url", "result"];
+  for (const k of named) {
+    const v = output[k];
+    if (typeof v === "string" && /^https?:\/\//.test(v)) return v;
+  }
+  const seen = [];
+  const walk = (v) => {
+    if (typeof v === "string") { if (/^https?:\/\//.test(v)) seen.push(v); return; }
+    if (v && typeof v === "object") for (const x of Array.isArray(v) ? v : Object.values(v)) walk(x);
+  };
+  walk(output);
+  const want = kind === "video" ? /\.(mp4|webm|mov)(\?|$)/i : /\.(jpe?g|png|webp)(\?|$)/i;
+  return seen.find((u) => want.test(u)) || seen[0] || null;
+}
+
 /** Start an AI video or scene. Counts against the plan when it starts; refunded if it fails. */
 export async function start(account, seller, { kind, image_file, preset, prompt }) {
   kind = kindOf(kind);
@@ -123,8 +149,12 @@ export async function poll(id = null) {
     try {
       const r = await rp(`${EP[job.kind]}/status/${job.runpod_id}`);
       if (r.status === "COMPLETED") {
-        const url = r.output?.video_url || r.output?.image_url;
-        if (!url) { fail(job.id, "No file came back."); continue; }
+        const url = resultUrl(r.output, job.kind);
+        if (!url) {
+          console.warn("[runpod] job", job.id, "finished without a file link:", JSON.stringify(r).slice(0, 600));
+          fail(job.id, "The AI finished but didn't send the file back. Try again.");
+          continue;
+        }
         const res = await fetchImpl(url, { signal: AbortSignal.timeout(120_000) });
         if (!res.ok) throw new Error(`download ${res.status}`);
         const buf = Buffer.from(await res.arrayBuffer());
@@ -141,7 +171,7 @@ export async function poll(id = null) {
         }
         db.prepare("UPDATE media_jobs SET status='done', result=?, updated_at=datetime('now') WHERE id=?").run(JSON.stringify({ ...result, cost: r.output?.cost ?? null }), job.id);
       } else if (["FAILED", "CANCELLED", "TIMED_OUT"].includes(r.status)) {
-        console.warn("[runpod] job", job.id, r.status, JSON.stringify(r.error || "").slice(0, 200));
+        console.warn("[runpod] job", job.id, r.status, JSON.stringify(r.error || r.output || "").slice(0, 600));
         fail(job.id, "The AI couldn't make this one. Try a different photo or option.");
       } else if (Date.now() - Date.parse(`${job.created_at}Z`) > 20 * 60_000) {
         fail(job.id, "This took too long. Try again.");
@@ -173,7 +203,11 @@ export async function editNow(imageFile, prompt) {
     await new Promise((s) => setTimeout(s, 2000));
     out = await rp(`${EP.scene}/status/${r.id}`);
   }
-  if (out.status !== "COMPLETED" || !out.output?.image_url) throw httpError(502, "The AI couldn't make that background. Try different words.");
-  const res = await fetchImpl(out.output.image_url, { signal: AbortSignal.timeout(60_000) });
+  const url = out.status === "COMPLETED" ? resultUrl(out.output, "scene") : null;
+  if (!url) {
+    console.warn("[runpod] edit", r.id, out.status, JSON.stringify(out.error || out.output || "").slice(0, 600));
+    throw httpError(502, "The AI couldn't make that background. Try different words.");
+  }
+  const res = await fetchImpl(url, { signal: AbortSignal.timeout(60_000) });
   return Buffer.from(await res.arrayBuffer());
 }
