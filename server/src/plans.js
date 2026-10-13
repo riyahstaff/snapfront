@@ -1,12 +1,13 @@
 // Pricing: Free (try it), Launch ($29 once: one live store), Pro ($14.99/month: up to 10 stores,
-// bigger AI allowances and the store assistant). Purchases happen in the app through Google Play
-// Billing; the server checks every purchase with Google itself (playbilling.js).
+// bigger AI allowances and the store assistant). Purchases happen in the Android app through Google
+// Play Billing (playbilling.js) or on the website through Stripe Checkout (webbilling.js); the server checks both itself.
 import crypto from "node:crypto";
 import { config } from "./config.js";
 import { db, newId, hashToken, slugify, uniqueSlug } from "./db.js";
 import { httpError } from "./claude.js";
 import * as suppliers from "./suppliers.js";
 import * as playbilling from "./playbilling.js";
+import * as webbilling from "./webbilling.js";
 import { freeSlug } from "./urls.js";
 
 const DEFAULTS = {
@@ -137,7 +138,7 @@ export function publicAccount(account, currentStoreId) {
 /* ---------- purchases ---------- */
 /** Look again at what this account bought with Google Play, and store the plan it adds up to. */
 export async function syncPlan(account) {
-  if (!playbilling.enabled()) return account;
-  await playbilling.refreshAccount(account.id, { olderThanMinutes: 10 });
+  if (playbilling.enabled()) await playbilling.refreshAccount(account.id, { olderThanMinutes: 10 });
+  if (webbilling.enabled()) await webbilling.refreshAccount(account.id, { olderThanMinutes: 10 });
   return getAccount(account.id);
 }

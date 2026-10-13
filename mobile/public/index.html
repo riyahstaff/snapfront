@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Snapfront</title>
+    <meta name="description" content="Snap a photo, get a store. AI product pages, Stripe checkout and marketing posts, on your phone or computer." />
+    <meta name="theme-color" content="#090B0E" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="apple-touch-icon" href="/favicon.ico" />
+    <style id="expo-reset">
+      html, body { height: 100%; }
+      body { overflow: hidden; margin: 0; background: #090B0E; color: #F5F6F8; }
+      #root { display: flex; height: 100%; flex: 1; }
+      /* Laptops and big tablets: keep the app to a comfortable reading width, centered on graphite. */
+      @media (min-width: 900px) {
+        body { background: radial-gradient(1200px 600px at 50% -10%, #1D2128 0%, #090B0E 60%) fixed #090B0E; }
+        #root { max-width: 1040px; margin: 0 auto; border-left: 1px solid #1D2128; border-right: 1px solid #1D2128; box-shadow: 0 0 80px rgba(0,0,0,0.45); }
+      }
+      noscript { display: block; padding: 24px; font: 16px system-ui, sans-serif; }
+    </style>
+    <script>
+      // Wide screens: square photo areas (viewfinder, product photos) would fill the whole column.
+      // React Native Web writes styles as atomic CSS rules at runtime, so find the square-ratio
+      // rules as they appear and cap those boxes at a comfortable size. Phones are unaffected.
+      (function () {
+        var done = {}, seen = 0;
+        function scan() {
+          var sheets = document.styleSheets, n = 0, out = [];
+          for (var i = 0; i < sheets.length; i++) {
+            var rules; try { rules = sheets[i].cssRules; } catch (e) { continue; }
+            if (!rules) continue; n += rules.length;
+            for (var j = 0; j < rules.length; j++) {
+              var r = rules[j];
+              if (r.selectorText && r.style && /^1(\s*\/\s*1)?$/.test(String(r.style.aspectRatio || "").trim()) && !done[r.selectorText]) {
+                done[r.selectorText] = 1; out.push(r.selectorText);
+              }
+            }
+          }
+          if (n === seen && !out.length) return; seen = n;
+          if (out.length) {
+            var st = document.createElement("style");
+            st.textContent = "@media (min-width: 900px) {" + out.map(function (sel) { return "#root " + sel.split(",").join(",#root ") + "{max-width:560px;width:100%;align-self:center;margin-left:auto;margin-right:auto}"; }).join("") + "}";
+            document.head.appendChild(st);
+          }
+        }
+        setInterval(scan, 1200);
+        window.addEventListener("load", scan);
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>Snapfront needs JavaScript turned on to run in your browser.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

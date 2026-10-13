@@ -53,7 +53,8 @@
     "build:android": "npx eas-cli@latest build -p android --profile production",
     "submit:ios": "npx eas-cli@latest submit -p ios --profile production",
     "submit:android": "npx eas-cli@latest submit -p android --profile production",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:web": "expo export -p web --clear --output-dir ../server/webapp"
   },
   "private": true
 }

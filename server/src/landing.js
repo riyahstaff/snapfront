@@ -1,73 +1,111 @@
-// snapfront.app home page: what Snapfront does, what it costs, where to get it.
+// snapfront.app home page: what Snapfront does, what it costs, where to get it. Styled in the
+// app's Liquid Chrome look (graphite, platinum, the silver aperture mark and the chrome gateway art).
 import { PLANS } from "./plans.js";
 import { THEMES } from "./themes.js";
+import { config } from "./config.js";
 
 const PLAY_URL = process.env.PLAY_STORE_URL || "";   // set once the Google Play listing is public
+const webAppUrl = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
 
 export function landingPage() {
   const year = new Date().getFullYear();
-  const cta = PLAY_URL
-    ? `<a class="play" href="${PLAY_URL}">Get it on Google Play</a>`
-    : `<span class="play soon">Coming soon to Google Play</span>`;
+  const web = webAppUrl();
+  const play = PLAY_URL
+    ? `<a class="btn ghost" href="${PLAY_URL}">Get it on Google Play</a>`
+    : `<span class="btn ghost soon">Android app coming soon</span>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Snapfront: snap a photo, open a store</title>
-<meta name="description" content="Snap a product photo and Snapfront writes the page, sets a price that beats Amazon and Walmart, and takes payments with Stripe. Dropship from CJ, Printful or AliExpress.">
+<meta name="description" content="Snap a product photo and Snapfront writes the page, sets a price that beats Amazon and Walmart, and takes payments with Stripe. On your phone or in your browser.">
 <meta property="og:title" content="Snapfront: snap a photo, open a store"><meta property="og:description" content="A full product page and checkout from one photo. No fees on your sales.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;600;700&display=swap">
+<meta property="og:image" content="${config.publicUrl}/site/chrome-hero.webp">
+<meta name="theme-color" content="#090B0E"><meta name="color-scheme" content="dark">
+<link rel="icon" href="/site/mark.png"><link rel="apple-touch-icon" href="/site/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap">
 <style>
-:root{--paper:#F2F3F7;--card:#fff;--ink:#16152E;--muted:#5D5F78;--line:#D6D9E5;--cobalt:#2C47F5;--flash:#FFD84A;--on-cobalt:#fff}
-@media(prefers-color-scheme:dark){:root{--paper:#0F0F1C;--card:#191A2B;--ink:#EEEEF7;--muted:#A3A5BE;--line:#2F3149;--cobalt:#7C8CFF;--on-cobalt:#0F0F1C}}
-*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif}
-a{color:inherit}.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
-header{padding:22px 0}header .wrap{display:flex;justify-content:space-between;align-items:center}
-.logo{font:800 24px/1 "Bricolage Grotesque",sans-serif;letter-spacing:-.02em;text-decoration:none}
-.hero{padding:48px 0 72px;display:grid;gap:28px}
-.frame{position:relative;padding:28px 30px;justify-self:start;max-width:100%}
-.frame i{position:absolute;width:34px;height:34px;border:0 solid var(--cobalt)}
-.frame i:nth-child(1){top:0;left:0;border-top-width:5px;border-left-width:5px}.frame i:nth-child(2){top:0;right:0;border-top-width:5px;border-right-width:5px}
-.frame i:nth-child(3){bottom:0;left:0;border-bottom-width:5px;border-left-width:5px}.frame i:nth-child(4){bottom:0;right:0;border-bottom-width:5px;border-right-width:5px}
-h1{font:800 clamp(44px,9vw,104px)/.95 "Bricolage Grotesque",sans-serif;letter-spacing:-.045em;margin:0;text-wrap:balance}
-.lede{font-size:clamp(18px,2.2vw,21px);color:var(--muted);max-width:56ch;margin:0}
-.play{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:var(--paper);font-weight:700;padding:15px 24px;border-radius:999px;text-decoration:none;justify-self:start}
-.play.soon{background:var(--card);color:var(--ink);border:1px solid var(--line)}
-h2{font:800 clamp(28px,4vw,40px)/1.05 "Bricolage Grotesque",sans-serif;letter-spacing:-.03em;margin:0 0 20px}
-section{padding:56px 0;border-top:1px solid var(--line)}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:28px;list-style:none;padding:0;margin:0;counter-reset:s}
-.steps li{counter-increment:s;display:grid;gap:6px}.steps li::before{content:counter(s);font:800 44px/1 "Bricolage Grotesque",sans-serif;color:var(--cobalt)}
+:root{--bg:#090B0E;--surface:#14171C;--sunk:#1D2128;--ink:#F5F6F8;--muted:#ADB4BF;--line:#363C46;--platinum:#E5E9F0;--on-platinum:#11151B;--copper:#D99568;--good:#76D8B3;color-scheme:dark}
+*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}.wrap{max-width:1120px;margin:0 auto;padding-inline:20px}
+header{padding-block:18px;position:sticky;top:0;z-index:5;background:rgba(9,11,14,.82);backdrop-filter:blur(12px);border-bottom:1px solid rgba(54,60,70,.5)}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:21px;letter-spacing:-.02em}
+.brand img{width:32px;height:32px}
+header nav{display:flex;align-items:center;gap:22px;font-weight:500;font-size:15px}header nav a{text-decoration:none;color:var(--muted)}header nav a:hover{color:var(--ink)}
+header nav .btn{color:var(--on-platinum)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:12px 24px;border-radius:999px;font-weight:700;font-size:16px;text-decoration:none;border:1px solid var(--platinum);background:var(--platinum);color:var(--on-platinum);transition:transform .15s ease}
+.btn:hover{transform:translateY(-1px)}.btn.small{min-height:40px;padding:8px 18px;font-size:15px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}.btn.soon{color:var(--muted);cursor:default}.btn.soon:hover{transform:none}
+a:focus-visible,.btn:focus-visible{outline:2px solid var(--platinum);outline-offset:3px}
+.hero{display:grid;grid-template-columns:1fr;gap:40px;align-items:center;padding-block:56px 72px}
+@media(min-width:900px){.hero{grid-template-columns:1.02fr 1fr;padding-block:88px 104px}}
+.eyebrow{color:var(--copper);font-weight:700;font-size:13px;letter-spacing:.16em;text-transform:uppercase;margin:0 0 18px}
+h1{font-weight:800;font-size:clamp(44px,6.2vw,80px);line-height:.96;letter-spacing:-.045em;margin:0;text-wrap:balance}
+h1 span{background:linear-gradient(180deg,#FFFFFF 0%,#C9CFD8 55%,#8D96A3 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{font-size:clamp(18px,2.1vw,20px);color:var(--muted);max-width:52ch;margin:22px 0 0}
+.ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}.note{color:var(--muted);font-size:14px;margin:14px 0 0}
+.art{position:relative;border-radius:28px;overflow:hidden;border:1px solid var(--line);box-shadow:0 40px 120px rgba(0,0,0,.6),0 0 0 1px rgba(229,233,240,.04) inset;aspect-ratio:4/3;max-width:100%}
+.art img{width:100%;height:100%;object-fit:cover;display:block}
+.art figcaption{position:absolute;left:14px;bottom:12px;font-size:12px;color:var(--muted);background:rgba(9,11,14,.7);padding:4px 10px;border-radius:999px}
+section{padding-block:72px;border-top:1px solid var(--sunk)}
+h2{font-weight:800;font-size:clamp(30px,4.2vw,46px);line-height:1.04;letter-spacing:-.035em;margin:0 0 14px;text-wrap:balance}
+.sub{color:var(--muted);max-width:60ch;margin:0 0 32px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;list-style:none;padding:0;margin:0;counter-reset:s}
+.steps li{counter-increment:s;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;display:grid;gap:8px;align-content:start}
+.steps li::before{content:counter(s);width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:var(--on-platinum);background:linear-gradient(160deg,#FFFFFF,#AEB6C2)}
 .steps b{font-size:19px}.steps span{color:var(--muted)}
-.suppliers{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.suppliers span{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-weight:600;font-size:15px}
-.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-.plan{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:8px;align-content:start}
-.plan.pro{border:2px solid var(--cobalt)}.plan h3{margin:0;font:800 22px/1 "Bricolage Grotesque",sans-serif}
-.price{font:800 38px/1 "Bricolage Grotesque",sans-serif;letter-spacing:-.02em}.price small{font:400 15px Figtree,sans-serif;color:var(--muted);letter-spacing:0}
-.plan ul{margin:6px 0 0;padding-left:18px;color:var(--muted)}.plan li{margin:3px 0}
-.zero{background:var(--flash);color:#16152E;display:inline-block;font-weight:700;padding:2px 10px;border-radius:6px}
-footer{padding:36px 0 48px;color:var(--muted);font-size:15px;border-top:1px solid var(--line)}footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
-footer nav{display:flex;gap:18px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.chips span{border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-weight:500;font-size:15px;color:var(--muted)}
+.devices{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.device{border:1px solid var(--line);border-radius:20px;padding:24px;display:grid;gap:10px;align-content:start;background:linear-gradient(180deg,var(--surface),var(--bg))}
+.device h3{margin:0;font-size:20px;letter-spacing:-.01em}.device p{margin:0;color:var(--muted)}.device .btn{justify-self:start;margin-top:8px}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px;display:grid;gap:10px;align-content:start}
+.plan.pro{border:2px solid var(--platinum)}.plan h3{margin:0;font-size:22px}
+.price{font-weight:800;font-size:40px;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.price small{font-weight:400;font-size:15px;color:var(--muted);letter-spacing:0}
+.plan ul{margin:6px 0 0;padding-left:18px;color:var(--muted)}.plan li{margin:4px 0}
+.zero{color:var(--good)}
+footer{padding-block:36px 48px;color:var(--muted);font-size:15px;border-top:1px solid var(--sunk)}footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;align-items:center}
+footer nav{display:flex;flex-wrap:wrap;gap:18px}
+@media(max-width:640px){header nav a:not(.btn){display:none}}
+@media(prefers-reduced-motion:reduce){.btn{transition:none}.btn:hover{transform:none}}
 </style></head><body>
-<header><div class="wrap"><a class="logo" href="/">Snapfront</a><a href="/themes">${THEMES.length} storefront themes</a></div></header>
+<header><div class="wrap"><a class="brand" href="/"><img src="/site/mark.png" alt="" width="32" height="32">snapfront</a>
+<nav><a href="/themes">Themes</a><a href="#pricing">Pricing</a><a class="btn small" href="${web}">Open Snapfront</a></nav></div></header>
 <main>
 <div class="wrap hero">
-  <div class="frame"><i></i><i></i><i></i><i></i><h1>Snap a photo.<br>Open a store.</h1></div>
-  <p class="lede">Point your phone at a product. Snapfront writes the page, finds what Amazon and Walmart charge, sets a price that beats them, and takes payments straight into your Stripe account.</p>
-  ${cta}
+  <div>
+    <p class="eyebrow">Creative commerce studio</p>
+    <h1><span>Snap a photo.</span><br>Open a store.</h1>
+    <p class="lede">Point your phone at a product, or upload a photo from your computer. Snapfront writes the page, finds what Amazon and Walmart charge, sets a price that beats them, and takes payments straight into your Stripe account.</p>
+    <div class="ctas"><a class="btn" href="${web}">Start in your browser</a>${play}</div>
+    <p class="note">Free to try. No fees on your sales.</p>
+  </div>
+  <figure class="art" style="margin:0"><img src="/site/chrome-hero.webp" alt="A brushed-chrome doorway with a ring and an armchair shown as storefront examples" width="1200" height="900" fetchpriority="high"><figcaption>Concept artwork</figcaption></figure>
 </div>
 <section><div class="wrap">
   <h2>From photo to paid in three steps</h2>
+  <p class="sub">Everything a small shop needs, written and set up for you.</p>
   <ol class="steps">
     <li><b>Snap or pick a product</b><span>Take a photo, upload a supplier screenshot, or add something from your supplier’s catalog.</span></li>
     <li><b>Get the page and the price</b><span>Title, description, options and a price checked against the big retailers, ready to edit.</span></li>
     <li><b>Share your store</b><span>Your store gets its own address, like yourshop.snapfront.app. Buyers pay with Stripe and your supplier ships.</span></li>
   </ol>
-  <div class="suppliers" aria-label="Suppliers you can connect"><span>CJdropshipping</span><span>Printful</span><span>AliExpress</span><span>Your own stock</span></div>
+  <div class="chips" aria-label="Suppliers you can connect"><span>CJdropshipping</span><span>Printful</span><span>AliExpress</span><span>Your own stock</span></div>
+</div></section>
+<section><div class="wrap">
+  <h2>On your phone or your computer</h2>
+  <p class="sub">One account everywhere. Sign in with your email and your stores, products and plan follow you.</p>
+  <div class="devices">
+    <div class="device"><h3>In your browser</h3><p>Use Snapfront on a laptop, desktop or tablet. Upload product photos, edit pages on a big screen and manage orders.</p><a class="btn ghost small" href="${web}">Open Snapfront</a></div>
+    <div class="device"><h3>On Android</h3><p>Snap products with your camera, save marketing posts to your gallery and run your store from anywhere.</p>${PLAY_URL ? `<a class="btn ghost small" href="${PLAY_URL}">Get it on Google Play</a>` : `<span class="btn ghost small soon">Coming soon to Google Play</span>`}</div>
+  </div>
 </div></section>
 <section><div class="wrap">
   <h2>${THEMES.length} themes. Your own storefront.</h2>
-  <p class="lede">Choose a product-specific look for fashion, beauty, electronics, home, outdoor goods and more. Upload your photos, edit the words and preview before applying. Your products, prices and checkout stay yours.</p>
-  <p><a class="play" href="/themes">Explore all ${THEMES.length} themes</a></p>
+  <p class="sub">Choose a product-specific look for fashion, beauty, electronics, home, outdoor goods and more. Upload your photos, edit the words and preview before applying. Your products, prices and checkout stay yours.</p>
+  <a class="btn ghost" href="/themes">Explore all ${THEMES.length} themes</a>
 </div></section>
-<section><div class="wrap">
+<section id="pricing"><div class="wrap">
   <h2>Simple pricing. <span class="zero">0% fees</span> on your sales.</h2>
+  <p class="sub">Buyers pay you directly through Stripe. Stripe’s standard processing fees apply.</p>
   <div class="plans">
     <div class="plan"><h3>Free</h3><div class="price">$0</div><ul><li>Build your store and try the AI</li><li>${PLANS.free.photo} AI product pages</li><li>${PLANS.free.research} price checks</li></ul></div>
     <div class="plan"><h3>Launch</h3><div class="price">$29 <small>one time</small></div><ul><li>Publish one store and take payments</li><li>${PLANS.launch.photo} AI product pages a month</li><li>${PLANS.launch.research} price checks a month</li></ul></div>
@@ -75,6 +113,6 @@ footer nav{display:flex;gap:18px}
   </div>
 </div></section>
 </main>
-<footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav></div></footer>
+<footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="${web}">Web app</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a><span>support@snapfront.app</span></nav></div></footer>
 </body></html>`;
 }
