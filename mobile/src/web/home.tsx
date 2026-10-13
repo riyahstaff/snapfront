@@ -27,6 +27,10 @@ const TOOLS: { title: string; detail: string; icon: Icon; href: Href }[] = [
   { title: "Find products", detail: "Source your next collection from trusted suppliers.", icon: "search-outline", href: "/find" },
   { title: "Store assistant", detail: "Ask for ideas, copy and next steps for your shop.", icon: "chatbubbles-outline", href: "/assistant" },
   { title: "Get more buyers", detail: "Link in bio, QR codes and Google Shopping.", icon: "people-outline", href: "/channels" },
+  { title: "Email marketing", detail: "Grow a list from your store, send emails and let welcome and win-back emails run themselves.", icon: "mail-outline", href: "/email" },
+  { title: "Instagram AutoDM", detail: "Someone comments a keyword; your Instagram DMs them the link.", icon: "chatbubble-ellipses-outline", href: "/autodm" },
+  { title: "Affiliates", detail: "Fans and creators share their own link and earn on each sale.", icon: "ribbon-outline", href: "/affiliates" },
+  { title: "Ad pixels", detail: "Meta, TikTok, Google and Pinterest see your sales, so ads find buyers.", icon: "pulse-outline", href: "/pixels" },
 ];
 
 export default function WebHome() {

@@ -30,11 +30,15 @@ import * as growth from "./growth.js";
 import * as playbilling from "./playbilling.js";
 import * as webbilling from "./webbilling.js";
 import * as business from "./business.js";
+import * as audience from "./audience.js";
+import * as affiliates from "./affiliates.js";
+import * as pixels from "./pixels.js";
+import * as autodm from "./autodm.js";
 import * as social from "./social.js";
 import * as digitalDesigns from "./digital-designs.js";
 import * as imageAssistant from "./image-assistant.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
-import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, esc } from "./render.js";
+import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, affiliateJoinPage, affiliatePortalPage, esc } from "./render.js";
 import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
 import { materializeTemplatePreview } from "./template-preview.js";
 
@@ -141,6 +145,20 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   res.json({ received: true });
 });
 
+/* ---------- Instagram AutoDM: Meta's webhook (signed with the app secret, so it needs the raw body) ---------- */
+app.get("/api/meta/webhook", (req, res) => {
+  const challenge = autodm.verifyChallenge({ "hub.mode": req.query["hub.mode"] ?? req.query.hub?.mode, "hub.verify_token": req.query["hub.verify_token"] ?? req.query.hub?.verify_token, "hub.challenge": req.query["hub.challenge"] ?? req.query.hub?.challenge });
+  if (challenge == null) return res.status(403).end();
+  res.type("text/plain").send(challenge);
+});
+app.post("/api/meta/webhook", express.raw({ type: "*/*", limit: "1mb" }), (req, res) => {
+  if (!autodm.signatureValid(req.body, req.get("x-hub-signature-256"))) return res.status(401).end();
+  let payload;
+  try { payload = JSON.parse(Buffer.from(req.body).toString("utf8")); } catch { return res.status(400).end(); }
+  res.status(200).send("EVENT_RECEIVED");   // answer Meta at once; replies go out after
+  autodm.handle(payload).catch((e) => console.error("[autodm]", e.message));
+});
+
 app.use(express.json({ limit: "12mb" }));
 
 /* ---------- helpers ---------- */
@@ -150,6 +168,7 @@ async function completeOrder(orderId, session) {
   const order = commerce.finalizeOrder(orderId, session);
   if (order && ["paid", "fulfilled"].includes(order.status)) {
     business.snapshotCost(order.id);
+    affiliates.credit(order);
     setTimeout(() => business.syncDue(order.seller_id, 5).catch(() => {}), 30_000).unref?.();   // Stripe's fee settles a moment later
   }
   if (order && before?.status === "pending" && order.status === "paid") {
@@ -157,6 +176,7 @@ async function completeOrder(orderId, session) {
     await pay.emailOrder(order.email, {
       storeName: seller.store_name, orderUrl: `${urls.storeOrigin(seller.store_slug)}/thanks?o=${order.id}`, downloads: commerce.downloadsFor(order),
     }).catch(() => false);
+    try { audience.fromCheckout(order, session); } catch (e) { console.warn("[email] checkout opt-in", e.message); }
     // Dropshipped items go to the supplier straight away.
     dropship.sendOrder(order.id).catch((e) => console.error("[supplier] send", order.id, e.message));
   }
@@ -646,6 +666,77 @@ app.get("/api/business/export", (req, res) => {
     res.set("Cache-Control", "no-store").attachment(f.name).type("text/csv").send(f.body);
   } catch (e) { res.status(e.status || 500).type("text/plain").send(e.message); }
 });
+/* ---------- email list and email marketing ---------- */
+app.get("/api/email", auth, (req, res) => res.json(audience.overview(req.seller)));
+app.put("/api/email/settings", auth, (req, res) => res.json(audience.updateSettings(req.seller, req.body || {})));
+app.get("/api/email/subscribers", auth, (req, res) => res.json(audience.listSubscribers(req.seller, req.query)));
+app.post("/api/email/subscribers", auth, (req, res) => res.status(201).json(audience.addSubscribers(req.seller, req.body || {})));
+app.patch("/api/email/subscribers/:id", auth, (req, res) => res.json(audience.updateSubscriber(req.seller, req.params.id, req.body || {})));
+app.delete("/api/email/subscribers/:id", auth, (req, res) => { audience.deleteSubscriber(req.seller, req.params.id); res.status(204).end(); });
+app.get("/api/email/campaigns", auth, (req, res) => res.json(audience.listCampaigns(req.seller)));
+app.post("/api/email/campaigns", auth, (req, res) => res.status(201).json(audience.createCampaign(req.seller, req.body || {})));
+app.get("/api/email/campaigns/:id", auth, (req, res) => res.json(audience.getCampaign(req.seller, req.params.id)));
+app.patch("/api/email/campaigns/:id", auth, (req, res) => res.json(audience.updateCampaign(req.seller, req.params.id, req.body || {})));
+app.delete("/api/email/campaigns/:id", auth, (req, res) => { audience.deleteCampaign(req.seller, req.params.id); res.status(204).end(); });
+app.get("/api/email/campaigns/:id/preview", auth, (req, res) => res.json(audience.previewCampaign(req.seller, req.params.id)));
+app.post("/api/email/campaigns/:id/test", auth, wrap(async (req, res) => res.json(await audience.testCampaign(req.seller, req.account, req.params.id, req.body?.to))));
+app.post("/api/email/campaigns/:id/send", auth, (req, res) => res.json(audience.sendCampaign(req.seller, req.params.id, req.body || {})));
+app.post("/api/email/campaigns/:id/cancel", auth, (req, res) => res.json(audience.cancelCampaign(req.seller, req.params.id)));
+app.post("/api/email/campaigns/:id/duplicate", auth, (req, res) => res.status(201).json(audience.duplicateCampaign(req.seller, req.params.id)));
+app.get("/api/email/flows", auth, (req, res) => res.json(audience.flows(req.seller)));
+app.put("/api/email/flows/:kind", auth, (req, res) => res.json(audience.updateFlow(req.seller, req.params.kind, req.body || {})));
+
+/* ---------- affiliate program ---------- */
+app.get("/api/affiliates", auth, (req, res) => res.json(affiliates.overview(req.seller)));
+app.put("/api/affiliates/settings", auth, (req, res) => res.json(affiliates.updateSettings(req.seller, req.body || {})));
+app.post("/api/affiliates", auth, (req, res) => res.status(201).json(affiliates.addAffiliate(req.seller, req.body || {})));
+app.get("/api/affiliates/:id", auth, (req, res) => {
+  const a = affiliates.overview(req.seller).affiliates.find((x) => x.id === req.params.id);
+  if (!a) throw httpError(404, "That affiliate doesn't exist.");
+  res.json({ affiliate: a, orders: affiliates.referredOrders(req.seller, a.id), payouts: affiliates.payouts(req.seller, a.id) });
+});
+app.patch("/api/affiliates/:id", auth, (req, res) => res.json(affiliates.updateAffiliate(req.seller, req.params.id, req.body || {})));
+app.delete("/api/affiliates/:id", auth, (req, res) => { affiliates.deleteAffiliate(req.seller, req.params.id); res.status(204).end(); });
+app.post("/api/affiliates/:id/payouts", auth, (req, res) => res.status(201).json(affiliates.addPayout(req.seller, req.params.id, req.body || {})));
+
+/* ---------- ad pixels ---------- */
+app.get("/api/pixels", auth, (req, res) => res.json(pixels.view(req.seller)));
+app.put("/api/pixels", auth, (req, res) => res.json(pixels.update(req.seller, req.body || {})));
+
+/* ---------- Instagram AutoDM ---------- */
+app.get("/api/autodm", auth, (req, res) => res.json({ ...autodm.status(req.seller), rules: autodm.rules(req.seller) }));
+app.post("/api/autodm/rules", auth, (req, res) => res.status(201).json(autodm.createRule(req.seller, req.body || {})));
+app.patch("/api/autodm/rules/:id", auth, (req, res) => res.json(autodm.updateRule(req.seller, req.params.id, req.body || {})));
+app.delete("/api/autodm/rules/:id", auth, (req, res) => { autodm.deleteRule(req.seller, req.params.id); res.status(204).end(); });
+app.post("/api/autodm/connect", auth, wrap(async (req, res) => res.json({ pages: await autodm.subscribePages(req.seller) })));
+
+/* ---------- email opens, clicks and unsubscribes (links in sent emails) ---------- */
+app.get("/e/o/:file", (req, res) => {
+  audience.recordOpen(String(req.params.file).replace(/\.gif$/, ""));
+  res.set({ "Content-Type": "image/gif", "Cache-Control": "no-store" }).send(audience.PIXEL);
+});
+app.get("/e/c/:id", (req, res) => {
+  const url = audience.recordClick(req.params.id, String(req.query.u || ""), String(req.query.s || ""));
+  if (!url) return res.status(400).send("This link isn't valid.");
+  res.redirect(302, url);
+});
+const unsubPage = (title, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(title)}</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F3F3F1;color:#1A1A1A;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px}main{max-width:440px;background:#fff;border-radius:18px;padding:32px}h1{font-size:24px;margin:0 0 8px}button{margin-top:16px;height:48px;padding:0 24px;border:0;border-radius:999px;background:#1A1A1A;color:#fff;font:inherit;font-weight:700;cursor:pointer}p{margin:0 0 8px;color:#444}</style></head><body><main>${body}</main></body></html>`;
+app.get("/u/:token", (req, res) => {
+  const t = audience.unsubscribeTarget(req.params.token);
+  res.set("Cache-Control", "no-store");
+  if (!t) return res.status(404).send(unsubPage("Unsubscribe", "<h1>This link isn't valid</h1><p>It may have been copied incompletely.</p>"));
+  if (t.sub.status === "unsubscribed") return res.send(unsubPage("Unsubscribed", `<h1>You're unsubscribed</h1><p>${esc(t.sub.email)} won't get marketing emails from ${esc(t.seller?.store_name || "this store")}.</p>`));
+  // A button rather than unsubscribing on open: email scanners open links on their own.
+  res.send(unsubPage("Unsubscribe", `<h1>Unsubscribe from ${esc(t.seller?.store_name || "this store")}?</h1><p>${esc(t.sub.email)} will stop getting news and offers. Order receipts still arrive.</p>
+<form method="post"><button type="submit">Unsubscribe</button></form>`));
+});
+app.post("/u/:token", express.urlencoded({ extended: false, limit: "2kb" }), (req, res) => {
+  const t = audience.unsubscribe(req.params.token);
+  if (!t) return res.status(404).send(unsubPage("Unsubscribe", "<h1>This link isn't valid</h1>"));
+  res.send(unsubPage("Unsubscribed", `<h1>You're unsubscribed</h1><p>${esc(t.sub.email)} won't get marketing emails from ${esc(t.seller?.store_name || "this store")}. Changed your mind? Sign up again on the store.</p>`));
+});
+
 app.get("/api/reviews", auth, (req, res) => res.json(growth.sellerReviews(req.seller)));
 app.patch("/api/reviews/:id", auth, (req, res) => { growth.setReviewStatus(req.seller, req.params.id, req.body?.status); res.json(growth.sellerReviews(req.seller)); });
 app.get("/api/qr", auth, wrap(async (req, res) => {
@@ -896,6 +987,7 @@ app.get("/s/:store", (req, res) => {
   const store = storeBySlug(req.params.store);
   const rows = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' ORDER BY created_at DESC").all(store.id);
   growth.recordVisit(req, store, "");
+  affiliates.recordClick(req, store);
   res.send(storePage(view(req, store), rows.map(rowToProduct), config.publicUrl, { category: typeof req.query.c === "string" ? req.query.c.slice(0, 60) : null }));
 });
 app.get("/s/:store/cart", (req, res) => {
@@ -919,7 +1011,7 @@ app.post("/s/:store/cart/quote", buyerLimit, (req, res) => {
 app.post("/s/:store/checkout", buyerLimit, wrap(async (req, res) => {
   const store = storeBySlug(req.params.store);
   if (!store) throw httpError(404, "Store not found");
-  res.json(await commerce.startCheckout(store, req.body?.items, req.body?.code));
+  res.json(await commerce.startCheckout(store, req.body?.items, req.body?.code, req.body?.ref));
 }));
 app.get("/s/:store/feeds/:file", (req, res) => {
   const store = storeBySlug(req.params.store);
@@ -930,6 +1022,7 @@ app.get("/s/:store/feeds/:file", (req, res) => {
 app.get("/s/:store/links", (req, res) => {
   const store = storeBySlug(req.params.store);
   growth.recordVisit(req, store, "");
+  affiliates.recordClick(req, store);
   const rows = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' ORDER BY created_at DESC LIMIT 4").all(store.id);
   res.send(linksPage(view(req, store), rows.map(rowToProduct), growth.linksOf(store)));
 });
@@ -948,12 +1041,48 @@ app.post("/s/:store/review", buyerLimit, express.urlencoded({ extended: false, l
   growth.addReview(order, req.body || {});
   res.redirect(303, `${view(req, store)._base}/review?t=${encodeURIComponent(req.body.t)}&done=1`);
 });
+// Email sign-up box on the storefront.
+const subscribeHits = new Map();
+app.post("/s/:store/subscribe", buyerLimit, (req, res) => {
+  const store = storeBySlug(req.params.store);
+  if (!store) throw httpError(404, "Store not found");
+  const now = Date.now(), list = (subscribeHits.get(req.ip) || []).filter((t) => now - t < 3600e3);
+  if (list.length >= 10) throw httpError(429, "Too many sign-ups from this network. Try again later.");
+  list.push(now); subscribeHits.set(req.ip, list);
+  if (subscribeHits.size > 20000) subscribeHits.clear();
+  res.json(audience.signupFromStore(store, req.body || {}));
+});
+// Affiliate program: the public join page and each affiliate's own stats page.
+app.get("/s/:store/affiliates", (req, res) => {
+  const store = storeBySlug(req.params.store);
+  if (!affiliates.programLive(store)) return res.status(404).send(notePage(view(req, store), "Affiliates", `<h1>No affiliate program here</h1><p><a href="${esc(view(req, store)._base || "/")}">Shop ${esc(store.store_name)}</a></p>`));
+  res.send(affiliateJoinPage(view(req, store), { rate: store.aff_rate, blurb: store.aff_blurb }));
+});
+app.post("/s/:store/affiliates", buyerLimit, express.urlencoded({ extended: false, limit: "8kb" }), wrap(async (req, res) => {
+  const store = storeBySlug(req.params.store);
+  if (!store) throw httpError(404, "Store not found");
+  try {
+    const r = await affiliates.join(store, req.body || {});
+    res.send(affiliateJoinPage(view(req, store), { state: r.status, rate: store.aff_rate, blurb: store.aff_blurb }));
+  } catch (e) {
+    if (e.status === 404) throw e;
+    res.status(e.status || 400).send(affiliateJoinPage(view(req, store), { error: e.message, rate: store.aff_rate, blurb: store.aff_blurb }));
+  }
+}));
+app.get("/s/:store/affiliate", (req, res) => {
+  const store = storeBySlug(req.params.store);
+  const a = affiliates.portal(store, req.query.t);
+  res.set("Cache-Control", "no-store").set("X-Robots-Tag", "noindex").set("Referrer-Policy", "no-referrer");
+  if (!a) return res.status(404).send(notePage(view(req, store), "Affiliate", "<h1>This affiliate link isn't valid</h1><p>Use the link in your welcome email.</p>"));
+  res.send(affiliatePortalPage(view(req, store), a));
+});
 app.get("/s/:store/:product", (req, res) => {
   const store = storeBySlug(req.params.store);
   const row = store && db.prepare("SELECT * FROM products WHERE seller_id = ? AND slug = ?").get(store.id, req.params.product);
   if (!row || (row.status !== "live" && req.query.preview !== "1")) return res.status(404).send(notePage(view(req, store), "Not found", `<h1>That product isn’t here</h1><p><a href="${esc(view(req, store)._base || "/")}">See everything in ${esc(store.store_name)}</a></p>`));
   const others = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' AND id != ? ORDER BY created_at DESC LIMIT 24").all(store.id, row.id).map(rowToProduct);
   growth.recordVisit(req, store, row.id);
+  affiliates.recordClick(req, store);
   res.send(productPage(view(req, store), rowToProduct(row), config.publicUrl, others));
 });
 app.get("/thanks", wrap(async (req, res) => {
@@ -1037,6 +1166,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
     aimedia.check().then((st) => console.log(`[runpod] key ${st === 200 ? "ok" : `check returned ${st}`}`)).catch((e) => console.error("[runpod] check", e.message));
     setInterval(() => aimedia.poll().catch((e) => console.error("[runpod] poll", e.message)), 8_000).unref();
   }
+  // Email broadcasts and automatic emails go out from a queue.
+  audience.startWorker();
   // Ask buyers for reviews a few days after they buy.
   setInterval(() => growth.sendReviewRequests().catch((e) => console.error("[reviews] email", e.message)), 60 * 60e3).unref();
   // Photo studio: fetch the cut-out model in the background so the first seller doesn't wait for it.

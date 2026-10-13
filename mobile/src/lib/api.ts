@@ -563,7 +563,88 @@ export const business = {
   addExpense: (e: { label: string; amount: number; category: string; day?: string }) => request<BizExpense>("POST", "/api/business/expenses", e),
   deleteExpense: (id: string) => request<void>("DELETE", `/api/business/expenses/${encodeURIComponent(id)}`),
   balance: () => request<BizBalance>("GET", "/api/business/balance"),
-  exportLink: (kind: "sales" | "customers" | "expenses", r: BizRange = {}) => request<{ url: string }>("POST", "/api/business/export", { kind, ...r }),
+  exportLink: (kind: "sales" | "customers" | "expenses" | "subscribers" | "affiliates", r: BizRange = {}) => request<{ url: string }>("POST", "/api/business/export", { kind, ...r }),
+};
+
+/* ---------- email list and email marketing ---------- */
+export type EmailOverview = {
+  signup: { enabled: boolean; title: string; text: string; offer_code: string; defaults: { title: string; text: string } };
+  mail_address: string; from_name: string; plan: PlanId; monthly_limit: number; used_this_month: number; can_broadcast: boolean; can_automate: boolean;
+  counts: { subscribed: number; unsubscribed: number; new_30d: number }; sending_ready: boolean;
+};
+export type Subscriber = { id: string; email: string; name: string; source: string; status: "subscribed" | "unsubscribed"; created_at: string; orders: number; spent: number; last_order: string | null };
+export type CampaignStats = { sent: number; failed: number; queued: number; opened: number; clicked: number; unsubscribed: number; open_rate: number; click_rate: number };
+export type Campaign = {
+  id: string; subject: string; preheader: string; body: string; cta_label: string; cta_url: string; product_id: string | null; discount_code: string; audience: string;
+  status: "draft" | "scheduled" | "sending" | "sent"; send_at: string | null; recipients: number; created_at: string; updated_at: string; sent_at: string | null; stats: CampaignStats | null;
+};
+export type CampaignInput = Partial<Pick<Campaign, "subject" | "preheader" | "body" | "cta_label" | "cta_url" | "product_id" | "discount_code" | "audience">>;
+export type Audience = { id: string; label: string; count: number };
+export type EmailFlow = { kind: "welcome" | "after_purchase" | "winback"; name: string; when: string; enabled: boolean; subject: string; body: string; cta_label: string; discount_code: string; delay_days: number; stats: { sent: number; opened: number; clicked: number } };
+export const email = {
+  overview: () => request<EmailOverview>("GET", "/api/email"),
+  settings: (patch: { signup_enabled?: boolean; signup_title?: string; signup_text?: string; signup_offer_code?: string; mail_address?: string; from_name?: string }) => request<EmailOverview>("PUT", "/api/email/settings", patch),
+  subscribers: (q: { q?: string; status?: string; page?: number }) => request<{ total: number; page: number; page_size: number; subscribers: Subscriber[]; counts: EmailOverview["counts"] }>("GET", `/api/email/subscribers${bizQuery(q)}`),
+  addSubscribers: (emails: string, consent: boolean) => request<{ added: number; skipped: number; invalid: number }>("POST", "/api/email/subscribers", { emails, consent }),
+  unsubscribe: (id: string) => request<Subscriber>("PATCH", `/api/email/subscribers/${encodeURIComponent(id)}`, { status: "unsubscribed" }),
+  removeSubscriber: (id: string) => request<void>("DELETE", `/api/email/subscribers/${encodeURIComponent(id)}`),
+  campaigns: () => request<{ campaigns: Campaign[]; audiences: Audience[] }>("GET", "/api/email/campaigns"),
+  createCampaign: (c: CampaignInput) => request<Campaign>("POST", "/api/email/campaigns", c),
+  updateCampaign: (id: string, c: CampaignInput) => request<Campaign>("PATCH", `/api/email/campaigns/${encodeURIComponent(id)}`, c),
+  deleteCampaign: (id: string) => request<void>("DELETE", `/api/email/campaigns/${encodeURIComponent(id)}`),
+  duplicateCampaign: (id: string) => request<Campaign>("POST", `/api/email/campaigns/${encodeURIComponent(id)}/duplicate`),
+  testCampaign: (id: string, to?: string) => request<{ sent_to: string }>("POST", `/api/email/campaigns/${encodeURIComponent(id)}/test`, { to }),
+  sendCampaign: (id: string, sendAt?: string) => request<Campaign>("POST", `/api/email/campaigns/${encodeURIComponent(id)}/send`, sendAt ? { send_at: sendAt } : {}),
+  cancelCampaign: (id: string) => request<Campaign>("POST", `/api/email/campaigns/${encodeURIComponent(id)}/cancel`),
+  flows: () => request<{ can_automate: boolean; flows: EmailFlow[] }>("GET", "/api/email/flows"),
+  updateFlow: (kind: EmailFlow["kind"], patch: Partial<Pick<EmailFlow, "enabled" | "subject" | "body" | "cta_label" | "discount_code" | "delay_days">>) => request<EmailFlow>("PUT", `/api/email/flows/${kind}`, patch),
+};
+
+/* ---------- affiliate program ---------- */
+export type Affiliate = {
+  id: string; name: string; email: string; code: string; rate: number; custom_rate: boolean; status: "active" | "pending" | "paused"; about: string; created_at: string;
+  link: string; portal_url: string; clicks: number; orders: number; revenue: number; earned: number; paid: number; owed: number;
+};
+export type AffiliateOverview = {
+  pro: boolean; join_url: string;
+  settings: { enabled: boolean; rate: number; cookie_days: number; auto_approve: boolean; blurb: string };
+  totals: { affiliates: number; pending: number; clicks: number; orders: number; revenue: number; earned: number; paid: number; owed: number };
+  affiliates: Affiliate[];
+};
+export const affiliates = {
+  overview: () => request<AffiliateOverview>("GET", "/api/affiliates"),
+  settings: (patch: Partial<AffiliateOverview["settings"]>) => request<AffiliateOverview>("PUT", "/api/affiliates/settings", patch),
+  add: (a: { name: string; email: string; code?: string; rate?: number | null }) => request<Affiliate>("POST", "/api/affiliates", a),
+  detail: (id: string) => request<{ affiliate: Affiliate; orders: { id: string; paid_at: string; amount: number; commission: number; refunded: boolean }[]; payouts: { id: string; amount: number; note: string; created_at: string }[] }>("GET", `/api/affiliates/${encodeURIComponent(id)}`),
+  update: (id: string, patch: { status?: "active" | "paused"; rate?: number | null; name?: string; code?: string }) => request<Affiliate>("PATCH", `/api/affiliates/${encodeURIComponent(id)}`, patch),
+  remove: (id: string) => request<void>("DELETE", `/api/affiliates/${encodeURIComponent(id)}`),
+  payout: (id: string, amount: number, note: string) => request<Affiliate>("POST", `/api/affiliates/${encodeURIComponent(id)}/payouts`, { amount, note }),
+};
+
+/* ---------- ad pixels ---------- */
+export type PixelKey = "meta_pixel_id" | "tiktok_pixel_id" | "ga4_id" | "pinterest_tag_id";
+export type PixelsView = { allowed: boolean; pixels: { key: PixelKey; name: string; hint: string; id: string }[] };
+export const pixels = {
+  get: () => request<PixelsView>("GET", "/api/pixels"),
+  save: (patch: Partial<Record<PixelKey, string>>) => request<PixelsView>("PUT", "/api/pixels", patch),
+};
+
+/* ---------- Instagram AutoDM ---------- */
+export type AutoDmRule = { id: string; keywords: string[]; match: "contains" | "exact"; trigger: "dm" | "comment" | "both"; reply: string; link_url: string; product_id: string | null; comment_reply: string; enabled: boolean; sent: number; created_at: string };
+export type AutoDmRuleInput = Partial<Omit<AutoDmRule, "id" | "sent" | "created_at" | "keywords">> & { keywords?: string[] | string };
+export type AutoDmStatus = {
+  pro: boolean; live: boolean; accounts: { id: string; name: string; status: string }[];
+  blocker: null | "pending_meta" | "connect_instagram" | "reconnect_instagram" | "upgrade";
+  stats: { sent: number; sent_7d: number };
+  activity: { kind: "dm" | "comment"; who: string; text: string; status: "sent" | "skipped" | "failed"; error: string | null; at: string }[];
+  rules: AutoDmRule[];
+};
+export const autodm = {
+  get: () => request<AutoDmStatus>("GET", "/api/autodm"),
+  create: (r: AutoDmRuleInput) => request<AutoDmRule>("POST", "/api/autodm/rules", r),
+  update: (id: string, r: AutoDmRuleInput) => request<AutoDmRule>("PATCH", `/api/autodm/rules/${encodeURIComponent(id)}`, r),
+  remove: (id: string) => request<void>("DELETE", `/api/autodm/rules/${encodeURIComponent(id)}`),
+  connect: () => request<{ pages: { name: string; ok: boolean }[] }>("POST", "/api/autodm/connect"),
 };
 
 export const money = (n: number) => `$${(Number(n) || 0).toFixed(2)}`;

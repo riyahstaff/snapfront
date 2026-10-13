@@ -10,6 +10,9 @@ const META_SCOPES = [
   "pages_show_list", "pages_read_engagement", "pages_manage_posts", "pages_manage_engagement",
   "publish_video", "instagram_basic", "instagram_content_publish",
 ];
+// AutoDM adds the Instagram messaging and comment permissions (autodm.js).
+const AUTODM_SCOPES = ["instagram_manage_messages", "instagram_manage_comments", "pages_manage_metadata"];
+const scopes = () => (config.metaAutoDmEnabled ? [...META_SCOPES, ...AUTODM_SCOPES] : META_SCOPES);
 const REQUIRED_SCOPES = ["pages_show_list", "pages_read_engagement", "pages_manage_posts", "instagram_basic", "instagram_content_publish"];
 const HOUR = 60 * 60 * 1000;
 const now = () => new Date().toISOString();
@@ -224,7 +227,7 @@ export function authorize(seller, account) {
   url.searchParams.set("state", state);
   url.searchParams.set("config_id", config.metaLoginConfigId);
   url.searchParams.set("display", "page");
-  url.searchParams.set("scope", META_SCOPES.join(","));
+  url.searchParams.set("scope", scopes().join(","));
   url.searchParams.set("auth_type", "rerequest");
   return { url: url.toString(), redirect_url: "snapfront://marketing" };
 }
@@ -375,6 +378,19 @@ export async function finishAuthorization(rawState, code) {
   })();
   return seller;
 }
+/* ---------- for AutoDM (autodm.js): the seller's Instagram accounts and their Page tokens ---------- */
+export function instagramAccounts(sellerId) {
+  return db.prepare("SELECT * FROM social_connections WHERE seller_id = ? AND platform = 'instagram' ORDER BY created_at").all(sellerId).map((r) => ({
+    id: r.id, ig_id: r.remote_id, page_id: r.page_id, name: r.name, status: r.status, token: () => decrypt(r.access_token_enc),
+  }));
+}
+export function instagramOwner(igId) {
+  const r = db.prepare("SELECT * FROM social_connections WHERE platform = 'instagram' AND remote_id = ? AND status = 'connected' ORDER BY updated_at DESC LIMIT 1").get(String(igId));
+  return r ? { seller_id: r.seller_id, ig_id: r.remote_id, page_id: r.page_id, name: r.name, token: () => decrypt(r.access_token_enc) } : null;
+}
+export const metaGraph = (method, endpoint, options) => graph(method, endpoint, options);
+export const metaOauthReady = () => oauthReady();
+
 export function disconnect(seller, id) {
   const result = db.prepare("DELETE FROM social_connections WHERE id = ? AND seller_id = ?").run(String(id), seller.id);
   if (!result.changes) throw httpError(404, "That social account is not connected to this store.");

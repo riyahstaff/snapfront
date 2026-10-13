@@ -10,6 +10,9 @@ import { isAiImage } from "./aimedia.js";
 import { CATEGORY_REGISTRY } from "./premium-themes.js";
 import { categoryContext, CATEGORY_BASE_CSS } from "./category-theme-kit.js";
 import { storefrontMediaSlots, storefrontPreviewMediaSlots } from "./storefront-media.js";
+import { headTags as pixelTags } from "./pixels.js";
+import { signupBox } from "./audience.js";
+import { programLive } from "./affiliates.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const money = (cents, cur = "usd") => new Intl.NumberFormat("en-US", { style: "currency", currency: cur.toUpperCase() }).format(cents / 100);
@@ -75,7 +78,7 @@ const img = (source, alt, extra = "") => {
 };
 
 /* ---------- the frame every page shares ---------- */
-function shell({ title, description, store, image, body, canonical, cats = [], facts = null, current = null }) {
+function shell({ title, description, store, image, body, canonical, cats = [], facts = null, current = null, signup = false }) {
   const t = themeOf(store._theme || store.theme);
   const preview = Boolean(store._theme);
   const module = CATEGORY_REGISTRY.get(t.id);
@@ -94,12 +97,12 @@ function shell({ title, description, store, image, body, canonical, cats = [], f
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}">${image ? `<meta property="og:image" content="${esc(image)}">` : ""}
 ${canonical ? `<link rel="canonical" href="${esc(canonical)}">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="${t.c.bg}">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${esc(fontsUrl(t))}">
-<style>${themeCss(t)}${module ? CATEGORY_CSS + CATEGORY_BASE_CSS + module.css : CSS}</style></head><body class="${bodyClass(t)}">
+<style>${themeCss(t)}${module ? CATEGORY_CSS + CATEGORY_BASE_CSS + module.css : CSS}${store.id ? SIGNUP_CSS : ""}</style>${pixelTags(store)}</head><body class="${bodyClass(t)}">
 ${demo ? `<div class="pv" role="note">Illustrative ${esc(t.name)} theme demo — photos, products and prices are examples, not a live seller store. <a href="/themes" style="color:inherit">Browse all themes</a></div>` : ""}${preview ? `<div class="pv" role="note">${store._draftPreview ? "Private draft preview — your cover, words and motion are not live. Product links open your currently applied store." : `Previewing the ${esc(t.name)} look. Buyers still see your current look until you choose this one in the app.`}</div>` : ""}${ann}
 <header class="hd"><div class="wrap"><a class="brand" href="${esc(home(store))}">${esc(store.store_name)}</a><nav class="nav" aria-label="Shop">${nav}</nav>
 <div class="acts"><a class="cart" href="${esc(base(store))}/cart" aria-label="Cart">${ICON.bag}<b data-cart-count></b></a></div></div></header>
-${CART_JS(store.store_slug)}<main>${body}</main>
-<footer class="ft"><div class="wrap top"><div><a class="brand" href="${esc(home(store))}">${esc(store.store_name)}</a>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</div>
+${CART_JS(store.store_slug)}${STORE_JS(store)}<main>${body}</main>
+${signup && !preview && !demo ? signupSection(store) : ""}<footer class="ft"><div class="wrap top"><div><a class="brand" href="${esc(home(store))}">${esc(store.store_name)}</a>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</div>
 <nav aria-label="Shop links"><h4>Shop</h4><a href="${esc(base(store))}/#shop">All products</a>${cats.slice(0, 5).map((c) => `<a href="${esc(catHref(store, c.name))}">${esc(c.name)}</a>`).join("")}</nav>
 <nav aria-label="Help"><h4>Help</h4><a href="${esc(base(store))}/cart">Your cart</a>${store.about ? `<a href="${esc(base(store))}/#about">About us</a>` : ""}${facts?.physical !== false ? `<span>${esc(ship.title)}</span>${ship.where ? `<span>${esc(ship.where)}</span>` : ""}` : ""}<span>Secure checkout by Stripe</span></nav></div>
 <div class="wrap bot"><span>© ${year} ${esc(store.store_name)}</span><span>Made with Snapfront</span></div></footer>
@@ -176,7 +179,7 @@ export function storePage(store, products, baseUrl, { category } = {}) {
     image: bannerUrl(store) || products[0]?.image_url, canonical: storeUrl(store.store_slug) };
   if (current) {
     return shell({ ...meta, current, body: `<div class="wrap"><section class="pagehead"><h1>${esc(current)}</h1><p>${shown.length} ${shown.length === 1 ? "product" : "products"}</p></section>
-<section id="shop" class="sec tight">${cats.length > 1 ? `<div class="sec-h">${chips(store, cats, current)}</div>` : ""}${grid}</section></div>` });
+<section id="shop" class="sec tight">${cats.length > 1 ? `<div class="sec-h">${chips(store, cats, current)}</div>` : ""}${grid}</section></div>`, signup: true });
   }
   const feat = products.length >= 4 ? products.find((p) => p.image_url && p.in_stock) : null;
   const band = t.band ? `<div class="band" aria-hidden="true"><div class="trk">${[0, 1].map(() => [store.tagline || store.store_name, store.store_name, facts.perks[0][1]].concat([store.tagline || store.store_name, store.store_name, facts.perks[0][1]])
@@ -191,7 +194,7 @@ ${feat ? `<section class="sec feat"><div class="wrap"><div class="pic">${img(fea
 ${feat.tagline ? `<p class="tl">${esc(feat.tagline)}</p>` : ""}<div class="price">${priceLabel(feat)}</div><a class="btn" href="${esc(base(store))}/${esc(feat.slug)}">Shop now</a></div></div></section>` : ""}
 ${band}
 ${store.about ? `<section id="about" class="sec story${aboutPic ? "" : " solo"}"><div class="wrap">${aboutPic ? `<div class="pic">${img(aboutPic, "", ' loading="lazy"')}</div>` : ""}<div class="txt"><h2>About ${esc(store.store_name)}</h2><p>${esc(store.about)}</p></div></div></section>` : ""}`;
-  return shell({ ...meta, current: null, body });
+  return shell({ ...meta, current: null, body, signup: true });
 }
 
 export function productPage(store, p, baseUrl, others = []) {
@@ -245,7 +248,7 @@ ${p.bullets.length ? `<ul class="b">${p.bullets.map((b) => `<li>${esc(b)}</li>`)
 ${p.tags.length ? `<div class="tags">${p.tags.map((t) => `<span>#${esc(t)}</span>`).join("")}</div>` : ""}</div></article></div>
 ${related.length ? `<section class="sec feat"><div class="wrap" style="display:block"><div class="sec-h"><h2>You may also like</h2><a class="more" href="${esc(base(store))}/#shop">Shop all</a></div><div class="grid">${related.map((o) => card(store, o)).join("")}</div></div></section>` : ""}
 ${reviewsHtml}
-<div class="toast" id="toast" role="status" hidden>Added to your cart <a href="${esc(base(store))}/cart">View cart</a></div>${script}`,
+<div class="toast" id="toast" role="status" hidden>Added to your cart <a href="${esc(base(store))}/cart">View cart</a></div>${script}${store.id ? `\n<script>window.sfTrack&&sfTrack("view",${JSON.stringify({ id: p.id, name: p.title, value: startPrice / 100 }).replace(/</g, "\\u003c")})</script>` : ""}`, signup: true,
   });
 }
 
@@ -257,6 +260,54 @@ function write(c){try{localStorage.setItem(K,JSON.stringify(c))}catch(e){}badge(
 function badge(){var n=read().reduce(function(s,l){return s+l.qty},0);document.querySelectorAll("[data-cart-count]").forEach(function(b){b.textContent=n?String(n):""})}
 window.sfCart={read:read,write:write,add:function(item){var c=read(),k=item.product_id+":"+(item.variant_id||"");var f=c.find(function(l){return l.product_id+":"+(l.variant_id||"")===k});
 if(f){f.qty=item.kind==="digital"?1:Math.min(20,f.qty+item.qty)}else c.push(item);write(c)}};badge();})();</script>`;
+
+// The email sign-up band above the footer, and the per-store script for it, affiliate links and ad events.
+const SIGNUP_CSS = `.sfn{background:var(--surface);color:var(--ink);border-top:1px solid var(--line);padding-block:clamp(40px,6vw,72px)}
+.sfn-in{max-width:1320px;margin-inline:auto;padding-inline:clamp(16px,4vw,48px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px 56px;align-items:center}
+.sfn h2{font-family:var(--display);font-weight:var(--dw);letter-spacing:var(--dt);font-size:clamp(26px,3.2vw,40px);line-height:1.1;margin:0 0 10px;text-wrap:balance}
+.sfn-t p{margin:0;color:var(--muted);font-size:16px;line-height:1.55;max-width:46ch}
+.sfn-f{display:flex;flex-wrap:wrap;gap:10px;margin:0}
+.sfn-f input[type=email]{flex:1 1 220px;min-width:0;height:52px;padding:0 18px;border:1px solid var(--line);border-radius:var(--r-btn);background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
+.sfn-f input:focus-visible,.sfn-f button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sfn-f button{height:52px;padding:0 26px;border:0;border-radius:var(--r-btn);background:var(--accent);color:var(--on-accent);font:inherit;font-weight:700;font-size:16px;cursor:pointer}
+.sfn-f button:disabled{opacity:.6;cursor:default}
+.sfn-m{flex-basis:100%;margin:0;font-size:15px;line-height:1.5}.sfn-m:empty{display:none}
+.sfn-m.ok{color:var(--ink)}.sfn-m.err{color:var(--danger)}.sfn-m b{letter-spacing:.06em}
+.sfn-sr,.sfn-hp{position:absolute!important;left:-9999px;width:1px;height:1px;overflow:hidden}
+@media(max-width:760px){.sfn-in{grid-template-columns:1fr}}
+.sfa{display:grid;gap:14px;padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card)}
+.sfa label{display:grid;gap:6px;font-weight:600}.sfa label small{font-weight:400;color:var(--muted)}
+.sfa input,.sfa textarea{font:inherit;font-weight:400;padding:12px;border:1.5px solid var(--line);border-radius:var(--r-in);background:var(--bg);color:var(--ink)}
+.sfa button{justify-self:start;height:50px;padding:0 26px;border:0;border-radius:var(--r-btn);background:var(--accent);color:var(--on-accent);font:inherit;font-weight:700;cursor:pointer}
+.sfa-link{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-in);font-weight:600;word-break:break-all}
+.sfa-link code{flex:1 1 240px;font:inherit}.sfa-link button{height:40px;padding:0 18px;border:1px solid var(--line);border-radius:var(--r-btn);background:var(--bg);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.sfa-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:0}
+.sfa-stats div{padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-in);background:var(--surface)}.sfa-stats dt{color:var(--muted);font-size:14px}.sfa-stats dd{margin:4px 0 0;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.sfa-tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.sfa-tbl th,.sfa-tbl td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}.sfa-tbl th{color:var(--muted);font-weight:500;font-size:14px}.sfa-tbl td:last-child,.sfa-tbl th:last-child{text-align:right}`;
+function signupSection(store) {
+  const box = signupBox(store);
+  if (!box) return "";
+  return `<section class="sfn" aria-labelledby="sfn-h"><div class="sfn-in"><div class="sfn-t"><h2 id="sfn-h">${esc(box.title)}</h2><p>${esc(box.text)}</p></div>
+<form id="sfn-form" class="sfn-f" novalidate><label for="sfn-e" class="sfn-sr">Email address</label><input id="sfn-e" type="email" name="email" autocomplete="email" placeholder="Your email address" required maxlength="254">
+<input type="text" name="website" tabindex="-1" autocomplete="off" class="sfn-hp" aria-hidden="true"><button type="submit">${box.offer ? "Get my code" : "Sign up"}</button><p class="sfn-m" id="sfn-m" role="status" aria-live="polite"></p></form></div></section>`;
+}
+const STORE_JS = (store) => {
+  if (!store.id) return "";
+  const slug = esc(store.store_slug);
+  const days = Number(store.aff_cookie_days) || 30;
+  return `<script>(function(){var S=${JSON.stringify(base(store))},K="sf_ref_${slug}";
+${programLive(store) ? `try{var m=/[?&]ref=([A-Za-z0-9]{1,16})(&|$)/.exec(location.search);if(m)localStorage.setItem(K,JSON.stringify({code:m[1].toUpperCase(),at:Date.now()}))}catch(e){}` : ""}
+window.sfRef=function(){try{var r=JSON.parse(localStorage.getItem(K)||"null");return r&&Date.now()-r.at<${days}*864e5?r:null}catch(e){return null}};
+var add=sfCart.add;sfCart.add=function(i){add(i);window.sfTrack&&sfTrack("add",{id:i.product_id,name:i.title,value:i.unit*i.qty/100,qty:i.qty})};
+document.addEventListener("DOMContentLoaded",function(){var f=document.getElementById("sfn-form");if(!f)return;var m=document.getElementById("sfn-m");
+f.addEventListener("submit",function(e){e.preventDefault();var em=f.email.value.trim(),b=f.querySelector("button");
+if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/.test(em)){m.className="sfn-m err";m.textContent="Enter a valid email address.";f.email.focus();return}
+b.disabled=true;fetch(S+"/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:em,website:f.website.value})})
+.then(function(r){return r.json().then(function(j){return[r.ok,j]})}).then(function(x){if(!x[0]){m.className="sfn-m err";m.textContent=x[1].error||"That didn't work. Try again.";b.disabled=false;return}
+m.className="sfn-m ok";m.textContent="You're on the list. Thanks for signing up!";f.email.value="";
+if(x[1].offer_code){m.textContent="You're on the list! Your code: ";var c=document.createElement("b");c.textContent=x[1].offer_code;m.appendChild(c);m.appendChild(document.createTextNode(". It's added to your cart automatically."));try{sessionStorage.setItem("sf_code_${slug}",x[1].offer_code)}catch(e){}}
+window.sfTrack&&sfTrack("lead",{})}).catch(function(){m.className="sfn-m err";m.textContent="Couldn't reach the store. Check your connection.";b.disabled=false})})})})();</script>`;
+};
 
 export function cartPage(store, baseUrl) {
   const slug = esc(store.store_slug);
@@ -295,8 +346,9 @@ document.getElementById("tot").textContent=fmt(q.total_before_tax);var tn=docume
 var cc=sfCart.read();q.lines.forEach(function(l){var f=cc.find(function(c){return c.product_id===l.product_id&&(c.variant_id||null)===(l.variant_id||null)});if(f){f.unit=l.unit_cents;f.title=l.title}});sfCart.write(cc);
 if(code&&q.discount)msg("Code applied: "+q.discount_label,true);else if(!code)msg("")}).catch(function(){msg("Couldn't reach the store. Check your connection.")})}
 document.getElementById("codef").addEventListener("submit",function(e){e.preventDefault();code=document.getElementById("code").value.trim().toUpperCase();try{sessionStorage.setItem("sf_code_${slug}",code)}catch(x){}quote()});
-document.getElementById("go").addEventListener("click",function(){var b=this;b.disabled=true;b.textContent="Opening checkout…";
-fetch(S+"/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:items(),code:code})}).then(function(r){return r.json().then(function(j){return[r.ok,j]})}).then(function(x){
+document.getElementById("go").addEventListener("click",function(){var b=this;b.disabled=true;b.textContent="Opening checkout…";${store.id ? `
+if(window.sfTrack){var c=sfCart.read();sfTrack("checkout",{value:c.reduce(function(t,l){return t+l.unit*l.qty},0)/100,qty:c.reduce(function(t,l){return t+l.qty},0)})}` : ""}
+fetch(S+"/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:items(),code:code${store.id ? ",ref:window.sfRef?sfRef():null" : ""}})}).then(function(r){return r.json().then(function(j){return[r.ok,j]})}).then(function(x){
 if(x[0]&&x[1].url){location.href=x[1].url;return}msg(x[1].error||"Checkout couldn't start.");b.disabled=false;b.textContent="Check out"}).catch(function(){msg("Couldn't reach the store.");b.disabled=false;b.textContent="Check out"})});
 draw()})();</script>`,
   });
@@ -319,7 +371,9 @@ ${o.discount ? `<div class="row"><span>Discount${o.discount_code ? ` (${esc(o.di
 ${o.shipping || o.items.some((l) => l.kind === "physical") ? `<div class="row"><span>Shipping</span><span>${o.shipping ? money$(o.shipping) : "Free"}</span></div>` : ""}
 ${o.tax ? `<div class="row"><span>Tax</span><span>${money$(o.tax)}</span></div>` : ""}
 <div class="row t"><span>Total</span><span>${money$(o.total)}</span></div><p class="fine">Order ${esc(o.id)}</p></div>`;
-  const clear = !pending && o.status !== "canceled" ? `<script>sfCart.write([]);try{sessionStorage.removeItem("sf_code_${esc(store.store_slug)}")}catch(e){}</script>` : "";
+  const purchase = { order: o.id, value: o.total, qty: o.items.reduce((t, l) => t + l.qty, 0) };
+  const clear = !pending && o.status !== "canceled" ? `<script>sfCart.write([]);try{sessionStorage.removeItem("sf_code_${esc(store.store_slug)}")}catch(e){}
+(function(){var k="sf_px_"+${JSON.stringify(o.id)};try{if(localStorage.getItem(k))return;localStorage.setItem(k,"1")}catch(e){}window.sfTrack&&sfTrack("purchase",${JSON.stringify(purchase).replace(/</g, "\\u003c")})})()</script>` : "";
   return shell({ title: pending ? "Confirming payment" : "Thank you", description: `Your order from ${store.store_name}`, store,
     body: `${pending ? `<meta http-equiv="refresh" content="4">` : ""}<div class="wrap page"><div class="order">${body}</div></div>${clear}` });
 }
@@ -351,7 +405,7 @@ export function linksPage(store, products, links) {
     body: `<div class="wrap links"><header>${store.banner_file ? `<img class="av" src="${esc(`${config.publicUrl}/img/${store.banner_file}`)}" alt="">` : ""}<h1>${esc(store.store_name)}</h1>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</header>
 ${btn(`${home(store)}?utm_source=bio`, "Shop the store", "main")}
 ${products.map((p) => `<a class="lk prod" href="${esc(base(store))}/${esc(p.slug)}?utm_source=bio">${img(p.image_url, "", ' loading="lazy"')}<span>${esc(p.title)}</span><b>${priceLabel(p)}</b></a>`).join("")}
-${links.map((l) => btn(l.url, l.label)).join("")}</div>` });
+${links.map((l) => btn(l.url, l.label)).join("")}</div>`, signup: true });
 }
 
 /** Review form for a buyer, from the link in their order page or email. */
@@ -364,6 +418,32 @@ export function reviewPage(store, token, items, done) {
   return shell({ title: `Review · ${store.store_name}`, description: `Review your order from ${store.store_name}`, store,
     body: `<div class="wrap page"><div class="order">${done ? `<p class="ok">Thank you! Your review is posted.</p>` : ""}<h1>${open.length ? "How was your order?" : "Thanks for your reviews"}</h1>
 ${open.length ? open.map(form).join("") : `<p>You've reviewed everything in this order. <a href="${esc(home(store))}">Back to the store</a></p>`}</div></div>` });
+}
+
+/** The public "Become an affiliate" page. */
+export function affiliateJoinPage(store, { state = null, error = null, rate, blurb } = {}) {
+  const done = state === "active" ? `<p class="ok">You're in! Check your email for your link and your stats page.</p>`
+    : state === "pending" ? `<p class="ok">Thanks for applying! You'll get your link by email once ${esc(store.store_name)} approves you.</p>` : "";
+  return shell({ title: `Affiliate program · ${store.store_name}`, description: `Earn ${rate}% sharing ${store.store_name}`, store, canonical: storeUrl(store.store_slug, "/affiliates"),
+    body: `<div class="wrap page"><div class="order"><h1>Earn ${esc(rate)}% sharing ${esc(store.store_name)}</h1>
+<p>${blurb ? esc(blurb).replace(/\n/g, "<br>") : `Share your own link with friends and followers. When someone buys through it within ${esc(store.aff_cookie_days)} days, you earn ${esc(rate)}% of their order.`}</p>
+${done}${error ? `<p class="err">${esc(error)}</p>` : ""}${state ? "" : `<form class="sfa" method="post" action="${esc(base(store))}/affiliates">
+<label>Your name <input name="name" required maxlength="80" autocomplete="name"></label>
+<label>Email <input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+<label>Where will you share? <small>Optional: your Instagram, TikTok, blog or newsletter</small><textarea name="about" rows="3" maxlength="300"></textarea></label>
+<input name="website" tabindex="-1" autocomplete="off" class="sfn-hp" aria-hidden="true"><button type="submit">Join the program</button></form>`}</div></div>` });
+}
+/** An affiliate's private stats page. */
+export function affiliatePortalPage(store, a) {
+  const $ = (n) => money(Math.round(n * 100));
+  return shell({ title: `Your affiliate stats · ${store.store_name}`, description: `Affiliate stats for ${store.store_name}`, store,
+    body: `<div class="wrap page"><div class="order"><h1>Hi ${esc(a.name.split(" ")[0])}</h1><p>You earn ${esc(a.rate)}% of every ${esc(store.store_name)} order that comes through your link.${a.status !== "active" ? " <strong>Your link is paused right now.</strong>" : ""}</p>
+<div class="sfa-link"><code id="lnk">${esc(a.link)}</code><button type="button" id="cp">Copy link</button></div>
+<dl class="sfa-stats"><div><dt>Clicks</dt><dd>${a.clicks}</dd></div><div><dt>Orders</dt><dd>${a.orders}</dd></div><div><dt>Earned</dt><dd>${$(a.earned)}</dd></div><div><dt>Paid to you</dt><dd>${$(a.paid)}</dd></div><div><dt>Owed to you</dt><dd>${$(a.owed)}</dd></div></dl>
+<h2 style="font-size:22px;margin:12px 0 0">Recent orders</h2>${a.recent.length ? `<div style="overflow-x:auto"><table class="sfa-tbl"><thead><tr><th>Date</th><th>Order</th><th>You earned</th></tr></thead><tbody>${a.recent.map((o) => `<tr><td>${esc(String(o.paid_at).slice(0, 10))}</td><td>${$(o.amount)}${o.refunded ? " (refunded)" : ""}</td><td>${$(o.commission)}</td></tr>`).join("")}</tbody></table></div>` : `<p>No orders yet. Share your link to get started.</p>`}
+${a.payouts.length ? `<h2 style="font-size:22px;margin:12px 0 0">Payments</h2><div style="overflow-x:auto"><table class="sfa-tbl"><thead><tr><th>Date</th><th>Note</th><th>Amount</th></tr></thead><tbody>${a.payouts.map((p) => `<tr><td>${esc(String(p.created_at).slice(0, 10))}</td><td>${esc(p.note)}</td><td>${$(p.amount)}</td></tr>`).join("")}</tbody></table></div>` : ""}
+<p class="fine">Keep this page private: anyone with its address can see your stats. ${esc(store.store_name)} pays affiliates directly.</p></div></div>
+<script>document.getElementById("cp").addEventListener("click",function(){var t=document.getElementById("lnk").textContent,b=this;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent="Copied"},function(){var r=document.createRange();r.selectNodeContents(document.getElementById("lnk"));getSelection().removeAllRanges();getSelection().addRange(r)})})</script>` });
 }
 
 export function notePage(store, title, html) {

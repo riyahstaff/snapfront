@@ -51,6 +51,10 @@ export const config = {
   metaTokenEncryptionKey: env.META_TOKEN_ENCRYPTION_KEY || "",
   metaGraphVersion: /^v\d+\.\d+$/.test(String(env.META_GRAPH_VERSION || "")) ? env.META_GRAPH_VERSION : "v26.0",
   metaPublishingEnabled: String(env.META_PUBLISHING_ENABLED || "").toLowerCase() === "true",
+  // Instagram AutoDM (keyword replies to DMs and comments). Needs Meta's approval for the
+  // instagram_manage_messages and instagram_manage_comments permissions before it's switched on.
+  metaAutoDmEnabled: String(env.META_AUTODM_ENABLED || "").toLowerCase() === "true",
+  metaWebhookVerifyToken: env.META_WEBHOOK_VERIFY_TOKEN || "",
 };
 
 export const dirs = {

@@ -1,6 +1,8 @@
 // Cart pricing, discount codes, checkout and order finalisation.
 // Prices are always re-read from the database: the browser only sends ids and quantities.
 import { recoveryParams } from "./growth.js";
+import { checkoutParams as listOptIn } from "./audience.js";
+import { attribute as affiliateFor } from "./affiliates.js";
 import { config } from "./config.js";
 import { db, newId, rowToProduct } from "./db.js";
 import { httpError } from "./claude.js";
@@ -114,14 +116,14 @@ export function quote(seller, items, code) {
 }
 
 /* ---------- checkout ---------- */
-export async function startCheckout(seller, items, code) {
+export async function startCheckout(seller, items, code, ref = null) {
   if (!seller.stripe_account_id || !seller.stripe_ready || !plans.storeCanSell(seller)) throw httpError(409, "This store isn't taking orders right now.");
   const p = priceCart(seller, items, code);
   if (p.subtotal - p.discountCents + p.shipping < 50) throw httpError(400, "The order total must be at least $0.50.");
   const orderId = newId("ord");
-  db.prepare("INSERT INTO orders (id, seller_id, status, items, subtotal_cents, discount_cents, shipping_cents, total_cents, discount_code) VALUES (?,?,?,?,?,?,?,?,?)")
+  db.prepare("INSERT INTO orders (id, seller_id, status, items, subtotal_cents, discount_cents, shipping_cents, total_cents, discount_code, affiliate_id) VALUES (?,?,?,?,?,?,?,?,?,?)")
     .run(orderId, seller.id, "pending", JSON.stringify(p.lines.map(({ key, ...l }) => l)), p.subtotal, p.discountCents, p.shipping,
-      p.total, p.discount?.code || null);
+      p.total, p.discount?.code || null, affiliateFor(seller, ref));
   // Pin what this checkout offers before yielding to Stripe. A later seller edit cannot
   // change the file for a payment already started. Pending orders still have no access.
   for (const line of p.lines.filter((line) => line.kind === "digital")) {
@@ -168,6 +170,7 @@ export async function startCheckout(seller, items, code) {
   if (fee > 0) params.payment_intent_data = { application_fee_amount: fee, metadata: { snapfront_order: orderId } };
 
   Object.assign(params, recoveryParams(seller));   // Pro: remind buyers who leave checkout
+  Object.assign(params, listOptIn(seller));        // "Email me new products and offers"
   const session = await pay.createCheckout(seller, params, p.discountCents);
   db.prepare("UPDATE orders SET checkout_session_id = ? WHERE id = ?").run(session.id, orderId);
   return { url: session.url, order_id: orderId };

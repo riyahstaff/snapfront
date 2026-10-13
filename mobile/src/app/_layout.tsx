@@ -52,6 +52,10 @@ export default function RootLayout() {
         <Stack.Screen name="settings" options={{ title: "Store settings", presentation: "modal" }} />
         <Stack.Screen name="orders" options={{ title: "Orders" }} />
         <Stack.Screen name="business" options={{ title: "Sales & profit" }} />
+        <Stack.Screen name="email" options={{ title: "Email marketing" }} />
+        <Stack.Screen name="affiliates" options={{ title: "Affiliates" }} />
+        <Stack.Screen name="pixels" options={{ title: "Ad pixels" }} />
+        <Stack.Screen name="autodm" options={{ title: "Instagram AutoDM" }} />
         <Stack.Screen name="discounts" options={{ title: "Discount codes" }} />
         <Stack.Screen name="looks" options={{ title: "Store look" }} />
         <Stack.Screen name="storefront-setup" options={{ title: "Storefront setup" }} />

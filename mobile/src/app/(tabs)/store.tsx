@@ -115,7 +115,11 @@ export default function StoreScreen() {
       <Text style={[type.heading, { color: c.ink, marginTop: space.sm }]}>Grow your store</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
         <GrowTile icon="cash-outline" label="Sales & profit" sub="Profit, customers, payouts" onPress={() => router.push("/business")} />
+        <GrowTile icon="mail-outline" label="Email marketing" sub="Your list, emails, automations" onPress={() => router.push("/email")} />
         <GrowTile icon="megaphone-outline" label="Marketing posts" sub="Posts, carousels and Reels" onPress={() => router.push("/marketing")} />
+        <GrowTile icon="chatbubble-ellipses-outline" label="Instagram AutoDM" sub="Reply to keywords with your link" onPress={() => router.push("/autodm")} />
+        <GrowTile icon="ribbon-outline" label="Affiliates" sub="Fans earn for each sale" onPress={() => router.push("/affiliates")} />
+        <GrowTile icon="pulse-outline" label="Ad pixels" sub="Meta, TikTok, Google, Pinterest" onPress={() => router.push("/pixels")} />
         <GrowTile icon="sparkles-outline" label="AI photos & video" sub="Lifestyle shots and clips" onPress={() => router.push("/ai-media")} />
         <GrowTile icon="people-outline" label="Get more buyers" sub="Link in bio, QR, Google" onPress={() => router.push("/channels")} />
         <GrowTile icon="bar-chart-outline" label="Insights" sub="Visitors and sales" onPress={() => router.push("/insights")} />

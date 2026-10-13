@@ -320,10 +320,13 @@ const csvCell = (v) => {
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;   // stop spreadsheets from running a "formula" a buyer typed
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
-const csv = (header, rows) => [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+export const csv = (header, rows) => [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+// Other features add their own downloads (subscribers, affiliates) through the same signed links.
+const EXPORTERS = new Map();
+export const registerExport = (kind, fn) => EXPORTERS.set(kind, fn);
 const exportSig = (sellerId, kind, exp) => crypto.createHmac("sha256", config.downloadSecret).update(`export:${sellerId}:${kind}:${exp}`).digest("base64url").slice(0, 32);
 export function exportLink(seller, kind, q = {}) {
-  if (!["sales", "customers", "expenses"].includes(kind)) throw httpError(400, "Export sales, customers or expenses.");
+  if (!["sales", "customers", "expenses"].includes(kind) && !EXPORTERS.has(kind)) throw httpError(400, "Export sales, customers or expenses.");
   const exp = Math.floor(Date.now() / 1000) + 15 * 60;
   const params = new URLSearchParams({ s: seller.id, k: kind, e: String(exp), sig: exportSig(seller.id, kind, exp) });
   for (const k of ["range", "from", "to"]) if (q[k]) params.set(k, String(q[k]));
@@ -337,6 +340,7 @@ export function exportFile(q) {
   if (String(sig || "").length !== want.length || !crypto.timingSafeEqual(Buffer.from(String(sig)), Buffer.from(want))) throw httpError(403, "This download link isn't valid.");
   const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(String(s));
   if (!seller) throw httpError(404, "This store no longer exists.");
+  if (EXPORTERS.has(String(k))) return EXPORTERS.get(String(k))(seller, q);
   const r = range(q);
   const stamp = r.label === "all" ? `all_time_to_${r.to}` : `${r.from}_to_${r.to}`;
   if (k === "sales") {
