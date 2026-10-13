@@ -115,8 +115,13 @@ export function planFromPurchases(accountId, now = Date.now()) {
   if (rows.some((r) => r.kind === "once")) return "launch";
   return "free";
 }
-function applyPlan(accountId) {
-  const plan = planFromPurchases(accountId);
+// Other places a plan can be bought (the website's Stripe checkout) register here; the best plan wins.
+const RANK = { free: 0, launch: 1, pro: 2 };
+const planSources = [planFromPurchases];
+export const addPlanSource = (fn) => { if (!planSources.includes(fn)) planSources.push(fn); };
+export const bestPlan = (accountId) => planSources.map((f) => f(accountId)).reduce((a, b) => (RANK[b] > RANK[a] ? b : a), "free");
+export function applyPlan(accountId) {
+  const plan = bestPlan(accountId);
   db.prepare("UPDATE accounts SET plan = ?, plan_synced_at = datetime('now') WHERE id = ?").run(plan, accountId);
   return plan;
 }

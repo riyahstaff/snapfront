@@ -28,6 +28,7 @@ import * as marketing from "./marketing.js";
 import * as aimedia from "./aimedia.js";
 import * as growth from "./growth.js";
 import * as playbilling from "./playbilling.js";
+import * as webbilling from "./webbilling.js";
 import * as social from "./social.js";
 import * as digitalDesigns from "./digital-designs.js";
 import * as imageAssistant from "./image-assistant.js";
@@ -43,8 +44,47 @@ app.set("trust proxy", 1);
 /* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
 const SHARED_PATHS = /^\/(api|img|media|d|thanks|stripe|suppliers|social|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview|digital-design-assets|digital-design-exports)(\/|$)/;
 const sameSecret = (a, b) => { const x = Buffer.from(String(a || "")), y = Buffer.from(String(b || "")); return x.length === y.length && crypto.timingSafeEqual(x, y); };
+/* ---------- the web version of the app: app.snapfront.app (built from mobile/ with `npm run build:web`) ---------- */
+export const WEBAPP_DIR = path.resolve(new URL("../webapp/", import.meta.url).pathname);
+const webappIndex = () => path.join(WEBAPP_DIR, "index.html");
+const isWebAppHost = (req) => Boolean(config.storeDomain) && String(req.hostname || "").toLowerCase() === `app.${config.storeDomain}`;
+const webappStatic = express.static(WEBAPP_DIR, {
+  index: false, fallthrough: true,
+  setHeaders: (res, file) => res.setHeader("Cache-Control", /[\\/]_expo[\\/]static[\\/]|[\\/]assets[\\/]/.test(file) ? "public, max-age=31536000, immutable" : "no-cache"),
+});
+function serveWebApp(req, res, next) {
+  if (req.method !== "GET" && req.method !== "HEAD") return next();
+  webappStatic(req, res, () => {
+    if (!fs.existsSync(webappIndex())) return res.status(503).send("The Snapfront web app is being updated. Try again in a minute.");
+    res.setHeader("Cache-Control", "no-cache");
+    res.sendFile(webappIndex());
+  });
+}
+// The web app (app.snapfront.app) calls the API, photos and files on snapfront.app.
 app.use((req, res, next) => {
-  if (!config.storeDomain) return next();
+  const origin = req.get("origin");
+  if (!config.storeDomain || origin !== `https://app.${config.storeDomain}`) return next();
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Vary", "Origin");
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Store");
+    res.setHeader("Access-Control-Max-Age", "86400");
+    return res.status(204).end();
+  }
+  next();
+});
+app.use((req, res, next) => {
+  if (!isWebAppHost(req)) return next();
+  // The API, photos and files are shared with the phone app; everything else is the web app.
+  if (/^\/(api|img|media|d|health|builds|digital-design-assets|digital-design-exports|storefront-preview|theme-assets)(\/|$)/.test(req.path)) return next();
+  serveWebApp(req, res, next);
+});
+// Without a store domain (local runs), the web app lives at /app.
+app.use("/app", (req, res, next) => (config.storeDomain ? next() : serveWebApp(req, res, next)));
+
+app.use((req, res, next) => {
+  if (!config.storeDomain || isWebAppHost(req)) return next();
   // A seller's own domain, forwarded by our Cloudflare Worker (see domains.js).
   const edgeHost = req.get("x-snapfront-host");
   if (edgeHost && sameSecret(req.get("x-snapfront-edge"), domains.edgeSecret())) {
@@ -165,6 +205,8 @@ const clampStr = store.clampStr, strList = store.strList, faqList = store.faqLis
 /* ---------- account ---------- */
 app.get("/health", (_req, res) => res.json({ ok: true }));
 app.get("/", (_req, res) => res.send(landingPage()));
+// The home page's images (brand mark and chrome art).
+app.use("/site", express.static(path.resolve(new URL("../assets/site/", import.meta.url).pathname), { maxAge: "30d", fallthrough: false }));
 
 /* ---------- fixed Meta callbacks: no client-controlled redirects or secret-bearing pages ---------- */
 const metaReturn = (state) => `snapfront://marketing?social=${state === "connected" ? "connected" : "error"}`;
@@ -345,6 +387,7 @@ function deleteAccount(accountId) {
   const rows = db.prepare("SELECT p.image_file, p.delivery_file FROM products p JOIN sellers s ON s.id = p.seller_id WHERE s.account_id = ?").all(accountId);
   const stores = plans.storesOf(accountId);
   for (const st of stores) if (st.custom_domain_id) domains.removeDomain(st).catch(() => {});
+  webbilling.cancelAll(accountId).catch((e) => console.warn("[webbilling] cancel on delete", e.message));
   purgeStores(stores.map((st) => st.id));
   db.prepare("DELETE FROM accounts WHERE id = ?").run(accountId);
   removeFiles(rows);
@@ -487,6 +530,15 @@ app.post("/api/billing/sync", auth, wrap(async (req, res) => {
   req.account = await plans.syncPlan(req.account);
   res.json(me(req));
 }));
+// Plans bought on the website, through Stripe Checkout on Snapfront's own Stripe account.
+app.get("/api/billing/web/offers", auth, (_req, res) => res.json({ enabled: webbilling.enabled(), offers: webbilling.enabled() ? webbilling.offers() : [] }));
+app.post("/api/billing/web/checkout", auth, wrap(async (req, res) => res.json(await webbilling.startCheckout(req.account, String(req.body?.plan || "")))));
+app.post("/api/billing/web/confirm", auth, wrap(async (req, res) => {
+  await webbilling.confirm(req.account, req.body?.session_id);
+  req.account = plans.getAccount(req.account.id);
+  res.json(me(req));
+}));
+app.post("/api/billing/web/portal", auth, wrap(async (req, res) => res.json(await webbilling.portal(req.account))));
 // The app bought a plan (or is restoring one): check it with Google Play and unlock it.
 app.post("/api/billing/google", auth, wrap(async (req, res) => {
   await playbilling.recordPurchase(req.account, { productId: req.body?.product_id, purchaseToken: req.body?.purchase_token });
@@ -948,6 +1000,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   ensureCutoutModel().catch((e) => console.error("[cutout] model", e.message));
   // Google Play subscriptions: notice renewals, cancellations and refunds.
   setInterval(() => playbilling.sweep().catch((e) => console.error("[play] sweep", e.message)), 30 * 60e3).unref();
+  // Website plans (Stripe): notice renewals, cancellations and refunds.
+  setInterval(() => webbilling.sweep().catch((e) => console.error("[webbilling] sweep", e.message)), 30 * 60e3).unref();
   // Create the Launch and Pro products in Play (retries hourly until Google allows it).
   const products = () => playbilling.ensureProducts().catch((e) => console.error("[play] products", e.message));
   setTimeout(products, 15e3).unref();

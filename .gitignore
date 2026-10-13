@@ -12,3 +12,6 @@ mobile/google-play-service-account.json
 products/out/
 __pycache__/
 *.py[cod]
+
+# The web app build (server/webapp) bundles icon fonts under assets/node_modules; keep them.
+!server/webapp/assets/node_modules/
