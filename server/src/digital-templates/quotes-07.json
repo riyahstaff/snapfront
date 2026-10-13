@@ -1,0 +1,54 @@
+{
+  "id": "quotes-07",
+  "name": "Soft Geometry",
+  "format": "quotes",
+  "description": "A calm, sculptural quote page pairing editorial serif storytelling with an orbiting geometric frame.",
+  "tags": ["quotes", "editorial", "geometry", "calm"],
+  "palette": {
+    "paper": "#F5F0E7",
+    "ink": "#25332F",
+    "accent": "#B85F46",
+    "muted": "#596A62",
+    "soft": "#D9DFD2"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.13, "y": 0.30, "w": 0.73, "h": 0.32, "size": 48, "align": "left"},
+    "subtitle": {"x": 0.13, "y": 0.66, "w": 0.72, "h": 0.12, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.13, "y": 0.15, "w": 0.70, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.13, "y": 0.87, "w": 0.72, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.68, "y": 0.10, "w": 0.25, "h": 0.25, "fill": "soft", "opacity": 0.92},
+      {"kind": "arc", "x": 0.64, "y": 0.08, "w": 0.34, "h": 0.35, "fill": "accent", "stroke": 2.2, "start": 205, "end": 330},
+      {"kind": "polygon", "x": 0.80, "y": 0.72, "w": 0.14, "h": 0.15, "fill": "accent", "opacity": 0.9, "points": [[0.5,0],[1,0.38],[0.76,1],[0.22,0.82],[0,0.35]]},
+      {"kind": "line", "x": 0.13, "y": 0.82, "w": 0.48, "h": 0, "fill": "muted", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.72, "y": 0.24, "w": 0.045, "h": 0.045, "fill": "accent"}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 50,
+    "headerStyle": "stack",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "plain",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.075, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.4},
+      {"kind": "ellipse", "x": 0.865, "y": 0.045, "w": 0.055, "h": 0.055, "fill": "accent", "opacity": 0.72}
+    ]
+  },
+  "sample": {
+    "title": "Make room for becoming.",
+    "subtitle": "A small reminder to grow at your own pace",
+    "brand": "Softly, Studio",
+    "eyebrow": "WORDS TO KEEP CLOSE"
+  }
+}

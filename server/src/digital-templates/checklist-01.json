@@ -1,0 +1,56 @@
+{
+  "id": "checklist-01",
+  "name": "Clear Ritual",
+  "format": "checklist",
+  "description": "A calm, tactile editorial checklist for turning a small daily intention into a clear, repeatable ritual.",
+  "tags": ["checklist", "ritual", "editorial", "calm", "printable"],
+  "palette": {
+    "paper": "#F5F1E8",
+    "ink": "#193832",
+    "accent": "#D76645",
+    "muted": "#526A61",
+    "soft": "#E4E8DC"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.10, "y": 0.33, "w": 0.75, "h": 0.30, "size": 54, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.66, "w": 0.72, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.15, "w": 0.70, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.89, "w": 0.70, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.70, "y": 0.055, "w": 0.23, "h": 0.23, "fill": "soft", "opacity": 1},
+      {"kind": "ellipse", "x": 0.755, "y": 0.105, "w": 0.12, "h": 0.12, "fill": "accent", "opacity": 1},
+      {"kind": "arc", "x": 0.675, "y": 0.025, "w": 0.29, "h": 0.29, "fill": "ink", "stroke": 2, "start": 205, "end": 325},
+      {"kind": "polygon", "x": 0.72, "y": 0.77, "w": 0.16, "h": 0.085, "fill": "accent", "points": [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]]},
+      {"kind": "line", "x": 0.10, "y": 0.84, "w": 0.78, "h": 0, "fill": "muted", "stroke": 1},
+      {"kind": "rect", "x": 0.90, "y": 0.37, "w": 0.025, "h": 0.20, "fill": "accent", "radius": 0.01}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.075, "w": 0.84, "h": 0, "fill": "muted", "stroke": 1},
+      {"kind": "ellipse", "x": 0.89, "y": 0.035, "w": 0.035, "h": 0.035, "fill": "accent", "opacity": 0.8},
+      {"kind": "line", "x": 0.08, "y": 0.93, "w": 0.18, "h": 0, "fill": "soft", "stroke": 2}
+    ]
+  },
+  "sample": {
+    "title": "A Clear Morning Ritual",
+    "subtitle": "A gentle checklist for making room, setting one intention, and beginning well.",
+    "brand": "FIELDNOTES STUDIO",
+    "eyebrow": "A DAILY RESET · PRINTABLE CHECKLIST"
+  }
+}

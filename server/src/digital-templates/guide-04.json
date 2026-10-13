@@ -1,0 +1,54 @@
+{
+  "id": "guide-04",
+  "name": "Sage Atelier",
+  "format": "guide",
+  "description": "A tactile editorial field guide with an architectural sun-and-leaf motif and generous reading space.",
+  "tags": ["atelier", "editorial", "commerce", "sage"],
+  "palette": {
+    "paper": "#F4F0E6",
+    "ink": "#1F302B",
+    "accent": "#587565",
+    "muted": "#52645B",
+    "soft": "#D9E2D6"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.10, "y": 0.29, "w": 0.70, "h": 0.31, "size": 52, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.64, "w": 0.70, "h": 0.13, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.15, "w": 0.70, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.70, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.65, "y": 0.09, "w": 0.35, "h": 0.35, "fill": "soft", "opacity": 1},
+      {"kind": "arc", "x": 0.70, "y": 0.14, "w": 0.29, "h": 0.29, "fill": "accent", "stroke": 2.2, "start": 205, "end": 35},
+      {"kind": "polygon", "x": 0.78, "y": 0.19, "w": 0.17, "h": 0.25, "fill": "accent", "opacity": 0.92, "points": [[0.5,0],[0.82,0.35],[0.73,0.78],[0.5,1],[0.27,0.78],[0.18,0.35]]},
+      {"kind": "line", "x": 0.865, "y": 0.21, "w": 0, "h": 0.22, "fill": "ink", "stroke": 1.2},
+      {"kind": "rect", "x": 0.10, "y": 0.82, "w": 0.16, "h": 0.012, "fill": "accent", "opacity": 0.9}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.075, "y": 0.055, "w": 0.85, "h": 0, "fill": "accent", "stroke": 1.1},
+      {"kind": "ellipse", "x": 0.885, "y": 0.86, "w": 0.055, "h": 0.055, "fill": "soft", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "Build Your First Shop",
+    "subtitle": "A calm, practical path from idea to opening day",
+    "brand": "Sage Atelier · EDITION 01",
+    "eyebrow": "THE INDEPENDENT SELLER FIELD GUIDE"
+  }
+}

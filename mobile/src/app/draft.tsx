@@ -48,8 +48,8 @@ export default function DraftScreen() {
   return (
     <Screen>
       <ProductPreview product={d} imageUri={d.localUri || d.image_url} badge={<Pill text="Not in your store yet" tone="flash" />} />
-      {d.image_file ? (
-        <Button label="Change the background" variant="secondary" icon={<Ionicons name="color-wand-outline" size={18} color={c.ink} />}
+      {d.kind === "physical" && d.image_file ? (
+        <Button label="Product Photo Cleanup" variant="secondary" icon={<Ionicons name="color-wand-outline" size={18} color={c.ink} />}
           onPress={() => router.push({ pathname: "/studio", params: { target: "draft", image_file: d.image_file!, image_url: d.image_url ?? "" } })} />
       ) : null}
       <View style={{ gap: space.md }}>

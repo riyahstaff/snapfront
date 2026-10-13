@@ -1,0 +1,55 @@
+{
+  "id": "quotes-04",
+  "name": "Modern Muse",
+  "format": "quotes",
+  "description": "A tactile editorial quote page pairing poised serif storytelling with a kinetic orbit-and-spark motif.",
+  "tags": ["editorial", "optimistic", "geometric"],
+  "palette": {
+    "paper": "#F5F0E7",
+    "ink": "#25252B",
+    "accent": "#B64F3B",
+    "muted": "#665F5B",
+    "soft": "#D9C9B7"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.11, "y": 0.29, "w": 0.76, "h": 0.28, "size": 46, "align": "left"},
+    "subtitle": {"x": 0.12, "y": 0.62, "w": 0.69, "h": 0.10, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.12, "y": 0.16, "w": 0.64, "h": 0.05, "size": 10, "align": "left"},
+    "brand": {"x": 0.12, "y": 0.89, "w": 0.70, "h": 0.05, "size": 10, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "arc", "x": 0.68, "y": 0.08, "w": 0.27, "h": 0.34, "fill": "soft", "opacity": 0.9, "stroke": 3, "start": 205, "end": 35},
+      {"kind": "ellipse", "x": 0.79, "y": 0.15, "w": 0.12, "h": 0.12, "fill": "accent", "opacity": 0.95},
+      {"kind": "polygon", "x": 0.83, "y": 0.36, "w": 0.11, "h": 0.12, "fill": "accent", "opacity": 0.9, "points": [[0.5, 0], [0.62, 0.36], [1, 0.5], [0.62, 0.64], [0.5, 1], [0.38, 0.64], [0, 0.5], [0.38, 0.36]]},
+      {"kind": "line", "x": 0.80, "y": 0.54, "w": 0.12, "h": 0.12, "fill": "soft", "stroke": 2},
+      {"kind": "ellipse", "x": 0.10, "y": 0.77, "w": 0.025, "h": 0.025, "fill": "accent", "opacity": 0.85},
+      {"kind": "line", "x": 0.12, "y": 0.80, "w": 0.64, "h": 0, "fill": "soft", "stroke": 1}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 50,
+    "headerStyle": "stack",
+    "blockStyle": "plain",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.09, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.86, "y": 0.035, "w": 0.035, "h": 0.035, "fill": "accent", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "Begin before you feel ready.",
+    "subtitle": "A little courage makes room for the next bright idea.",
+    "brand": "STUDIO SOLACE",
+    "eyebrow": "A NOTE FOR THE MAKING"
+  }
+}

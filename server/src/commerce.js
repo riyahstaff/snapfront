@@ -122,6 +122,14 @@ export async function startCheckout(seller, items, code) {
   db.prepare("INSERT INTO orders (id, seller_id, status, items, subtotal_cents, discount_cents, shipping_cents, total_cents, discount_code) VALUES (?,?,?,?,?,?,?,?,?)")
     .run(orderId, seller.id, "pending", JSON.stringify(p.lines.map(({ key, ...l }) => l)), p.subtotal, p.discountCents, p.shipping,
       p.total, p.discount?.code || null);
+  // Pin what this checkout offers before yielding to Stripe. A later seller edit cannot
+  // change the file for a payment already started. Pending orders still have no access.
+  for (const line of p.lines.filter((line) => line.kind === "digital")) {
+    const product = db.prepare("SELECT * FROM products WHERE id=? AND seller_id=?").get(line.product_id, seller.id);
+    if (product) db.prepare(`INSERT OR IGNORE INTO digital_order_downloads
+      (order_id, product_id, delivery_file, delivery_url, download_name) VALUES (?,?,?,?,?)`)
+      .run(orderId, product.id, product.delivery_file || null, product.delivery_url || null, `${product.slug || "download"}.pdf`);
+  }
 
   const tax = Boolean(seller.tax_enabled);
   const line_items = p.lines.map((l) => {
@@ -193,6 +201,42 @@ export function downloadsFor(order) {
   if (!order || !["paid", "fulfilled"].includes(order.status)) return [];
   return JSON.parse(order.items).filter((l) => l.kind === "digital")
     .map((l) => ({ title: l.title, url: `${config.publicUrl}/d/${pay.downloadToken(l.product_id, order.id)}` }));
+}
+
+/**
+ * Preserve the attachment a paid buyer purchased immediately before a seller replaces a product's
+ * delivery file. Existing rows are never overwritten: an earlier replacement has already pinned
+ * that buyer to the correct historical file. This is intentionally called by digital attach rather
+ * than by a broad migration of every commerce path.
+ */
+export function snapshotProductDownloads(product) {
+  if (!product || product.kind !== "digital" || (!product.delivery_file && !product.delivery_url)) return 0;
+  const orders = db.prepare("SELECT id, items FROM orders WHERE seller_id = ? AND status IN ('paid','fulfilled')").all(product.seller_id);
+  const insert = db.prepare(`INSERT OR IGNORE INTO digital_order_downloads
+    (order_id, product_id, delivery_file, delivery_url, download_name) VALUES (?,?,?,?,?)`);
+  let count = 0;
+  for (const order of orders) {
+    let lines;
+    try { lines = JSON.parse(order.items); } catch { continue; }
+    if (!Array.isArray(lines) || !lines.some((line) => line?.kind === "digital" && line.product_id === product.id)) continue;
+    const result = insert.run(order.id, product.id, product.delivery_file || null, product.delivery_url || null, `${product.slug || "download"}.pdf`);
+    count += result.changes;
+  }
+  return count;
+}
+
+/** Resolve a signed buyer token to its paid order's immutable snapshot, or the current attachment. */
+export function downloadFor(orderId, productId) {
+  const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(String(orderId || ""));
+  if (!order || !["paid", "fulfilled"].includes(order.status)) return null;
+  let lines;
+  try { lines = JSON.parse(order.items); } catch { return null; }
+  if (!Array.isArray(lines) || !lines.some((line) => line?.kind === "digital" && line.product_id === productId)) return null;
+  const pinned = db.prepare("SELECT * FROM digital_order_downloads WHERE order_id = ? AND product_id = ?").get(order.id, String(productId));
+  if (pinned) return { delivery_file: pinned.delivery_file, delivery_url: pinned.delivery_url, filename: pinned.download_name || "download.pdf" };
+  const product = db.prepare("SELECT * FROM products WHERE id = ? AND seller_id = ?").get(String(productId), order.seller_id);
+  if (!product || product.kind !== "digital") return null;
+  return { delivery_file: product.delivery_file, delivery_url: product.delivery_url, filename: `${product.slug || "download"}.pdf` };
 }
 
 /* ---------- seller views ---------- */

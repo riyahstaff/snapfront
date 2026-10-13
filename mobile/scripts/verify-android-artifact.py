@@ -5,9 +5,11 @@ This is an integrity/content check, not a malware scan or Google Play approval.
 """
 import argparse
 import hashlib
+import io
 import json
 from pathlib import Path
 import zipfile
+from PIL import Image
 
 
 def text_present(data, text):
@@ -50,6 +52,12 @@ def verify(artifact, version_code):
         for text in ['Snap a photo.', 'Get a storefront.']:
             if text_present(bundle, text):
                 raise ValueError(f'Historical Home string found in compiled UI: {text!r}')
+        for text in ['Digital Design Studio', '/api/digital-designs/create', '/digital-design/preview', '/digital-design/attach']:
+            if not text_present(bundle, text):
+                raise ValueError(f'Digital editor missing from compiled UI: {text!r}')
+        for text in ['Storefront Photo Agent', '/api/image-assistant/jobs', 'Digital Photo Studio', 'Recover the same request', 'Preview refreshed.']:
+            if not text_present(bundle, text):
+                raise ValueError(f'New image tools missing from compiled UI: {text!r}')
         image_hashes = {}
         for name in archive.namelist():
             if name.endswith(('.webp', '.jpg', '.png')):
@@ -60,8 +68,24 @@ def verify(artifact, version_code):
             digest = hashlib.sha256(source.read_bytes()).hexdigest()
             if digest not in image_hashes:
                 raise ValueError(f'Image bytes not embedded in artifact: {source.name}')
+        digital_previews = list((root / 'assets/digital-designs').glob('*.png'))
+        assert len(digital_previews) == 50, len(digital_previews)
+        for source in digital_previews:
+            if hashlib.sha256(source.read_bytes()).hexdigest() not in image_hashes:
+                # Android AAPT losslessly recompresses PNG drawables. Container hashes may
+                # change, but the exact source dimensions and RGBA pixels must survive.
+                resource_name = 'assets_digitaldesigns_' + source.stem.replace('-', '') + '.png'
+                candidates = [name for name in archive.namelist() if name.endswith('/' + resource_name)]
+                if len(candidates) != 1:
+                    raise ValueError(f'Digital design image not embedded in artifact: {source.name}')
+                original = Image.open(source).convert('RGBA')
+                packaged = Image.open(io.BytesIO(archive.read(candidates[0]))).convert('RGBA')
+                if original.size != packaged.size or original.tobytes() != packaged.tobytes():
+                    raise ValueError(f'Packaged digital design pixels differ from source: {source.name}')
     result = {'artifact': str(artifact.resolve()), 'package': package, 'version': native_version,
               'version_code': native_code, 'theme_previews_verified': len(previews),
+              'digital_design_previews_verified': len(digital_previews), 'digital_editor_verified': True, 'separate_image_studios_verified': True,
+              'android_png_lossless_pixel_verification': True,
               'chrome_home_verified': True, 'bytes': artifact.stat().st_size,
               'sha256': hashlib.sha256(artifact.read_bytes()).hexdigest()}
     return result

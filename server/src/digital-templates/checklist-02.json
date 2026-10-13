@@ -1,0 +1,54 @@
+{
+  "id": "checklist-02",
+  "name": "Citrus Check",
+  "format": "checklist",
+  "description": "A bright editorial launch checklist framed by citrus-slice geometry and crisp, generous writing space.",
+  "tags": ["checklist", "launch", "citrus", "editorial"],
+  "palette": {
+    "paper": "#FFF9EB",
+    "ink": "#17352E",
+    "accent": "#E56B35",
+    "muted": "#536B60",
+    "soft": "#F2D56B"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.29, "w": 0.66, "h": 0.34, "size": 54, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.67, "w": 0.66, "h": 0.12, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.15, "w": 0.66, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.70, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.63, "y": 0.16, "w": 0.37, "h": 0.37, "fill": "soft", "stroke": 1.5},
+      {"kind": "ellipse", "x": 0.77, "y": 0.23, "w": 0.23, "h": 0.23, "fill": "paper", "stroke": 1.5},
+      {"kind": "line", "x": 0.81, "y": 0.18, "w": 0.12, "h": 0.34, "fill": "accent", "stroke": 2},
+      {"kind": "polygon", "x": 0.80, "y": 0.58, "w": 0.17, "h": 0.17, "fill": "accent", "points": [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]]},
+      {"kind": "arc", "x": 0.70, "y": 0.70, "w": 0.20, "h": 0.20, "fill": "ink", "stroke": 1.5, "start": 210, "end": 340}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "pill",
+    "blockStyle": "steps",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.07, "w": 0.84, "h": 0, "fill": "soft", "stroke": 2},
+      {"kind": "ellipse", "x": 0.87, "y": 0.82, "w": 0.07, "h": 0.07, "fill": "soft", "opacity": 0.7}
+    ]
+  },
+  "sample": {
+    "title": "Ready, Set, Launch",
+    "subtitle": "A small-shop checklist for a confident product debut",
+    "brand": "CITRUS STUDIO",
+    "eyebrow": "THE SELLER’S FIRST-LAUNCH LIST"
+  }
+}

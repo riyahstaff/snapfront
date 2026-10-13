@@ -1,0 +1,54 @@
+{
+  "id": "planner-07",
+  "name": "Warm Intentions",
+  "format": "planner",
+  "description": "A sun-warmed weekly intention planner pairing editorial type with a quiet orbit of geometric forms and generous writing space.",
+  "tags": ["planner", "intentional", "warm editorial"],
+  "palette": {
+    "paper": "#FBF6EC",
+    "ink": "#292A27",
+    "accent": "#B85D3E",
+    "muted": "#665F54",
+    "soft": "#E9D8C2"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.10, "y": 0.29, "w": 0.67, "h": 0.31, "size": 54, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.64, "w": 0.67, "h": 0.10, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.16, "w": 0.68, "h": 0.05, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.68, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.71, "y": 0.17, "w": 0.20, "h": 0.20, "fill": "soft", "opacity": 1},
+      {"kind": "arc", "x": 0.67, "y": 0.13, "w": 0.29, "h": 0.29, "fill": "accent", "stroke": 2.2, "start": 205, "end": 330},
+      {"kind": "polygon", "x": 0.78, "y": 0.43, "w": 0.13, "h": 0.20, "fill": "accent", "points": [[0.5,0],[1,0.35],[0.76,1],[0.12,0.78],[0,0.28]]},
+      {"kind": "line", "x": 0.71, "y": 0.72, "w": 0.22, "h": 0, "fill": "muted", "stroke": 1.4},
+      {"kind": "ellipse", "x": 0.89, "y": 0.69, "w": 0.045, "h": 0.045, "fill": "accent", "opacity": 1}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.075, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.3},
+      {"kind": "ellipse", "x": 0.085, "y": 0.045, "w": 0.018, "h": 0.018, "fill": "accent", "opacity": 1}
+    ]
+  },
+  "sample": {
+    "title": "A Week with Intention",
+    "subtitle": "A gentle plan for focus, small joys, and room to breathe",
+    "brand": "The Sunday Desk",
+    "eyebrow": "WEEKLY REFLECTION & PLANNING"
+  }
+}

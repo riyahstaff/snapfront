@@ -1,0 +1,175 @@
+{
+  "id": "quotes-03",
+  "name": "Orbit of Joy",
+  "format": "quotes",
+  "description": "A sunshine-yellow typographic print with playful orbit markers, expressive dark display lettering and a generous centered message.",
+  "tags": [
+    "uplifting",
+    "editorial",
+    "orbit",
+    "joy"
+  ],
+  "palette": {
+    "paper": "#FFE77D",
+    "ink": "#202A44",
+    "accent": "#9F4139",
+    "muted": "#59533A",
+    "soft": "#F0BD59"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.1,
+      "y": 0.3,
+      "w": 0.59,
+      "h": 0.3,
+      "size": 43,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.64,
+      "w": 0.58,
+      "h": 0.12,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.15,
+      "w": 0.6,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.88,
+      "w": 0.6,
+      "h": 0.05,
+      "size": 11,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "ellipse",
+        "x": 0.72,
+        "y": 0.07,
+        "w": 0.21,
+        "h": 0.16,
+        "fill": "soft"
+      },
+      {
+        "kind": "polygon",
+        "x": 0.78,
+        "y": 0.1,
+        "w": 0.09,
+        "h": 0.09,
+        "fill": "accent",
+        "points": [
+          [
+            0.5,
+            0
+          ],
+          [
+            0.63,
+            0.35
+          ],
+          [
+            1,
+            0.5
+          ],
+          [
+            0.63,
+            0.65
+          ],
+          [
+            0.5,
+            1
+          ],
+          [
+            0.37,
+            0.65
+          ],
+          [
+            0,
+            0.5
+          ],
+          [
+            0.37,
+            0.35
+          ]
+        ]
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.065,
+        "y": 0.77,
+        "w": 0.11,
+        "h": 0.085,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.23,
+        "w": 0.84,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 2
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.82,
+        "w": 0.84,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 2
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 52,
+    "headerStyle": "rule",
+    "blockStyle": "plain",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {
+        "kind": "ellipse",
+        "x": 0.84,
+        "y": 0.04,
+        "w": 0.09,
+        "h": 0.09,
+        "fill": "soft",
+        "opacity": 0.7
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.94,
+        "w": 0.85,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1,
+        "opacity": 0.7
+      }
+    ]
+  },
+  "sample": {
+    "title": "Joy finds its orbit in small things.",
+    "subtitle": "A little room for wonder, wherever you are.",
+    "brand": "MORNING ORBIT",
+    "eyebrow": "A NOTE TO KEEP CLOSE"
+  }
+}

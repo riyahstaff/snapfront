@@ -1,0 +1,162 @@
+{
+  "id": "guide-03",
+  "name": "Noir Narrative",
+  "format": "guide",
+  "description": "A cinematic graphite book jacket: high-contrast serif storytelling, vermilion edge spine and architectural silver rules.",
+  "tags": [
+    "noir",
+    "storytelling",
+    "editorial"
+  ],
+  "palette": {
+    "paper": "#FAF8F3",
+    "ink": "#18191C",
+    "accent": "#AD4C35",
+    "muted": "#606269",
+    "soft": "#E7E3DA"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "title": {
+      "x": 0.1,
+      "y": 0.29,
+      "w": 0.67,
+      "h": 0.32,
+      "size": 53,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.65,
+      "w": 0.66,
+      "h": 0.12,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.13,
+      "w": 0.65,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.88,
+      "w": 0.65,
+      "h": 0.05,
+      "size": 11,
+      "align": "left"
+    },
+    "textColor": "paper",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.88,
+        "y": 0,
+        "w": 0.12,
+        "h": 1,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.075,
+        "w": 0.76,
+        "h": 0,
+        "fill": "paper",
+        "stroke": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.71,
+        "y": 0.19,
+        "w": 0.13,
+        "h": 0.03,
+        "fill": "paper"
+      },
+      {
+        "kind": "rect",
+        "x": 0.77,
+        "y": 0.24,
+        "w": 0.07,
+        "h": 0.16,
+        "fill": "soft",
+        "opacity": 0.35
+      },
+      {
+        "kind": "polygon",
+        "x": 0.78,
+        "y": 0.79,
+        "w": 0.08,
+        "h": 0.07,
+        "fill": "paper",
+        "points": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.83,
+        "w": 0.48,
+        "h": 0,
+        "fill": "paper",
+        "stroke": 1
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 50,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.075,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.88,
+        "y": 0.045,
+        "w": 0.035,
+        "h": 0.035,
+        "fill": "accent",
+        "opacity": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "Tell Your Product Story",
+    "subtitle": "A practical field guide to finding the detail customers remember",
+    "brand": "STUDIO AFTERLIGHT",
+    "eyebrow": "A SELLER'S STORY FIELD GUIDE"
+  }
+}

@@ -1,12 +1,14 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { Ionicons } from "@expo/vector-icons";
 import { Notice, Pill } from "@/components/ui";
+import { API_URL } from "@/lib/api";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
 import { TemplatePreviewFallback } from "./template-preview-fallback";
 import {
   buildTemplatePreviewDocument,
+  refreshTemplateImages,
   isAllowedPreviewNavigation,
   previewBridgeMessage,
   setupPreviewNeedsLatestBackend,
@@ -16,9 +18,11 @@ import {
 export type { TemplatePreviewProps } from "./template-preview-bridge";
 
 /** Inline, non-navigating setup preview. It does not open a seller storefront or enable shopping. */
-export function TemplatePreview({ preview, loading, error, theme, onRetry, onPhoto, onWords }: TemplatePreviewProps) {
+export function TemplatePreview({ preview, loading, error, theme, onRetry, onPhoto, onWords, renderRevision = 0 }: TemplatePreviewProps) {
   const c = useColors();
-  const html = useMemo(() => preview ? buildTemplatePreviewDocument(preview.html, "native") : "", [preview]);
+  const [frameError, setFrameError] = useState<{ revision: number; text: string } | null>(null);
+  const shownError = error || (frameError?.revision === renderRevision ? frameError.text : null);
+  const html = useMemo(() => preview ? buildTemplatePreviewDocument(refreshTemplateImages(preview.html, renderRevision, API_URL), "native") : "", [preview, renderRevision]);
   if (!preview && loading) return <View style={{ gap: 8, alignItems: "center", padding: space.lg }}><ActivityIndicator color={c.accent} /><Text style={[type.small, { color: c.muted }]}>Loading your chosen design…</Text></View>;
   if (!preview) return <TemplatePreviewFallback theme={theme} error={setupPreviewNeedsLatestBackend(error, preview) ? "Setup preview needs the latest backend. Your draft is kept on this phone; retry when it is available or keep editing manually." : error} onRetry={onRetry} />;
   const sample = preview.mode === "template" || preview.sample_products > 0 || preview.photo_slots.some((slot) => slot.sample);
@@ -34,6 +38,9 @@ export function TemplatePreview({ preview, loading, error, theme, onRetry, onPho
       </View>
       <View style={[styles.frame, { borderColor: previewTheme.colors.line, backgroundColor: previewTheme.colors.bg }]}>
         <WebView
+          key={renderRevision}
+          onError={() => setFrameError({ revision: renderRevision, text: "The picture frame could not load. Your draft is safe; tap Refresh to reload it." })}
+          onRenderProcessGone={() => setFrameError({ revision: renderRevision, text: "Android stopped the picture frame. Your draft is safe; tap Refresh to reopen it." })}
           source={{ html, baseUrl: "about:blank" }}
           originWhitelist={["about:blank"]}
           onShouldStartLoadWithRequest={(request) => isAllowedPreviewNavigation(request.url)}
@@ -55,9 +62,9 @@ export function TemplatePreview({ preview, loading, error, theme, onRetry, onPho
         />
       </View>
       {sample ? <Notice text="Example photos and products help you see the design. Replace them with yours. You cannot shop in this private preview." /> : <Notice text="This private preview does not change your live store. Customers only see your design after you finish." />}
-      {error ? <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}><Text style={[type.small, { color: c.bad, flex: 1 }]}>{error}</Text><Pressable accessibilityRole="button" onPress={onRetry} style={{ minHeight: 44, justifyContent: "center" }}><Text style={{ fontFamily: fonts.bodyBold, color: c.accent }}>Retry</Text></Pressable></View> : null}
+      {shownError ? <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}><Text style={[type.small, { color: c.bad, flex: 1 }]}>{shownError}</Text><Pressable accessibilityRole="button" onPress={onRetry} style={{ minHeight: 44, justifyContent: "center" }}><Text style={{ fontFamily: fonts.bodyBold, color: c.accent }}>Retry</Text></Pressable></View> : null}
       <View style={{ flexDirection: "row", gap: space.sm }}>
-        <Pressable accessibilityRole="button" onPress={onRetry} style={[styles.control, { borderColor: c.line, backgroundColor: c.surface }]}><Ionicons name="refresh-outline" size={17} color={c.ink} /><Text style={{ fontFamily: fonts.bodyBold, color: c.ink }}>Refresh</Text></Pressable>
+        <Pressable accessibilityRole="button" disabled={loading} accessibilityState={{ disabled: loading, busy: loading }} onPress={onRetry} style={[styles.control, { borderColor: c.line, backgroundColor: c.surface }]}><Ionicons name="refresh-outline" size={17} color={c.ink} /><Text style={{ fontFamily: fonts.bodyBold, color: c.ink }}>{loading ? "Refreshing…" : "Refresh"}</Text></Pressable>
         {onWords ? <Pressable accessibilityRole="button" onPress={onWords} style={[styles.control, { borderColor: c.line, backgroundColor: c.surface }]}><Ionicons name="create-outline" size={17} color={c.ink} /><Text style={{ fontFamily: fonts.bodyBold, color: c.ink }}>Edit words</Text></Pressable> : null}
       </View>
     </View>

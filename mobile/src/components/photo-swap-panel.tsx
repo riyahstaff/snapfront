@@ -1,192 +1,191 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Notice, Pill } from "@/components/ui";
-import { useMe } from "@/lib/account-store";
-import { api, ApiError, type Product, type StudioPresets, type StudioStyle, type TemplatePreview as TemplatePreviewData } from "@/lib/api";
+import { Body, Button, Field, Notice, Pill, Segmented } from "@/components/ui";
+import { account } from "@/lib/account-store";
+import { API_URL, api, ApiError, type Product, type TemplatePreview as TemplatePreviewData } from "@/lib/api";
+import { imageAssistant, imageJobRunning, imageRequestKey, jobsForStorefrontSlot, mergeImageJob, usableImageJob, type ImageAspect, type ImageAssistantInput, type ImageAssistantOptions, type ImageJob } from "@/lib/image-assistant";
 import type { StorefrontDraft, TemplatePhoto, TemplatePhotoSlot } from "@/lib/storefront-draft";
-import { fonts, radius, space, type, useColors } from "@/lib/theme";
-import {
-  discardStudioResult,
-  draftSlotSource,
-  ownedPhoto,
-  productPhotoSources,
-  retainStudioResult,
-  studioResultFor,
-  type OwnedPhotoSource,
-} from "./photo-swap-safeguards";
+import { radius, space, type, useColors } from "@/lib/theme";
+import { draftSlotSource, productPhotoSources, type OwnedPhotoSource } from "./photo-swap-safeguards";
 
 export type PhotoSwapPanelProps = {
-  slot: TemplatePhotoSlot;
-  slots: TemplatePreviewData["photo_slots"];
-  storeId: string;
-  storeRevision: number;
-  draft: StorefrontDraft;
-  products: Product[];
-  busy: boolean;
+  slot: TemplatePhotoSlot; slots: TemplatePreviewData["photo_slots"]; storeId: string; storeRevision: number;
+  draft: StorefrontDraft; products: Product[]; busy: boolean;
   onSelectSlot: (slot: TemplatePhotoSlot) => void;
   onUpload: (slot: TemplatePhotoSlot, source: "camera" | "library") => void;
   onUsePhoto: (slot: TemplatePhotoSlot, photo: TemplatePhoto) => Promise<void>;
-  onReuseMain: () => void;
-  onClear: (slot: TemplatePhotoSlot) => void;
+  onReuseMain: () => void; onClear: (slot: TemplatePhotoSlot) => void;
 };
-
-type PanelMessage = { text: string; tone: "error" | "info" | "ok" };
 type Scoped<T> = { scope: string; value: T };
-type PresetRecord = { storeId: string; presets: StudioPresets; error: string | null };
+type Message = { text: string; tone: "ok" | "info" | "error" };
+const examples = [
+  { name: "Editorial light", prompt: "Style my real product in an elegant editorial scene on warm travertine, soft side-window light, subtle shadows and plenty of clear space around it. Keep the item and its label accurate." },
+  { name: "Cinematic luxury", prompt: "Create a cinematic luxury campaign around my real product: dark graphite stone, restrained silver reflections, directional light and a refined uncluttered composition. Keep the item and its label accurate." },
+];
 
-/**
- * The wizard owns uploads and draft patches. This panel only presents explicit choices: Studio
- * receives a real owner reference, and its result is never inserted until the seller taps Use.
- */
-export function PhotoSwapPanel({ slot, slots, storeId, storeRevision, draft, products, busy, onSelectSlot, onUpload, onUsePhoto, onReuseMain, onClear }: PhotoSwapPanelProps) {
+/** Storefront-only photo direction. No candidate is inserted or applied without an explicit Use. */
+export function PhotoSwapPanel(props: PhotoSwapPanelProps) {
+  const { slot, slots, storeId, storeRevision, draft, products, busy, onSelectSlot, onUpload, onUsePhoto, onReuseMain, onClear } = props;
   const c = useColors();
-  const me = useMe();
-  const scope = `${storeId}:${slot}:${storeRevision}`;
-  const [presetRecord, setPresetRecord] = useState<PresetRecord | null>(null);
-  const [sourceChoice, setSourceChoice] = useState<Scoped<OwnedPhotoSource> | null>(null);
-  const [styleChoice, setStyleChoice] = useState<Scoped<StudioStyle> | null>(null);
+  const scope = `${storeId}:${storeRevision}:${slot}`;
+  const [open, setOpen] = useState(false);
+  const [config, setConfig] = useState<{ store: string; data: ImageAssistantOptions } | null>(null);
+  const [history, setHistory] = useState<{ store: string; jobs: ImageJob[] } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [modeChoice, setModeChoice] = useState<Scoped<"edit" | "art"> | null>(null);
   const [promptChoice, setPromptChoice] = useState<Scoped<string> | null>(null);
-  const [messageChoice, setMessageChoice] = useState<Scoped<PanelMessage> | null>(null);
-  const [resultChoice, setResultChoice] = useState<Scoped<ReturnType<typeof studioResultFor>> | null>(null);
-  const [aiOpen, setAiOpen] = useState(false);
-  const [runningScope, setRunningScope] = useState<string | null>(null);
-  const run = useRef(0);
-  const current = slots.find((item) => item.index === slot) ?? null;
-  const slotSource = useMemo(() => draftSlotSource(draft, slot), [draft, slot]);
-  const productSources = useMemo(() => productPhotoSources(products), [products]);
-  const presets = presetRecord?.storeId === storeId ? presetRecord.presets : null;
-  const presetLoadError = presetRecord?.storeId === storeId ? presetRecord.error : null;
-  const source = sourceChoice?.scope === scope ? sourceChoice.value : slotSource;
-  const style = styleChoice?.scope === scope ? styleChoice.value : null;
+  const [aspectChoice, setAspectChoice] = useState<Scoped<ImageAspect> | null>(null);
+  const [sourceChoice, setSourceChoice] = useState<Scoped<OwnedPhotoSource> | null>(null);
+  const [jobChoice, setJobChoice] = useState<Scoped<string> | null>(null);
+  const [messageChoice, setMessageChoice] = useState<Scoped<Message> | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
+  const [active, setActive] = useState(AppState.currentState === "active");
+  const [resume, setResume] = useState(0);
+  const [stoppedId, setStoppedId] = useState<string | null>(null);
+  const [retryScope, setRetryScope] = useState<string | null>(null);
+  const frozen = useRef<Scoped<ImageAssistantInput> | null>(null);
+  const mounted = useRef(true);
+  const currentScope = useRef(scope);
+  useEffect(() => { currentScope.current = scope; }, [scope]);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useFocusEffect(useCallback(() => { setFocused(true); return () => setFocused(false); }, []));
+  useEffect(() => { const sub = AppState.addEventListener("change", (state) => setActive(state === "active")); return () => sub.remove(); }, []);
+  const original = useMemo(() => draftSlotSource(draft, slot), [draft, slot]);
+  const sources = useMemo(() => productPhotoSources(products), [products]);
+  const source = sourceChoice?.scope === scope ? sourceChoice.value : original;
+  const mode = modeChoice?.scope === scope ? modeChoice.value : "edit";
   const prompt = promptChoice?.scope === scope ? promptChoice.value : "";
+  const aspect = aspectChoice?.scope === scope ? aspectChoice.value : slot === 0 ? "wide" : "portrait";
+  const options = config?.store === storeId ? config.data : null;
+  const jobs = jobsForStorefrontSlot(history?.store === storeId ? history.jobs : [], slot);
+  const candidate = jobs.find((job) => job.id === (jobChoice?.scope === scope ? jobChoice.value : "")) ?? null;
+  const current = slots.find((item) => item.index === slot);
+  const polling = jobs.find((job) => imageJobRunning(job) && job.id !== stoppedId) ?? null;
+  const disabled = busy || pending === scope;
   const message = messageChoice?.scope === scope ? messageChoice.value : null;
-  const retained = resultChoice?.scope === scope ? resultChoice.value : studioResultFor(storeId, slot, storeRevision);
-  const running = runningScope === scope;
-  const allowance = me?.account ? Math.max(0, me.account.limits.studio - me.account.usage.studio) : null;
-  const disabled = busy || running;
-  const setMessage = (value: PanelMessage | null) => setMessageChoice(value ? { scope, value } : null);
+  const owns = (requestScope = scope) => mounted.current && currentScope.current === requestScope && account.get()?.id === storeId && (!api.selectedStore() || api.selectedStore() === storeId) && api.storeRevision() === storeRevision;
+  const setMessage = (value: Message) => setMessageChoice({ scope, value });
 
   useEffect(() => {
+    if (!open || !focused || !active) return;
     let alive = true;
-    void api.studioPresets().then((next) => {
-      if (alive) setPresetRecord({ storeId, presets: next, error: null });
-    }).catch(() => {
-      if (alive) setPresetRecord({ storeId, presets: { enabled: false, custom: false, colors: [], scenes: [] }, error: "Photo Studio is unavailable right now. Your own uploaded photos still work." });
+    void imageAssistant.options("storefront", storeId).then((data) => {
+      if (!alive || account.get()?.id !== storeId || api.storeRevision() !== storeRevision) return;
+      setConfig({ store: storeId, data }); setHistory((old) => ({ store: storeId, jobs: data.jobs.reduce((all, job) => mergeImageJob(all, job), old?.store === storeId ? old.jobs : []) }));
+    }).catch((error) => {
+      if (alive) setMessageChoice({ scope, value: { text: error instanceof ApiError ? error.message : "The Photo Agent could not connect. Your own photos and Refresh still work.", tone: "error" } });
     });
     return () => { alive = false; };
-  }, [storeId]);
+  }, [open, focused, active, storeId, storeRevision, attempt, scope]);
 
-  function selectStyle(next: StudioStyle) {
-    setStyleChoice({ scope, value: next });
-    setMessage(null);
-  }
+  const pollingId = polling?.id;
+  useEffect(() => {
+    if (!open || !focused || !active || !pollingId) return;
+    let alive = true; let count = 0; let timer: ReturnType<typeof setTimeout> | null = null;
+    const read = async () => {
+      try {
+        const job = await imageAssistant.job(pollingId, storeId);
+        if (!alive || account.get()?.id !== storeId || api.storeRevision() !== storeRevision) return;
+        setHistory((old) => ({ store: storeId, jobs: mergeImageJob(old?.store === storeId ? old.jobs : [], job) }));
+        if (!imageJobRunning(job)) {
+          if (usableImageJob(job)) setJobChoice({ scope, value: job.id });
+          setMessageChoice({ scope, value: { text: job.status === "done" ? "Your candidate is ready. Compare it with the original, then choose whether to use it." : job.error || "This edit failed. Your earlier photo is unchanged.", tone: job.status === "done" ? "ok" : "error" } });
+          setAttempt((value) => value + 1); return;
+        }
+      } catch (error) {
+        if (!alive) return;
+        setMessageChoice({ scope, value: { text: error instanceof ApiError ? error.message : "Couldn’t check this edit. It stays saved on the server; resume without generating again.", tone: "info" } });
+      }
+      if (!alive) return;
+      if (++count >= 24) { setStoppedId(pollingId); setMessageChoice({ scope, value: { text: "This edit is taking longer. Its job is saved. Tap Resume to check again without spending another edit.", tone: "info" } }); return; }
+      timer = setTimeout(() => { void read(); }, 5000);
+    };
+    void read();
+    return () => { alive = false; if (timer) clearTimeout(timer); };
+  }, [open, focused, active, pollingId, storeId, storeRevision, scope, resume]);
 
-  async function generate() {
-    const owner = storeId;
-    const revision = storeRevision;
-    const requestScope = scope;
-    const selected = source && ownedPhoto(source, source.label, source.kind);
-    if (!selected) { setMessage({ text: "Upload a photo or choose one of your real product photos first. We do not make inventory from example images.", tone: "info" }); return; }
-    if (!presets?.enabled) { setMessage({ text: "Photo Studio is not enabled for this account right now. You can still use your own uploaded photo.", tone: "info" }); return; }
-    if (!style) { setMessage({ text: "Choose a background style first.", tone: "info" }); return; }
-    if (allowance === 0) { setMessage({ text: "You have no Studio edits left right now. Choose one of your own photos instead.", tone: "info" }); return; }
-    const request = ++run.current;
-    setRunningScope(requestScope); setMessage(null);
-    try {
-      const result = await api.studio({ image_file: selected.image_file, style }, owner);
-      const saved = retainStudioResult(owner, slot, revision, selected, result);
-      // A changed store, slot, or selection revision cannot display this late result.
-      if (request !== run.current) return;
-      if (!saved) { setMessageChoice({ scope: requestScope, value: { text: "The Studio result did not match the photo you selected, so it was not offered for use.", tone: "error" } }); return; }
-      setResultChoice({ scope: requestScope, value: saved });
-      setMessageChoice({ scope: requestScope, value: result.notice ? { text: result.notice, tone: "info" } : { text: "Your AI photo is ready. It is not in your storefront until you choose Use this AI photo.", tone: "ok" } });
-    } catch (error) {
-      if (request === run.current) setMessageChoice({ scope: requestScope, value: { text: error instanceof ApiError ? error.message : "Couldn’t make that photo. Your existing photos are unchanged.", tone: "error" } });
-    } finally {
-      if (request === run.current) setRunningScope((currentScope) => currentScope === requestScope ? null : currentScope);
+  async function generate(retry = false) {
+    if (!owns() || disabled) return;
+    if ((!options?.enabled || !options?.provider)) { setMessage({ text: options?.setup_required || "AI image generation is unavailable. Uploading and previewing your own photos still works.", tone: "info" }); return; }
+    if (!retry && mode === "edit" && !source) { setMessage({ text: "Choose or upload your real photo first. Then describe how you want it redesigned.", tone: "info" }); return; }
+    if (!retry && prompt.trim().length < 8) { setMessage({ text: "Describe the picture you want in a short sentence.", tone: "info" }); return; }
+    if (!retry && options.allowance.ai.remaining <= 0) { setMessage({ text: "Your AI image allowance is used up. Your own uploads and Refresh still work.", tone: "info" }); return; }
+    const frozenInput = frozen.current?.scope === scope ? frozen.current.value : null;
+    if (retry && !frozenInput) {
+      setRetryScope(null); setAttempt((value) => value + 1);
+      setMessage({ text: "Check the saved requests for this photo spot. We did not create another image.", tone: "info" }); return;
     }
-  }
-
-  async function applyAiPhoto() {
-    if (!retained || retained.storeId !== storeId || retained.slot !== slot || retained.revision !== storeRevision) return;
-    const requestScope = scope;
-    setRunningScope(requestScope); setMessage(null);
+    const input = retry ? frozenInput! : {
+      operation: mode === "edit" ? "storefront-edit" as const : "storefront-art" as const,
+      prompt: prompt.trim(), image_file: mode === "edit" ? source?.image_file : undefined,
+      aspect, slot, idempotency_key: imageRequestKey(),
+    };
+    frozen.current = { scope, value: input };
+    setPending(scope); setMessage({ text: "Starting one private photo candidate. Your current photo stays in place.", tone: "info" });
+    const initiated = scope;
     try {
-      await onUsePhoto(slot, retained.photo);
-      discardStudioResult(storeId, slot);
-      setResultChoice({ scope: requestScope, value: null });
-      setMessageChoice({ scope: requestScope, value: { text: "AI photo selected for this setup draft. It is not public until you finish your store design.", tone: "ok" } });
+      const job = await imageAssistant.start(input, storeId);
+      if (!owns(initiated)) return;
+      frozen.current = null; setRetryScope(null);
+      setHistory((old) => ({ store: storeId, jobs: mergeImageJob(old?.store === storeId ? old.jobs : [], job) }));
+      setJobChoice({ scope: initiated, value: job.id }); setStoppedId(null);
+      setMessage({ text: job.status === "failed" ? job.error || "Couldn’t create this photo." : "Your request is saved. You can leave this screen and return to see its result.", tone: job.status === "failed" ? "error" : "info" });
     } catch (error) {
-      setMessageChoice({ scope: requestScope, value: { text: error instanceof Error ? error.message : "Couldn’t use that AI photo. It is still available here.", tone: "error" } });
-    } finally { setRunningScope((currentScope) => currentScope === requestScope ? null : currentScope); }
+      if (owns(initiated)) { setRetryScope(error instanceof ApiError && error.status !== 0 ? null : initiated); setMessage({ text: error instanceof ApiError ? error.message : "The request did not return. Retry the same request to avoid spending twice.", tone: "error" }); }
+    } finally { if (mounted.current) setPending((old) => old === initiated ? null : old); }
   }
 
-  const main = slots.find((item) => item.index === 0);
-  return (
-    <View style={{ gap: space.md }}>
-      <View style={{ gap: 5 }}>
-        <Text style={[type.heading, { color: c.ink }]}>Photos in this layout</Text>
-        <Text style={[type.small, { color: c.muted }]}>Choose a real photo for each spot. Example images are only layout placeholders.</Text>
-      </View>
-      <View style={[styles.tabs, { backgroundColor: c.sunk }]} accessibilityRole="tablist">
-        {(slots.length ? slots.map((item) => item.index) : [0] as TemplatePhotoSlot[]).map((index) => {
-          const item = slots.find((candidate) => candidate.index === index);
-          const selected = index === slot;
-          return <Pressable key={index} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => onSelectSlot(index)} style={[styles.tab, selected && { backgroundColor: c.accent }]}>
-            <Text style={{ fontFamily: fonts.bodyBold, color: selected ? c.onAccent : c.ink, fontSize: 13 }}>{index === 0 ? "Main" : `Detail ${index}`}</Text>
-            <Text style={{ fontFamily: fonts.body, color: selected ? c.onAccent : c.muted, fontSize: 11 }}>{item?.sample ? "Example" : item?.image_url ? "Your photo" : "Add yours"}</Text>
-          </Pressable>;
-        })}
-      </View>
-      <View style={[styles.current, { borderColor: c.line, backgroundColor: c.surface }]}>
-        <View style={[styles.thumbnail, { backgroundColor: c.sunk }]}>{current?.image_url ? <Image source={{ uri: current.image_url }} contentFit="cover" style={StyleSheet.absoluteFill} /> : <Ionicons name="image-outline" size={24} color={c.muted} />}</View>
-        <View style={{ flex: 1, gap: 3 }}><Text style={[type.label, { color: c.ink }]}>{current?.label || (slot === 0 ? "Main photo" : `Detail photo ${slot}`)}</Text><Pill text={current?.sample ? "Example" : current?.image_url ? "Your photo" : "Add your photo"} /></View>
-      </View>
-      <View style={{ flexDirection: "row", gap: space.sm }}>
-        <Button label="Take photo" variant="secondary" disabled={disabled} style={{ flex: 1 }} onPress={() => onUpload(slot, "camera")} />
-        <Button label="Choose photo" variant="secondary" disabled={disabled} style={{ flex: 1 }} onPress={() => onUpload(slot, "library")} />
-      </View>
-      <View style={{ flexDirection: "row", gap: space.sm }}>
-        {slots.length > 1 && draft.banner_file && main?.image_url ? <Button label="Use main photo in other spots" variant="secondary" disabled={disabled} style={{ flex: 1 }} onPress={onReuseMain} /> : null}
-        {(current?.image_url || slotSource) ? <Button label="Clear this spot" variant="ghost" disabled={disabled} onPress={() => onClear(slot)} /> : null}
-      </View>
-      {productSources.length ? <View style={{ gap: space.sm }}>
-        <Text style={[type.label, { color: c.ink }]}>Choose one of your product photos</Text>
-        {productSources.map((product) => <View key={product.image_file} style={[styles.product, { borderColor: c.line }]}><Image source={{ uri: product.image_url }} contentFit="cover" style={styles.productImage} /><Text numberOfLines={1} style={[type.small, { color: c.ink, flex: 1 }]}>{product.label}</Text><Pressable disabled={disabled} accessibilityRole="button" onPress={() => { void onUsePhoto(slot, product).catch((error: unknown) => setMessage({ text: error instanceof Error ? error.message : "Couldn’t use that photo.", tone: "error" })); }} style={{ minHeight: 44, minWidth: 44, justifyContent: "center" }}><Text style={{ fontFamily: fonts.bodyBold, color: c.accent }}>Use</Text></Pressable><Pressable disabled={disabled} accessibilityRole="button" onPress={() => { setSourceChoice({ scope, value: product }); setAiOpen(true); }} style={{ minHeight: 44, minWidth: 44, justifyContent: "center" }}><Text style={{ fontFamily: fonts.bodyBold, color: c.accent }}>Studio</Text></Pressable></View>)}
-      </View> : null}
-      <Button label={aiOpen ? "Hide AI photo help" : "Ask AI to help with this photo"} variant="secondary" disabled={disabled} onPress={() => setAiOpen(!aiOpen)} />
-      {aiOpen ? <View style={[styles.studio, { backgroundColor: c.sunk, borderColor: c.line }]}>
-        <Text style={[type.heading, { color: c.ink }]}>Photo Studio</Text>
-        <Text style={[type.small, { color: c.muted }]}>{source ? `Source: ${source.label}. Studio changes the background only.` : "Choose one of your own uploaded or product photos before using Studio."}</Text>
-        {allowance != null ? <Text style={[type.small, { color: c.ink }]}>{allowance} of {me!.account.limits.studio} Studio edits left. Each generation uses one edit.</Text> : null}
-        {!presets ? <ActivityIndicator color={c.accent} /> : !presets.enabled ? <Notice text={presetLoadError || "Photo Studio is not enabled right now. No background will be generated."} /> : <>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
-            {presets.colors.map((item) => <Pressable key={item.id} disabled={disabled} onPress={() => selectStyle({ color: item.id })} style={[styles.preset, { borderColor: style && "color" in style && style.color === item.id ? c.accent : c.line, backgroundColor: c.surface }]}><View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: `#${item.hex}` }} /><Text style={[type.small, { color: c.ink }]}>{item.name}</Text></Pressable>)}
-            {presets.scenes.map((item) => <Pressable key={item.id} disabled={disabled} onPress={() => selectStyle({ scene: item.id })} style={[styles.preset, { borderColor: style && "scene" in style && style.scene === item.id ? c.accent : c.line, backgroundColor: c.surface }]}><Text style={[type.small, { color: c.ink }]}>{item.name}</Text></Pressable>)}
-          </View>
-          {presets.custom ? <View style={{ gap: 6 }}><Text style={[type.label, { color: c.ink }]}>Place my product on…</Text><TextInput value={prompt} onChangeText={(value) => { setPromptChoice({ scope, value }); const text = value.trim(); setStyleChoice(text.length >= 3 ? { scope, value: { prompt: `Place my product on ${text}` } } : null); setMessage(null); }} maxLength={220} editable={!disabled} placeholder="a sunlit stone shelf" placeholderTextColor={c.muted} style={[styles.input, { color: c.ink, borderColor: c.line, backgroundColor: c.surface }]} /></View> : null}
-          <Button label={running ? "Making your photo…" : "Generate one AI photo"} variant="secondary" loading={running} disabled={disabled || !source || !style || allowance === 0} onPress={generate} />
-          {running ? <Pressable accessibilityRole="button" onPress={() => { run.current++; setRunningScope(null); setMessage({ text: "Stopped waiting. If the service finishes later, its result remains private to this store and slot for this app session.", tone: "info" }); }} style={{ minHeight: 44, justifyContent: "center" }}><Text style={{ fontFamily: fonts.bodyBold, color: c.accent }}>Stop waiting</Text></Pressable> : null}
-        </>}
-      </View> : null}
-      {retained ? <View style={[styles.result, { borderColor: c.line, backgroundColor: c.surface }]}><Image source={{ uri: retained.photo.image_url }} contentFit="cover" style={styles.resultImage} /><View style={{ flex: 1, gap: 6 }}><Text style={[type.label, { color: c.ink }]}>AI photo ready</Text><Text style={[type.small, { color: c.muted }]}>It remains a private choice until you use it below. It is held for this app session; it is not restored after an app restart.</Text><Button label="Use this AI photo" disabled={disabled} loading={running} onPress={() => { void applyAiPhoto(); }} /></View></View> : null}
-      <Notice text={message?.text ?? null} tone={message?.tone} />
-    </View>
-  );
-}
+  async function chooseCandidate() {
+    if (!owns() || disabled || !usableImageJob(candidate) || candidate.slot !== slot || candidate.context !== "storefront") return;
+    const initiated = scope; setPending(initiated);
+    try {
+      await onUsePhoto(slot, { image_file: candidate.image_file, image_url: candidate.image_url });
+      if (owns(initiated)) setMessage({ text: "Candidate placed in this photo spot. Your layout is unchanged. Nothing is public until you finish your store.", tone: "ok" });
+    } catch (error) { if (owns(initiated)) setMessage({ text: error instanceof Error ? error.message : "Couldn’t save that candidate. It is still in your history.", tone: "error" }); }
+    finally { if (mounted.current) setPending((old) => old === initiated ? null : old); }
+  }
 
+  return <View style={{ gap: space.md }}>
+    <Text style={[type.heading, { color: c.ink }]}>Photos in this layout</Text>
+    <Body muted>Choose a photo spot, then upload your own picture or ask the Storefront Photo Agent to help.</Body>
+    <View style={styles.tabs} accessibilityRole="tablist">{(slots.length ? slots : [{ index: 0 as const, label: "Main photo", image_url: null, sample: true }]).map((item) => <Pressable key={item.index} disabled={disabled} onPress={() => onSelectSlot(item.index)} accessibilityRole="tab" accessibilityState={{ selected: item.index === slot, disabled }} style={[styles.tab, { backgroundColor: item.index === slot ? c.accent : c.sunk }]}><Text style={[type.label, { color: item.index === slot ? c.onAccent : c.ink }]}>{item.index === 0 ? "Main" : `Detail ${item.index}`}</Text><Text style={[type.small, { color: item.index === slot ? c.onAccent : c.muted }]}>{item.sample ? "Example" : item.image_url ? "Your photo" : "Add yours"}</Text></Pressable>)}</View>
+    <View style={[styles.current, { borderColor: c.line, backgroundColor: c.surface }]}>{current?.image_url ? <Image source={{ uri: current.image_url }} contentFit="cover" style={styles.thumbnail} /> : <Ionicons name="image-outline" size={32} color={c.muted} />}<View style={{ flex: 1, gap: 5 }}><Text style={[type.label, { color: c.ink }]}>{current?.label || "Main photo"}</Text><Pill text={current?.sample ? "Example" : current?.image_url ? "Your photo" : "Add yours"} /></View></View>
+    <View style={styles.row}><Button label="Take photo" variant="secondary" disabled={disabled} style={{ flex: 1 }} onPress={() => onUpload(slot, "camera")} /><Button label="Choose photo" variant="secondary" disabled={disabled} style={{ flex: 1 }} onPress={() => onUpload(slot, "library")} /></View>
+    {slots.length > 1 && draft.banner_file ? <Button label="Use main photo in other spots" variant="secondary" disabled={disabled} onPress={onReuseMain} /> : null}
+    {original ? <Button label="Clear this spot" variant="ghost" disabled={disabled} onPress={() => onClear(slot)} /> : null}
+    {sources.length ? <View style={{ gap: space.sm }}><Text style={[type.label, { color: c.ink }]}>Your product photos</Text>{sources.map((item) => <View key={item.image_file} style={[styles.current, { borderColor: c.line }]}><Image source={{ uri: item.image_url }} style={styles.thumbnail} contentFit="cover" /><Text style={[type.small, { color: c.ink, flex: 1 }]}>{item.label}</Text><Button label="Use" variant="ghost" disabled={disabled} onPress={() => { void onUsePhoto(slot, item).catch((error: unknown) => setMessage({ text: error instanceof Error ? error.message : "Couldn’t use that photo.", tone: "error" })); }} /><Button label="Redesign" variant="ghost" disabled={disabled} onPress={() => { setSourceChoice({ scope, value: item }); setModeChoice({ scope, value: "edit" }); setOpen(true); }} /></View>)}</View> : null}
+    <Button label={open ? "Hide Storefront Photo Agent" : "Ask the Storefront Photo Agent"} variant="secondary" onPress={() => setOpen(!open)} />
+    {open ? <View style={[styles.agent, { backgroundColor: c.sunk, borderColor: c.line }]}>
+      <Text style={[type.heading, { color: c.ink }]}>Storefront Photo Agent</Text>
+      <Body muted>1. Pick a picture or artwork. 2. Describe your idea. 3. Review the result. 4. Use it in this spot.</Body>
+      <Segmented value={mode} onChange={(value) => { setModeChoice({ scope, value: value === "art" ? "art" : "edit" }); }} options={[{ value: "edit", label: "Redesign my photo" }, { value: "art", label: "Create backdrop" }]} />
+      <Notice text={mode === "edit" ? source ? `Editing: ${source.label}. We ask AI to keep your item, logo and label accurate. Check its result before using it.` : "Choose your own picture first. Example photos are not used as your inventory." : "Creates decorative store artwork, not a new product or an accurate picture of an item you sell."} />
+      {mode === "edit" ? <View style={styles.row}>{examples.map((example) => <Button key={example.name} label={example.name} variant="secondary" disabled={disabled} style={{ flex: 1 }} onPress={() => setPromptChoice({ scope, value: example.prompt })} />)}</View> : null}
+      <Field label="Tell the agent what to create or change" hint="Describe the scene, colors, light and mood. Your words are not restricted to a background preset." value={prompt} onChangeText={(value) => { setPromptChoice({ scope, value }); if (retryScope !== scope) frozen.current = null; }} multiline maxLength={1200} editable={!disabled && retryScope !== scope} placeholder={mode === "edit" ? "Put my candle on cream stone with soft sunrise light and a luxury spa mood." : "A calm abstract silver-and-cream landscape with room for the store headline."} />
+      <Segmented value={aspect} options={[{ value: "wide", label: "Wide hero" }, { value: "portrait", label: "Portrait" }, { value: "square", label: "Square" }]} onChange={(value) => setAspectChoice({ scope, value: value as ImageAspect })} />
+      {!options ? <Button label="Load agent status" variant="secondary" onPress={() => setAttempt((value) => value + 1)} /> : <><Body muted>{options.allowance.ai.remaining} of {options.allowance.ai.limit} AI images left. One new candidate uses one image; checking a saved job does not.</Body>{(!options.enabled || !options.provider) ? <Notice text={options.setup_required || "The AI image provider is unavailable. You can still upload pictures and refresh your design."} /> : null}<Button label={pending === scope ? "Starting candidate…" : "Create one candidate"} loading={pending === scope} disabled={disabled || retryScope === scope || (!options.enabled || !options.provider) || prompt.trim().length < 8 || (mode === "edit" && !source) || options.allowance.ai.remaining <= 0} onPress={() => { void generate(); }} /></>}
+      {retryScope === scope ? <Button label="Retry same request (no duplicate generation)" variant="secondary" disabled={disabled} onPress={() => { void generate(true); }} /> : null}
+      {jobs.length ? <View style={{ gap: 7 }}><Text style={[type.label, { color: c.ink }]}>Saved requests for this photo spot</Text>{jobs.slice(0, 6).map((job) => <View key={job.id} style={{ gap: 5, paddingVertical: 6 }}><Button label={`${job.status === "done" ? "Review" : imageJobRunning(job) ? "Resume" : "View"}: ${job.prompt.slice(0, 55)}`} variant="secondary" disabled={disabled} onPress={() => { setJobChoice({ scope, value: job.id }); if (imageJobRunning(job)) { setStoppedId(null); setResume((value) => value + 1); } }} /><Text style={[type.small, { color: c.muted }]}>{job.status === "failed" ? job.error || "Failed — current photo unchanged" : job.status}</Text></View>)}</View> : null}
+      {polling ? <View style={styles.row}><ActivityIndicator color={c.accent} /><Body muted>Creating your candidate. Your request is saved.</Body><Button label="Stop waiting" variant="ghost" onPress={() => setStoppedId(polling.id)} /></View> : null}
+      {usableImageJob(candidate) ? <View style={{ gap: space.sm }}>
+        <Text style={[type.heading, { color: c.ink }]}>Compare before using</Text>
+        {candidate.source_file ? <><Body muted>Original photo</Body><Image source={{ uri: `${API_URL}/img/${candidate.source_file}` }} style={styles.resultImage} contentFit="contain" /></> : null}
+        <Body muted>AI candidate · {candidate.aspect}</Body><Image source={{ uri: candidate.image_url }} style={styles.resultImage} contentFit="contain" />
+        <Body muted>{candidate.prompt}</Body>
+        <Button label="Use this candidate in this spot" disabled={disabled} onPress={() => { void chooseCandidate(); }} />
+        <Notice text="Only this draft photo is replaced. Your theme, other photo spots, products and live store stay unchanged until you finish setup." />
+      </View> : null}
+    </View> : null}
+    <Notice text={message?.text ?? null} tone={message?.tone} />
+  </View>;
+}
 const styles = StyleSheet.create({
-  tabs: { flexDirection: "row", padding: 3, borderRadius: radius.md, gap: 3 },
-  tab: { minHeight: 48, flex: 1, alignItems: "center", justifyContent: "center", borderRadius: radius.sm, gap: 1, paddingHorizontal: 4 },
-  current: { flexDirection: "row", borderWidth: 1, borderRadius: radius.md, padding: space.sm, alignItems: "center", gap: space.sm },
-  thumbnail: { width: 58, height: 58, borderRadius: radius.sm, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  product: { minHeight: 64, borderTopWidth: 1, flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 7 },
-  productImage: { width: 48, height: 48, borderRadius: radius.sm },
-  studio: { borderWidth: 1, borderRadius: radius.lg, padding: space.md, gap: space.sm },
-  preset: { minHeight: 44, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 10, flexDirection: "row", alignItems: "center", gap: 6 },
-  input: { minHeight: 48, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 12, fontFamily: fonts.body, fontSize: 16 },
-  result: { borderWidth: 1, borderRadius: radius.lg, padding: space.sm, flexDirection: "row", gap: space.sm },
-  resultImage: { width: 104, height: 104, borderRadius: radius.md },
+  tabs: { flexDirection: "row", gap: 4 }, tab: { flex: 1, minHeight: 52, borderRadius: radius.md, alignItems: "center", justifyContent: "center", gap: 3 },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: space.sm, alignItems: "center" },
+  current: { flexDirection: "row", minHeight: 72, borderWidth: 1, padding: space.sm, borderRadius: radius.md, alignItems: "center", gap: space.sm },
+  thumbnail: { width: 54, height: 54, borderRadius: radius.sm }, agent: { padding: space.md, borderWidth: 1, borderRadius: radius.lg, gap: space.md }, resultImage: { width: "100%", height: 230, borderRadius: radius.md },
 });

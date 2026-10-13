@@ -1,0 +1,55 @@
+{
+  "id": "planner-04",
+  "name": "Botanical Balance",
+  "format": "planner",
+  "description": "A restorative weekly planning system framed by an abstract botanical sunroom motif, with generous printable space for priorities, appointments, and notes.",
+  "tags": ["planner", "botanical", "weekly", "intentional-living"],
+  "palette": {
+    "paper": "#F7F4EB",
+    "ink": "#20352E",
+    "accent": "#527A63",
+    "muted": "#53655B",
+    "soft": "#DCE6D8"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.25, "w": 0.64, "h": 0.35, "size": 48, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.65, "w": 0.61, "h": 0.13, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.14, "w": 0.70, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.72, "h": 0.05, "size": 10, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.68, "y": 0.11, "w": 0.28, "h": 0.37, "fill": "soft", "opacity": 0.9},
+      {"kind": "arc", "x": 0.64, "y": 0.08, "w": 0.34, "h": 0.47, "fill": "accent", "stroke": 2.2, "start": 205, "end": 35},
+      {"kind": "polygon", "x": 0.74, "y": 0.27, "w": 0.19, "h": 0.39, "fill": "accent", "opacity": 0.86, "points": [[0.48, 0], [0.78, 0.22], [1, 0.53], [0.67, 0.77], [0.18, 1], [0.38, 0.56], [0, 0.29]]},
+      {"kind": "line", "x": 0.81, "y": 0.29, "w": 0.09, "h": 0.31, "fill": "ink", "stroke": 1.4, "opacity": 0.82},
+      {"kind": "polygon", "x": 0.68, "y": 0.55, "w": 0.17, "h": 0.24, "fill": "soft", "opacity": 0.95, "points": [[0.45, 0], [0.82, 0.19], [1, 0.48], [0.64, 0.72], [0.1, 1], [0.35, 0.55], [0, 0.27]]},
+      {"kind": "ellipse", "x": 0.87, "y": 0.72, "w": 0.055, "h": 0.055, "fill": "accent", "opacity": 0.9}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.075, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.2, "opacity": 0.9},
+      {"kind": "ellipse", "x": 0.89, "y": 0.035, "w": 0.035, "h": 0.035, "fill": "accent", "opacity": 0.6}
+    ]
+  },
+  "sample": {
+    "title": "A Week in Balance",
+    "subtitle": "Plan gently, make room for what matters",
+    "brand": "FIELD & FERN PLANNING CO.",
+    "eyebrow": "WEEKLY INTENTION PLANNER"
+  }
+}

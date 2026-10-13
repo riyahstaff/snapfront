@@ -343,3 +343,48 @@ addCol("social_connections", "user_access_token_enc", "TEXT");
 addCol("social_connections", "user_token_expires_at", "TEXT");
 addCol("social_connections", "user_data_access_expires_at", "TEXT");
 addCol("social_posts", "remote_post_id", "TEXT");
+
+// Editable source is deliberately separate from the buyer-facing product attachment. This lets a
+// seller save, preview and export a draft without changing a live download.
+db.exec(`
+CREATE TABLE IF NOT EXISTS digital_designs (
+  product_id TEXT PRIMARY KEY REFERENCES products(id) ON DELETE CASCADE,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  source_available INTEGER NOT NULL DEFAULT 1,
+  document_json TEXT,
+  revision INTEGER NOT NULL DEFAULT 0,
+  attached_export_id TEXT,
+  legacy_message TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS digital_designs_seller ON digital_designs (seller_id, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS digital_design_exports (
+  id TEXT PRIMARY KEY,
+  product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  revision INTEGER NOT NULL,
+  document_hash TEXT NOT NULL,
+  page_count INTEGER NOT NULL,
+  pdf_file TEXT NOT NULL,
+  cover_file TEXT NOT NULL,
+  attached_cover_file TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS digital_design_exports_current
+  ON digital_design_exports (product_id, seller_id, revision, document_hash, created_at DESC);
+
+-- A row is written only when a seller replaces an existing attachment. It intentionally does not
+-- reference products: buyers of a deleted later product still need the preserved paid-order file.
+CREATE TABLE IF NOT EXISTS digital_order_downloads (
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  product_id TEXT NOT NULL,
+  delivery_file TEXT,
+  delivery_url TEXT,
+  download_name TEXT NOT NULL DEFAULT 'download.pdf',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (order_id, product_id)
+);
+CREATE INDEX IF NOT EXISTS digital_order_downloads_file ON digital_order_downloads (delivery_file);
+`);

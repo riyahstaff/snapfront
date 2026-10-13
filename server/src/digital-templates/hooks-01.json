@@ -1,0 +1,164 @@
+{
+  "id": "hooks-01",
+  "name": "Creator Signal",
+  "format": "hooks",
+  "description": "A punchy creator workbook with a raspberry signal rail, bold display headlines and practical content-writing cards.",
+  "tags": [
+    "creator",
+    "hooks",
+    "editorial",
+    "content"
+  ],
+  "palette": {
+    "paper": "#FFF5EC",
+    "ink": "#311B26",
+    "accent": "#C14168",
+    "muted": "#715660",
+    "soft": "#F3D5DE"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.09,
+      "y": 0.3,
+      "w": 0.68,
+      "h": 0.34,
+      "size": 54,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.69,
+      "w": 0.7,
+      "h": 0.11,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.14,
+      "w": 0.68,
+      "h": 0.07,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.88,
+      "w": 0.72,
+      "h": 0.05,
+      "size": 11,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.82,
+        "y": 0,
+        "w": 0.18,
+        "h": 1,
+        "fill": "accent"
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.75,
+        "y": 0.085,
+        "w": 0.18,
+        "h": 0.14,
+        "fill": "soft"
+      },
+      {
+        "kind": "polygon",
+        "x": 0.79,
+        "y": 0.29,
+        "w": 0.16,
+        "h": 0.1,
+        "fill": "paper",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0.25,
+            1
+          ]
+        ]
+      },
+      {
+        "kind": "rect",
+        "x": 0.84,
+        "y": 0.49,
+        "w": 0.08,
+        "h": 0.17,
+        "fill": "ink"
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.235,
+        "w": 0.65,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 2
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.86,
+        "y": 0.82,
+        "w": 0.07,
+        "h": 0.07,
+        "fill": "paper"
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "pill",
+    "blockStyle": "steps",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.075,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1.2
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.875,
+        "y": 0.045,
+        "w": 0.035,
+        "h": 0.035,
+        "fill": "accent"
+      }
+    ]
+  },
+  "sample": {
+    "title": "Open with a Spark",
+    "subtitle": "A flexible hook bank for posts that sound like you",
+    "brand": "FIELD NOTES FOR CREATORS",
+    "eyebrow": "THE CREATOR SIGNAL / HOOKS"
+  }
+}

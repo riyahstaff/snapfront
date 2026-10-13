@@ -1,0 +1,159 @@
+{
+  "id": "guide-05",
+  "name": "Signal Manual",
+  "format": "guide",
+  "description": "A precise monospace manual with indexed coral tabs and a graphite spine, built for practical step-by-step teaching.",
+  "tags": [
+    "editorial",
+    "commerce",
+    "positioning"
+  ],
+  "palette": {
+    "paper": "#F4F0E7",
+    "ink": "#172333",
+    "accent": "#E05B3F",
+    "muted": "#465767",
+    "soft": "#D9E0D9"
+  },
+  "fonts": {
+    "heading": "mono",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.09,
+      "y": 0.28,
+      "w": 0.69,
+      "h": 0.35,
+      "size": 40,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.68,
+      "w": 0.69,
+      "h": 0.11,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.16,
+      "w": 0.67,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.88,
+      "w": 0.67,
+      "h": 0.05,
+      "size": 11,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.84,
+        "y": 0,
+        "w": 0.16,
+        "h": 1,
+        "fill": "ink"
+      },
+      {
+        "kind": "rect",
+        "x": 0.845,
+        "y": 0.16,
+        "w": 0.155,
+        "h": 0.055,
+        "fill": "accent"
+      },
+      {
+        "kind": "rect",
+        "x": 0.845,
+        "y": 0.265,
+        "w": 0.155,
+        "h": 0.055,
+        "fill": "accent"
+      },
+      {
+        "kind": "rect",
+        "x": 0.845,
+        "y": 0.37,
+        "w": 0.155,
+        "h": 0.055,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.23,
+        "w": 0.64,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 2.5
+      },
+      {
+        "kind": "polygon",
+        "x": 0.75,
+        "y": 0.82,
+        "w": 0.065,
+        "h": 0.055,
+        "fill": "accent",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0.5
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "side",
+    "blockStyle": "steps",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.085,
+        "w": 0.16,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 2
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.89,
+        "y": 0.045,
+        "w": 0.035,
+        "h": 0.035,
+        "fill": "soft"
+      }
+    ]
+  },
+  "sample": {
+    "title": "Find Your Signal",
+    "subtitle": "A practical starter guide to a shop people remember",
+    "brand": "FIELDNOTE / COMMERCE STUDIO",
+    "eyebrow": "A SELLER'S POSITIONING MANUAL"
+  }
+}

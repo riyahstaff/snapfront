@@ -1,0 +1,54 @@
+{
+  "id": "quotes-02",
+  "name": "Type in Bloom",
+  "format": "quotes",
+  "description": "A tactile editorial quote card system pairing calm literary type with an asymmetric botanical geometry of nested arcs, a seed-like ellipse, and a folded polygon.",
+  "tags": ["quotes", "editorial", "botanical", "encouragement"],
+  "palette": {
+    "paper": "#F5F0E7",
+    "ink": "#26342F",
+    "accent": "#B64F3D",
+    "muted": "#53675D",
+    "soft": "#D9DFD0"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.13, "y": 0.35, "w": 0.70, "h": 0.30, "size": 48, "align": "left"},
+    "subtitle": {"x": 0.13, "y": 0.69, "w": 0.70, "h": 0.11, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.13, "y": 0.16, "w": 0.68, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.13, "y": 0.88, "w": 0.68, "h": 0.05, "size": 10, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "arc", "x": 0.60, "y": 0.06, "w": 0.34, "h": 0.30, "fill": "soft", "stroke": 3, "start": 205, "end": 350},
+      {"kind": "arc", "x": 0.67, "y": 0.10, "w": 0.25, "h": 0.23, "fill": "accent", "opacity": 0.88, "stroke": 2, "start": 25, "end": 165},
+      {"kind": "ellipse", "x": 0.80, "y": 0.23, "w": 0.075, "h": 0.12, "fill": "muted", "opacity": 0.92},
+      {"kind": "polygon", "x": 0.84, "y": 0.40, "w": 0.12, "h": 0.16, "fill": "accent", "opacity": 0.83, "points": [[0.5, 0], [0.92, 0.37], [0.68, 1], [0.22, 0.78], [0, 0.3]]},
+      {"kind": "line", "x": 0.13, "y": 0.82, "w": 0.68, "h": 0, "fill": "muted", "opacity": 0.7, "stroke": 1}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "plain",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "plain",
+    "shapes": [
+      {"kind": "arc", "x": 0.81, "y": 0.02, "w": 0.14, "h": 0.12, "fill": "soft", "opacity": 0.8, "stroke": 1.5, "start": 200, "end": 335},
+      {"kind": "ellipse", "x": 0.88, "y": 0.10, "w": 0.035, "h": 0.055, "fill": "accent", "opacity": 0.75}
+    ]
+  },
+  "sample": {
+    "title": "Grow at your own pace.",
+    "subtitle": "A little progress is still a beginning.",
+    "brand": "Small Hours Studio",
+    "eyebrow": "WORDS TO KEEP CLOSE"
+  }
+}

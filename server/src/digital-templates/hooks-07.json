@@ -1,0 +1,167 @@
+{
+  "id": "hooks-07",
+  "name": "Analog Ideas",
+  "format": "hooks",
+  "description": "A tactile analog index with monospace copy, warm recycled-paper tones and a tuning-console motif.",
+  "tags": [
+    "hooks",
+    "editorial",
+    "analog",
+    "content-writing"
+  ],
+  "palette": {
+    "paper": "#F3EBDC",
+    "ink": "#352C23",
+    "accent": "#825637",
+    "muted": "#6D6357",
+    "soft": "#D9C6A9"
+  },
+  "fonts": {
+    "heading": "mono",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.09,
+      "y": 0.29,
+      "w": 0.68,
+      "h": 0.36,
+      "size": 39,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.7,
+      "w": 0.68,
+      "h": 0.11,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.12,
+      "w": 0.72,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.88,
+      "w": 0.72,
+      "h": 0.05,
+      "size": 11,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.83,
+        "y": 0.1,
+        "w": 0.12,
+        "h": 0.68,
+        "fill": "soft"
+      },
+      {
+        "kind": "line",
+        "x": 0.855,
+        "y": 0.16,
+        "w": 0.07,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 3
+      },
+      {
+        "kind": "line",
+        "x": 0.855,
+        "y": 0.23,
+        "w": 0.07,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 3
+      },
+      {
+        "kind": "line",
+        "x": 0.855,
+        "y": 0.3,
+        "w": 0.07,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 3
+      },
+      {
+        "kind": "line",
+        "x": 0.855,
+        "y": 0.37,
+        "w": 0.07,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 3
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.847,
+        "y": 0.5,
+        "w": 0.08,
+        "h": 0.08,
+        "fill": "accent"
+      },
+      {
+        "kind": "rect",
+        "x": 0.1,
+        "y": 0.215,
+        "w": 0.12,
+        "h": 0.011,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.84,
+        "w": 0.64,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 1
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "steps",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.075,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.5
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.875,
+        "y": 0.84,
+        "w": 0.055,
+        "h": 0.055,
+        "fill": "soft",
+        "opacity": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "Hooks for a Handmade Brand",
+    "subtitle": "A field guide to opening lines that sound like you",
+    "brand": "STUDIO FIELDNOTES",
+    "eyebrow": "THE ANALOG IDEAS DECK"
+  }
+}

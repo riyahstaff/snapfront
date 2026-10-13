@@ -1,0 +1,56 @@
+{
+  "id": "planner-01",
+  "name": "Slow Sunday",
+  "format": "planner",
+  "description": "A gentle weekly reset planner with an editorial sun-dial motif and generous writing space.",
+  "tags": ["weekly-planner", "slow-living", "editorial"],
+  "palette": {
+    "paper": "#F7F3E9",
+    "ink": "#25372F",
+    "accent": "#B75E45",
+    "muted": "#5E6B60",
+    "soft": "#E8DCC8"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.10, "y": 0.29, "w": 0.69, "h": 0.32, "size": 54, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.64, "w": 0.70, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.16, "w": 0.70, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.70, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.68, "y": 0.12, "w": 0.28, "h": 0.28, "fill": "soft", "opacity": 1},
+      {"kind": "ellipse", "x": 0.75, "y": 0.19, "w": 0.14, "h": 0.14, "fill": "accent", "opacity": 1},
+      {"kind": "line", "x": 0.82, "y": 0.08, "w": 0, "h": 0.41, "fill": "ink", "stroke": 1.5, "opacity": 0.8},
+      {"kind": "line", "x": 0.63, "y": 0.26, "w": 0.36, "h": 0, "fill": "ink", "stroke": 1.5, "opacity": 0.8},
+      {"kind": "polygon", "x": 0.77, "y": 0.20, "w": 0.10, "h": 0.12, "fill": "paper", "opacity": 1, "points": [[0.5,0],[1,0.5],[0.5,1],[0,0.5]]},
+      {"kind": "arc", "x": 0.64, "y": 0.08, "w": 0.36, "h": 0.36, "fill": "accent", "stroke": 2, "start": 205, "end": 330, "opacity": 1},
+      {"kind": "rect", "x": 0.86, "y": 0.56, "w": 0.10, "h": 0.10, "fill": "soft", "radius": 0.03, "opacity": 1}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.075, "w": 0.84, "h": 0, "fill": "soft", "stroke": 2},
+      {"kind": "ellipse", "x": 0.86, "y": 0.11, "w": 0.055, "h": 0.055, "fill": "soft", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "A softer week, by design",
+    "subtitle": "Make room for what matters, one day at a time",
+    "brand": "FIELD NOTES STUDIO",
+    "eyebrow": "THE WEEKLY RESET"
+  }
+}

@@ -29,6 +29,8 @@ import * as aimedia from "./aimedia.js";
 import * as growth from "./growth.js";
 import * as playbilling from "./playbilling.js";
 import * as social from "./social.js";
+import * as digitalDesigns from "./digital-designs.js";
+import * as imageAssistant from "./image-assistant.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, esc } from "./render.js";
 import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
@@ -39,7 +41,7 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 /* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
-const SHARED_PATHS = /^\/(api|img|media|d|thanks|stripe|suppliers|social|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview)(\/|$)/;
+const SHARED_PATHS = /^\/(api|img|media|d|thanks|stripe|suppliers|social|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview|digital-design-assets|digital-design-exports)(\/|$)/;
 const sameSecret = (a, b) => { const x = Buffer.from(String(a || "")), y = Buffer.from(String(b || "")); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 app.use((req, res, next) => {
   if (!config.storeDomain) return next();
@@ -125,7 +127,8 @@ function auth(req, _res, next) {
   const stores = plans.storesOf(account.id);
   // The app says which of the person's stores it is working on; default to their first store.
   const wanted = req.get("x-store");
-  const seller = (wanted && stores.find((s) => s.id === wanted)) || stores[0];
+  const seller = wanted !== undefined ? stores.find((s) => s.id === wanted) : stores[0];
+  if (wanted !== undefined && !seller) return next(httpError(404, "That store is no longer available in this account. Select your store again."));
   if (!seller) return next(httpError(404, "This account has no store yet."));
   req.account = account;
   req.seller = seller;
@@ -253,9 +256,11 @@ app.delete("/api/storefront/photo/:file", auth, (req, res) => {
   if (!/^[\w-]+\.(jpg|png|webp|gif)$/.test(file)) throw httpError(400, "Invalid cover reference.");
   const row = db.prepare("SELECT 1 FROM storefront_photos WHERE seller_id = ? AND image_file = ?").get(req.seller.id, file);
   if (!row) throw httpError(404, "This staged cover does not belong to your store.");
-  if (sellerImageIsInUse(req.seller.id, file)) throw httpError(409, "This photo is still used by a product or storefront slot.");
+  if (sellerImageIsInUse(req.seller.id, file) || digitalDesigns.imageReferencedByAnyDesign(req.seller.id, file)) {
+    throw httpError(409, "This photo is still used by a product, storefront slot, or editable digital design.");
+  }
   db.prepare("DELETE FROM storefront_photos WHERE seller_id = ? AND image_file = ?").run(req.seller.id, file);
-  if (!sellerImageIsInUse(req.seller.id, file)) fs.rmSync(path.join(dirs.images, file), { force: true });
+  if (!sellerImageIsInUse(req.seller.id, file) && !digitalDesigns.imageReferencedByAnyDesign(req.seller.id, file)) fs.rmSync(path.join(dirs.images, file), { force: true });
   for (const [token, entry] of storefrontPreviews) if (entry.sellerId === req.seller.id && entry.patch.banner_file === file) storefrontPreviews.delete(token);
   res.status(204).end();
 });
@@ -268,13 +273,13 @@ app.put("/api/me/banner", auth, (req, res) => {
   const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg", req.seller.id);
   const old = req.seller.banner_file;
   db.prepare("UPDATE sellers SET banner_file = ? WHERE id = ?").run(file, req.seller.id);
-  if (old && !sellerImageIsStored(req.seller.id, old)) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
+  if (old && !sellerImageIsStored(req.seller.id, old) && !digitalDesigns.imageReferencedByAnyDesign(req.seller.id, old)) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
   res.json(me(req));
 });
 app.delete("/api/me/banner", auth, (req, res) => {
   const old = req.seller.banner_file;
   db.prepare("UPDATE sellers SET banner_file = NULL WHERE id = ?").run(req.seller.id);
-  if (old && !sellerImageIsStored(req.seller.id, old)) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
+  if (old && !sellerImageIsStored(req.seller.id, old) && !digitalDesigns.imageReferencedByAnyDesign(req.seller.id, old)) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
   res.json(me(req));
 });
 // Free directory of places to source products (everyone, no sign-in).
@@ -288,6 +293,14 @@ function purgeStores(sellerIds) {
   for (const id of sellerIds) {
     const seller = db.prepare("SELECT banner_file, design_photos FROM sellers WHERE id = ?").get(id);
     const covers = db.prepare("SELECT image_file FROM storefront_photos WHERE seller_id = ?").all(id).map((p) => p.image_file);
+    const designExports = db.prepare("SELECT pdf_file, cover_file, attached_cover_file FROM digital_design_exports WHERE seller_id=?").all(id);
+    covers.push(...designExports.map((row) => row.attached_cover_file).filter(Boolean));
+    const privateFiles = designExports.flatMap((row) => [row.pdf_file, row.cover_file]).filter(Boolean);
+    privateFiles.push(...db.prepare(`SELECT d.delivery_file FROM digital_order_downloads d
+      JOIN orders o ON o.id=d.order_id WHERE o.seller_id=?`).all(id).map((row) => row.delivery_file).filter(Boolean));
+    for (const file of new Set(privateFiles)) {
+      if (/^[\w-]+\.(pdf|png)$/.test(file)) fs.rmSync(path.join(dirs.files, file), { force: true });
+    }
     covers.push(...db.prepare("SELECT image_file FROM seller_media WHERE seller_id=?").all(id).map((row) => row.image_file));
     if (seller?.banner_file) covers.push(seller.banner_file);
     covers.push(...designPhotoFiles(seller?.design_photos).filter(Boolean));
@@ -301,6 +314,14 @@ function purgeStores(sellerIds) {
         if (r.image_file && /^[\w-]+\.\w+$/.test(r.image_file)) fs.rm(path.join(dirs.images, r.image_file), { force: true }, () => {});
       } catch { /* unreadable result: nothing to remove */ }
     }
+    // image_assistant_jobs records both an original source and a copied, durable result. They are
+    // protected by media-ownership during ordinary product/staged-photo cleanup, but all become
+    // orphaned when the entire store is deleted.
+    for (const j of db.prepare("SELECT source_file, result_file FROM image_assistant_jobs WHERE seller_id=?").all(id)) {
+      for (const file of [j.source_file, j.result_file]) {
+        if (/^[\w-]+\.(jpg|jpeg|png|webp|gif)$/.test(String(file || ""))) fs.rm(path.join(dirs.images, file), { force: true }, () => {});
+      }
+    }
     const registered = db.prepare("SELECT files_json AS files FROM social_renders WHERE seller_id=? UNION ALL SELECT media_json AS files FROM social_posts WHERE seller_id=?").all(id, id);
     for (const row of registered) {
       let files; try { files = JSON.parse(row.files); } catch { continue; }
@@ -312,6 +333,8 @@ function purgeStores(sellerIds) {
     // so a store/account cascade must not reach its render before its queued jobs are removed.
     db.prepare("DELETE FROM social_posts WHERE seller_id=?").run(id);
     db.prepare("DELETE FROM media_jobs WHERE seller_id = ?").run(id);
+    db.prepare("DELETE FROM ai_images WHERE file IN (SELECT result_file FROM image_assistant_jobs WHERE seller_id=?)").run(id);
+    db.prepare("DELETE FROM image_assistant_jobs WHERE seller_id = ?").run(id);
     db.prepare("DELETE FROM store_visits WHERE seller_id = ?").run(id);
   }
 }
@@ -611,7 +634,38 @@ app.post("/api/agent/runs", auth, aiLimit, (req, res) => {
 });
 app.get("/api/agent/runs/:id", auth, (req, res) => res.json(agent.getRun(req.seller, req.params.id, Number(req.query.after) || 0)));
 
+/* ---------- separate storefront and digital image studios ---------- */
+// Completion deliberately only creates seller-owned media. Applying any result to a storefront
+// slot, listing, or editable document remains an explicit client action.
+imageAssistant.routes(app, { auth, wrap });
+
 /* ---------- products ---------- */
+// The template catalogue is intentionally public so native can browse it before a seller starts a
+// draft. Thumbnail files are packaged assets only; the route accepts no filesystem path.
+const DIGITAL_DESIGN_ASSETS = path.resolve(new URL("../assets/digital-designs/", import.meta.url).pathname);
+const digitalTemplateIds = new Set(digitalDesigns.catalog().templates.map((template) => template.id));
+app.get("/api/digital-designs", (_req, res) => res.json(digitalDesigns.catalog()));
+app.get("/digital-design-assets/:id.png", (req, res) => {
+  if (!digitalTemplateIds.has(req.params.id)) return res.status(404).end();
+  res.set("Cache-Control", "public, max-age=31536000, immutable");
+  res.sendFile(path.join(DIGITAL_DESIGN_ASSETS, `${req.params.id}.png`), (err) => err && !res.headersSent && res.status(404).end());
+});
+// A signed expiring token is a narrow owner-private export capability. It is not listed by any
+// public storefront page and the underlying files never live below a static route.
+app.get("/digital-design-exports/:token", (req, res, next) => {
+  try {
+    const file = digitalDesigns.privateExportFile(req.params.token);
+    res.set({ "Cache-Control": "private, no-store", Pragma: "no-cache", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow", "X-Content-Type-Options": "nosniff" });
+    if (file.kind === "pdf") return res.download(file.path, file.name);
+    return res.type("png").sendFile(file.path);
+  } catch (error) { next(error); }
+});
+app.post("/api/digital-designs/create", auth, wrap(async (req, res) => res.status(201).json(await digitalDesigns.createDraft(req.seller, req.body || {}))));
+app.get("/api/products/:id/digital-design", auth, (req, res) => res.json(digitalDesigns.getDesign(req.seller, req.params.id)));
+app.put("/api/products/:id/digital-design", auth, wrap(async (req, res) => res.json(await digitalDesigns.saveDesign(req.seller, req.params.id, req.body || {}))));
+app.post("/api/products/:id/digital-design/preview", auth, wrap(async (req, res) => res.json(await digitalDesigns.previewDesign(req.seller, req.params.id, req.body || {}))));
+app.post("/api/products/:id/digital-design/export", auth, wrap(async (req, res) => res.json(await digitalDesigns.exportDesign(req.seller, req.params.id, req.body || {}))));
+app.post("/api/products/:id/digital-design/attach", auth, wrap(async (req, res) => res.json(await digitalDesigns.attachExport(req.seller, req.params.id, req.body || {}))));
 app.get("/api/products", auth, (req, res) => res.json(store.listProducts(req.seller)));
 app.get("/api/products/:id", auth, (req, res) => res.json(store.withPage(req.seller, store.productRow(req.seller, req.params.id))));
 app.post("/api/products", auth, (req, res) => res.status(201).json(store.createProduct(req.seller, req.body || {})));
@@ -823,11 +877,11 @@ app.get("/thanks", wrap(async (req, res) => {
 app.get("/d/:token", (req, res) => {
   const t = pay.readDownloadToken(req.params.token);
   if (!t?.p) return res.status(410).send("This download link has expired. Open your order confirmation page for a fresh one.");
-  const row = db.prepare("SELECT * FROM products WHERE id = ?").get(t.p);
-  if (!row) return res.status(404).send("Product not found");
-  if (row.delivery_url) return res.redirect(row.delivery_url);
-  if (!row.delivery_file) return res.status(404).send("The seller hasn't attached a file yet.");
-  res.download(path.join(dirs.files, row.delivery_file), `${row.slug}.pdf`);
+  const delivery = commerce.downloadFor(t.s, t.p);
+  if (!delivery) return res.status(410).send("This download is no longer available. Open your order confirmation page for a fresh link.");
+  if (delivery.delivery_url) return res.redirect(delivery.delivery_url);
+  if (!delivery.delivery_file || !/^[\w-]+\.pdf$/.test(delivery.delivery_file)) return res.status(404).send("The seller hasn't attached a file yet.");
+  res.download(path.join(dirs.files, delivery.delivery_file), /^[\w.-]+$/.test(delivery.filename) ? delivery.filename : "download.pdf");
 });
 
 /* ---------- legal pages the app stores require (edit before launch) ---------- */
@@ -843,6 +897,7 @@ app.get("/privacy", legal("Privacy policy", `
 <li>If you connect a supplier (CJdropshipping, AliExpress or Printful), the key or sign-in token for that account, stored encrypted, so we can place orders there for you.</li></ul>
 <h2>Optional Meta publishing</h2><p>If you choose to connect Facebook or Instagram, Snapfront receives the access tokens, Page and professional Instagram identifiers, and display names Meta returns for your selected destinations. Tokens are encrypted at rest and are not shown in the app. We use them only to show your connected destinations and carry out a post that you have reviewed and explicitly approved.</p>
 <p>For an approved publish or schedule request, we keep the selected destination, exact approved caption, owned media-file snapshot, requested schedule, processing status and any returned post identifier or permalink. We send the caption and media URL to Meta only when the queue reaches that seller-approved destination. Generating a graphic or caption alone does not publish it.</p>
+<h2>Optional image tools</h2><p>When you create a Storefront Photo Agent or Digital Photo Studio image, we keep your prompt, chosen source-file reference, store photo spot or digital product, requested shape, processing status, returned image and allowance record so you can resume the same request. Source pictures and prompts are sent to Runpod only for an image request you start. A completed image is not inserted into your storefront or digital pages automatically; you review and choose whether to use it. Digital presentation frames use your real cover on our server without an AI image-generation request. Refreshing a storefront preview does not generate an image.</p>
 <h2>What we collect about your buyers</h2><ul>
 <li>Order records: what was bought, amounts, and the buyer's name, email, shipping address and phone number, so digital downloads can be delivered and physical orders shipped.</li>
 <li>Reviews buyers choose to leave: their name, star rating and comment.</li>
@@ -851,7 +906,7 @@ app.get("/privacy", legal("Privacy policy", `
 <h2>How we use it</h2><p>To write your product pages and marketing posts, edit your photos, host your storefront, take payments, send order and review emails, and fulfil dropshipped orders. We don't sell data or use it for advertising.</p>
 <h2>Who we share it with</h2><ul>
 <li>Anthropic (Claude): photos and text, to write product pages, posts and answers.</li>
-<li>Runpod: product photos, when you make AI lifestyle photos or video clips.</li>
+<li>Runpod: prompts and selected source pictures, when you choose to make or edit storefront or digital artwork, lifestyle photos or video clips.</li>
 <li>Stripe: payments, seller identity checks and sales tax.</li>
 <li>Google Play and the App Store: plan purchases.</li>
 <li>Resend: sending sign-in codes, order confirmations, review requests and checkout reminders.</li>
@@ -881,6 +936,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   // The durable SQLite queue is deliberately started only by the real server process, never by
   // imported test apps. Disabled or incomplete Meta configuration starts no worker at all.
   if (social.startWorker()) console.log("[meta] seller publishing worker started");
+  if (imageAssistant.startWorker()) console.log("[image-assistant] durable image worker started");
   // AI video and lifestyle photos: check the Runpod key, then collect finished jobs.
   if (aimedia.enabled()) {
     aimedia.check().then((st) => console.log(`[runpod] key ${st === 200 ? "ok" : `check returned ${st}`}`)).catch((e) => console.error("[runpod] check", e.message));

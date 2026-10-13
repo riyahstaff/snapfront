@@ -1,0 +1,182 @@
+{
+  "id": "checklist-04",
+  "name": "Graphite Method",
+  "format": "checklist",
+  "description": "A functional graphite grid toolkit: precise monospace headings, square status markers and clean printable worksheets.",
+  "tags": [
+    "checklist",
+    "editorial",
+    "launch",
+    "seller-workflow"
+  ],
+  "palette": {
+    "paper": "#F1F4F5",
+    "ink": "#20252C",
+    "accent": "#31566A",
+    "muted": "#59626B",
+    "soft": "#E0E7E9"
+  },
+  "fonts": {
+    "heading": "mono",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.09,
+      "y": 0.29,
+      "w": 0.62,
+      "h": 0.29,
+      "size": 48,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.64,
+      "w": 0.6,
+      "h": 0.12,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.16,
+      "w": 0.62,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.88,
+      "w": 0.62,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.07,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.5
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.93,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.5
+      },
+      {
+        "kind": "rect",
+        "x": 0.84,
+        "y": 0.12,
+        "w": 0.065,
+        "h": 0.065,
+        "fill": "ink"
+      },
+      {
+        "kind": "rect",
+        "x": 0.84,
+        "y": 0.22,
+        "w": 0.065,
+        "h": 0.065,
+        "fill": "soft"
+      },
+      {
+        "kind": "rect",
+        "x": 0.84,
+        "y": 0.32,
+        "w": 0.065,
+        "h": 0.065,
+        "fill": "accent"
+      },
+      {
+        "kind": "rect",
+        "x": 0.84,
+        "y": 0.42,
+        "w": 0.065,
+        "h": 0.065,
+        "fill": "soft"
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.22,
+        "w": 0.62,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 0.7
+      },
+      {
+        "kind": "polygon",
+        "x": 0.78,
+        "y": 0.85,
+        "w": 0.11,
+        "h": 0.035,
+        "fill": "accent",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "steps",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.085,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.91,
+        "w": 0.055,
+        "h": 0.012,
+        "fill": "soft"
+      }
+    ]
+  },
+  "sample": {
+    "title": "First Listing, Ready",
+    "subtitle": "A clear pre-launch checklist for your first product page",
+    "brand": "STUDIO FIELDNOTES",
+    "eyebrow": "THE GRAPHITE METHOD  /  SELLER CHECKLIST"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "id": "planner-10",
+  "name": "Undated Horizons",
+  "format": "planner",
+  "description": "An open, undated planning system framed by horizon lines, a rising sun, and an offset arch—made for clear priorities and generous handwritten notes.",
+  "tags": ["planner", "horizon", "editorial", "undated", "reflection"],
+  "palette": {
+    "paper": "#F5F0E6",
+    "ink": "#172B32",
+    "accent": "#C65B3D",
+    "muted": "#536A6D",
+    "soft": "#D9E1D9"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.29, "w": 0.72, "h": 0.30, "size": 56, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.64, "w": 0.70, "h": 0.13, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.17, "w": 0.70, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.87, "w": 0.70, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.64, "y": 0.10, "w": 0.24, "h": 0.24, "fill": "accent", "opacity": 0.92},
+      {"kind": "arc", "x": 0.57, "y": 0.05, "w": 0.38, "h": 0.38, "fill": "soft", "stroke": 2.2, "start": 205, "end": 335},
+      {"kind": "polygon", "x": 0.57, "y": 0.32, "w": 0.43, "h": 0.19, "fill": "soft", "opacity": 0.88, "points": [[0, 0.72], [0.26, 0.18], [0.44, 0.53], [0.68, 0.08], [1, 0.72], [1, 1], [0, 1]]},
+      {"kind": "line", "x": 0.58, "y": 0.55, "w": 0.34, "h": 0, "fill": "accent", "stroke": 2.2, "opacity": 0.9},
+      {"kind": "line", "x": 0.63, "y": 0.59, "w": 0.25, "h": 0, "fill": "muted", "stroke": 1.1, "opacity": 0.8},
+      {"kind": "rect", "x": 0.89, "y": 0.08, "w": 0.025, "h": 0.49, "fill": "ink", "opacity": 0.82}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.075, "y": 0.055, "w": 0.85, "h": 0, "fill": "soft", "stroke": 1.4},
+      {"kind": "ellipse", "x": 0.86, "y": 0.035, "w": 0.055, "h": 0.055, "fill": "accent", "opacity": 0.72}
+    ]
+  },
+  "sample": {
+    "title": "Make room for what matters",
+    "subtitle": "An undated weekly planner for priorities, plans, and open space",
+    "brand": "FIELDNOTES STUDIO",
+    "eyebrow": "A WEEKLY RESET · NO DATES REQUIRED"
+  }
+}
