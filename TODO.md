@@ -16,4 +16,4 @@
 - [x] Users can upload a staged cover, recover from cancel/upload failure, keep the current cover, and choose still/drift/pan without modifying the live storefront until Apply.
 - [x] Users can generate AI suggestions, insert individual editable fields, or edit manually without an allowance; suggestions never deploy public copy automatically.
 - [x] Users can review real products/readiness, preview the private draft, and apply the design in one final action with an explicit completion view and actual store link; products, plan, Stripe and checkout stay unchanged.
-- [ ] Deliver validated source via a GitHub pull request; document native-device/build gaps; do not submit an app-store release or mutate production sellers during tests.
+- [x] Deliver validated source via a GitHub pull request; document native-device/build gaps; do not submit an app-store release or mutate production sellers during tests.
