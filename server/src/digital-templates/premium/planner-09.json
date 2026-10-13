@@ -1,0 +1,179 @@
+{
+  "id": "planner-09",
+  "format": "planner",
+  "design_revision": 2,
+  "name": "Threshold \u2014 The Focus Planner",
+  "description": "A sculptural weekly planner built around a monumental liquid-chrome doorway: choose what deserves entry, give it a clear place, and leave the margins quiet.",
+  "tags": [
+    "planner",
+    "weekly",
+    "focus",
+    "liquid chrome",
+    "editorial"
+  ],
+  "palette": {
+    "paper": "#F4F4F1",
+    "ink": "#202328",
+    "accent": "#56616B",
+    "muted": "#50565D",
+    "soft": "#DCE0E1"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.09,
+      "y": 0.16,
+      "w": 0.72,
+      "h": 0.19,
+      "size": 58,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.38,
+      "w": 0.62,
+      "h": 0.09,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.095,
+      "w": 0.62,
+      "h": 0.04,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.91,
+      "w": 0.42,
+      "h": 0.035,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "ink",
+      "eyebrow": "accent",
+      "brand": "ink"
+    },
+    "artworks": [
+      {
+        "id": "chrome-gateway",
+        "x": 0.33,
+        "y": 0.49,
+        "w": 0.58,
+        "h": 0.42,
+        "fit": "contain",
+        "opacity": 1
+      },
+      {
+        "id": "optical-silver",
+        "x": 0.76,
+        "y": 0.13,
+        "w": 0.15,
+        "h": 0.2,
+        "fit": "cover",
+        "opacity": 0.42
+      }
+    ],
+    "image": {
+      "x": 0.33,
+      "y": 0.49,
+      "w": 0.58,
+      "h": 0.42
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.145,
+        "w": 0.75,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1.2
+      },
+      {
+        "kind": "rect",
+        "x": 0.31,
+        "y": 0.475,
+        "w": 0.62,
+        "h": 0.445,
+        "fill": "paper",
+        "opacity": 0,
+        "stroke": 1.2,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.87,
+        "w": 0.82,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.1,
+        "y": 0.89,
+        "w": 0.028,
+        "h": 0.028,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.93,
+        "y": 0.16,
+        "w": 0,
+        "h": 0.22,
+        "fill": "soft",
+        "stroke": 1
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.16,
+        "w": 0.12,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.5
+      }
+    ]
+  },
+  "sample": {
+    "title": "Threshold",
+    "subtitle": "A weekly focus planner for choosing what gets your attention.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "WEEKLY FOCUS \u00b7 VOLUME 01"
+  }
+}

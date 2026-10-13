@@ -1,0 +1,175 @@
+{
+  "id": "checklist-08",
+  "format": "checklist",
+  "design_revision": 2,
+  "name": "The Matcha Threshold",
+  "description": "A precise, sensorial checklist for preparing a quietly excellent matcha ritual, framed by a monumental liquid-chrome doorway and a low pearl-like vessel sculpture.",
+  "tags": [
+    "matcha",
+    "ritual",
+    "wellness",
+    "checklist",
+    "editorial",
+    "daily practice"
+  ],
+  "palette": {
+    "paper": "#F5F6F4",
+    "ink": "#182126",
+    "accent": "#718B83",
+    "muted": "#4C5A5F",
+    "soft": "#DCE3E0"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "soft",
+      "brand": "soft"
+    },
+    "title": {
+      "x": 0.08,
+      "y": 0.12,
+      "w": 0.77,
+      "h": 0.205,
+      "size": 58,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.08,
+      "y": 0.345,
+      "w": 0.66,
+      "h": 0.105,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.08,
+      "y": 0.065,
+      "w": 0.64,
+      "h": 0.04,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.08,
+      "y": 0.92,
+      "w": 0.38,
+      "h": 0.035,
+      "size": 10,
+      "align": "left"
+    },
+    "image": {
+      "x": 0.55,
+      "y": 0.54,
+      "w": 0.37,
+      "h": 0.35
+    },
+    "artworks": [
+      {
+        "id": "chrome-gateway",
+        "x": 0.42,
+        "y": 0.5,
+        "w": 0.5,
+        "h": 0.39,
+        "fit": "contain",
+        "opacity": 1
+      },
+      {
+        "id": "pearl-sculpture",
+        "x": 0.58,
+        "y": 0.72,
+        "w": 0.32,
+        "h": 0.17,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.055,
+        "y": 0.045,
+        "w": 0.89,
+        "h": 0.91,
+        "fill": "ink",
+        "opacity": 1,
+        "stroke": 0.7,
+        "radius": 0.006,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.88,
+        "w": 0.84,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.075,
+        "y": 0.465,
+        "w": 0.225,
+        "h": 0.25,
+        "fill": "ink",
+        "opacity": 1,
+        "stroke": 0.8,
+        "radius": 0.012
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.465,
+        "w": 0,
+        "h": 0.25,
+        "fill": "accent",
+        "stroke": 2.2
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.91,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.9,
+        "y": 0.84,
+        "w": 0.012,
+        "h": 0.055,
+        "fill": "soft",
+        "radius": 0.004
+      }
+    ]
+  },
+  "sample": {
+    "title": "Enter the quiet",
+    "subtitle": "A focused checklist for a beautifully made daily matcha",
+    "brand": "YOUR BRAND",
+    "eyebrow": "MATCHA, MADE WITH INTENTION"
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "id": "guide-01",
+  "format": "guide",
+  "design_revision": 2,
+  "name": "The Signal Within",
+  "description": "A sculptural editorial guide to finding a clear point of view, shaping it into useful ideas, and publishing with intention.",
+  "tags": [
+    "editorial",
+    "creative practice",
+    "voice",
+    "strategy"
+  ],
+  "palette": {
+    "paper": "#111820",
+    "ink": "#F5F7F8",
+    "accent": "#B9D3E2",
+    "muted": "#B8C4CC",
+    "soft": "#263641"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "textColor": "ink",
+    "eyebrow": {
+      "x": 0.075,
+      "y": 0.085,
+      "w": 0.72,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "title": {
+      "x": 0.075,
+      "y": 0.155,
+      "w": 0.79,
+      "h": 0.17,
+      "size": 62,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.078,
+      "y": 0.345,
+      "w": 0.48,
+      "h": 0.11,
+      "size": 15,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.075,
+      "y": 0.91,
+      "w": 0.48,
+      "h": 0.04,
+      "size": 10,
+      "align": "left"
+    },
+    "image": {
+      "x": 0.57,
+      "y": 0.43,
+      "w": 0.37,
+      "h": 0.46
+    },
+    "artworks": [
+      {
+        "id": "chrome-gateway",
+        "x": 0.57,
+        "y": 0.43,
+        "w": 0.37,
+        "h": 0.46,
+        "fit": "contain",
+        "opacity": 1
+      },
+      {
+        "id": "optical-silver",
+        "x": 0.055,
+        "y": 0.48,
+        "w": 0.24,
+        "h": 0.34,
+        "fit": "cover",
+        "opacity": 0.72
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.335,
+        "y": 0.48,
+        "w": 0,
+        "h": 0.37,
+        "fill": "accent",
+        "opacity": 0.55,
+        "stroke": 0.7
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.875,
+        "w": 0.85,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.58,
+        "stroke": 0.7
+      },
+      {
+        "kind": "rect",
+        "x": 0.925,
+        "y": 0.075,
+        "w": 0.012,
+        "h": 0.25,
+        "fill": "accent",
+        "opacity": 0.85
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "side",
+    "blockStyle": "cards",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.915,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "opacity": 0.95,
+        "stroke": 0.65
+      }
+    ]
+  },
+  "sample": {
+    "title": "Find the signal. Shape the story.",
+    "subtitle": "A field guide to clarifying your point of view and turning it into work worth sharing.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A CREATIVE PRACTICE GUIDE"
+  }
+}

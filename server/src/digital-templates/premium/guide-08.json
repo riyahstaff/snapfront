@@ -1,0 +1,205 @@
+{
+  "id": "guide-08",
+  "format": "guide",
+  "name": "Violet Signal Manual",
+  "description": "A precision-minded field guide to shaping a distinct independent brand, presented in smoky violet with a framed optical-silver study and a crisp technical reading system.",
+  "tags": [
+    "brand strategy",
+    "field guide",
+    "violet",
+    "independent business",
+    "technical editorial"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#19161F",
+    "ink": "#F7F5FA",
+    "accent": "#B9A0E8",
+    "muted": "#C9C2D2",
+    "soft": "#302A38"
+  },
+  "fonts": {
+    "heading": "sans",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "textColor": "ink",
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.105,
+      "w": 0.79,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "title": {
+      "x": 0.09,
+      "y": 0.205,
+      "w": 0.72,
+      "h": 0.18,
+      "size": 50,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.405,
+      "w": 0.67,
+      "h": 0.1,
+      "size": 15,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.915,
+      "w": 0.48,
+      "h": 0.035,
+      "size": 10,
+      "align": "left"
+    },
+    "fieldColors": {
+      "eyebrow": "accent",
+      "title": "ink",
+      "subtitle": "muted",
+      "brand": "muted"
+    },
+    "image": {
+      "x": 0.18,
+      "y": 0.56,
+      "w": 0.65,
+      "h": 0.285
+    },
+    "artworks": [
+      {
+        "id": "optical-silver",
+        "x": 0.18,
+        "y": 0.56,
+        "w": 0.65,
+        "h": 0.285,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.17,
+        "w": 0.8,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.9,
+        "stroke": 1.2
+      },
+      {
+        "kind": "rect",
+        "x": 0.12,
+        "y": 0.535,
+        "w": 0.72,
+        "h": 0.335,
+        "fill": "soft",
+        "opacity": 0.7,
+        "stroke": 0.7,
+        "radius": 0.012,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.145,
+        "y": 0.545,
+        "w": 0,
+        "h": 0.31,
+        "fill": "accent",
+        "opacity": 0.85,
+        "stroke": 1.1
+      },
+      {
+        "kind": "line",
+        "x": 0.815,
+        "y": 0.545,
+        "w": 0,
+        "h": 0.31,
+        "fill": "muted",
+        "opacity": 0.6,
+        "stroke": 0.7
+      },
+      {
+        "kind": "rect",
+        "x": 0.145,
+        "y": 0.545,
+        "w": 0.035,
+        "h": 0.012,
+        "fill": "accent",
+        "opacity": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.145,
+        "y": 0.843,
+        "w": 0.035,
+        "h": 0.012,
+        "fill": "accent",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.885,
+        "w": 0.8,
+        "h": 0,
+        "fill": "muted",
+        "opacity": 0.65,
+        "stroke": 0.7
+      },
+      {
+        "kind": "rect",
+        "x": 0.835,
+        "y": 0.105,
+        "w": 0.055,
+        "h": 0.045,
+        "fill": "soft",
+        "opacity": 1,
+        "stroke": 0.7
+      }
+    ]
+  },
+  "interior": {
+    "margin": 46,
+    "headingSize": 28,
+    "bodySize": 11.5,
+    "lineHeight": 1.52,
+    "headerStyle": "technical",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "technical",
+    "ornament": "micro-grid",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.935,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "opacity": 1,
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.895,
+        "y": 0.915,
+        "w": 0.03,
+        "h": 0.02,
+        "fill": "accent",
+        "opacity": 0.9
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make Your Signal Clear",
+    "subtitle": "A practical field guide to a brand people recognize and remember",
+    "brand": "YOUR BRAND",
+    "eyebrow": "BRAND SYSTEMS \u00b7 FIELD MANUAL 08"
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "id": "hooks-09",
+  "format": "hooks",
+  "name": "Silverline: The Opening Hookbook",
+  "description": "A precision-crafted hookbook for shaping first lines with clarity, tension, and a decisive point of view.",
+  "tags": [
+    "hooks",
+    "writing",
+    "creator",
+    "editorial",
+    "silver"
+  ],
+  "palette": {
+    "paper": "#17191D",
+    "ink": "#FFFFFF",
+    "accent": "#C7CCD2",
+    "muted": "#AEB4BC",
+    "soft": "#282C32"
+  },
+  "fonts": {
+    "heading": "sans",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "gradient": {
+      "from": "paper",
+      "to": "soft",
+      "direction": "horizontal"
+    },
+    "title": {
+      "x": 0.075,
+      "y": 0.34,
+      "w": 0.5,
+      "h": 0.22,
+      "size": 53,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.078,
+      "y": 0.605,
+      "w": 0.48,
+      "h": 0.11,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.08,
+      "y": 0.16,
+      "w": 0.47,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.08,
+      "y": 0.87,
+      "w": 0.42,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "ink",
+      "eyebrow": "accent",
+      "brand": "accent"
+    },
+    "artworks": [
+      {
+        "id": "optical-silver",
+        "x": 0.58,
+        "y": 0,
+        "w": 0.42,
+        "h": 1,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.58,
+      "y": 0,
+      "w": 0.42,
+      "h": 1
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0,
+        "y": 0,
+        "w": 0.58,
+        "h": 1,
+        "fill": "paper",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.245,
+        "w": 0.42,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.79,
+        "w": 0.42,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.7
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.225,
+        "w": 0.11,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 2.5
+      },
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.825,
+        "w": 0.055,
+        "h": 0.008,
+        "fill": "accent",
+        "opacity": 0.9
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "plain",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.91,
+        "w": 0.12,
+        "h": 0.006,
+        "fill": "accent",
+        "opacity": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "Lead With the Line",
+    "subtitle": "A field guide to sharper openings, one deliberate sentence at a time.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "THE OPENING HOOKBOOK"
+  },
+  "design_revision": 2
+}

@@ -265,17 +265,20 @@ export async function publishProduct(sellerIn, id) {
 }
 
 /** Write a whole digital product, render its cover and PDF, and save it as a draft listing. */
-export async function generateProduct(seller, { type = "guide", niche, color = "cobalt", price, template_id = null }) {
+export async function generateProduct(seller, { type = "guide", niche, color = "cobalt", price, template_id = null, design_revision } = {}) {
   if (!PRODUCT_TYPES[type]) throw httpError(400, `Unknown product type. Use one of: ${Object.keys(PRODUCT_TYPES).join(", ")}.`);
   if (!niche || String(niche).trim().length < 4) throw httpError(400, "Describe who the product is for, in a few words.");
+  // Existing native builds did not send this field. Keep their source/rendering on the frozen
+  // revision-1 catalog rather than accidentally pairing an offline v1 picker with a v2 export.
+  const selectedRevision = digitalDesigns.designRevision(design_revision, 1);
   // Fail an unknown template before consuming an AI allowance. No template deliberately retains
   // the established legacy PDF output and response shape.
-  if (template_id != null) digitalDesigns.catalog(); // loads the catalog before its canonical check below
-  if (template_id != null) (await import("./digital-catalog.js")).templateById(String(template_id));
+  if (template_id != null) digitalDesigns.catalog(selectedRevision); // loads the catalog before its canonical check below
+  if (template_id != null) (await import("./digital-catalog.js")).templateById(String(template_id), selectedRevision);
   const r = await generateDigitalProduct({ type, niche: clampStr(niche, 200) });
   // Convert and validate the entire original AI object before creating any cover, PDF or listing.
   // A malformed response therefore cannot leave an orphan legacy product without editable source.
-  const sourceDocument = await digitalDesigns.generatedSourceDocument(seller, r, type, template_id == null ? null : String(template_id));
+  const sourceDocument = await digitalDesigns.generatedSourceDocument(seller, r, type, template_id == null ? null : String(template_id), { design_revision: selectedRevision });
   const listing = {
     title: r.title, tagline: r.tagline, description: r.description, bullets: r.bullets, faq: r.faq, tags: r.tags,
     category: r.category || PRODUCT_TYPES[type].name, kind: "digital", price: price || r.suggested_price || PRODUCT_TYPES[type].price,
@@ -285,7 +288,7 @@ export async function generateProduct(seller, { type = "guide", niche, color = "
     // Template-selected generation has no legacy intermediary. Save the original full structured
     // reply first, then render/attach that saved revision to this still-private draft.
     const product = createProduct(seller, listing);
-    await digitalDesigns.registerGeneratedSource(seller, product.id, r, type, String(template_id), sourceDocument);
+    await digitalDesigns.registerGeneratedSource(seller, product.id, r, type, String(template_id), sourceDocument, { design_revision: selectedRevision });
     return (await digitalDesigns.renderGeneratedTemplate(seller, product.id)).product;
   }
   const hex = COVER_COLORS[color] || COVER_COLORS.cobalt;
@@ -296,7 +299,7 @@ export async function generateProduct(seller, { type = "guide", niche, color = "
   const delivery_file = writeFileSafe(dirs.files, `${crypto.randomUUID()}.pdf`, pdf);
   const product = createProduct(seller, { ...listing, image_file }, delivery_file);
   // Keep all original structured AI content, including long paragraphs and list items, in source.
-  await digitalDesigns.registerGeneratedSource(seller, product.id, r, type, null, sourceDocument);
+  await digitalDesigns.registerGeneratedSource(seller, product.id, r, type, null, sourceDocument, { design_revision: selectedRevision });
   return product;
 }
 

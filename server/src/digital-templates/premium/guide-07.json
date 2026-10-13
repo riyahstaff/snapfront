@@ -1,0 +1,174 @@
+{
+  "id": "guide-07",
+  "format": "guide",
+  "name": "Nocturne: A Field Guide to Seeing",
+  "description": "A considered visual journal for collecting details, decoding composition, and building a more attentive creative practice.",
+  "tags": [
+    "visual-journal",
+    "creative-practice",
+    "art-direction",
+    "observation"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#F4F3F0",
+    "ink": "#17191D",
+    "accent": "#9C7CE0",
+    "muted": "#555963",
+    "soft": "#D9D9DE"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "gradient": {
+      "from": "ink",
+      "to": "ink",
+      "direction": "vertical"
+    },
+    "title": {
+      "x": 0.075,
+      "y": 0.59,
+      "w": 0.4,
+      "h": 0.2,
+      "size": 57,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.075,
+      "y": 0.815,
+      "w": 0.4,
+      "h": 0.075,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.075,
+      "y": 0.12,
+      "w": 0.4,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.075,
+      "y": 0.91,
+      "w": 0.42,
+      "h": 0.035,
+      "size": 9,
+      "align": "left"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "accent",
+      "brand": "soft"
+    },
+    "artworks": [
+      {
+        "id": "ice-prism",
+        "x": 0.5,
+        "y": 0.11,
+        "w": 0.45,
+        "h": 0.75,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.5,
+      "y": 0.11,
+      "w": 0.45,
+      "h": 0.75
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.195,
+        "w": 0.32,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "rect",
+        "x": 0.555,
+        "y": 0.145,
+        "w": 0.34,
+        "h": 0.68,
+        "fill": "soft",
+        "opacity": 0.1,
+        "stroke": 0.7
+      },
+      {
+        "kind": "line",
+        "x": 0.535,
+        "y": 0.12,
+        "w": 0,
+        "h": 0.75,
+        "fill": "accent",
+        "stroke": 0.8
+      },
+      {
+        "kind": "polygon",
+        "x": 0.86,
+        "y": 0.08,
+        "w": 0.08,
+        "h": 0.1,
+        "fill": "accent",
+        "opacity": 0.9,
+        "points": [
+          [
+            0.5,
+            0
+          ],
+          [
+            1,
+            0.5
+          ],
+          [
+            0.5,
+            1
+          ],
+          [
+            0,
+            0.5
+          ]
+        ]
+      }
+    ]
+  },
+  "interior": {
+    "margin": 52,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "headingSize": 30,
+    "bodySize": 11.5,
+    "lineHeight": 1.55,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "gallery",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.085,
+        "y": 0.875,
+        "w": 0.83,
+        "h": 0.001,
+        "fill": "soft",
+        "opacity": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "Nocturne",
+    "subtitle": "A field guide to seeing what others pass by",
+    "brand": "YOUR BRAND",
+    "eyebrow": "AN ATELIER FOR ATTENTION"
+  }
+}

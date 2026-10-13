@@ -1,0 +1,156 @@
+{
+  "id": "hooks-03",
+  "format": "hooks",
+  "name": "First Line, Lasting Echo",
+  "description": "An architectural hook-writing studio for shaping a sharp opening, testing its tension, and carrying the reader into the story.",
+  "tags": [
+    "hooks",
+    "editorial",
+    "writing",
+    "content craft",
+    "architecture"
+  ],
+  "palette": {
+    "paper": "#F3F2EF",
+    "ink": "#202326",
+    "accent": "#9A7B4F",
+    "muted": "#52575A",
+    "soft": "#D8D9D8"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "design_revision": 2,
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.085,
+      "y": 0.335,
+      "w": 0.43,
+      "h": 0.27,
+      "size": 49,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.645,
+      "w": 0.405,
+      "h": 0.105,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.17,
+      "w": 0.4,
+      "h": 0.055,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.88,
+      "w": 0.36,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "eyebrow": "ink"
+    },
+    "artworks": [
+      {
+        "id": "stone-silver",
+        "x": 0.565,
+        "y": 0.11,
+        "w": 0.365,
+        "h": 0.73,
+        "fit": "contain",
+        "opacity": 1
+      },
+      {
+        "id": "optical-silver",
+        "x": 0.515,
+        "y": 0.22,
+        "w": 0.055,
+        "h": 0.53,
+        "fit": "cover",
+        "opacity": 0.82
+      }
+    ],
+    "image": {
+      "x": 0.565,
+      "y": 0.11,
+      "w": 0.365,
+      "h": 0.73
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.055,
+        "y": 0.105,
+        "w": 0.445,
+        "h": 0.77,
+        "fill": "paper",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.255,
+        "w": 0.34,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.1
+      },
+      {
+        "kind": "line",
+        "x": 0.545,
+        "y": 0.1,
+        "w": 0,
+        "h": 0.76,
+        "fill": "ink",
+        "stroke": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.565,
+        "y": 0.865,
+        "w": 0.365,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "rect",
+        "x": 0.905,
+        "y": 0.11,
+        "w": 0.025,
+        "h": 0.73,
+        "fill": "soft",
+        "opacity": 0.9
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": []
+  },
+  "sample": {
+    "title": "Make the first line impossible to pass.",
+    "subtitle": "A field guide to tension, specificity, and the sentence that opens the door.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "THE OPENING EDIT \u00b7 HOOKS"
+  }
+}

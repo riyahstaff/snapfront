@@ -1,0 +1,179 @@
+{
+  "id": "guide-05",
+  "format": "guide",
+  "name": "The Useful Signal",
+  "description": "A sharp, image-led field guide to making an offer clearer, more compelling, and easier to choose.",
+  "tags": [
+    "offer design",
+    "positioning",
+    "editorial",
+    "business guide"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#F2F3F4",
+    "ink": "#171B20",
+    "accent": "#B7C1C9",
+    "muted": "#535D65",
+    "soft": "#DCE1E4"
+  },
+  "fonts": {
+    "heading": "sans",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "textColor": "paper",
+    "title": {
+      "x": 0.075,
+      "y": 0.32,
+      "w": 0.265,
+      "h": 0.24,
+      "size": 41,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.075,
+      "y": 0.61,
+      "w": 0.27,
+      "h": 0.14,
+      "size": 13,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.075,
+      "y": 0.18,
+      "w": 0.27,
+      "h": 0.055,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.075,
+      "y": 0.86,
+      "w": 0.27,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0,
+        "y": 0,
+        "w": 0.37,
+        "h": 1,
+        "fill": "ink"
+      },
+      {
+        "kind": "rect",
+        "x": 0.37,
+        "y": 0.06,
+        "w": 0.006,
+        "h": 0.88,
+        "fill": "accent",
+        "opacity": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.275,
+        "w": 0.22,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.81,
+        "w": 0.22,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.405,
+        "y": 0.04,
+        "w": 0.53,
+        "h": 0.012,
+        "fill": "accent",
+        "opacity": 0.85
+      },
+      {
+        "kind": "rect",
+        "x": 0.405,
+        "y": 0.948,
+        "w": 0.53,
+        "h": 0.012,
+        "fill": "accent",
+        "opacity": 0.85
+      },
+      {
+        "kind": "line",
+        "x": 0.92,
+        "y": 0.04,
+        "w": 0,
+        "h": 0.16,
+        "fill": "paper",
+        "stroke": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.405,
+        "y": 0.8,
+        "w": 0,
+        "h": 0.16,
+        "fill": "paper",
+        "stroke": 0.8
+      }
+    ],
+    "image": {
+      "x": 0.39,
+      "y": 0.07,
+      "w": 0.56,
+      "h": 0.86
+    },
+    "artworks": [
+      {
+        "id": "optical-silver",
+        "x": 0.39,
+        "y": 0.07,
+        "w": 0.56,
+        "h": 0.86,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.93,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make the Useful Unmissable",
+    "subtitle": "A field guide to shaping offers people choose",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A CLEARER WAY TO POSITION WHAT YOU SELL"
+  }
+}

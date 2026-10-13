@@ -1,0 +1,169 @@
+{
+  "id": "checklist-05",
+  "format": "checklist",
+  "design_revision": 2,
+  "name": "Violet Signal: Launch Control",
+  "description": "A precision launch checklist in smoky violet and chrome, with a sculptural amethyst-glass inset and practical, open writing space.",
+  "tags": [
+    "launch",
+    "seller",
+    "precision",
+    "checklist",
+    "violet"
+  ],
+  "palette": {
+    "paper": "#F5F2F8",
+    "ink": "#211B2A",
+    "accent": "#A98AE0",
+    "muted": "#5A5065",
+    "soft": "#DDD5E9"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "textColor": "paper",
+    "title": {
+      "x": 0.075,
+      "y": 0.335,
+      "w": 0.39,
+      "h": 0.205,
+      "size": 51,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.08,
+      "y": 0.585,
+      "w": 0.37,
+      "h": 0.105,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.08,
+      "y": 0.17,
+      "w": 0.37,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.08,
+      "y": 0.87,
+      "w": 0.35,
+      "h": 0.04,
+      "size": 10,
+      "align": "left"
+    },
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "accent",
+      "brand": "paper"
+    },
+    "artworks": [
+      {
+        "id": "amethyst-glass",
+        "x": 0.53,
+        "y": 0.19,
+        "w": 0.39,
+        "h": 0.57,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.53,
+      "y": 0.19,
+      "w": 0.39,
+      "h": 0.57
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.49,
+        "y": 0.13,
+        "w": 0.47,
+        "h": 0.69,
+        "fill": "soft",
+        "opacity": 0.16,
+        "behindArt": true
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.255,
+        "w": 0.34,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.4
+      },
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.738,
+        "w": 0.34,
+        "h": 0.003,
+        "fill": "accent",
+        "opacity": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.49,
+        "y": 0.17,
+        "w": 0,
+        "h": 0.61,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "rect",
+        "x": 0.93,
+        "y": 0.19,
+        "w": 0.018,
+        "h": 0.57,
+        "fill": "accent",
+        "opacity": 0.82
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.075,
+        "y": 0.862,
+        "w": 0.012,
+        "h": 0.012,
+        "fill": "accent"
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "technical",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.925,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.9
+      }
+    ]
+  },
+  "sample": {
+    "title": "The Launch, Precisely",
+    "subtitle": "A clear-eyed final check for every detail between first draft and live listing.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "SELLER FIELDNOTES / 05"
+  }
+}

@@ -81,6 +81,16 @@ export function DigitalDocumentControls(props: Props) {
             </View>
           );
         })}
+        {document.design_revision === 2 ? (
+          <View style={{ gap: 5, padding: space.md, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, backgroundColor: c.surface }}>
+            <Text style={[type.label, { color: c.ink }]}>Cover artwork</Text>
+            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: document.show_artwork !== false }} onPress={() => onChange({ ...document, show_artwork: document.show_artwork === false })} style={({ pressed }) => ({ minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: space.md, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, backgroundColor: c.bg, opacity: pressed ? 0.8 : 1 })}>
+              <Text style={[type.body, { color: c.ink }]}>Show original artwork</Text>
+              <Text style={[type.small, { color: document.show_artwork !== false ? c.accent : c.muted }]}>{document.show_artwork !== false ? "On" : "Off"}</Text>
+            </Pressable>
+            <Text style={[type.small, { color: c.muted }]}>Title and text always stay editable. An uploaded picture can replace the cover artwork.</Text>
+          </View>
+        ) : null}
         <Text style={[type.label, { color: c.ink }]}>Palette</Text>
         <Text style={[type.small, { color: c.muted }]}>Use six-digit hex colors, for example #7052E8.</Text>
         {paletteFields.map(([field, label]) => (

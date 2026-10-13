@@ -1,0 +1,158 @@
+{
+  "id": "guide-10",
+  "format": "guide",
+  "name": "Emerald Signal",
+  "description": "A collectible strategy field guide for building a distinctive small brand, pairing an optical emerald architectural cover with clear, actionable editorial pages.",
+  "tags": [
+    "brand strategy",
+    "field guide",
+    "emerald",
+    "small business",
+    "editorial"
+  ],
+  "palette": {
+    "paper": "#F5F6F1",
+    "ink": "#172321",
+    "accent": "#167B65",
+    "muted": "#485954",
+    "soft": "#DCE8E2"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "design_revision": 2,
+  "cover": {
+    "background": "ink",
+    "gradient": {
+      "from": "ink",
+      "to": "ink",
+      "direction": "horizontal"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "soft",
+      "brand": "soft"
+    },
+    "title": {
+      "x": 0.085,
+      "y": 0.345,
+      "w": 0.46,
+      "h": 0.27,
+      "size": 56,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.655,
+      "w": 0.42,
+      "h": 0.13,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.145,
+      "w": 0.43,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.88,
+      "w": 0.42,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "image": {
+      "x": 0.56,
+      "y": 0.105,
+      "w": 0.37,
+      "h": 0.79
+    },
+    "artworks": [
+      {
+        "id": "emerald-architecture",
+        "x": 0.56,
+        "y": 0.105,
+        "w": 0.37,
+        "h": 0.79,
+        "fit": "cover",
+        "opacity": 1
+      },
+      {
+        "id": "optical-silver",
+        "x": 0.548,
+        "y": 0.105,
+        "w": 0.012,
+        "h": 0.79,
+        "fit": "contain",
+        "opacity": 0.84
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.23,
+        "w": 0.34,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8,
+        "opacity": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.09,
+        "y": 0.815,
+        "w": 0.11,
+        "h": 0.008,
+        "fill": "accent",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.945,
+        "y": 0.105,
+        "w": 0,
+        "h": 0.79,
+        "fill": "soft",
+        "stroke": 0.7,
+        "opacity": 0.7
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 30,
+    "bodySize": 11.5,
+    "lineHeight": 1.52,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.92,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make Your Brand Impossible to Mistake",
+    "subtitle": "A field guide to finding your signal and making it unmistakable.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "THE EMERALD SIGNAL \u00b7 BRAND STRATEGY FIELD GUIDE"
+  }
+}

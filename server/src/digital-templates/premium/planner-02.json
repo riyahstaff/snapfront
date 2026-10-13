@@ -1,0 +1,215 @@
+{
+  "id": "planner-02",
+  "format": "planner",
+  "name": "Verdant Axis \u2014 Daily Folio",
+  "description": "An architectural daily folio pairing a deliberate top-three plan with generous appointment, project, and end-of-day reflection space.",
+  "tags": [
+    "daily-planner",
+    "architectural",
+    "emerald-edition",
+    "focus",
+    "writing-folio"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#F2F5F1",
+    "ink": "#17231F",
+    "accent": "#176B52",
+    "muted": "#4A5E55",
+    "soft": "#DCE9E1"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "gradient": {
+      "from": "ink",
+      "to": "accent",
+      "direction": "diagonal"
+    },
+    "title": {
+      "x": 0.09,
+      "y": 0.23,
+      "w": 0.8,
+      "h": 0.19,
+      "size": 66,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.11,
+      "y": 0.48,
+      "w": 0.69,
+      "h": 0.09,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.11,
+      "y": 0.17,
+      "w": 0.67,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.11,
+      "y": 0.88,
+      "w": 0.52,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "paper",
+      "brand": "paper"
+    },
+    "artworks": [
+      {
+        "id": "emerald-architecture",
+        "x": 0.16,
+        "y": 0.61,
+        "w": 0.68,
+        "h": 0.25,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.16,
+      "y": 0.61,
+      "w": 0.68,
+      "h": 0.25
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.08,
+        "w": 0.84,
+        "h": 0.82,
+        "fill": "ink",
+        "opacity": 1,
+        "behindArt": true
+      },
+      {
+        "kind": "rect",
+        "x": 0.095,
+        "y": 0.095,
+        "w": 0.81,
+        "h": 0.79,
+        "fill": "ink",
+        "opacity": 0.82,
+        "stroke": 0.8,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.13,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.87,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.13,
+        "w": 0,
+        "h": 0.74,
+        "fill": "accent",
+        "stroke": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.92,
+        "y": 0.13,
+        "w": 0,
+        "h": 0.74,
+        "fill": "accent",
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.11,
+        "y": 0.455,
+        "w": 0.035,
+        "h": 0.008,
+        "fill": "paper",
+        "opacity": 0.9
+      },
+      {
+        "kind": "line",
+        "x": 0.11,
+        "y": 0.59,
+        "w": 0.78,
+        "h": 0,
+        "fill": "paper",
+        "stroke": 0.6,
+        "opacity": 0.55
+      },
+      {
+        "kind": "rect",
+        "x": 0.84,
+        "y": 0.17,
+        "w": 0.04,
+        "h": 0.008,
+        "fill": "accent",
+        "opacity": 1
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "technical",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8,
+        "opacity": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.91,
+        "w": 0.055,
+        "h": 0.009,
+        "fill": "accent",
+        "opacity": 1
+      }
+    ]
+  },
+  "sample": {
+    "title": "Set the Day in Motion",
+    "subtitle": "Three priorities. A clear stretch of time. Room to close well.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "VERDANT AXIS \u00b7 DAILY PLANNING FOLIO"
+  }
+}

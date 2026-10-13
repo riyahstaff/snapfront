@@ -1,0 +1,163 @@
+{
+  "id": "planner-03",
+  "format": "planner",
+  "name": "The Clear Hour",
+  "description": "A composed weekly planning system for deliberate priorities, focused work and a considered reset, wrapped in an optical-silver material study.",
+  "tags": [
+    "weekly",
+    "focus",
+    "priorities",
+    "editorial",
+    "minimal"
+  ],
+  "palette": {
+    "paper": "#F4F6F7",
+    "ink": "#141A20",
+    "accent": "#A9B7C0",
+    "muted": "#4D5961",
+    "soft": "#DDE3E6"
+  },
+  "fonts": {
+    "heading": "sans",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "title": {
+      "x": 0.075,
+      "y": 0.37,
+      "w": 0.37,
+      "h": 0.22,
+      "size": 48,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.08,
+      "y": 0.62,
+      "w": 0.35,
+      "h": 0.12,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.08,
+      "y": 0.29,
+      "w": 0.35,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.08,
+      "y": 0.89,
+      "w": 0.35,
+      "h": 0.04,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "accent",
+      "brand": "accent"
+    },
+    "artworks": [
+      {
+        "id": "optical-silver",
+        "x": 0.48,
+        "y": 0.055,
+        "w": 0.49,
+        "h": 0.89,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.045,
+        "y": 0.245,
+        "w": 0.42,
+        "h": 0.52,
+        "fill": "ink",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.35,
+        "w": 0.31,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.9,
+        "stroke": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.81,
+        "w": 0.12,
+        "h": 0.006,
+        "fill": "accent",
+        "opacity": 0.9
+      }
+    ],
+    "image": {
+      "x": 0.48,
+      "y": 0.055,
+      "w": 0.49,
+      "h": 0.89
+    }
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.145,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.9,
+        "stroke": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.18,
+        "w": 0.012,
+        "h": 0.68,
+        "fill": "soft",
+        "opacity": 0.9
+      },
+      {
+        "kind": "line",
+        "x": 0.115,
+        "y": 0.88,
+        "w": 0.805,
+        "h": 0,
+        "fill": "soft",
+        "opacity": 1,
+        "stroke": 1
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make Space for What Matters",
+    "subtitle": "A weekly practice for clear priorities, focused days and a thoughtful reset.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "WEEKLY PLANNER \u00b7 VOLUME 01"
+  },
+  "design_revision": 2
+}

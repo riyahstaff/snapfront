@@ -1,0 +1,157 @@
+{
+  "id": "hooks-08",
+  "format": "hooks",
+  "name": "Verdant Signal",
+  "description": "A sculptural emerald-architecture hook-writing folio for turning a product's sharpest truth into a line people stop to read.",
+  "tags": [
+    "hooks",
+    "luxury",
+    "editorial",
+    "writing-folio"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#F1F3EE",
+    "ink": "#14211D",
+    "accent": "#16765A",
+    "muted": "#46564F",
+    "soft": "#D8E2DB"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "gradient": {
+      "from": "paper",
+      "to": "soft",
+      "direction": "vertical"
+    },
+    "title": {
+      "x": 0.11,
+      "y": 0.675,
+      "w": 0.78,
+      "h": 0.13,
+      "size": 54,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.11,
+      "y": 0.825,
+      "w": 0.76,
+      "h": 0.075,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.11,
+      "y": 0.595,
+      "w": 0.72,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.11,
+      "y": 0.925,
+      "w": 0.76,
+      "h": 0.035,
+      "size": 9,
+      "align": "left"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "paper",
+      "brand": "soft"
+    },
+    "artworks": [
+      {
+        "id": "emerald-architecture",
+        "x": 0.1,
+        "y": 0.075,
+        "w": 0.8,
+        "h": 0.47,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.055,
+        "y": 0.055,
+        "w": 0.89,
+        "h": 0.51,
+        "fill": "paper",
+        "opacity": 0,
+        "stroke": 1.2,
+        "hollow": true
+      },
+      {
+        "kind": "rect",
+        "x": 0.06,
+        "y": 0.565,
+        "w": 0.88,
+        "h": 0.41,
+        "fill": "ink",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.11,
+        "y": 0.65,
+        "w": 0.15,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 2
+      },
+      {
+        "kind": "line",
+        "x": 0.89,
+        "y": 0.075,
+        "w": 0,
+        "h": 0.47,
+        "fill": "accent",
+        "stroke": 1.2,
+        "opacity": 0.85
+      },
+      {
+        "kind": "rect",
+        "x": 0.865,
+        "y": 0.925,
+        "w": 0.025,
+        "h": 0.025,
+        "fill": "accent",
+        "radius": 0.004
+      }
+    ],
+    "image": {
+      "x": 0.1,
+      "y": 0.075,
+      "w": 0.8,
+      "h": 0.47
+    }
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": []
+  },
+  "sample": {
+    "title": "Make Them Look Twice",
+    "subtitle": "A field folio for writing product hooks with clarity, tension, and intent.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "THE VERDANT SIGNAL \u00b7 HOOK-WRITING FOLIO"
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "id": "checklist-09",
+  "format": "checklist",
+  "design_revision": 2,
+  "name": "The Chrome Launch Ledger",
+  "description": "A polished launch-day checklist for independent makers, composed as a platinum fashion editorial with a sculptural chrome gateway, fine numbered rail, and calm, writable interior pages.",
+  "tags": [
+    "checklist",
+    "launch",
+    "maker-business",
+    "editorial",
+    "premium"
+  ],
+  "palette": {
+    "paper": "#F4F5F6",
+    "ink": "#20252B",
+    "accent": "#69747E",
+    "muted": "#535D66",
+    "soft": "#D9DEE2"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "gradient": {
+      "from": "paper",
+      "to": "soft",
+      "direction": "horizontal"
+    },
+    "textColor": "ink",
+    "eyebrow": {
+      "x": 0.07,
+      "y": 0.075,
+      "w": 0.48,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "title": {
+      "x": 0.07,
+      "y": 0.17,
+      "w": 0.46,
+      "h": 0.29,
+      "size": 56,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.07,
+      "y": 0.5,
+      "w": 0.43,
+      "h": 0.14,
+      "size": 15,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.07,
+      "y": 0.89,
+      "w": 0.43,
+      "h": 0.04,
+      "size": 10,
+      "align": "left"
+    },
+    "fieldColors": {
+      "eyebrow": "muted",
+      "title": "ink",
+      "subtitle": "ink",
+      "brand": "ink"
+    },
+    "artworks": [
+      {
+        "id": "copper-orbit",
+        "x": 0.55,
+        "y": 0.08,
+        "w": 0.4,
+        "h": 0.72,
+        "fit": "contain",
+        "opacity": 1
+      },
+      {
+        "id": "optical-silver",
+        "x": 0.83,
+        "y": 0.8,
+        "w": 0.12,
+        "h": 0.13,
+        "fit": "cover",
+        "opacity": 0.8
+      }
+    ],
+    "image": {
+      "x": 0.55,
+      "y": 0.08,
+      "w": 0.4,
+      "h": 0.72
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.07,
+        "y": 0.7,
+        "w": 0.4,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "line",
+        "x": 0.07,
+        "y": 0.76,
+        "w": 0.2,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 2
+      },
+      {
+        "kind": "rect",
+        "x": 0.07,
+        "y": 0.82,
+        "w": 0.018,
+        "h": 0.018,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.829,
+        "w": 0.37,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "headerStyle": "side",
+    "blockStyle": "steps",
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.93,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make the First Impression Count",
+    "subtitle": "A considered launch checklist for the details customers remember.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "THE INDEPENDENT MAKER\u2019S LAUNCH LEDGER"
+  }
+}

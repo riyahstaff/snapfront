@@ -1,0 +1,221 @@
+{
+  "id": "hooks-04",
+  "format": "hooks",
+  "design_revision": 2,
+  "name": "Nocturne Signal",
+  "description": "A midnight-green hookwriting field guide for turning a precise observation into an opening people want to follow.",
+  "tags": [
+    "hooks",
+    "writing",
+    "editorial",
+    "emerald",
+    "creator"
+  ],
+  "palette": {
+    "paper": "#F7F8F5",
+    "ink": "#15221E",
+    "accent": "#08745B",
+    "muted": "#53645E",
+    "soft": "#DCE8E2"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "gradient": {
+      "from": "ink",
+      "to": "accent",
+      "direction": "diagonal"
+    },
+    "title": {
+      "x": 0.085,
+      "y": 0.585,
+      "w": 0.79,
+      "h": 0.17,
+      "size": 61,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.785,
+      "w": 0.72,
+      "h": 0.075,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.105,
+      "w": 0.77,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.91,
+      "w": 0.5,
+      "h": 0.035,
+      "size": 9,
+      "align": "left"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "soft",
+      "brand": "soft"
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0,
+        "y": 0,
+        "w": 1,
+        "h": 0.035,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.19,
+        "w": 0.78,
+        "h": 0,
+        "fill": "soft",
+        "opacity": 0.7,
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.09,
+        "y": 0.505,
+        "w": 0.105,
+        "h": 0.006,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.84,
+        "y": 0.235,
+        "w": 0,
+        "h": 0.245,
+        "fill": "soft",
+        "opacity": 0.72,
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.79,
+        "y": 0.235,
+        "w": 0.05,
+        "h": 0,
+        "fill": "soft",
+        "opacity": 0.72,
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.84,
+        "y": 0.48,
+        "w": 0.05,
+        "h": 0,
+        "fill": "soft",
+        "opacity": 0.72,
+        "stroke": 1
+      },
+      {
+        "kind": "polygon",
+        "x": 0.78,
+        "y": 0.295,
+        "w": 0.12,
+        "h": 0.12,
+        "fill": "accent",
+        "points": [
+          [
+            0.5,
+            0
+          ],
+          [
+            1,
+            0.5
+          ],
+          [
+            0.5,
+            1
+          ],
+          [
+            0,
+            0.5
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.875,
+        "w": 0.78,
+        "h": 0,
+        "fill": "soft",
+        "opacity": 0.55,
+        "stroke": 0.7
+      }
+    ],
+    "artworks": [
+      {
+        "id": "emerald-architecture",
+        "x": 0.43,
+        "y": 0.205,
+        "w": 0.48,
+        "h": 0.315,
+        "fit": "cover",
+        "opacity": 1
+      },
+      {
+        "id": "optical-silver",
+        "x": 0.62,
+        "y": 0.39,
+        "w": 0.27,
+        "h": 0.12,
+        "fit": "contain",
+        "opacity": 0.82
+      }
+    ],
+    "image": {
+      "x": 0.43,
+      "y": 0.205,
+      "w": 0.48,
+      "h": 0.315
+    }
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 30,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.925,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make Them Lean In",
+    "subtitle": "Find the friction. Name the shift. Open with the part that matters.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "NOCTURNE SIGNAL \u00b7 THE HOOK FIELD GUIDE"
+  }
+}

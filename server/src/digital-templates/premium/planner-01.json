@@ -1,0 +1,167 @@
+{
+  "id": "planner-01",
+  "format": "planner",
+  "name": "Amethyst Interval \u2014 Collector Planner",
+  "description": "A sculptural weekly planner for deliberate momentum: clear priorities, roomy daily notes, and a considered close to the week.",
+  "tags": [
+    "weekly-planner",
+    "collector-edition",
+    "intentional-living",
+    "amethyst-glass"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#F6F4F8",
+    "ink": "#201B29",
+    "accent": "#67469B",
+    "muted": "#5B5662",
+    "soft": "#E7E0EF"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "gradient": {
+      "from": "paper",
+      "to": "soft",
+      "direction": "diagonal"
+    },
+    "title": {
+      "x": 0.09,
+      "y": 0.29,
+      "w": 0.79,
+      "h": 0.19,
+      "size": 68,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.52,
+      "w": 0.7,
+      "h": 0.1,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.18,
+      "w": 0.65,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.88,
+      "w": 0.55,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "ink",
+      "eyebrow": "accent",
+      "brand": "muted"
+    },
+    "artworks": [
+      {
+        "id": "amethyst-glass",
+        "x": 0.46,
+        "y": 0.65,
+        "w": 0.43,
+        "h": 0.2,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.46,
+      "y": 0.65,
+      "w": 0.43,
+      "h": 0.2
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.085,
+        "y": 0.12,
+        "w": 0.055,
+        "h": 0.012,
+        "fill": "accent",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.68,
+        "w": 0.26,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 0.7,
+        "opacity": 0.75
+      },
+      {
+        "kind": "line",
+        "x": 0.9,
+        "y": 0.13,
+        "w": 0,
+        "h": 0.4,
+        "fill": "accent",
+        "stroke": 1,
+        "opacity": 0.7
+      },
+      {
+        "kind": "rect",
+        "x": 0.86,
+        "y": 0.13,
+        "w": 0.04,
+        "h": 0.012,
+        "fill": "accent",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.84,
+        "y": 0.93,
+        "w": 0.06,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 0.7,
+        "opacity": 0.75
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "headingSize": 30,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.91,
+        "w": 0.055,
+        "h": 0.009,
+        "fill": "accent",
+        "opacity": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make Space for the Week",
+    "subtitle": "Seven days, one clear intention, room to begin again.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "THE AMETHYST WEEKLY PLANNER"
+  }
+}

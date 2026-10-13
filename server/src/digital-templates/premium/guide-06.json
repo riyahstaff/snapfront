@@ -1,0 +1,174 @@
+{
+  "id": "guide-06",
+  "format": "guide",
+  "name": "Pearl: The Quiet Form",
+  "description": "A collectible designer monograph for shaping a considered visual language, pairing sculptural pearl imagery with precise silver framing and spacious editorial reading pages.",
+  "tags": [
+    "designer monograph",
+    "visual identity",
+    "editorial",
+    "pearl sculpture"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#101317",
+    "ink": "#F5F6F7",
+    "accent": "#BFC8D0",
+    "muted": "#A4ADB6",
+    "soft": "#20262C"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.075,
+      "y": 0.115,
+      "w": 0.49,
+      "h": 0.34,
+      "size": 66,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.08,
+      "y": 0.505,
+      "w": 0.43,
+      "h": 0.105,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.08,
+      "y": 0.065,
+      "w": 0.46,
+      "h": 0.035,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.08,
+      "y": 0.895,
+      "w": 0.46,
+      "h": 0.035,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "ink",
+      "eyebrow": "accent",
+      "brand": "accent"
+    },
+    "artworks": [
+      {
+        "id": "silk-silver",
+        "x": 0.555,
+        "y": 0.115,
+        "w": 0.375,
+        "h": 0.69,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.555,
+      "y": 0.115,
+      "w": 0.375,
+      "h": 0.69
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.555,
+        "y": 0.095,
+        "w": 0.375,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8,
+        "opacity": 0.72
+      },
+      {
+        "kind": "line",
+        "x": 0.555,
+        "y": 0.83,
+        "w": 0.375,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8,
+        "opacity": 0.72
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.855,
+        "w": 0.85,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.7,
+        "opacity": 0.65
+      },
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.698,
+        "w": 0.405,
+        "h": 0.105,
+        "fill": "soft",
+        "opacity": 1,
+        "radius": 0.006
+      },
+      {
+        "kind": "line",
+        "x": 0.101,
+        "y": 0.724,
+        "w": 0.035,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.5
+      },
+      {
+        "kind": "line",
+        "x": 0.101,
+        "y": 0.775,
+        "w": 0.34,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 0.55,
+        "opacity": 0.6
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.52,
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "editorial",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.91,
+        "w": 0.85,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.65,
+        "opacity": 0.58
+      }
+    ]
+  },
+  "sample": {
+    "title": "Pearl: The Quiet Form",
+    "subtitle": "A field guide to building a visual language with intention",
+    "brand": "YOUR BRAND",
+    "eyebrow": "DESIGNER MONOGRAPH \u00b7 NO. 01"
+  }
+}

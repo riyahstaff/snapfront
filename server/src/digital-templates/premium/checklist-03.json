@@ -1,0 +1,194 @@
+{
+  "id": "checklist-03",
+  "format": "checklist",
+  "name": "The Pearl Index",
+  "description": "A sculptural studio checklist for shaping a considered product launch, from first proof to final reveal.",
+  "tags": [
+    "checklist",
+    "product launch",
+    "studio",
+    "editorial",
+    "pearl"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#15191D",
+    "ink": "#F4F5F3",
+    "accent": "#C5CDD1",
+    "muted": "#AAB3B8",
+    "soft": "#252C31"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "gradient": {
+      "from": "paper",
+      "to": "soft",
+      "direction": "diagonal"
+    },
+    "title": {
+      "x": 0.08,
+      "y": 0.35,
+      "w": 0.43,
+      "h": 0.25,
+      "size": 57,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.08,
+      "y": 0.63,
+      "w": 0.43,
+      "h": 0.13,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.08,
+      "y": 0.12,
+      "w": 0.43,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.08,
+      "y": 0.88,
+      "w": 0.43,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "ink",
+      "eyebrow": "accent",
+      "brand": "accent"
+    },
+    "artworks": [
+      {
+        "id": "silk-silver",
+        "x": 0.57,
+        "y": 0.11,
+        "w": 0.36,
+        "h": 0.78,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.57,
+      "y": 0.11,
+      "w": 0.36,
+      "h": 0.78
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.055,
+        "y": 0.08,
+        "w": 0.89,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8,
+        "opacity": 0.7
+      },
+      {
+        "kind": "rect",
+        "x": 0.535,
+        "y": 0.105,
+        "w": 0.006,
+        "h": 0.79,
+        "fill": "accent",
+        "opacity": 0.85
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.29,
+        "w": 0.3,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "polygon",
+        "x": 0.895,
+        "y": 0.12,
+        "w": 0.035,
+        "h": 0.08,
+        "fill": "accent",
+        "points": [
+          [
+            0.5,
+            0
+          ],
+          [
+            1,
+            0.5
+          ],
+          [
+            0.5,
+            1
+          ],
+          [
+            0,
+            0.5
+          ]
+        ],
+        "opacity": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.81,
+        "w": 0.2,
+        "h": 0.008,
+        "fill": "accent",
+        "opacity": 0.7
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.065,
+        "y": 0.945,
+        "w": 0.87,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8,
+        "opacity": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.15,
+        "w": 0.05,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make It Worth Opening",
+    "subtitle": "A product-launch checklist for the last careful pass\u2014from proof to reveal.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "THE PEARL INDEX \u00b7 STUDIO CHECKLIST"
+  }
+}

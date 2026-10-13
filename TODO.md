@@ -64,3 +64,9 @@
 - [x] Digital Photo Studio provides original prompted artwork/refinement plus polished true-cover mockups, preserves editable words/pages/PDF and supports reviewed page-image/listing-image use with current-store guards.
 - [x] Keep provider availability, allowance exhaustion and test-account access distinct; no silent account upgrade, cross-store result, purchase, fabricated inventory, duplicate charge or automatic public apply.
 - [x] Validate isolated server/native/UI regressions and Android/iOS bundles; deliver reviewable source and visual evidence with PR #7 dependency, backend/native activation and tester-identity gaps explicit.
+
+## Premium redesign of all 50 digital designs
+- [x] Replace new catalog/draft visuals with exactly 50 individually composed extravagant, modern, sleek layouts worthy of the Liquid Chrome app: authentic metallic/cinematic/optical artwork, confident typography, distinct cover and interior designs, not generic color variants.
+- [x] Keep every title, paragraph, list, brand, palette, page and owned image editable; show the same premium art and layout in the picker, real editor and PDF, with controls to replace/hide cover artwork; retain legible interiors and real source content.
+- [x] Preserve original revision-1 documents, existing buyer downloads, ownership, reviewed export/attach, physical product/storefront/AI flows, billing and native identifiers; only explicit new selection/new drafts use revision 2.
+- [x] Verify all 50 real premium previews/interiors and exports, offline asset completeness, native types/lint/bundles and isolated backend regressions; correct real output problems before publishing a separate reviewable PR with an honest next-build activation boundary.

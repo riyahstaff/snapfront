@@ -1,0 +1,187 @@
+{
+  "id": "planner-10",
+  "format": "planner",
+  "design_revision": 2,
+  "name": "The Platinum Index",
+  "description": "A refined undated planning folio with a numbered editorial rail, clear daily priorities, and generous space to think.",
+  "tags": [
+    "planner",
+    "platinum",
+    "editorial",
+    "undated",
+    "daily focus"
+  ],
+  "palette": {
+    "paper": "#F2F3F4",
+    "ink": "#17191D",
+    "accent": "#AEB5BD",
+    "muted": "#555D66",
+    "soft": "#D8DDE2"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "textColor": "ink",
+    "title": {
+      "x": 0.105,
+      "y": 0.285,
+      "w": 0.39,
+      "h": 0.2,
+      "size": 58,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.11,
+      "y": 0.515,
+      "w": 0.37,
+      "h": 0.11,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.11,
+      "y": 0.205,
+      "w": 0.38,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.11,
+      "y": 0.875,
+      "w": 0.38,
+      "h": 0.04,
+      "size": 10,
+      "align": "left"
+    },
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "muted",
+      "eyebrow": "muted",
+      "brand": "ink"
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.535,
+        "y": 0.075,
+        "w": 0.405,
+        "h": 0.85,
+        "fill": "soft",
+        "opacity": 0.55,
+        "behindArt": true
+      },
+      {
+        "kind": "line",
+        "x": 0.515,
+        "y": 0.075,
+        "w": 0,
+        "h": 0.85,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "rect",
+        "x": 0.055,
+        "y": 0.075,
+        "w": 0.018,
+        "h": 0.85,
+        "fill": "ink"
+      },
+      {
+        "kind": "line",
+        "x": 0.095,
+        "y": 0.255,
+        "w": 0.39,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.095,
+        "y": 0.645,
+        "w": 0.39,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1.1
+      },
+      {
+        "kind": "rect",
+        "x": 0.11,
+        "y": 0.697,
+        "w": 0.12,
+        "h": 0.012,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.94,
+        "y": 0.075,
+        "w": 0,
+        "h": 0.85,
+        "fill": "ink",
+        "stroke": 0.7,
+        "opacity": 0.65
+      }
+    ],
+    "artworks": [
+      {
+        "id": "copper-orbit",
+        "x": 0.535,
+        "y": 0.075,
+        "w": 0.405,
+        "h": 0.85,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.535,
+      "y": 0.075,
+      "w": 0.405,
+      "h": 0.85
+    }
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "headerStyle": "side",
+    "blockStyle": "cards",
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.935,
+        "w": 0.81,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.075,
+        "y": 0.14,
+        "w": 0.018,
+        "h": 0.72,
+        "fill": "accent",
+        "opacity": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "A day, deliberately",
+    "subtitle": "Undated daily pages for priorities, appointments, and a clear end-of-day note",
+    "brand": "YOUR BRAND",
+    "eyebrow": "THE PLATINUM INDEX \u00b7 DAILY FOLIO"
+  }
+}

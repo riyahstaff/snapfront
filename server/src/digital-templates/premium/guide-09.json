@@ -1,0 +1,160 @@
+{
+  "id": "guide-09",
+  "format": "guide",
+  "design_revision": 2,
+  "name": "The Quiet Architecture of Focus",
+  "description": "A considered field guide to shaping focused work: architectural stone, platinum rules, and generous editorial pages for turning intention into a durable practice.",
+  "tags": [
+    "focus",
+    "creative practice",
+    "editorial",
+    "field guide"
+  ],
+  "palette": {
+    "paper": "#F1F0ED",
+    "ink": "#202326",
+    "accent": "#777E83",
+    "muted": "#555B60",
+    "soft": "#D8DADD"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "gradient": {
+      "from": "paper",
+      "to": "soft",
+      "direction": "horizontal"
+    },
+    "title": {
+      "x": 0.075,
+      "y": 0.3,
+      "w": 0.49,
+      "h": 0.32,
+      "size": 57,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.08,
+      "y": 0.66,
+      "w": 0.43,
+      "h": 0.12,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.08,
+      "y": 0.12,
+      "w": 0.44,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.08,
+      "y": 0.89,
+      "w": 0.42,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "artworks": [
+      {
+        "id": "stone-silver",
+        "x": 0.57,
+        "y": 0.1,
+        "w": 0.38,
+        "h": 0.8,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.57,
+      "y": 0.1,
+      "w": 0.38,
+      "h": 0.8
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.22,
+        "w": 0.39,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.83,
+        "w": 0.4,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 2
+      },
+      {
+        "kind": "rect",
+        "x": 0.57,
+        "y": 0.1,
+        "w": 0.38,
+        "h": 0.8,
+        "fill": "paper",
+        "opacity": 0,
+        "stroke": 1.2,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.57,
+        "y": 0.935,
+        "w": 0.38,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1
+      }
+    ]
+  },
+  "interior": {
+    "margin": 52,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "headingSize": 30,
+    "bodySize": 11.5,
+    "lineHeight": 1.55,
+    "column": "single",
+    "numberStyle": "plain",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.08,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 2
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make Room for the Work",
+    "subtitle": "A field guide to focus, creative rhythm, and finishing what matters",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A PRACTICE FOR CLEARER DAYS"
+  }
+}

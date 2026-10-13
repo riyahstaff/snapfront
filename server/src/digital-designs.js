@@ -7,7 +7,7 @@ import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
 import { db, newId, rowToProduct } from "./db.js";
 import { httpError } from "./claude.js";
-import { digitalTemplates, publicDigitalCatalog, templateById } from "./digital-catalog.js";
+import { digitalTemplates, publicDigitalCatalog, revision1DigitalTemplates, templateById } from "./digital-catalog.js";
 import { validateDocument, documentFromGenerated, starterDocument, documentHash, ownedDocument } from "./digital-document.js";
 import { renderDigitalPreview, renderDigitalExport } from "./digital-renderer.js";
 import { createProduct, withPage } from "./store.js";
@@ -17,6 +17,17 @@ const IMAGE_FILE = /^[\w-]+\.(?:jpg|jpeg|png|webp|gif)$/;
 const FILE_NAME = /^[\w-]+\.(?:pdf|png)$/;
 const EXPORT_TTL_MS = 60 * 60 * 1000;
 const LEGACY_MESSAGE = "This older digital file has no editable source. You can rebuild an editable draft, but the existing buyer download will not be imported or changed until you review and attach a new export.";
+
+/**
+ * API callers that predate revisioned templates intentionally remain on the frozen revision-1
+ * registry. A client must opt in with the numeric revision 2 value; accepting a truthy value or
+ * silently coercing an invalid value would let a stale offline picker and a new server disagree.
+ */
+export function designRevision(value, fallback = 1) {
+  if (value === undefined) return fallback;
+  if (value === 1 || value === 2) return value;
+  throw httpError(400, "design_revision must be 1 or 2.");
+}
 
 const parseDocument = (value) => {
   if (!value) return null;
@@ -121,12 +132,48 @@ function deleteQuiet(dir, file) {
   if (FILE_NAME.test(String(file || "")) || IMAGE_FILE.test(String(file || ""))) fs.rmSync(path.join(dir, file), { force: true });
 }
 
-export function catalog() {
+function catalogFallback(revision) {
+  const templates = revision === 1 ? revision1DigitalTemplates : digitalTemplates;
+  return {
+    version: revision,
+    formats: ["guide", "checklist", "hooks", "quotes", "planner"].map((id) => ({ id, name: id[0].toUpperCase() + id.slice(1) })),
+    templates: templates.map((template) => ({
+      id: template.id,
+      name: template.name,
+      format: template.format,
+      description: template.description,
+      tags: template.tags,
+      palette: template.palette,
+      fonts: template.fonts,
+      sample: template.sample,
+      design_revision: revision,
+      preview_url: revision === 2 ? `/digital-design-assets/v2/${template.id}.png` : `/digital-design-assets/${template.id}.png`,
+    })),
+  };
+}
+
+function revisionedCatalog(response, revision) {
+  if (!response || !Array.isArray(response.templates)) return null;
+  return {
+    ...response,
+    version: revision,
+    templates: response.templates.map((template) => ({
+      ...template,
+      design_revision: revision,
+      // Paths, like template registries, are revision-specific compatibility contracts. Do not
+      // retain a catalog worker's former unversioned v2 preview URL during a rolling update.
+      preview_url: revision === 2 ? `/digital-design-assets/v2/${template.id}.png` : `/digital-design-assets/${template.id}.png`,
+    })),
+  };
+}
+
+export function catalog(revision = 2) {
+  const selected = designRevision(revision, 2);
   // publicDigitalCatalog is the canonical view. The fallback only preserves a useful response if
-  // a deployment has an older catalog worker during a rolling restart.
-  return typeof publicDigitalCatalog === "function"
-    ? publicDigitalCatalog()
-    : { templates: digitalTemplates, formats: ["guide", "checklist", "hooks", "quotes", "planner"].map((id) => ({ id, name: id[0].toUpperCase() + id.slice(1) })), version: 1 };
+  // a deployment has an older catalog worker during a rolling restart. In particular, an older
+  // worker's no-argument public catalog is never allowed to make ?revision=1 lie about v2 bytes.
+  const response = typeof publicDigitalCatalog === "function" ? publicDigitalCatalog(selected) : null;
+  return response?.version === selected ? revisionedCatalog(response, selected) : catalogFallback(selected);
 }
 
 export function getDesign(seller, productId) {
@@ -136,11 +183,13 @@ export function getDesign(seller, productId) {
 /** Make a product/listing and its editable illustrative source. It remains a private draft. */
 export async function createDraft(seller, body = {}) {
   const templateId = String(body.template_id || "");
-  const template = templateById(templateId); // canonical 400 for an unknown template
+  const selectedRevision = designRevision(body.design_revision, 1);
+  const template = templateById(templateId, selectedRevision); // canonical 400 for an unknown template
   const document = await owned(seller, starterDocument(templateId, {
     title: body.title,
     subtitle: body.subtitle,
     brand: body.brand || seller.store_name,
+    design_revision: selectedRevision,
   }));
   validateDocument(document);
   const product = createProduct(seller, {
@@ -314,18 +363,19 @@ export async function attachExport(seller, productId, body = {}) {
 }
 
 /** Prepare generated content before a listing/file is created, avoiding orphaned legacy output. */
-export async function generatedSourceDocument(seller, generated, type, templateId = null) {
+export async function generatedSourceDocument(seller, generated, type, templateId = null, options = {}) {
+  const selectedRevision = designRevision(options.design_revision, 1);
   const id = templateId || `${type}-01`;
-  templateById(id);
-  const document = await owned(seller, documentFromGenerated(generated, type, id, seller.store_name));
+  templateById(id, selectedRevision);
+  const document = await owned(seller, documentFromGenerated(generated, type, id, seller.store_name, selectedRevision));
   validateDocument(document);
   return document;
 }
 
 /** Called after normal AI generation so the complete structured response remains editable. */
-export async function registerGeneratedSource(seller, productId, generated, type, templateId = null, preparedDocument = null) {
+export async function registerGeneratedSource(seller, productId, generated, type, templateId = null, preparedDocument = null, options = {}) {
   const product = productFor(seller, productId);
-  const document = preparedDocument || await generatedSourceDocument(seller, generated, type, templateId);
+  const document = preparedDocument || await generatedSourceDocument(seller, generated, type, templateId, options);
   const current = designRow(product.id);
   if (current) return recordFor(product, current);
   db.prepare(`INSERT INTO digital_designs (product_id, seller_id, source_available, document_json, revision, legacy_message)

@@ -1,0 +1,170 @@
+{
+  "id": "quotes-10",
+  "format": "quotes",
+  "design_revision": 2,
+  "name": "The Quiet Ascent",
+  "description": "A sculptural stone-and-platinum quote print, composed as an architectural diptych with a generous editorial serif and a calm, collectible gallery presence.",
+  "tags": [
+    "quotes",
+    "platinum",
+    "stone",
+    "editorial",
+    "gallery print"
+  ],
+  "palette": {
+    "paper": "#F1F0EC",
+    "ink": "#22262B",
+    "accent": "#707982",
+    "muted": "#59616A",
+    "soft": "#D8D9D7"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "textColor": "ink",
+    "title": {
+      "x": 0.085,
+      "y": 0.345,
+      "w": 0.385,
+      "h": 0.245,
+      "size": 48,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.625,
+      "w": 0.36,
+      "h": 0.105,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.13,
+      "w": 0.34,
+      "h": 0.045,
+      "size": 9,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.875,
+      "w": 0.34,
+      "h": 0.04,
+      "size": 9,
+      "align": "left"
+    },
+    "image": {
+      "x": 0.53,
+      "y": 0.105,
+      "w": 0.395,
+      "h": 0.79
+    },
+    "artworks": [
+      {
+        "id": "stone-silver",
+        "x": 0.53,
+        "y": 0.105,
+        "w": 0.395,
+        "h": 0.79,
+        "fit": "cover",
+        "opacity": 1
+      },
+      {
+        "id": "pearl-sculpture",
+        "x": 0.48,
+        "y": 0.19,
+        "w": 0.12,
+        "h": 0.23,
+        "fit": "contain",
+        "opacity": 0.92
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.505,
+        "y": 0.075,
+        "w": 0.445,
+        "h": 0.85,
+        "fill": "ink",
+        "behindArt": true
+      },
+      {
+        "kind": "rect",
+        "x": 0.517,
+        "y": 0.087,
+        "w": 0.421,
+        "h": 0.826,
+        "fill": "soft",
+        "behindArt": true
+      },
+      {
+        "kind": "line",
+        "x": 0.49,
+        "y": 0.12,
+        "w": 0,
+        "h": 0.76,
+        "fill": "accent",
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.225,
+        "w": 0.3,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.09,
+        "y": 0.79,
+        "w": 0.3,
+        "h": 0.003,
+        "fill": "soft"
+      },
+      {
+        "kind": "rect",
+        "x": 0.09,
+        "y": 0.183,
+        "w": 0.035,
+        "h": 0.006,
+        "fill": "accent"
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "plain",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.915,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1
+      }
+    ]
+  },
+  "sample": {
+    "title": "Begin where the light finds you.",
+    "subtitle": "A quiet reminder to meet the day as it comes.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A NOTE ON BEGINNING"
+  }
+}

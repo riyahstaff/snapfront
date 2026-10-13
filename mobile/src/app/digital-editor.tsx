@@ -269,7 +269,7 @@ export default function DigitalEditorScreen() {
   function confirmTemplateStyle() {
     const source = documentRef.current;
     if (!source || !selectedTemplate) return;
-    Alert.alert("Apply visual style?", `This changes only the template id, format, palette, and fonts to ${selectedTemplate.name}. It keeps every existing page, block, image reference, and word.`, [
+    Alert.alert("Apply visual style?", `This changes only the selected visual style—template, format, palette, fonts, and original cover artwork—to ${selectedTemplate.name}. It keeps every existing page, block, image reference, and word.`, [
       { text: "Cancel", style: "cancel" },
       { text: "Apply style", onPress: () => commitDocument(applyDigitalTemplateStyle(source, selectedTemplate)) },
     ]);
@@ -550,7 +550,7 @@ export default function DigitalEditorScreen() {
         <Body muted>Work in editable source pages, then render real server pages and review one saved export before changing a buyer download. Nothing here publishes your product.</Body>
       </View>
       <Segmented value={stage} options={[{ value: "edit", label: "1 Edit" }, { value: "preview", label: "2 Preview" }, { value: "attach", label: "3 Attach" }]} onChange={setStage} />
-      {replacementRoute && selectedTemplate ? <View style={{ gap: space.sm, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }}><Text style={[type.heading, { color: c.ink }]}>Try {selectedTemplate.name}&apos;s visual style</Text><Text style={[type.small, { color: c.muted }]}>This preserves every word, page, block, and owned image reference. Only format, template, palette, and fonts change after your confirmation.</Text><Button label="Apply visual style and keep content" variant="secondary" onPress={confirmTemplateStyle} /></View> : null}
+      {replacementRoute && selectedTemplate ? <View style={{ gap: space.sm, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }}><Text style={[type.heading, { color: c.ink }]}>Try {selectedTemplate.name}&apos;s visual style</Text><Text style={[type.small, { color: c.muted }]}>This preserves every word, page, block, and owned image reference. Only the selected style and original cover artwork change after your confirmation.</Text><Button label="Apply visual style and keep content" variant="secondary" onPress={confirmTemplateStyle} /></View> : null}
       {stage === "edit" ? (
         <View style={{ gap: space.lg }}>
           <Notice text={preview && !previewCurrent ? "This frame is from an earlier source revision. It remains visible for reference only; update it before export or attach." : null} tone="info" />

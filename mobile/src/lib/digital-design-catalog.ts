@@ -3,1495 +3,1594 @@ import type { DigitalTemplateSummary } from './digital-design';
 export const DIGITAL_DESIGNS: DigitalTemplateSummary[] = [
   {
     "id": "guide-01",
-    "name": "Quiet Authority",
+    "name": "The Signal Within",
     "format": "guide",
-    "description": "A tactile editorial field guide for building a steady, confident content practice.",
+    "description": "A sculptural editorial guide to finding a clear point of view, shaping it into useful ideas, and publishing with intention.",
     "tags": [
       "editorial",
-      "content",
-      "confidence"
+      "creative practice",
+      "voice",
+      "strategy"
     ],
     "palette": {
-      "paper": "#F5F0E7",
-      "ink": "#202A31",
-      "accent": "#B45D43",
-      "muted": "#59656A",
-      "soft": "#D9DED5"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Build a quieter content rhythm",
-      "subtitle": "A practical field guide to showing up with clarity, consistency, and room to breathe.",
-      "brand": "STUDIO NOTES",
-      "eyebrow": "A FIELD GUIDE · CONTENT PRACTICE"
-    },
-    "preview_url": "/digital-design-assets/guide-01.png"
-  },
-  {
-    "id": "guide-02",
-    "name": "Chromatic Fieldnotes",
-    "format": "guide",
-    "description": "A bold field-guide cover with blue-and-citrus modular blocks, expressive display type and airy reading pages.",
-    "tags": [
-      "fieldnotes",
-      "editorial",
-      "color",
-      "beginner-sellers"
-    ],
-    "palette": {
-      "paper": "#F4F0E7",
-      "ink": "#172C35",
-      "accent": "#1F55CA",
-      "muted": "#50646A",
-      "soft": "#FFD761"
+      "paper": "#111820",
+      "ink": "#F5F7F8",
+      "accent": "#B9D3E2",
+      "muted": "#B8C4CC",
+      "soft": "#263641"
     },
     "fonts": {
       "heading": "display",
       "body": "sans"
     },
     "sample": {
-      "title": "Find Your First Product Story",
-      "subtitle": "A field guide to noticing what makes a small shop memorable",
-      "brand": "FIELDNOTE STUDIO",
-      "eyebrow": "A SELLER’S FIELD GUIDE"
+      "title": "Find the signal. Shape the story.",
+      "subtitle": "A field guide to clarifying your point of view and turning it into work worth sharing.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A CREATIVE PRACTICE GUIDE"
     },
-    "preview_url": "/digital-design-assets/guide-02.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/guide-01.png"
+  },
+  {
+    "id": "guide-02",
+    "name": "The Quiet Advantage",
+    "format": "guide",
+    "description": "A platinum-toned editorial field guide to shaping a small shop customers remember, from first impression to lasting trust.",
+    "tags": [
+      "shop-building",
+      "brand-story",
+      "editorial-guide",
+      "customer-trust"
+    ],
+    "palette": {
+      "paper": "#12171C",
+      "ink": "#F7F8F9",
+      "accent": "#B9C2CA",
+      "muted": "#AAB4BC",
+      "soft": "#E1E5E8"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make It Matter",
+      "subtitle": "A field guide to building a small shop people remember",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE QUIET ADVANTAGE · A SHOPKEEPER'S GUIDE"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/guide-02.png"
   },
   {
     "id": "guide-03",
-    "name": "Noir Narrative",
+    "name": "Amethyst Index",
     "format": "guide",
-    "description": "A cinematic graphite book jacket: high-contrast serif storytelling, vermilion edge spine and architectural silver rules.",
+    "description": "A collector-edition field guide in smoked violet and amethyst glass: oversized editorial type, a sculptural right-hand art bay, and a precise silvered frame.",
     "tags": [
-      "noir",
-      "storytelling",
-      "editorial"
+      "amethyst",
+      "collector edition",
+      "field guide",
+      "editorial",
+      "glass"
     ],
     "palette": {
-      "paper": "#FAF8F3",
-      "ink": "#18191C",
-      "accent": "#AD4C35",
-      "muted": "#606269",
-      "soft": "#E7E3DA"
+      "paper": "#17141E",
+      "ink": "#F7F4FA",
+      "accent": "#B89CEB",
+      "muted": "#C6BED0",
+      "soft": "#292331"
     },
     "fonts": {
-      "heading": "serif",
+      "heading": "display",
       "body": "sans"
     },
     "sample": {
-      "title": "Tell Your Product Story",
-      "subtitle": "A practical field guide to finding the detail customers remember",
-      "brand": "STUDIO AFTERLIGHT",
-      "eyebrow": "A SELLER'S STORY FIELD GUIDE"
+      "title": "Read the Light",
+      "subtitle": "A field guide to noticing the details that make a thing unforgettable",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE AMETHYST FIELD GUIDE"
     },
-    "preview_url": "/digital-design-assets/guide-03.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/guide-03.png"
   },
   {
     "id": "guide-04",
-    "name": "Sage Atelier",
+    "name": "The Emerald Index",
     "format": "guide",
-    "description": "A tactile editorial field guide with an architectural sun-and-leaf motif and generous reading space.",
+    "description": "A considered field guide to building a memorable independent shop, with an emerald architectural art window and a precise, generous reading system.",
     "tags": [
-      "atelier",
-      "editorial",
-      "commerce",
-      "sage"
+      "independent retail",
+      "field guide",
+      "emerald",
+      "architecture",
+      "editorial"
     ],
     "palette": {
-      "paper": "#F4F0E6",
-      "ink": "#1F302B",
-      "accent": "#587565",
-      "muted": "#52645B",
-      "soft": "#D9E2D6"
+      "paper": "#F6F7F4",
+      "ink": "#172521",
+      "accent": "#08745B",
+      "muted": "#4B5E57",
+      "soft": "#DCE9E2"
     },
     "fonts": {
-      "heading": "serif",
+      "heading": "display",
       "body": "sans"
     },
     "sample": {
-      "title": "Build Your First Shop",
-      "subtitle": "A calm, practical path from idea to opening day",
-      "brand": "Sage Atelier · EDITION 01",
-      "eyebrow": "THE INDEPENDENT SELLER FIELD GUIDE"
+      "title": "The Emerald Index",
+      "subtitle": "A field guide to opening a shop with a point of view",
+      "brand": "YOUR BRAND",
+      "eyebrow": "INDEPENDENT RETAIL · FIELD NOTES"
     },
-    "preview_url": "/digital-design-assets/guide-04.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/guide-04.png"
   },
   {
     "id": "guide-05",
-    "name": "Signal Manual",
+    "name": "The Useful Signal",
     "format": "guide",
-    "description": "A precise monospace manual with indexed coral tabs and a graphite spine, built for practical step-by-step teaching.",
+    "description": "A sharp, image-led field guide to making an offer clearer, more compelling, and easier to choose.",
     "tags": [
+      "offer design",
+      "positioning",
       "editorial",
-      "commerce",
-      "positioning"
+      "business guide"
     ],
     "palette": {
-      "paper": "#F4F0E7",
-      "ink": "#172333",
-      "accent": "#E05B3F",
-      "muted": "#465767",
-      "soft": "#D9E0D9"
-    },
-    "fonts": {
-      "heading": "mono",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Find Your Signal",
-      "subtitle": "A practical starter guide to a shop people remember",
-      "brand": "FIELDNOTE / COMMERCE STUDIO",
-      "eyebrow": "A SELLER'S POSITIONING MANUAL"
-    },
-    "preview_url": "/digital-design-assets/guide-05.png"
-  },
-  {
-    "id": "guide-06",
-    "name": "Terracotta Stories",
-    "format": "guide",
-    "description": "A tactile editorial field guide built around a sun-warmed arch, orbiting geometry, and generous story-first reading space.",
-    "tags": [
-      "editorial",
-      "storytelling",
-      "terracotta"
-    ],
-    "palette": {
-      "paper": "#F6EBDD",
-      "ink": "#2D2521",
-      "accent": "#B6533B",
-      "muted": "#675B52",
-      "soft": "#DCC6A9"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Tell Your Shop Story",
-      "subtitle": "A simple guide to turning your point of view into product-page copy",
-      "brand": "STUDIO FIELDNOTES",
-      "eyebrow": "A STORYTELLING FIELD GUIDE"
-    },
-    "preview_url": "/digital-design-assets/guide-06.png"
-  },
-  {
-    "id": "guide-07",
-    "name": "Blue Hour Journal",
-    "format": "guide",
-    "description": "A cinematic, reflective guide for shaping a quiet end-of-day journaling ritual.",
-    "tags": [
-      "journaling",
-      "reflection",
-      "editorial"
-    ],
-    "palette": {
-      "paper": "#F3F0E8",
-      "ink": "#14243B",
-      "accent": "#D06F55",
-      "muted": "#52647A",
-      "soft": "#D8E1E8"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "A softer landing at day’s end",
-      "subtitle": "Three prompts to notice, release, and carry forward",
-      "brand": "Blue Hour Notes",
-      "eyebrow": "AN EVENING JOURNAL GUIDE"
-    },
-    "preview_url": "/digital-design-assets/guide-07.png"
-  },
-  {
-    "id": "guide-08",
-    "name": "Vellum Studio",
-    "format": "guide",
-    "description": "A tactile editorial field guide for building a first commerce storefront, framed by an abstract orbital seal.",
-    "tags": [
-      "editorial",
-      "commerce",
-      "beginner",
-      "studio"
-    ],
-    "palette": {
-      "paper": "#F5F0E7",
-      "ink": "#202B32",
-      "accent": "#287D79",
-      "muted": "#53656A",
-      "soft": "#E2D8C8"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Open Your First Shop",
-      "subtitle": "A clear, creative path from product idea to polished storefront",
-      "brand": "VELLUM STUDIO  /  FIELD NOTES",
-      "eyebrow": "THE BEGINNER'S COMMERCE GUIDE"
-    },
-    "preview_url": "/digital-design-assets/guide-08.png"
-  },
-  {
-    "id": "guide-09",
-    "name": "Soft Systems",
-    "format": "guide",
-    "description": "A tactile editorial field guide for building a gentle, repeatable content rhythm, with a sculptural orbit motif and calm reading pages.",
-    "tags": [
-      "editorial",
-      "systems",
-      "beginner",
-      "content"
-    ],
-    "palette": {
-      "paper": "#F4F0E7",
-      "ink": "#182A31",
-      "accent": "#B6533B",
-      "muted": "#52666B",
-      "soft": "#D8DED3"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "A Softer Content System",
-      "subtitle": "A simple weekly rhythm for your first small shop",
-      "brand": "STUDIO STILL",
-      "eyebrow": "A BEGINNER FIELD GUIDE"
-    },
-    "preview_url": "/digital-design-assets/guide-09.png"
-  },
-  {
-    "id": "guide-10",
-    "name": "Editorial Bloom",
-    "format": "guide",
-    "description": "A tactile editorial field guide with a sculptural bloom motif, generous reading space, and a restrained botanical palette.",
-    "tags": [
-      "editorial",
-      "bloom",
-      "small-business",
-      "content"
-    ],
-    "palette": {
-      "paper": "#F7F2E8",
-      "ink": "#252C2A",
-      "accent": "#B94F3B",
-      "muted": "#59645F",
-      "soft": "#D9E2D7"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "A Small-Shop Content Garden",
-      "subtitle": "A practical guide to growing a clear, steady presence",
-      "brand": "FIELDNOTE STUDIO",
-      "eyebrow": "THE EDITORIAL BLOOM · A SELLER FIELD GUIDE"
-    },
-    "preview_url": "/digital-design-assets/guide-10.png"
-  },
-  {
-    "id": "checklist-01",
-    "name": "Clear Ritual",
-    "format": "checklist",
-    "description": "A calm, tactile editorial checklist for turning a small daily intention into a clear, repeatable ritual.",
-    "tags": [
-      "checklist",
-      "ritual",
-      "editorial",
-      "calm",
-      "printable"
-    ],
-    "palette": {
-      "paper": "#F5F1E8",
-      "ink": "#193832",
-      "accent": "#D76645",
-      "muted": "#526A61",
-      "soft": "#E4E8DC"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "A Clear Morning Ritual",
-      "subtitle": "A gentle checklist for making room, setting one intention, and beginning well.",
-      "brand": "FIELDNOTES STUDIO",
-      "eyebrow": "A DAILY RESET · PRINTABLE CHECKLIST"
-    },
-    "preview_url": "/digital-design-assets/checklist-01.png"
-  },
-  {
-    "id": "checklist-02",
-    "name": "Citrus Check",
-    "format": "checklist",
-    "description": "A bright editorial launch checklist framed by citrus-slice geometry and crisp, generous writing space.",
-    "tags": [
-      "checklist",
-      "launch",
-      "citrus",
-      "editorial"
-    ],
-    "palette": {
-      "paper": "#FFF9EB",
-      "ink": "#17352E",
-      "accent": "#E56B35",
-      "muted": "#536B60",
-      "soft": "#F2D56B"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Ready, Set, Launch",
-      "subtitle": "A small-shop checklist for a confident product debut",
-      "brand": "CITRUS STUDIO",
-      "eyebrow": "THE SELLER’S FIRST-LAUNCH LIST"
-    },
-    "preview_url": "/digital-design-assets/checklist-02.png"
-  },
-  {
-    "id": "checklist-03",
-    "name": "Paper Trail",
-    "format": "checklist",
-    "description": "A tactile editorial launch-readiness checklist with a receipt-inspired geometric trail and generous writable space.",
-    "tags": [
-      "checklist",
-      "editorial",
-      "launch",
-      "paper goods"
-    ],
-    "palette": {
-      "paper": "#F5F0E6",
-      "ink": "#202B36",
-      "accent": "#B24D36",
-      "muted": "#566674",
-      "soft": "#E5D8C5"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Ready, Set, Open",
-      "subtitle": "A small-shop launch checklist, from first listing to opening day",
-      "brand": "FIELD NOTES / YOUR SHOP",
-      "eyebrow": "THE PAPER TRAIL SERIES · SELLER CHECKLIST"
-    },
-    "preview_url": "/digital-design-assets/checklist-03.png"
-  },
-  {
-    "id": "checklist-04",
-    "name": "Graphite Method",
-    "format": "checklist",
-    "description": "A functional graphite grid toolkit: precise monospace headings, square status markers and clean printable worksheets.",
-    "tags": [
-      "checklist",
-      "editorial",
-      "launch",
-      "seller-workflow"
-    ],
-    "palette": {
-      "paper": "#F1F4F5",
-      "ink": "#20252C",
-      "accent": "#31566A",
-      "muted": "#59626B",
-      "soft": "#E0E7E9"
-    },
-    "fonts": {
-      "heading": "mono",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "First Listing, Ready",
-      "subtitle": "A clear pre-launch checklist for your first product page",
-      "brand": "STUDIO FIELDNOTES",
-      "eyebrow": "THE GRAPHITE METHOD  /  SELLER CHECKLIST"
-    },
-    "preview_url": "/digital-design-assets/checklist-04.png"
-  },
-  {
-    "id": "checklist-05",
-    "name": "Lilac Ledger",
-    "format": "checklist",
-    "description": "A soft lilac checklist with crisp sans-serif hierarchy, rounded status tiles and generous writable space.",
-    "tags": [
-      "seller",
-      "launch",
-      "editorial",
-      "checklist"
-    ],
-    "palette": {
-      "paper": "#F0EAF9",
-      "ink": "#292135",
-      "accent": "#6B4BA9",
-      "muted": "#655775",
-      "soft": "#DACEED"
+      "paper": "#F2F3F4",
+      "ink": "#171B20",
+      "accent": "#B7C1C9",
+      "muted": "#535D65",
+      "soft": "#DCE1E4"
     },
     "fonts": {
       "heading": "sans",
       "body": "sans"
     },
     "sample": {
-      "title": "Open-Shop Launch Checklist",
-      "subtitle": "A calm, practical pass through the details before your first listing goes live.",
-      "brand": "Lilac Ledger Studio",
-      "eyebrow": "THE BEGINNER SELLER SERIES"
+      "title": "Make the Useful Unmissable",
+      "subtitle": "A field guide to shaping offers people choose",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A CLEARER WAY TO POSITION WHAT YOU SELL"
     },
-    "preview_url": "/digital-design-assets/checklist-05.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/guide-05.png"
+  },
+  {
+    "id": "guide-06",
+    "name": "Pearl: The Quiet Form",
+    "format": "guide",
+    "description": "A collectible designer monograph for shaping a considered visual language, pairing sculptural pearl imagery with precise silver framing and spacious editorial reading pages.",
+    "tags": [
+      "designer monograph",
+      "visual identity",
+      "editorial",
+      "pearl sculpture"
+    ],
+    "palette": {
+      "paper": "#101317",
+      "ink": "#F5F6F7",
+      "accent": "#BFC8D0",
+      "muted": "#A4ADB6",
+      "soft": "#20262C"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Pearl: The Quiet Form",
+      "subtitle": "A field guide to building a visual language with intention",
+      "brand": "YOUR BRAND",
+      "eyebrow": "DESIGNER MONOGRAPH · NO. 01"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/guide-06.png"
+  },
+  {
+    "id": "guide-07",
+    "name": "Nocturne: A Field Guide to Seeing",
+    "format": "guide",
+    "description": "A considered visual journal for collecting details, decoding composition, and building a more attentive creative practice.",
+    "tags": [
+      "visual-journal",
+      "creative-practice",
+      "art-direction",
+      "observation"
+    ],
+    "palette": {
+      "paper": "#F4F3F0",
+      "ink": "#17191D",
+      "accent": "#9C7CE0",
+      "muted": "#555963",
+      "soft": "#D9D9DE"
+    },
+    "fonts": {
+      "heading": "display",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Nocturne",
+      "subtitle": "A field guide to seeing what others pass by",
+      "brand": "YOUR BRAND",
+      "eyebrow": "AN ATELIER FOR ATTENTION"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/guide-07.png"
+  },
+  {
+    "id": "guide-08",
+    "name": "Violet Signal Manual",
+    "format": "guide",
+    "description": "A precision-minded field guide to shaping a distinct independent brand, presented in smoky violet with a framed optical-silver study and a crisp technical reading system.",
+    "tags": [
+      "brand strategy",
+      "field guide",
+      "violet",
+      "independent business",
+      "technical editorial"
+    ],
+    "palette": {
+      "paper": "#19161F",
+      "ink": "#F7F5FA",
+      "accent": "#B9A0E8",
+      "muted": "#C9C2D2",
+      "soft": "#302A38"
+    },
+    "fonts": {
+      "heading": "sans",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make Your Signal Clear",
+      "subtitle": "A practical field guide to a brand people recognize and remember",
+      "brand": "YOUR BRAND",
+      "eyebrow": "BRAND SYSTEMS · FIELD MANUAL 08"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/guide-08.png"
+  },
+  {
+    "id": "guide-09",
+    "name": "The Quiet Architecture of Focus",
+    "format": "guide",
+    "description": "A considered field guide to shaping focused work: architectural stone, platinum rules, and generous editorial pages for turning intention into a durable practice.",
+    "tags": [
+      "focus",
+      "creative practice",
+      "editorial",
+      "field guide"
+    ],
+    "palette": {
+      "paper": "#F1F0ED",
+      "ink": "#202326",
+      "accent": "#777E83",
+      "muted": "#555B60",
+      "soft": "#D8DADD"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make Room for the Work",
+      "subtitle": "A field guide to focus, creative rhythm, and finishing what matters",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A PRACTICE FOR CLEARER DAYS"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/guide-09.png"
+  },
+  {
+    "id": "guide-10",
+    "name": "Emerald Signal",
+    "format": "guide",
+    "description": "A collectible strategy field guide for building a distinctive small brand, pairing an optical emerald architectural cover with clear, actionable editorial pages.",
+    "tags": [
+      "brand strategy",
+      "field guide",
+      "emerald",
+      "small business",
+      "editorial"
+    ],
+    "palette": {
+      "paper": "#F5F6F1",
+      "ink": "#172321",
+      "accent": "#167B65",
+      "muted": "#485954",
+      "soft": "#DCE8E2"
+    },
+    "fonts": {
+      "heading": "display",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make Your Brand Impossible to Mistake",
+      "subtitle": "A field guide to finding your signal and making it unmistakable.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE EMERALD SIGNAL · BRAND STRATEGY FIELD GUIDE"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/guide-10.png"
+  },
+  {
+    "id": "checklist-01",
+    "name": "The Quietly Capable Day",
+    "format": "checklist",
+    "description": "A considered daily checklist for choosing what matters, moving through the essentials, and closing the day with intention.",
+    "tags": [
+      "checklist",
+      "daily practice",
+      "editorial",
+      "intentional living",
+      "printable"
+    ],
+    "palette": {
+      "paper": "#F2F4F0",
+      "ink": "#172522",
+      "accent": "#176B55",
+      "muted": "#435850",
+      "soft": "#DCE5DE"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "The Quietly Capable Day",
+      "subtitle": "A clear-eyed checklist for priorities, practical progress, and a softer landing at day’s end.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A DAILY FIELD GUIDE · CHECKLIST"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/checklist-01.png"
+  },
+  {
+    "id": "checklist-02",
+    "name": "The Silverline Launch",
+    "format": "checklist",
+    "description": "A precise, beautifully paced launch checklist for makers who want every detail to feel considered.",
+    "tags": [
+      "checklist",
+      "launch",
+      "small business",
+      "editorial",
+      "silver"
+    ],
+    "palette": {
+      "paper": "#F4F6F8",
+      "ink": "#171A20",
+      "accent": "#B9C3CE",
+      "muted": "#515B66",
+      "soft": "#E1E6EB"
+    },
+    "fonts": {
+      "heading": "display",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "The Silverline Launch",
+      "subtitle": "Every detail, in its place. A maker’s launch checklist.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A FIELD GUIDE TO GOING LIVE"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/checklist-02.png"
+  },
+  {
+    "id": "checklist-03",
+    "name": "The Pearl Index",
+    "format": "checklist",
+    "description": "A sculptural studio checklist for shaping a considered product launch, from first proof to final reveal.",
+    "tags": [
+      "checklist",
+      "product launch",
+      "studio",
+      "editorial",
+      "pearl"
+    ],
+    "palette": {
+      "paper": "#15191D",
+      "ink": "#F4F5F3",
+      "accent": "#C5CDD1",
+      "muted": "#AAB3B8",
+      "soft": "#252C31"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make It Worth Opening",
+      "subtitle": "A product-launch checklist for the last careful pass—from proof to reveal.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE PEARL INDEX · STUDIO CHECKLIST"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/checklist-03.png"
+  },
+  {
+    "id": "checklist-04",
+    "name": "Nocturne: The Clear Run",
+    "format": "checklist",
+    "description": "A sculptural chrome-edged launch checklist for bringing a product from final polish to confident release.",
+    "tags": [
+      "checklist",
+      "launch",
+      "editorial",
+      "product-release",
+      "premium"
+    ],
+    "palette": {
+      "paper": "#F4F3F0",
+      "ink": "#17191D",
+      "accent": "#59636D",
+      "muted": "#50545A",
+      "soft": "#D8D9D8"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "The Clear Run",
+      "subtitle": "A considered final pass, from product polish to launch day.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "NOCTURNE EDITION  /  PRODUCT RELEASE CHECKLIST"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/checklist-04.png"
+  },
+  {
+    "id": "checklist-05",
+    "name": "Violet Signal: Launch Control",
+    "format": "checklist",
+    "description": "A precision launch checklist in smoky violet and chrome, with a sculptural amethyst-glass inset and practical, open writing space.",
+    "tags": [
+      "launch",
+      "seller",
+      "precision",
+      "checklist",
+      "violet"
+    ],
+    "palette": {
+      "paper": "#F5F2F8",
+      "ink": "#211B2A",
+      "accent": "#A98AE0",
+      "muted": "#5A5065",
+      "soft": "#DDD5E9"
+    },
+    "fonts": {
+      "heading": "display",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "The Launch, Precisely",
+      "subtitle": "A clear-eyed final check for every detail between first draft and live listing.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "SELLER FIELDNOTES / 05"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/checklist-05.png"
   },
   {
     "id": "checklist-06",
-    "name": "Momentum Steps",
+    "name": "The Quiet Launch",
     "format": "checklist",
-    "description": "A bright editorial launch checklist built around an ascending sequence of bold geometric steps, with generous room to mark progress.",
+    "description": "An architectural launch checklist in a stone-and-platinum editorial diptych, pairing a calm decision sequence with generous, practical room to act.",
     "tags": [
       "checklist",
-      "momentum",
       "launch",
-      "editorial"
+      "editorial",
+      "stone",
+      "platinum"
     ],
     "palette": {
-      "paper": "#F7F3E9",
-      "ink": "#192B36",
-      "accent": "#D9573B",
-      "muted": "#536A70",
-      "soft": "#DCE8D5"
+      "paper": "#F3F2EF",
+      "ink": "#202329",
+      "accent": "#A9ADB2",
+      "muted": "#555B62",
+      "soft": "#D9DADD"
     },
     "fonts": {
       "heading": "serif",
       "body": "sans"
     },
     "sample": {
-      "title": "Momentum Steps",
-      "subtitle": "A clear checklist for preparing your first product launch",
-      "brand": "STUDIO NORTH",
-      "eyebrow": "THE SMALL-SELLER LAUNCH LIST"
+      "title": "The Quiet Launch",
+      "subtitle": "A considered checklist for taking your next good idea to market.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "FIELD NOTES / PRODUCT RELEASE"
     },
-    "preview_url": "/digital-design-assets/checklist-06.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/checklist-06.png"
   },
   {
     "id": "checklist-07",
-    "name": "Coastal Notes",
+    "name": "The Quietly Unstoppable List",
     "format": "checklist",
-    "description": "A tactile coastal field-note checklist with a quiet editorial cover and generous printable writing space.",
+    "description": "An optical-midnight ritual checklist for turning an important intention into a sequence of small, finishable moves.",
     "tags": [
-      "coastal",
-      "field-notes",
       "checklist",
+      "focus",
+      "ritual",
+      "emerald",
       "editorial"
     ],
     "palette": {
-      "paper": "#F5F1E8",
-      "ink": "#173B42",
-      "accent": "#C16B4B",
-      "muted": "#4F7070",
-      "soft": "#D9E5DF"
+      "paper": "#071A17",
+      "ink": "#F2F7F3",
+      "accent": "#48D5A3",
+      "muted": "#AFC7BC",
+      "soft": "#12352C"
     },
     "fonts": {
-      "heading": "serif",
+      "heading": "display",
       "body": "sans"
     },
     "sample": {
-      "title": "A Day by the Water",
-      "subtitle": "A simple field checklist for noticing, gathering, and remembering",
-      "brand": "TIDELINE STUDIO",
-      "eyebrow": "COASTAL FIELD NOTES"
+      "title": "Make Room for the Real Work",
+      "subtitle": "A focused sequence for choosing, beginning, and finishing what matters.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A SMALL-RITUAL CHECKLIST"
     },
-    "preview_url": "/digital-design-assets/checklist-07.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/checklist-07.png"
   },
   {
     "id": "checklist-08",
-    "name": "Matcha Matters",
+    "name": "The Matcha Threshold",
     "format": "checklist",
-    "description": "A tactile, garden-calm checklist for building a simple matcha ritual, with an abstract whisk-and-bowl cover and airy printable task space.",
+    "description": "A precise, sensorial checklist for preparing a quietly excellent matcha ritual, framed by a monumental liquid-chrome doorway and a low pearl-like vessel sculpture.",
     "tags": [
       "matcha",
       "ritual",
       "wellness",
       "checklist",
-      "editorial"
+      "editorial",
+      "daily practice"
     ],
     "palette": {
-      "paper": "#F7F5EA",
-      "ink": "#183B32",
-      "accent": "#78994F",
-      "muted": "#52685B",
-      "soft": "#DDE6D1"
+      "paper": "#F5F6F4",
+      "ink": "#182126",
+      "accent": "#718B83",
+      "muted": "#4C5A5F",
+      "soft": "#DCE3E0"
     },
     "fonts": {
-      "heading": "serif",
+      "heading": "display",
       "body": "sans"
     },
     "sample": {
-      "title": "Your Matcha Moment",
-      "subtitle": "A gentle checklist for a fresh, feel-good daily cup",
-      "brand": "MOSS & MORNING",
-      "eyebrow": "A SMALL DAILY RITUAL"
+      "title": "Enter the quiet",
+      "subtitle": "A focused checklist for a beautifully made daily matcha",
+      "brand": "YOUR BRAND",
+      "eyebrow": "MATCHA, MADE WITH INTENTION"
     },
-    "preview_url": "/digital-design-assets/checklist-08.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/checklist-08.png"
   },
   {
     "id": "checklist-09",
-    "name": "Peach Workshop",
+    "name": "The Chrome Launch Ledger",
     "format": "checklist",
-    "description": "A lively but spacious seller-prep checklist framed by cut-paper peach forms, a measured orbit, and a tiny registration mark; light interior pages leave room to write.",
-    "tags": [
-      "checklist",
-      "beginner",
-      "shop-launch",
-      "workshop"
-    ],
-    "palette": {
-      "paper": "#FFF7EF",
-      "ink": "#26343A",
-      "accent": "#D85F46",
-      "muted": "#56666A",
-      "soft": "#F2C7A7"
-    },
-    "fonts": {
-      "heading": "display",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Open Your Shop",
-      "subtitle": "A first-launch checklist for getting the small things ready",
-      "brand": "PEACH WORKSHOP",
-      "eyebrow": "THE BEGINNER SELLER CHECKLIST"
-    },
-    "preview_url": "/digital-design-assets/checklist-09.png"
-  },
-  {
-    "id": "checklist-10",
-    "name": "Precision Pack",
-    "format": "checklist",
-    "description": "A crisp, editorial launch-readiness checklist with a calibrated geometric cover and generous printable check-off space.",
+    "description": "A polished launch-day checklist for independent makers, composed as a platinum fashion editorial with a sculptural chrome gateway, fine numbered rail, and calm, writable interior pages.",
     "tags": [
       "checklist",
       "launch",
+      "maker-business",
       "editorial",
-      "precision"
+      "premium"
     ],
     "palette": {
-      "paper": "#F7F4EC",
-      "ink": "#182A2C",
-      "accent": "#D15C3B",
-      "muted": "#536664",
-      "soft": "#E4E8DE"
+      "paper": "#F4F5F6",
+      "ink": "#20252B",
+      "accent": "#69747E",
+      "muted": "#535D66",
+      "soft": "#D9DEE2"
     },
     "fonts": {
       "heading": "serif",
       "body": "sans"
     },
     "sample": {
-      "title": "Launch-Ready Shop Checklist",
-      "subtitle": "A clear final pass for your first product launch",
-      "brand": "Northline Studio",
-      "eyebrow": "THE SELLER'S FIELD NOTES"
+      "title": "Make the First Impression Count",
+      "subtitle": "A considered launch checklist for the details customers remember.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE INDEPENDENT MAKER’S LAUNCH LEDGER"
     },
-    "preview_url": "/digital-design-assets/checklist-10.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/checklist-09.png"
+  },
+  {
+    "id": "checklist-10",
+    "name": "The Luminous Reset",
+    "format": "checklist",
+    "description": "A collector-edition personal reset checklist: a considered sequence for clearing the noise, tending to yourself, and beginning again.",
+    "tags": [
+      "checklist",
+      "self-care",
+      "reset",
+      "ritual",
+      "amethyst",
+      "printable"
+    ],
+    "palette": {
+      "paper": "#F5F1FA",
+      "ink": "#21182C",
+      "accent": "#7954A8",
+      "muted": "#514760",
+      "soft": "#E6DDF0"
+    },
+    "fonts": {
+      "heading": "display",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "The Luminous Reset",
+      "subtitle": "A small ritual for making room to begin again",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A PERSONAL RESET CHECKLIST"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/checklist-10.png"
   },
   {
     "id": "hooks-01",
-    "name": "Creator Signal",
+    "name": "Nocturne Signal Archive",
     "format": "hooks",
-    "description": "A punchy creator workbook with a raspberry signal rail, bold display headlines and practical content-writing cards.",
+    "description": "An art-led hook-writing field guide pairing sculptural chrome imagery with a precise, practical system for opening lines that earn attention.",
     "tags": [
-      "creator",
       "hooks",
+      "creator",
+      "writing",
       "editorial",
-      "content"
+      "content craft"
     ],
     "palette": {
-      "paper": "#FFF5EC",
-      "ink": "#311B26",
-      "accent": "#C14168",
-      "muted": "#715660",
-      "soft": "#F3D5DE"
+      "paper": "#101216",
+      "ink": "#F4F2EE",
+      "accent": "#B9C4D0",
+      "muted": "#B3B7BE",
+      "soft": "#242A32"
     },
     "fonts": {
-      "heading": "display",
+      "heading": "serif",
       "body": "sans"
     },
     "sample": {
-      "title": "Open with a Spark",
-      "subtitle": "A flexible hook bank for posts that sound like you",
-      "brand": "FIELD NOTES FOR CREATORS",
-      "eyebrow": "THE CREATOR SIGNAL / HOOKS"
+      "title": "Make Them Lean In",
+      "subtitle": "A field guide to first lines with pull",
+      "brand": "YOUR BRAND",
+      "eyebrow": "NOCTURNE / THE HOOK ARCHIVE"
     },
-    "preview_url": "/digital-design-assets/hooks-01.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/hooks-01.png"
   },
   {
     "id": "hooks-02",
-    "name": "Electric Index",
+    "name": "Violet Signal Lab",
     "format": "hooks",
-    "description": "A kinetic editorial hook-writing kit built around a crisp signal-burst motif and spacious, usable copy blocks.",
+    "description": "A precision hook-writing field guide for shaping first lines with tension, clarity, and a reason to keep reading.",
     "tags": [
       "hooks",
-      "editorial",
-      "electric",
-      "copywriting"
-    ],
-    "palette": {
-      "paper": "#F7F4EA",
-      "ink": "#14243A",
-      "accent": "#00A7A0",
-      "muted": "#526477",
-      "soft": "#DCE9D9"
-    },
-    "fonts": {
-      "heading": "display",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "A Week of Scroll-Stopping Openers",
-      "subtitle": "A practical hook bank for product stories, launches, and everyday posts",
-      "brand": "Brightline Goods",
-      "eyebrow": "THE CREATOR'S COPY INDEX"
-    },
-    "preview_url": "/digital-design-assets/hooks-02.png"
-  },
-  {
-    "id": "hooks-03",
-    "name": "The Content Edit",
-    "format": "hooks",
-    "description": "A tactile editorial hook-writing template pairing a calm paper field with a sculptural cut-paper orbit and a clear, spacious reading system.",
-    "tags": [
-      "editorial",
-      "content",
+      "technical",
+      "violet",
       "writing",
-      "hooks"
-    ],
-    "palette": {
-      "paper": "#F4F0E7",
-      "ink": "#18272B",
-      "accent": "#B84E35",
-      "muted": "#53676A",
-      "soft": "#D9E1DC"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Hooks for a handmade launch",
-      "subtitle": "A simple edit for turning one good idea into a week of opening lines.",
-      "brand": "STUDIO FIELDNOTES",
-      "eyebrow": "THE CONTENT EDIT · HOOKS"
-    },
-    "preview_url": "/digital-design-assets/hooks-03.png"
-  },
-  {
-    "id": "hooks-04",
-    "name": "Studio Punch",
-    "format": "hooks",
-    "description": "A kinetic editorial hook-writing studio with chrome-inspired geometry, warm paper, and clear space for shaping opening lines.",
-    "tags": [
-      "hooks",
-      "editorial",
-      "bold",
-      "creator-studio"
-    ],
-    "palette": {
-      "paper": "#F5F0E6",
-      "ink": "#171A20",
-      "accent": "#E34D2F",
-      "muted": "#555B66",
-      "soft": "#D9E0E2"
-    },
-    "fonts": {
-      "heading": "display",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Hooks That Stop the Scroll",
-      "subtitle": "A quick-start studio for writing sharper openings",
-      "brand": "STUDIO PUNCH · YOUR CONTENT DESK",
-      "eyebrow": "THE CREATOR HOOK WORKBOOK"
-    },
-    "preview_url": "/digital-design-assets/hooks-04.png"
-  },
-  {
-    "id": "hooks-05",
-    "name": "Neon Notes",
-    "format": "hooks",
-    "description": "A kinetic editorial hook-writing kit pairing sharp neon geometry with calm, writable copy space.",
-    "tags": [
-      "hooks",
-      "creator",
-      "neon-editorial",
-      "social-content"
-    ],
-    "palette": {
-      "paper": "#F4F0E5",
-      "ink": "#172127",
-      "accent": "#D2FF3F",
-      "muted": "#52636A",
-      "soft": "#DCE6E0"
-    },
-    "fonts": {
-      "heading": "display",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Hooks that stop the scroll",
-      "subtitle": "A 30-prompt starter set for clearer, more human social posts",
-      "brand": "NEON NOTES STUDIO",
-      "eyebrow": "THE CREATOR'S HOOKBOOK"
-    },
-    "preview_url": "/digital-design-assets/hooks-05.png"
-  },
-  {
-    "id": "hooks-06",
-    "name": "Coral Conversation",
-    "format": "hooks",
-    "description": "A bright editorial hook-writing kit built around the rhythm of a conversation and an abstract coral dialogue motif.",
-    "tags": [
-      "conversation",
-      "content-writing",
       "editorial"
     ],
     "palette": {
-      "paper": "#F7F3EA",
-      "ink": "#183A3B",
-      "accent": "#E66F5D",
-      "muted": "#496563",
-      "soft": "#DCE9E2"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Open with a question",
-      "subtitle": "Conversation starters for product posts that invite a reply",
-      "brand": "Studio Sunday",
-      "eyebrow": "THE CORAL CONVERSATION · HOOKS"
-    },
-    "preview_url": "/digital-design-assets/hooks-06.png"
-  },
-  {
-    "id": "hooks-07",
-    "name": "Analog Ideas",
-    "format": "hooks",
-    "description": "A tactile analog index with monospace copy, warm recycled-paper tones and a tuning-console motif.",
-    "tags": [
-      "hooks",
-      "editorial",
-      "analog",
-      "content-writing"
-    ],
-    "palette": {
-      "paper": "#F3EBDC",
-      "ink": "#352C23",
-      "accent": "#825637",
-      "muted": "#6D6357",
-      "soft": "#D9C6A9"
-    },
-    "fonts": {
-      "heading": "mono",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Hooks for a Handmade Brand",
-      "subtitle": "A field guide to opening lines that sound like you",
-      "brand": "STUDIO FIELDNOTES",
-      "eyebrow": "THE ANALOG IDEAS DECK"
-    },
-    "preview_url": "/digital-design-assets/hooks-07.png"
-  },
-  {
-    "id": "hooks-08",
-    "name": "Midnight Dispatch",
-    "format": "hooks",
-    "description": "A cinematic, late-night hook-writing kit framed by orbital dispatch marks and crisp editorial type.",
-    "tags": [
-      "hooks",
-      "editorial",
-      "commerce",
-      "cinematic"
-    ],
-    "palette": {
-      "paper": "#F5F1E8",
-      "ink": "#111C2C",
-      "accent": "#E7A94B",
-      "muted": "#536477",
-      "soft": "#DCE7E5"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Hooks for the After-Hours Scroll",
-      "subtitle": "A practical prompt deck for product posts that earn the pause",
-      "brand": "NIGHT SHIFT STUDIO",
-      "eyebrow": "THE MIDNIGHT DISPATCH · HOOK KIT"
-    },
-    "preview_url": "/digital-design-assets/hooks-08.png"
-  },
-  {
-    "id": "hooks-09",
-    "name": "Playful Prompts",
-    "format": "hooks",
-    "description": "A bright, editorial hook-writing kit that pairs kinetic confetti geometry with calm, writable prompt pages.",
-    "tags": [
-      "hooks",
-      "playful",
-      "creator-writing"
-    ],
-    "palette": {
-      "paper": "#FFF8ED",
-      "ink": "#202338",
-      "accent": "#E75E43",
-      "muted": "#55596B",
-      "soft": "#F3D36B"
-    },
-    "fonts": {
-      "heading": "display",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Make Them Stop Scrolling",
-      "subtitle": "15 playful opening lines for your next post",
-      "brand": "Brightside Studio",
-      "eyebrow": "THE CREATOR'S HOOK DECK"
-    },
-    "preview_url": "/digital-design-assets/hooks-09.png"
-  },
-  {
-    "id": "hooks-10",
-    "name": "Golden Frequency",
-    "format": "hooks",
-    "description": "A sunlit signal-studio hook library with editorial typography and concentric broadcast geometry.",
-    "tags": [
-      "hooks",
-      "content",
-      "editorial",
-      "creator-studio"
-    ],
-    "palette": {
-      "paper": "#F5E9CF",
-      "ink": "#20231F",
-      "accent": "#C66A3D",
-      "muted": "#565A50",
-      "soft": "#E3C783"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Hooks that hold attention",
-      "subtitle": "A practical prompt deck for stronger first lines",
-      "brand": "Signal & Story Studio",
-      "eyebrow": "THE CREATOR'S HOOKBOOK"
-    },
-    "preview_url": "/digital-design-assets/hooks-10.png"
-  },
-  {
-    "id": "quotes-01",
-    "name": "Quiet Confidence",
-    "format": "quotes",
-    "description": "A quiet editorial quote template framed by an original orbit-and-sun geometry, with generous space for a brief affirmation.",
-    "tags": [
-      "quotes",
-      "editorial",
-      "calm",
-      "affirmation"
-    ],
-    "palette": {
-      "paper": "#F5F0E7",
-      "ink": "#202936",
-      "accent": "#B64F39",
-      "muted": "#535F68",
-      "soft": "#E5D7C4"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "I can move gently and still move forward.",
-      "subtitle": "A small reminder for the days that ask for patience.",
-      "brand": "STILL / STUDIO",
-      "eyebrow": "A NOTE ON YOUR OWN PACE"
-    },
-    "preview_url": "/digital-design-assets/quotes-01.png"
-  },
-  {
-    "id": "quotes-02",
-    "name": "Type in Bloom",
-    "format": "quotes",
-    "description": "A tactile editorial quote card system pairing calm literary type with an asymmetric botanical geometry of nested arcs, a seed-like ellipse, and a folded polygon.",
-    "tags": [
-      "quotes",
-      "editorial",
-      "botanical",
-      "encouragement"
-    ],
-    "palette": {
-      "paper": "#F5F0E7",
-      "ink": "#26342F",
-      "accent": "#B64F3D",
-      "muted": "#53675D",
-      "soft": "#D9DFD0"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Grow at your own pace.",
-      "subtitle": "A little progress is still a beginning.",
-      "brand": "Small Hours Studio",
-      "eyebrow": "WORDS TO KEEP CLOSE"
-    },
-    "preview_url": "/digital-design-assets/quotes-02.png"
-  },
-  {
-    "id": "quotes-03",
-    "name": "Orbit of Joy",
-    "format": "quotes",
-    "description": "A sunshine-yellow typographic print with playful orbit markers, expressive dark display lettering and a generous centered message.",
-    "tags": [
-      "uplifting",
-      "editorial",
-      "orbit",
-      "joy"
-    ],
-    "palette": {
-      "paper": "#FFE77D",
-      "ink": "#202A44",
-      "accent": "#9F4139",
-      "muted": "#59533A",
-      "soft": "#F0BD59"
-    },
-    "fonts": {
-      "heading": "display",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Joy finds its orbit in small things.",
-      "subtitle": "A little room for wonder, wherever you are.",
-      "brand": "MORNING ORBIT",
-      "eyebrow": "A NOTE TO KEEP CLOSE"
-    },
-    "preview_url": "/digital-design-assets/quotes-03.png"
-  },
-  {
-    "id": "quotes-04",
-    "name": "Modern Muse",
-    "format": "quotes",
-    "description": "A tactile editorial quote page pairing poised serif storytelling with a kinetic orbit-and-spark motif.",
-    "tags": [
-      "editorial",
-      "optimistic",
-      "geometric"
-    ],
-    "palette": {
-      "paper": "#F5F0E7",
-      "ink": "#25252B",
-      "accent": "#B64F3B",
-      "muted": "#665F5B",
-      "soft": "#D9C9B7"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Begin before you feel ready.",
-      "subtitle": "A little courage makes room for the next bright idea.",
-      "brand": "STUDIO SOLACE",
-      "eyebrow": "A NOTE FOR THE MAKING"
-    },
-    "preview_url": "/digital-design-assets/quotes-04.png"
-  },
-  {
-    "id": "quotes-05",
-    "name": "Sunday Serif",
-    "format": "quotes",
-    "description": "A sunlit editorial quote design pairing a quiet serif voice with a sculptural horizon medallion.",
-    "tags": [
-      "editorial",
-      "uplifting",
-      "serif",
-      "calm"
-    ],
-    "palette": {
-      "paper": "#F6F0E5",
-      "ink": "#183B3A",
-      "accent": "#C56C4B",
-      "muted": "#536B66",
-      "soft": "#E5D4B9"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Make room for what makes you feel alive.",
-      "subtitle": "A gentle reminder to choose the things that bring you back to yourself.",
-      "brand": "Sunday Notes",
-      "eyebrow": "A NOTE FOR SLOWER DAYS"
-    },
-    "preview_url": "/digital-design-assets/quotes-05.png"
-  },
-  {
-    "id": "quotes-06",
-    "name": "Bold Becoming",
-    "format": "quotes",
-    "description": "An unapologetic large-type affirmation in plum and warm peach, balanced by crisp blocks and editorial rules.",
-    "tags": [
-      "quotes",
-      "becoming",
-      "editorial",
-      "bold"
-    ],
-    "palette": {
-      "paper": "#FBE6D6",
-      "ink": "#52223F",
-      "accent": "#9A315F",
-      "muted": "#725467",
-      "soft": "#E7B3C2"
-    },
-    "fonts": {
-      "heading": "display",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "You are allowed to begin again.",
-      "subtitle": "A small brave step is still a becoming.",
-      "brand": "STUDIO STILL / WORDS FOR THE WAY",
-      "eyebrow": "NOTES ON BECOMING"
-    },
-    "preview_url": "/digital-design-assets/quotes-06.png"
-  },
-  {
-    "id": "quotes-07",
-    "name": "Soft Geometry",
-    "format": "quotes",
-    "description": "A calm, sculptural quote page pairing editorial serif storytelling with an orbiting geometric frame.",
-    "tags": [
-      "quotes",
-      "editorial",
-      "geometry",
-      "calm"
-    ],
-    "palette": {
-      "paper": "#F5F0E7",
-      "ink": "#25332F",
-      "accent": "#B85F46",
-      "muted": "#596A62",
-      "soft": "#D9DFD2"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Make room for becoming.",
-      "subtitle": "A small reminder to grow at your own pace",
-      "brand": "Softly, Studio",
-      "eyebrow": "WORDS TO KEEP CLOSE"
-    },
-    "preview_url": "/digital-design-assets/quotes-07.png"
-  },
-  {
-    "id": "quotes-08",
-    "name": "Night Poetry",
-    "format": "quotes",
-    "description": "A cinematic night-sky quotation keepsake with an editorial serif voice and orbiting geometric marks.",
-    "tags": [
-      "poetry",
-      "cinematic",
-      "editorial",
-      "night"
-    ],
-    "palette": {
-      "paper": "#F4EFE4",
-      "ink": "#17243A",
-      "accent": "#D68A62",
-      "muted": "#59677A",
-      "soft": "#D9DFE5"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Let the dark make room for stars.",
-      "subtitle": "A small reminder to trust the light you carry",
-      "brand": "NIGHT NOTES · STUDIO EDITION",
-      "eyebrow": "WORDS FOR THE IN-BETWEEN"
-    },
-    "preview_url": "/digital-design-assets/quotes-08.png"
-  },
-  {
-    "id": "quotes-09",
-    "name": "Apricot Affirmations",
-    "format": "quotes",
-    "description": "A sun-warmed editorial affirmation page pairing generous serif storytelling with orbiting fruit-slice geometry.",
-    "tags": [
-      "affirmations",
-      "apricot",
-      "editorial",
-      "warm"
-    ],
-    "palette": {
-      "paper": "#FFF4E7",
-      "ink": "#39242C",
-      "accent": "#C9533F",
-      "muted": "#76564C",
-      "soft": "#F2D4B5"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "I can begin again, gently.",
-      "subtitle": "A small collection of steady words for brighter mornings",
-      "brand": "Apricot Hour Studio",
-      "eyebrow": "WORDS TO KEEP CLOSE"
-    },
-    "preview_url": "/digital-design-assets/quotes-09.png"
-  },
-  {
-    "id": "quotes-10",
-    "name": "Gallery Words",
-    "format": "quotes",
-    "description": "A gallery-ready framed quote print with sophisticated sans-serif lettering, sage matboard geometry and quiet negative space.",
-    "tags": [
-      "quotes",
-      "editorial",
-      "gallery",
-      "inspiration"
-    ],
-    "palette": {
-      "paper": "#F5F4EF",
-      "ink": "#242B2A",
-      "accent": "#4D6054",
-      "muted": "#5F6962",
-      "soft": "#DCE1D5"
+      "paper": "#F4F1F7",
+      "ink": "#21192A",
+      "accent": "#8054B8",
+      "muted": "#554963",
+      "soft": "#DDD1E9"
     },
     "fonts": {
       "heading": "sans",
       "body": "sans"
     },
     "sample": {
-      "title": "Make room for wonder.",
-      "subtitle": "Small reminders for a more open-hearted day",
-      "brand": "STUDIO STILL",
-      "eyebrow": "A GALLERY OF GOOD WORDS"
+      "title": "Make Them Lean In",
+      "subtitle": "A field guide to sharper opening lines",
+      "brand": "YOUR BRAND",
+      "eyebrow": "HOOKS / FIELD NOTES 01"
     },
-    "preview_url": "/digital-design-assets/quotes-10.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/hooks-02.png"
   },
   {
-    "id": "planner-01",
-    "name": "Slow Sunday",
-    "format": "planner",
-    "description": "A gentle weekly reset planner with an editorial sun-dial motif and generous writing space.",
+    "id": "hooks-03",
+    "name": "First Line, Lasting Echo",
+    "format": "hooks",
+    "description": "An architectural hook-writing studio for shaping a sharp opening, testing its tension, and carrying the reader into the story.",
     "tags": [
-      "weekly-planner",
-      "slow-living",
-      "editorial"
+      "hooks",
+      "editorial",
+      "writing",
+      "content craft",
+      "architecture"
     ],
     "palette": {
-      "paper": "#F7F3E9",
-      "ink": "#25372F",
-      "accent": "#B75E45",
-      "muted": "#5E6B60",
-      "soft": "#E8DCC8"
+      "paper": "#F3F2EF",
+      "ink": "#202326",
+      "accent": "#9A7B4F",
+      "muted": "#52575A",
+      "soft": "#D8D9D8"
     },
     "fonts": {
       "heading": "serif",
       "body": "sans"
     },
     "sample": {
-      "title": "A softer week, by design",
-      "subtitle": "Make room for what matters, one day at a time",
-      "brand": "FIELD NOTES STUDIO",
-      "eyebrow": "THE WEEKLY RESET"
+      "title": "Make the first line impossible to pass.",
+      "subtitle": "A field guide to tension, specificity, and the sentence that opens the door.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE OPENING EDIT · HOOKS"
     },
-    "preview_url": "/digital-design-assets/planner-01.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/hooks-03.png"
   },
   {
-    "id": "planner-02",
-    "name": "Focus Framework",
-    "format": "planner",
-    "description": "A tactile editorial planning sheet that turns one priority into a focused, writable day.",
+    "id": "hooks-04",
+    "name": "Nocturne Signal",
+    "format": "hooks",
+    "description": "A midnight-green hookwriting field guide for turning a precise observation into an opening people want to follow.",
     "tags": [
-      "focus",
-      "daily-planning",
-      "editorial"
+      "hooks",
+      "writing",
+      "editorial",
+      "emerald",
+      "creator"
     ],
     "palette": {
-      "paper": "#F5F0E6",
-      "ink": "#202A3A",
-      "accent": "#C9573F",
-      "muted": "#526276",
-      "soft": "#DCE4DF"
+      "paper": "#F7F8F5",
+      "ink": "#15221E",
+      "accent": "#08745B",
+      "muted": "#53645E",
+      "soft": "#DCE8E2"
     },
     "fonts": {
       "heading": "serif",
       "body": "sans"
     },
     "sample": {
-      "title": "One Clear Priority",
-      "subtitle": "A calm daily page for choosing what matters, then making room to do it.",
-      "brand": "FIELD NOTES STUDIO",
-      "eyebrow": "THE FOCUS FRAMEWORK · DAILY PLANNER"
+      "title": "Make Them Lean In",
+      "subtitle": "Find the friction. Name the shift. Open with the part that matters.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "NOCTURNE SIGNAL · THE HOOK FIELD GUIDE"
     },
-    "preview_url": "/digital-design-assets/planner-02.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/hooks-04.png"
   },
   {
-    "id": "planner-03",
-    "name": "Colorblock Week",
-    "format": "planner",
-    "description": "An expressive weekly planner with stacked coral, marigold and slate blocks, bold friendly type and spacious planning pages.",
+    "id": "hooks-05",
+    "name": "The First-Line Atelier",
+    "format": "hooks",
+    "description": "A polished hook-writing workbook for turning a clear point of view into an opening line worth reading.",
     "tags": [
-      "weekly",
-      "colorblock",
-      "planning",
-      "editorial"
+      "hooks",
+      "creator-writing",
+      "editorial-workbook",
+      "content-craft"
     ],
     "palette": {
-      "paper": "#FFF6E7",
-      "ink": "#283146",
-      "accent": "#AF4440",
-      "muted": "#60657A",
-      "soft": "#F0C460"
+      "paper": "#F2F1EE",
+      "ink": "#17191C",
+      "accent": "#B9C8D2",
+      "muted": "#535A60",
+      "soft": "#DDE2E5"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make the first line matter",
+      "subtitle": "A practical studio for shaping sharp, specific openings from your real ideas",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE FIRST-LINE ATELIER"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/hooks-05.png"
+  },
+  {
+    "id": "hooks-06",
+    "name": "The Chrome Opening",
+    "format": "hooks",
+    "description": "A platinum editorial hook-writing collection pairing sculptural chrome portraiture with a precise, numbered studio rail for shaping irresistible opening lines.",
+    "tags": [
+      "hooks",
+      "copywriting",
+      "editorial",
+      "platinum",
+      "creator-tools"
+    ],
+    "palette": {
+      "paper": "#F4F5F6",
+      "ink": "#11151A",
+      "accent": "#AAB5C0",
+      "muted": "#555F69",
+      "soft": "#DCE1E6"
     },
     "fonts": {
       "heading": "display",
       "body": "sans"
     },
     "sample": {
-      "title": "A Week in Color",
-      "subtitle": "Seven days, clear priorities, and room to reset",
-      "brand": "Fieldnote Studio",
-      "eyebrow": "WEEKLY PLANNING · VOL. 01"
+      "title": "The First-Line Atelier",
+      "subtitle": "A considered hook, made to stop the scroll.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A PLATINUM EDITION · OPENING LINES"
     },
-    "preview_url": "/digital-design-assets/planner-03.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/hooks-06.png"
+  },
+  {
+    "id": "hooks-07",
+    "name": "Amethyst: The Opening Line",
+    "format": "hooks",
+    "description": "A collectible hook-writing edition pairing a sculptural amethyst glass study with spacious, sharp editorial typography and practical prompts.",
+    "tags": [
+      "hooks",
+      "amethyst",
+      "copywriting",
+      "editorial",
+      "collector-edition"
+    ],
+    "palette": {
+      "paper": "#F7F5FA",
+      "ink": "#211C29",
+      "accent": "#A985D2",
+      "muted": "#62596D",
+      "soft": "#D8C9E8"
+    },
+    "fonts": {
+      "heading": "display",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "The First Line",
+      "subtitle": "A field guide to hooks with a little voltage.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "AMETHYST EDITION · HOOKS"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/hooks-07.png"
+  },
+  {
+    "id": "hooks-08",
+    "name": "Verdant Signal",
+    "format": "hooks",
+    "description": "A sculptural emerald-architecture hook-writing folio for turning a product's sharpest truth into a line people stop to read.",
+    "tags": [
+      "hooks",
+      "luxury",
+      "editorial",
+      "writing-folio"
+    ],
+    "palette": {
+      "paper": "#F1F3EE",
+      "ink": "#14211D",
+      "accent": "#16765A",
+      "muted": "#46564F",
+      "soft": "#D8E2DB"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make Them Look Twice",
+      "subtitle": "A field folio for writing product hooks with clarity, tension, and intent.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE VERDANT SIGNAL · HOOK-WRITING FOLIO"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/hooks-08.png"
+  },
+  {
+    "id": "hooks-09",
+    "name": "Silverline: The Opening Hookbook",
+    "format": "hooks",
+    "description": "A precision-crafted hookbook for shaping first lines with clarity, tension, and a decisive point of view.",
+    "tags": [
+      "hooks",
+      "writing",
+      "creator",
+      "editorial",
+      "silver"
+    ],
+    "palette": {
+      "paper": "#17191D",
+      "ink": "#FFFFFF",
+      "accent": "#C7CCD2",
+      "muted": "#AEB4BC",
+      "soft": "#282C32"
+    },
+    "fonts": {
+      "heading": "sans",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Lead With the Line",
+      "subtitle": "A field guide to sharper openings, one deliberate sentence at a time.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE OPENING HOOKBOOK"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/hooks-09.png"
+  },
+  {
+    "id": "hooks-10",
+    "name": "Pearl / First Light",
+    "format": "hooks",
+    "description": "A sculptural hook-writing monograph: precise opening-line studies framed by a luminous pearl form and measured silver rules.",
+    "tags": [
+      "hooks",
+      "writing",
+      "editorial",
+      "creator-workbook"
+    ],
+    "palette": {
+      "paper": "#111519",
+      "ink": "#F5F7F7",
+      "accent": "#B9D4D7",
+      "muted": "#AAB4B7",
+      "soft": "#252D32"
+    },
+    "fonts": {
+      "heading": "display",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make the first line linger",
+      "subtitle": "A pearl-bright studio for openings with pull",
+      "brand": "YOUR BRAND",
+      "eyebrow": "HOOK STUDIES · VOL. 01"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/hooks-10.png"
+  },
+  {
+    "id": "quotes-01",
+    "name": "The Quiet Is Yours",
+    "format": "quotes",
+    "description": "An emerald-lit statement print for words worth keeping: a sculptural architectural artwork, precise metallic framing and a generous, high-contrast quote field.",
+    "tags": [
+      "quote print",
+      "emerald",
+      "optical",
+      "statement",
+      "editorial"
+    ],
+    "palette": {
+      "paper": "#071A17",
+      "ink": "#F4F7F2",
+      "accent": "#27B98B",
+      "muted": "#A9BCB4",
+      "soft": "#12342D"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "The quiet is yours to keep.",
+      "subtitle": "A little room for the words that bring you back to yourself.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A STATEMENT FOR THE STILL MOMENT"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/quotes-01.png"
+  },
+  {
+    "id": "quotes-02",
+    "name": "Threshold of Light",
+    "format": "quotes",
+    "description": "A monumental liquid-chrome gateway anchors this collectible quote print, with a poised editorial headline above and a quiet, deliberate reading space below.",
+    "tags": [
+      "quotes",
+      "liquid chrome",
+      "editorial print",
+      "inspiration"
+    ],
+    "palette": {
+      "paper": "#F4F6F8",
+      "ink": "#171B20",
+      "accent": "#B9C6D2",
+      "muted": "#59636D",
+      "soft": "#DCE2E8"
+    },
+    "fonts": {
+      "heading": "display",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make room for the possible.",
+      "subtitle": "A small reminder to step toward what is next.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A NOTE FOR NEW BEGINNINGS"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/quotes-02.png"
+  },
+  {
+    "id": "quotes-03",
+    "name": "Make Room for Light",
+    "format": "quotes",
+    "description": "A platinum-toned quote print pairing a precise editorial rail with a sculptural silver study and a thought to keep.",
+    "tags": [
+      "quote print",
+      "platinum",
+      "editorial",
+      "silver",
+      "minimal"
+    ],
+    "palette": {
+      "paper": "#F4F3EF",
+      "ink": "#17191D",
+      "accent": "#A9B0B7",
+      "muted": "#555B62",
+      "soft": "#D9DDE0"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make room for the light.",
+      "subtitle": "A quiet reminder to begin again.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A THOUGHT TO KEEP"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/quotes-03.png"
+  },
+  {
+    "id": "quotes-04",
+    "name": "The Inner Radiance Quote Edition",
+    "format": "quotes",
+    "description": "A collectible amethyst-glass quote print, composed as a sharp editorial statement with quiet space and crystalline detail.",
+    "tags": [
+      "amethyst",
+      "collector-edition",
+      "quote-print",
+      "editorial",
+      "glass"
+    ],
+    "palette": {
+      "paper": "#F7F5FA",
+      "ink": "#17121F",
+      "accent": "#632A86",
+      "muted": "#51485B",
+      "soft": "#DDD2E8"
+    },
+    "fonts": {
+      "heading": "display",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Let your quiet light lead.",
+      "subtitle": "A small reminder to trust the glow that is already yours.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "AMETHYST GLASS · COLLECTOR QUOTE PRINT"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/quotes-04.png"
+  },
+  {
+    "id": "quotes-05",
+    "name": "Emerald Edition — The Quiet Ascent",
+    "format": "quotes",
+    "description": "A collectible quote folio: a framed emerald architectural vista above a precise graphite plaque, with generous editorial space for a single resonant line.",
+    "tags": [
+      "quote print",
+      "emerald",
+      "architecture",
+      "editorial",
+      "luxury",
+      "gallery"
+    ],
+    "palette": {
+      "paper": "#F3F5F1",
+      "ink": "#17201E",
+      "accent": "#176B53",
+      "muted": "#465650",
+      "soft": "#D6E1DA"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "The way forward is through.",
+      "subtitle": "Keep becoming. The horizon moves with you.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A STUDY IN FORWARD MOTION"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/quotes-05.png"
+  },
+  {
+    "id": "quotes-06",
+    "name": "Silver Stillness",
+    "format": "quotes",
+    "description": "A collectible optical-silver quote print: one clear line of courage, framed by a close-cropped liquid-chrome surface.",
+    "tags": [
+      "quotes",
+      "optical silver",
+      "quiet confidence",
+      "print",
+      "editorial"
+    ],
+    "palette": {
+      "paper": "#F4F5F6",
+      "ink": "#171A1D",
+      "accent": "#5A6874",
+      "muted": "#50565C",
+      "soft": "#DDE1E4"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "The quiet is yours.",
+      "subtitle": "Keep a little room for what you know.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A NOTE TO KEEP"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/quotes-06.png"
+  },
+  {
+    "id": "quotes-07",
+    "name": "The Shape of Stillness",
+    "format": "quotes",
+    "description": "A collectible pearl-sculpture quote folio, pairing a single luminous object with a sharp silver editorial frame and room to make the words your own.",
+    "tags": [
+      "quotes",
+      "pearl",
+      "editorial",
+      "silver",
+      "printable"
+    ],
+    "palette": {
+      "paper": "#11151A",
+      "ink": "#F5F7F8",
+      "accent": "#AFC4CF",
+      "muted": "#B9C4CA",
+      "soft": "#222B32"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Stillness has a shape.",
+      "subtitle": "A quiet mind makes room for light.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A NOTE ON INNER QUIET"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/quotes-07.png"
+  },
+  {
+    "id": "quotes-08",
+    "name": "After the Last Light",
+    "format": "quotes",
+    "description": "A sculptural nocturne quote print series: one clear, memorable line set against a gallery of polished forms and precise editorial furniture.",
+    "tags": [
+      "nocturne",
+      "quote print",
+      "chrome",
+      "gallery",
+      "editorial"
+    ],
+    "palette": {
+      "paper": "#10151B",
+      "ink": "#F4F5F3",
+      "accent": "#B9C8D5",
+      "muted": "#AEB8C1",
+      "soft": "#202A34"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Even the night reflects light.",
+      "subtitle": "A line to keep when the world grows quiet",
+      "brand": "YOUR BRAND",
+      "eyebrow": "NOCTURNE · QUOTE PRINTS"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/quotes-08.png"
+  },
+  {
+    "id": "quotes-09",
+    "name": "Violet Signal — Quote Folio",
+    "format": "quotes",
+    "description": "A precision-set quote folio in smoky violet and optical silver, with an inset amethyst study and measured editorial page furniture.",
+    "tags": [
+      "quotes",
+      "violet",
+      "precision",
+      "folio",
+      "editorial"
+    ],
+    "palette": {
+      "paper": "#F4F1F7",
+      "ink": "#241C2B",
+      "accent": "#65477B",
+      "muted": "#51465A",
+      "soft": "#E1DBE8"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Stillness is a form of courage.",
+      "subtitle": "A considered collection of words for the moments between decisions.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE QUIET SIGNAL · QUOTE FOLIO"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/quotes-09.png"
+  },
+  {
+    "id": "quotes-10",
+    "name": "The Quiet Ascent",
+    "format": "quotes",
+    "description": "A sculptural stone-and-platinum quote print, composed as an architectural diptych with a generous editorial serif and a calm, collectible gallery presence.",
+    "tags": [
+      "quotes",
+      "platinum",
+      "stone",
+      "editorial",
+      "gallery print"
+    ],
+    "palette": {
+      "paper": "#F1F0EC",
+      "ink": "#22262B",
+      "accent": "#707982",
+      "muted": "#59616A",
+      "soft": "#D8D9D7"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Begin where the light finds you.",
+      "subtitle": "A quiet reminder to meet the day as it comes.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "A NOTE ON BEGINNING"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/quotes-10.png"
+  },
+  {
+    "id": "planner-01",
+    "name": "Amethyst Interval — Collector Planner",
+    "format": "planner",
+    "description": "A sculptural weekly planner for deliberate momentum: clear priorities, roomy daily notes, and a considered close to the week.",
+    "tags": [
+      "weekly-planner",
+      "collector-edition",
+      "intentional-living",
+      "amethyst-glass"
+    ],
+    "palette": {
+      "paper": "#F6F4F8",
+      "ink": "#201B29",
+      "accent": "#67469B",
+      "muted": "#5B5662",
+      "soft": "#E7E0EF"
+    },
+    "fonts": {
+      "heading": "display",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make Space for the Week",
+      "subtitle": "Seven days, one clear intention, room to begin again.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE AMETHYST WEEKLY PLANNER"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/planner-01.png"
+  },
+  {
+    "id": "planner-02",
+    "name": "Verdant Axis — Daily Folio",
+    "format": "planner",
+    "description": "An architectural daily folio pairing a deliberate top-three plan with generous appointment, project, and end-of-day reflection space.",
+    "tags": [
+      "daily-planner",
+      "architectural",
+      "emerald-edition",
+      "focus",
+      "writing-folio"
+    ],
+    "palette": {
+      "paper": "#F2F5F1",
+      "ink": "#17231F",
+      "accent": "#176B52",
+      "muted": "#4A5E55",
+      "soft": "#DCE9E1"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Set the Day in Motion",
+      "subtitle": "Three priorities. A clear stretch of time. Room to close well.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "VERDANT AXIS · DAILY PLANNING FOLIO"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/planner-02.png"
+  },
+  {
+    "id": "planner-03",
+    "name": "The Clear Hour",
+    "format": "planner",
+    "description": "A composed weekly planning system for deliberate priorities, focused work and a considered reset, wrapped in an optical-silver material study.",
+    "tags": [
+      "weekly",
+      "focus",
+      "priorities",
+      "editorial",
+      "minimal"
+    ],
+    "palette": {
+      "paper": "#F4F6F7",
+      "ink": "#141A20",
+      "accent": "#A9B7C0",
+      "muted": "#4D5961",
+      "soft": "#DDE3E6"
+    },
+    "fonts": {
+      "heading": "sans",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Make Space for What Matters",
+      "subtitle": "A weekly practice for clear priorities, focused days and a thoughtful reset.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "WEEKLY PLANNER · VOLUME 01"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/planner-03.png"
   },
   {
     "id": "planner-04",
-    "name": "Botanical Balance",
+    "name": "The Quiet Orbit Weekly Planner",
     "format": "planner",
-    "description": "A restorative weekly planning system framed by an abstract botanical sunroom motif, with generous printable space for priorities, appointments, and notes.",
+    "description": "A sculptural weekly planning companion for turning a crowded week into a clear sequence of considered moves, with spacious daily pages and a precise chrome-edged editorial cover.",
     "tags": [
       "planner",
-      "botanical",
       "weekly",
-      "intentional-living"
+      "editorial",
+      "pearl",
+      "minimal"
     ],
     "palette": {
-      "paper": "#F7F4EB",
-      "ink": "#20352E",
-      "accent": "#527A63",
-      "muted": "#53655B",
-      "soft": "#DCE6D8"
+      "paper": "#F4F5F6",
+      "ink": "#17191D",
+      "accent": "#697783",
+      "muted": "#4F5962",
+      "soft": "#D7DDE1"
     },
     "fonts": {
       "heading": "serif",
       "body": "sans"
     },
     "sample": {
-      "title": "A Week in Balance",
-      "subtitle": "Plan gently, make room for what matters",
-      "brand": "FIELD & FERN PLANNING CO.",
-      "eyebrow": "WEEKLY INTENTION PLANNER"
+      "title": "The Quiet Orbit",
+      "subtitle": "A clear week, shaped one day at a time.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "WEEKLY PLANNER · EDITION 01"
     },
-    "preview_url": "/digital-design-assets/planner-04.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/planner-04.png"
   },
   {
     "id": "planner-05",
-    "name": "Lunar Routine",
+    "name": "Nocturne: A Study in Focus",
     "format": "planner",
-    "description": "A lunar-cycle-inspired routine planner with a quiet editorial cover and generous printable planning space.",
+    "description": "A sculptural chrome-led planning folio for setting a deliberate weekly rhythm, choosing one essential, and leaving room to think.",
     "tags": [
       "planner",
-      "lunar",
-      "routine",
+      "weekly",
+      "nocturne",
+      "focus",
       "editorial"
     ],
     "palette": {
-      "paper": "#F5F0E7",
-      "ink": "#18262B",
-      "accent": "#B65F45",
-      "muted": "#52666A",
-      "soft": "#DCE5DF"
+      "paper": "#F3F5F6",
+      "ink": "#171B21",
+      "accent": "#AEBBC4",
+      "muted": "#59656E",
+      "soft": "#DDE3E7"
     },
     "fonts": {
-      "heading": "serif",
+      "heading": "display",
       "body": "sans"
     },
     "sample": {
-      "title": "A Week in Rhythm",
-      "subtitle": "A gentle plan for routines, priorities, and room to reset",
-      "brand": "FIELDNOTES STUDIO",
-      "eyebrow": "MOONPHASE ROUTINE PLANNER"
+      "title": "Make Space for What Matters",
+      "subtitle": "A weekly focus folio for clear priorities and considered pace",
+      "brand": "YOUR BRAND",
+      "eyebrow": "NOCTURNE / WEEKLY PLANNING FOLIO"
     },
-    "preview_url": "/digital-design-assets/planner-05.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/planner-05.png"
   },
   {
     "id": "planner-06",
-    "name": "The Daily Edit",
+    "name": "Violet Index — Precision Daybook",
     "format": "planner",
-    "description": "A writable daily planner with a crisp editorial grid and orbiting chrome-inspired geometry.",
+    "description": "A precision-minded daily planner in smoky violet and optical silver, with a quiet image inset and a generous, writable architecture for the day.",
     "tags": [
       "planner",
-      "editorial",
-      "daily focus",
-      "creative workflow"
+      "precision",
+      "violet",
+      "daily planning",
+      "focus"
     ],
     "palette": {
-      "paper": "#F7F5F0",
-      "ink": "#172A32",
-      "accent": "#B34D35",
-      "muted": "#53666B",
-      "soft": "#DCE5E2"
+      "paper": "#211B2B",
+      "ink": "#F7F4FC",
+      "accent": "#B8A6D8",
+      "muted": "#B9B1C4",
+      "soft": "#393044"
     },
     "fonts": {
-      "heading": "serif",
+      "heading": "sans",
       "body": "sans"
     },
     "sample": {
-      "title": "A Clear Day",
-      "subtitle": "A little space to choose what matters and make it happen.",
-      "brand": "STUDIO NORTH",
-      "eyebrow": "THE DAILY EDIT · FOCUS PLANNER"
+      "title": "Make Room for What Matters",
+      "subtitle": "A measured plan for a day that moves with intention.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "VIOLET INDEX · DAILY PRECISION PLANNER"
     },
-    "preview_url": "/digital-design-assets/planner-06.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/planner-06.png"
   },
   {
     "id": "planner-07",
-    "name": "Warm Intentions",
+    "name": "The Quiet Architecture",
     "format": "planner",
-    "description": "A sun-warmed weekly intention planner pairing editorial type with a quiet orbit of geometric forms and generous writing space.",
+    "description": "A considered weekly planner framed as a stone-and-platinum editorial object, with calm structure for priorities, appointments, and the space between.",
     "tags": [
       "planner",
-      "intentional",
-      "warm editorial"
+      "weekly",
+      "editorial",
+      "architecture"
     ],
     "palette": {
-      "paper": "#FBF6EC",
-      "ink": "#292A27",
-      "accent": "#B85D3E",
-      "muted": "#665F54",
-      "soft": "#E9D8C2"
+      "paper": "#F1F0EC",
+      "ink": "#25292D",
+      "accent": "#8A9AA4",
+      "muted": "#555D63",
+      "soft": "#D8DADD"
     },
     "fonts": {
       "heading": "serif",
       "body": "sans"
     },
     "sample": {
-      "title": "A Week with Intention",
-      "subtitle": "A gentle plan for focus, small joys, and room to breathe",
-      "brand": "The Sunday Desk",
-      "eyebrow": "WEEKLY REFLECTION & PLANNING"
+      "title": "The Quiet Architecture",
+      "subtitle": "A clear week, with room for what matters.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "WEEKLY PLANNER · NO. 07"
     },
-    "preview_url": "/digital-design-assets/planner-07.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/planner-07.png"
   },
   {
     "id": "planner-08",
-    "name": "Fresh Start",
+    "name": "The Clear Week",
     "format": "planner",
-    "description": "A tactile editorial reset planner pairing generous writing space with a sunrise-inspired geometric cover.",
+    "description": "A focused weekly planning edition for choosing what matters, protecting space for deep work, and ending each week with intention.",
     "tags": [
       "planner",
-      "fresh start",
-      "editorial",
-      "weekly reset"
-    ],
-    "palette": {
-      "paper": "#F7F3E9",
-      "ink": "#202B38",
-      "accent": "#D65A3A",
-      "muted": "#536675",
-      "soft": "#E6D8C3"
-    },
-    "fonts": {
-      "heading": "serif",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "A Week to Begin Again",
-      "subtitle": "A gentle weekly reset for priorities, plans, and breathing room",
-      "brand": "Fieldnotes Studio",
-      "eyebrow": "THE WEEKLY RESET"
-    },
-    "preview_url": "/digital-design-assets/planner-08.png"
-  },
-  {
-    "id": "planner-09",
-    "name": "Studio Schedule",
-    "format": "planner",
-    "description": "A crisp studio schedule in cool jade and slate, with monospace indexing and a structured timetable-strip composition.",
-    "tags": [
-      "planner",
-      "studio",
       "weekly",
+      "focus",
+      "emerald",
       "editorial"
     ],
     "palette": {
-      "paper": "#EEF3F2",
-      "ink": "#233A3B",
-      "accent": "#2C6570",
-      "muted": "#5A6C6B",
-      "soft": "#D2E1DE"
+      "paper": "#F4F7F3",
+      "ink": "#12221D",
+      "accent": "#16A77B",
+      "muted": "#486057",
+      "soft": "#DCE9E2"
     },
     "fonts": {
-      "heading": "mono",
-      "body": "sans"
-    },
-    "sample": {
-      "title": "Studio Schedule",
-      "subtitle": "A weekly plan for making, sharing, and resetting",
-      "brand": "FIELDNOTE STUDIO",
-      "eyebrow": "WEEKLY WORKROOM · 01"
-    },
-    "preview_url": "/digital-design-assets/planner-09.png"
-  },
-  {
-    "id": "planner-10",
-    "name": "Undated Horizons",
-    "format": "planner",
-    "description": "An open, undated planning system framed by horizon lines, a rising sun, and an offset arch—made for clear priorities and generous handwritten notes.",
-    "tags": [
-      "planner",
-      "horizon",
-      "editorial",
-      "undated",
-      "reflection"
-    ],
-    "palette": {
-      "paper": "#F5F0E6",
-      "ink": "#172B32",
-      "accent": "#C65B3D",
-      "muted": "#536A6D",
-      "soft": "#D9E1D9"
-    },
-    "fonts": {
-      "heading": "serif",
+      "heading": "display",
       "body": "sans"
     },
     "sample": {
       "title": "Make room for what matters",
-      "subtitle": "An undated weekly planner for priorities, plans, and open space",
-      "brand": "FIELDNOTES STUDIO",
-      "eyebrow": "A WEEKLY RESET · NO DATES REQUIRED"
+      "subtitle": "Set your weekly direction, map each day, and leave space to think.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "WEEKLY PLANNING EDITION"
     },
-    "preview_url": "/digital-design-assets/planner-10.png"
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/planner-08.png"
+  },
+  {
+    "id": "planner-09",
+    "name": "Threshold — The Focus Planner",
+    "format": "planner",
+    "description": "A sculptural weekly planner built around a monumental liquid-chrome doorway: choose what deserves entry, give it a clear place, and leave the margins quiet.",
+    "tags": [
+      "planner",
+      "weekly",
+      "focus",
+      "liquid chrome",
+      "editorial"
+    ],
+    "palette": {
+      "paper": "#F4F4F1",
+      "ink": "#202328",
+      "accent": "#56616B",
+      "muted": "#50565D",
+      "soft": "#DCE0E1"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "Threshold",
+      "subtitle": "A weekly focus planner for choosing what gets your attention.",
+      "brand": "YOUR BRAND",
+      "eyebrow": "WEEKLY FOCUS · VOLUME 01"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/planner-09.png"
+  },
+  {
+    "id": "planner-10",
+    "name": "The Platinum Index",
+    "format": "planner",
+    "description": "A refined undated planning folio with a numbered editorial rail, clear daily priorities, and generous space to think.",
+    "tags": [
+      "planner",
+      "platinum",
+      "editorial",
+      "undated",
+      "daily focus"
+    ],
+    "palette": {
+      "paper": "#F2F3F4",
+      "ink": "#17191D",
+      "accent": "#AEB5BD",
+      "muted": "#555D66",
+      "soft": "#D8DDE2"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "sans"
+    },
+    "sample": {
+      "title": "A day, deliberately",
+      "subtitle": "Undated daily pages for priorities, appointments, and a clear end-of-day note",
+      "brand": "YOUR BRAND",
+      "eyebrow": "THE PLATINUM INDEX · DAILY FOLIO"
+    },
+    "design_revision": 2,
+    "preview_url": "/digital-design-assets/v2/planner-10.png"
   }
 ];
 export const DIGITAL_FORMATS = [
@@ -1516,4 +1615,4 @@ export const DIGITAL_FORMATS = [
     "name": "Planners"
   }
 ];
-export const DIGITAL_DESIGN_VERSION = 1;
+export const DIGITAL_DESIGN_VERSION = 2;

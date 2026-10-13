@@ -1,0 +1,196 @@
+{
+  "id": "guide-03",
+  "format": "guide",
+  "name": "Amethyst Index",
+  "description": "A collector-edition field guide in smoked violet and amethyst glass: oversized editorial type, a sculptural right-hand art bay, and a precise silvered frame.",
+  "tags": [
+    "amethyst",
+    "collector edition",
+    "field guide",
+    "editorial",
+    "glass"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#17141E",
+    "ink": "#F7F4FA",
+    "accent": "#B89CEB",
+    "muted": "#C6BED0",
+    "soft": "#292331"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.075,
+      "y": 0.32,
+      "w": 0.45,
+      "h": 0.27,
+      "size": 66,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.08,
+      "y": 0.63,
+      "w": 0.43,
+      "h": 0.12,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.08,
+      "y": 0.13,
+      "w": 0.43,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.08,
+      "y": 0.88,
+      "w": 0.43,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "muted",
+      "eyebrow": "accent",
+      "brand": "muted"
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.235,
+        "w": 0.43,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.9,
+        "stroke": 1.2
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.82,
+        "w": 0.43,
+        "h": 0,
+        "fill": "muted",
+        "opacity": 0.55,
+        "stroke": 0.7
+      },
+      {
+        "kind": "rect",
+        "x": 0.545,
+        "y": 0.055,
+        "w": 0.405,
+        "h": 0.89,
+        "fill": "soft",
+        "opacity": 0.55,
+        "stroke": 0.8,
+        "radius": 0.018,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.565,
+        "y": 0.08,
+        "w": 0,
+        "h": 0.84,
+        "fill": "accent",
+        "opacity": 0.8,
+        "stroke": 1.1
+      },
+      {
+        "kind": "line",
+        "x": 0.91,
+        "y": 0.08,
+        "w": 0,
+        "h": 0.84,
+        "fill": "muted",
+        "opacity": 0.6,
+        "stroke": 0.7
+      },
+      {
+        "kind": "rect",
+        "x": 0.56,
+        "y": 0.095,
+        "w": 0.02,
+        "h": 0.035,
+        "fill": "accent",
+        "opacity": 0.95
+      },
+      {
+        "kind": "rect",
+        "x": 0.56,
+        "y": 0.87,
+        "w": 0.02,
+        "h": 0.035,
+        "fill": "accent",
+        "opacity": 0.95
+      },
+      {
+        "kind": "line",
+        "x": 0.79,
+        "y": 0.055,
+        "w": 0,
+        "h": 0.89,
+        "fill": "muted",
+        "opacity": 0.35,
+        "stroke": 0.5
+      }
+    ],
+    "image": {
+      "x": 0.575,
+      "y": 0.09,
+      "w": 0.33,
+      "h": 0.82
+    },
+    "artworks": [
+      {
+        "id": "amethyst-glass",
+        "x": 0.575,
+        "y": 0.09,
+        "w": 0.33,
+        "h": 0.82,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ]
+  },
+  "interior": {
+    "margin": 50,
+    "headingSize": 30,
+    "bodySize": 11.5,
+    "lineHeight": 1.52,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "editorial",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.915,
+        "w": 0.84,
+        "h": 0,
+        "fill": "muted",
+        "opacity": 0.55,
+        "stroke": 0.55
+      }
+    ]
+  },
+  "sample": {
+    "title": "Read the Light",
+    "subtitle": "A field guide to noticing the details that make a thing unforgettable",
+    "brand": "YOUR BRAND",
+    "eyebrow": "THE AMETHYST FIELD GUIDE"
+  }
+}
