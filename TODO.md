@@ -9,3 +9,11 @@
 - [x] Validate server syntax/tests, classic parity, all 105 storefront/product/cart renders, preview isolation, asset routing, thumbnail completeness, phone TypeScript/lint and responsive layouts. Fix confirmed defects before push.
 - [ ] Push approved changes through the existing GitHub/Railway auto-deployment, verify GitHub Railway status and the live theme API, and report whether 105 themes are confirmed deployed. Do not submit a native app-store release or change Railway infrastructure/billing/access.
 - [x] Update seller instructions and release notes; clearly distinguish live backend theme availability from phone UI changes that need a new native release.
+
+## Native theme picker and guided storefront setup
+- [x] Users can browse all 105 API-fed themes, including classic and premium designs, using a shared searchable thumbnail picker; search/filter/page changes never select or apply a theme; counts, selected visibility, empty states and retries work on a phone.
+- [x] Users can complete Look, Cover, Words, Products and Review; store-specific drafts preserve step and browse state; existing classic themes remain selected; switching stores cannot apply another store's local draft.
+- [x] Users can upload a staged cover, recover from cancel/upload failure, keep the current cover, and choose still/drift/pan without modifying the live storefront until Apply.
+- [x] Users can generate AI suggestions, insert individual editable fields, or edit manually without an allowance; suggestions never deploy public copy automatically.
+- [x] Users can review real products/readiness, preview the private draft, and apply the design in one final action with an explicit completion view and actual store link; products, plan, Stripe and checkout stay unchanged.
+- [ ] Deliver validated source via a GitHub pull request; document native-device/build gaps; do not submit an app-store release or mutate production sellers during tests.

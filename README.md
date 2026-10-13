@@ -16,6 +16,10 @@ server/   Node API + public storefronts                               — Expres
 5. **Ask the assistant** – the Assistant tab talks to a store agent running on Claude Fable 5.1 (`AGENT_MODEL`). It has tools that act on the seller's own store (check the store, research what sells, generate digital products, create and edit listings, set prices, stock and options, publish, manage discount codes, shipping and tax settings, read and fulfil orders) and runs the multi-step job itself, reporting progress back to the app (`POST /api/agent/runs`, then poll `GET /api/agent/runs/:id`). Limits: 10 tool rounds per request, 15 requests per seller per hour, one at a time.
 6. **Sell** – every store lives at `/s/<store>` with product pages at `/s/<store>/<product>` (Open Graph tags + Product schema for search and social previews) and a cart at `/s/<store>/cart`. After payment, buyers land on `/thanks?o=<order>`, which confirms the order with Stripe if the webhook hasn't arrived yet and gives digital buyers signed, 7-day download links (also emailed if Resend is configured).
 
+### Guided storefront setup
+
+**My store → Build your storefront** opens Look → Cover → Words → Products → Review. The shared searchable thumbnail picker browses all 105 API-fed themes (20 classic and 85 premium), with collection/category filters and 12 cards per page. Upload a staged cover, insert optional editable AI suggestions, review actual products, privately preview, then apply the design in one final action. Store-specific phone drafts preserve browsing and progress. Applying the design never publishes products or changes plan/Stripe/checkout. See the [phone setup guide](docs/storefront-setup-guide.md). These controls require a native build containing the update; backend availability is separate from app-store release.
+
 ## Pricing
 
 | Plan | Price | Live stores | AI pages / products / assistant |
@@ -57,6 +61,7 @@ npm run dev                 # http://localhost:8080
 # 2. App
 cd ../mobile
 npm install
+npm test                    # catalog/draft regressions; mocked native storage, no live API calls
 # point the app at your API: edit "extra.apiUrl" in app.json (use your computer's LAN IP on a phone)
 npx expo start              # scan the QR code with a development build or Expo Go
 ```

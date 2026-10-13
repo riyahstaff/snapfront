@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,7 +21,8 @@ function previewUrl(theme: StoreTheme): string | null {
 /** A catalog preview is illustrative. Seller Preview still opens the seller's own storefront. */
 export function ThemePreview({ theme, storeName, photo = null, height = 190, style }: ThemePreviewProps) {
   const url = previewUrl(theme);
-  if (url) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  if (url && failedUrl !== url) {
     return (
       <View
         style={[styles.preview, { height, backgroundColor: theme.colors.bg, borderColor: theme.colors.line }, style]}
@@ -33,6 +34,7 @@ export function ThemePreview({ theme, storeName, photo = null, height = 190, sty
           cachePolicy="memory-disk"
           contentFit="cover"
           transition={120}
+          onError={() => setFailedUrl(url)}
           style={StyleSheet.absoluteFill}
         />
         <View style={[styles.demoLabel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]} pointerEvents="none">
@@ -44,7 +46,7 @@ export function ThemePreview({ theme, storeName, photo = null, height = 190, sty
   }
 
   // Premium catalog looks must not silently reuse one generic split drawing as their preview.
-  if (theme.collection === "premium" || theme.id.startsWith("p-")) {
+  if ((url !== null && failedUrl === url) || theme.collection === "premium" || theme.id.startsWith("p-")) {
     return (
       <View style={[styles.missing, { height, backgroundColor: theme.colors.bg, borderColor: theme.colors.line }, style]} accessibilityLabel={`${theme.name} preview image unavailable`}>
         <Ionicons name="image-outline" size={22} color={theme.colors.muted} />

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, ScrollView, Share, Text, View } from "react-native";
 import { Link, router, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
@@ -18,18 +18,22 @@ export default function StoreScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [setupDraftStep, setSetupDraftStep] = useState<number | null>(null);
+  const loadRevision = useRef(0);
 
   const load = useCallback(async () => {
+    const revision = ++loadRevision.current;
+    const storeRevision = api.storeRevision();
     setLoading(true); setError(null);
     try {
       const [me, list] = await Promise.all([account.refresh(), api.products()]);
       const setupDraft = await loadStorefrontDraft(me.id).catch(() => null);
+      if (revision !== loadRevision.current || storeRevision !== api.storeRevision()) return;
       setSeller(me); setItems(list); setSetupDraftStep(setupDraft?.step ?? null);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Couldn't load your store.");
-    } finally { setLoading(false); }
+      if (revision === loadRevision.current) setError(e instanceof ApiError ? e.message : "Couldn't load your store.");
+    } finally { if (revision === loadRevision.current) setLoading(false); }
   }, []);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(useCallback(() => { void load(); return () => { loadRevision.current++; }; }, [load]));
 
   async function connectStripe() {
     try {
@@ -65,6 +69,7 @@ export default function StoreScreen() {
       {seller ? <PlanCard me={seller} /> : null}
       {seller && (seller.account.stores.length > 1 || seller.account.plan === "pro") ? (
         <StoreSwitcher me={seller} busy={switching} onSwitch={async (id) => {
+          loadRevision.current++;
           setSwitching(true);
           try { await api.switchStore(id); await load(); } finally { setSwitching(false); }
         }} onCreate={async () => {
@@ -91,8 +96,8 @@ export default function StoreScreen() {
         </View>
       ) : null}
       <Button label="Add a product" icon={<Ionicons name="add-circle-outline" size={20} color={c.onAccent} />} onPress={addProduct} />
-      <Button label={setupDraftStep ? `Resume premium storefront · step ${setupDraftStep}` : "Build a premium storefront"} variant="secondary" icon={<Ionicons name="sparkles-outline" size={20} color={c.ink} />} onPress={() => router.push("/storefront-setup")} />
-      {setupDraftStep ? <Notice text="Your premium storefront setup is saved on this phone. Resume it here when you’re ready." /> : null}
+      <Button label={setupDraftStep ? `Resume storefront setup · step ${setupDraftStep}` : "Build your storefront"} variant="secondary" icon={<Ionicons name="sparkles-outline" size={20} color={c.ink} />} onPress={() => router.push("/storefront-setup")} />
+      {setupDraftStep ? <Notice text="Your storefront setup is saved on this phone. Resume it here when you’re ready." /> : null}
       {drafts > 0 ? (
         <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start", backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, padding: space.md }}>
           <Ionicons name="information-circle-outline" size={20} color={c.accent} />
