@@ -1,6 +1,6 @@
 # Liquid Chrome × Noir Atelier native facelift
 
-The selected design is implemented in the existing Snapfront Expo SDK 57 app: graphite backgrounds, platinum actions, polished chrome artwork, and the copper aperture/storefront-doorway emblem from Noir Atelier. The new wordmark and mark replace the previous blue/yellow branding in Home, native navigation, onboarding, app launcher, Android adaptive/themed icons, splash, and favicon.
+The selected design is implemented in the existing Snapfront Expo SDK 57 app: graphite backgrounds, platinum actions, polished chrome artwork, and the aperture/storefront-doorway emblem from Noir Atelier. At the user's request, the emblem now has a brushed silver/platinum chrome finish matching the gateway on Home rather than copper. The same silver mark replaces the previous blue/yellow branding in Home, native navigation, onboarding, app launcher, Android adaptive/themed icons, splash, and favicon. The emblem silhouette, graphite icon background, interface, motion and app behavior are preserved; the small copper editorial text accents remain unchanged.
 
 ## What changed
 

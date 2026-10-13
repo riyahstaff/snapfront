@@ -22,7 +22,7 @@ server/   Node API + public storefronts                               — Expres
 
 ### Liquid Chrome native identity
 
-Home now combines Liquid Chrome's graphite/platinum interface with the copper Noir Atelier aperture/doorway logo. It offers Build/Continue storefront setup, real catalog discovery and photo/studio/assistant/sourcing shortcuts. The original photo composer is available at `/snap`; all photo entry actions retain direct access. Decorative native hero motion supports Pause/Play, Reduce Motion and foreground/route lifecycle cleanup. Shared controls, navigation, onboarding and launcher/splash assets use the new identity. See [facelift notes and validation boundaries](docs/liquid-chrome-native-facelift.md). A new signed native build is required; this source update is not an app-store release.
+Home now combines Liquid Chrome's graphite/platinum interface with the Noir Atelier aperture/doorway logo in a brushed-silver chrome finish matching the Home gateway. It offers Build/Continue storefront setup, real catalog discovery and photo/studio/assistant/sourcing shortcuts. The original photo composer is available at `/snap`; all photo entry actions retain direct access. Decorative native hero motion supports Pause/Play, Reduce Motion and foreground/route lifecycle cleanup. Shared controls, navigation, onboarding and launcher/splash assets use the new identity. See [facelift notes and validation boundaries](docs/liquid-chrome-native-facelift.md). A new signed native build is required; this source update is not an app-store release.
 
 ## Pricing
 
