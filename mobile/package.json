@@ -1,12 +1,13 @@
 {
   "name": "snapfront",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
     "@expo-google-fonts/figtree": "^0.4.1",
     "@expo/vector-icons": "^15.0.2",
     "expo": "~57.0.27",
+    "expo-application": "~57.0.3",
     "expo-clipboard": "~57.0.2",
     "expo-constants": "~57.0.21",
     "expo-document-picker": "~57.0.3",

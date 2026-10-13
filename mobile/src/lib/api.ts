@@ -318,6 +318,20 @@ async function request<T>(method: string, path: string, body?: unknown, storeId?
   return data as T;
 }
 
+/** This endpoint is public: catalog discovery must not wait for or create a seller token. */
+async function themeCatalog(): Promise<StoreTheme[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/themes`);
+    if (!response.ok) throw new ApiError("Couldn't load themes. Check your connection and retry.", response.status);
+    const data = await response.json() as { themes?: StoreTheme[] };
+    if (!Array.isArray(data.themes)) throw new ApiError("The theme catalog couldn't be read. Please retry.", 0);
+    return data.themes;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError("Couldn't load themes. Check your connection and retry.", 0);
+  }
+}
+
 async function setStore(id: string | null) {
   selectionRevision++;
   storeCache = id;
@@ -363,7 +377,7 @@ export const api = {
   reviews: () => request<Review[]>("GET", "/api/reviews"),
   setReview: (id: string, status: "published" | "hidden") => request<Review[]>("PATCH", `/api/reviews/${id}`, { status }),
   qrUrl: (url: string) => `${API_URL}/qr.png?url=${encodeURIComponent(url)}`,
-  themes: () => request<{ themes: StoreTheme[] }>("GET", "/api/themes").then((r) => r.themes),
+  themes: themeCatalog,
   async deleteAccount() {
     await request<void>("DELETE", "/api/me");
     await SecureStore.deleteItemAsync(TOKEN_KEY);

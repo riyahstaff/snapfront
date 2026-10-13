@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Button, Notice } from "./ui";
 import { ChromeHero } from "./chrome-hero";
 import { ThemeCarousel } from "./theme-carousel";
+import { ReleaseInfo } from "./release-info";
 import { featuredThemes } from "@/lib/home-discovery";
 import { carouselInViewport, homePrimaryAction } from "@/lib/home-carousel";
 import type { Me, StoreTheme } from "@/lib/api";
@@ -27,6 +28,7 @@ export function HomeDashboard({ me, themes, draftStep, hasProducts = null, viewp
     <View style={{ gap: space.xl }}>
       <View style={{ gap: 10 }}>
         <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 10, letterSpacing: 2.8, color: c.brand }}>FROM IDEA TO ICONIC</Text>
+        <ReleaseInfo />
         <Text accessibilityRole="header" style={[type.hero, { color: c.ink, fontSize: width > 500 ? 48 : 38, lineHeight: width > 500 ? 53 : 42 }]}>Your vision.{"\n"}Beautifully built.</Text>
         <Text style={[type.body, { color: c.muted, maxWidth: 450 }]}>Start with a product photo. Turn it into a page, then give your brand a storefront worth discovering.</Text>
       </View>

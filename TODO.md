@@ -36,3 +36,9 @@
 - [x] Durable server-owned jobs survive restart, handle partial destination success, processing/rate delays and expired tokens safely, and do not blindly retry ambiguous public publishing; isolated mocked tests never publish or consume production allowances.
 - [x] Deliver a validated separate GitHub PR and setup/release guidance; preserve Google Play/Stripe billing and native IDs; do not merge, submit app-store builds, activate live social posting or change account permissions during tests.
 - [ ] Activate live Meta OAuth/publishing only after the owner configures the developer app/secrets/approved permissions and the updated backend/native app are deployed; report real-account verification as pending until performed.
+
+## Native release identification and reliable theme images
+- [x] Home and Settings visibly identify native version/build and Liquid Chrome release so users can distinguish the installed release without clearing local drafts; correction uses display version 1.0.1 and existing app/signing identity.
+- [x] All 105 actual storefront thumbnail images (20 classic, 85 premium) are packaged locally and render without remote-image access in picker, wizard and carousel; future remote looks retain HTTPS support and explicit retry/error feedback; classic definitions and selection/application behavior stay intact.
+- [x] Public theme discovery is independent of seller bootstrap; photo-first and returning-store behavior remains unchanged.
+- [ ] Validate tests, types/lint, native bundle and actual AAB content/assets; deliver focused PR and verified signed AAB, with Play rollout/installed-device verification distinguished from artifact completion; no app-store submission, account deletion or signing changes during tests.

@@ -6,6 +6,7 @@ import { Body, Button, Field, H2, Notice, Screen } from "@/components/ui";
 import { api, ApiError, type Me } from "@/lib/api";
 import { account } from "@/lib/account-store";
 import { AccountSection } from "@/components/account-section";
+import { ReleaseInfo } from "@/components/release-info";
 import { displayAddress } from "@/lib/store-address";
 import { SupplierSection } from "@/components/supplier-section";
 import { DomainSection } from "@/components/domain-section";
@@ -140,6 +141,7 @@ export default function SettingsScreen() {
       </View>
       <View style={{ gap: space.sm, marginTop: space.lg }}>
         <H2>About</H2>
+        <ReleaseInfo detailed />
         <Button label="Privacy policy" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("privacy"))} />
         <Button label="Terms of use" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("terms"))} />
         {confirm ? (
