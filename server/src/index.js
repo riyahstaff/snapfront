@@ -531,12 +531,12 @@ app.post("/api/billing/sync", auth, wrap(async (req, res) => {
   res.json(me(req));
 }));
 // Plans bought on the website, through Stripe Checkout on Snapfront's own Stripe account.
-app.get("/api/billing/web/offers", auth, (_req, res) => res.json({ enabled: webbilling.enabled(), offers: webbilling.enabled() ? webbilling.offers() : [] }));
+app.get("/api/billing/web/offers", auth, (_req, res) => res.json({ enabled: webbilling.enabled(), offers: webbilling.enabled() ? webbilling.offers() : [], android_url: webbilling.androidUrl() }));
 app.post("/api/billing/web/checkout", auth, wrap(async (req, res) => res.json(await webbilling.startCheckout(req.account, String(req.body?.plan || "")))));
 app.post("/api/billing/web/confirm", auth, wrap(async (req, res) => {
-  await webbilling.confirm(req.account, req.body?.session_id);
+  const { email } = await webbilling.confirm(req.account, req.body?.session_id);
   req.account = plans.getAccount(req.account.id);
-  res.json(me(req));
+  res.json({ ...me(req), checkout_email: email });
 }));
 app.post("/api/billing/web/portal", auth, wrap(async (req, res) => res.json(await webbilling.portal(req.account))));
 // The app bought a plan (or is restoring one): check it with Google Play and unlock it.

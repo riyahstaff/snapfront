@@ -6,6 +6,7 @@ import { config } from "./config.js";
 import { db } from "./db.js";
 import { httpError } from "./claude.js";
 import * as plans from "./plans.js";
+import * as webbilling from "./webbilling.js";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const normEmail = (e) => String(e || "").trim().toLowerCase().slice(0, 200);
@@ -65,8 +66,11 @@ export function verifyEmailLogin(account, rawEmail, rawCode) {
   // The email belongs to another account: sign this phone in to it. The phone's own account is
   // dropped if it never got past the starter store (no products), so it doesn't linger.
   const token = plans.newSession(owner.id);
+  // A plan this browser or phone bought on the website goes with the person to their account.
+  webbilling.transferPurchases(account.id, owner.id);
   const products = db.prepare("SELECT COUNT(*) n FROM products p JOIN sellers s ON s.id = p.seller_id WHERE s.account_id = ?").get(account.id).n;
-  if (!products && !account.email && account.plan === "free" && !account.comp_plan) db.prepare("DELETE FROM accounts WHERE id = ?").run(account.id);
+  const now = db.prepare("SELECT plan FROM accounts WHERE id = ?").get(account.id);
+  if (!products && !account.email && (now?.plan ?? account.plan) === "free" && !account.comp_plan) db.prepare("DELETE FROM accounts WHERE id = ?").run(account.id);
   return { status: "switched", email, token };
 }
 

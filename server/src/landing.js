@@ -57,10 +57,10 @@ h2{font-weight:800;font-size:clamp(30px,4.2vw,46px);line-height:1.04;letter-spac
 .device{border:1px solid var(--line);border-radius:20px;padding:24px;display:grid;gap:10px;align-content:start;background:linear-gradient(180deg,var(--surface),var(--bg))}
 .device h3{margin:0;font-size:20px;letter-spacing:-.01em}.device p{margin:0;color:var(--muted)}.device .btn{justify-self:start;margin-top:8px}
 .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
-.plan{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px;display:grid;gap:10px;align-content:start}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px;display:grid;gap:10px;align-content:start;grid-template-rows:auto auto 1fr auto}
 .plan.pro{border:2px solid var(--platinum)}.plan h3{margin:0;font-size:22px}
 .price{font-weight:800;font-size:40px;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.price small{font-weight:400;font-size:15px;color:var(--muted);letter-spacing:0}
-.plan ul{margin:6px 0 0;padding-left:18px;color:var(--muted)}.plan li{margin:4px 0}
+.plan ul{margin:6px 0 8px;padding-left:18px;color:var(--muted)}.plan li{margin:4px 0}.plan .btn{justify-self:start;margin-top:auto}
 .zero{color:var(--good)}
 footer{padding-block:36px 48px;color:var(--muted);font-size:15px;border-top:1px solid var(--sunk)}footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;align-items:center}
 footer nav{display:flex;flex-wrap:wrap;gap:18px}
@@ -107,10 +107,11 @@ footer nav{display:flex;flex-wrap:wrap;gap:18px}
   <h2>Simple pricing. <span class="zero">0% fees</span> on your sales.</h2>
   <p class="sub">Buyers pay you directly through Stripe. Stripe’s standard processing fees apply.</p>
   <div class="plans">
-    <div class="plan"><h3>Free</h3><div class="price">$0</div><ul><li>Build your store and try the AI</li><li>${PLANS.free.photo} AI product pages</li><li>${PLANS.free.research} price checks</li></ul></div>
-    <div class="plan"><h3>Launch</h3><div class="price">$29 <small>one time</small></div><ul><li>Publish one store and take payments</li><li>${PLANS.launch.photo} AI product pages a month</li><li>${PLANS.launch.research} price checks a month</li></ul></div>
-    <div class="plan pro"><h3>Pro</h3><div class="price">$14.99 <small>a month</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores</li><li>${PLANS.pro.photo} AI product pages a month</li><li>The store assistant</li></ul></div>
+    <div class="plan"><h3>Free</h3><div class="price">$0</div><ul><li>Build your store and try the AI</li><li>${PLANS.free.photo} AI product pages</li><li>${PLANS.free.research} price checks</li></ul><a class="btn ghost small" href="${web}">Start free</a></div>
+    <div class="plan"><h3>Launch</h3><div class="price">$29 <small>one time</small></div><ul><li>Publish one store and take payments</li><li>${PLANS.launch.photo} AI product pages a month</li><li>${PLANS.launch.research} price checks a month</li></ul><a class="btn small" href="${web}/plans?buy=launch">Get Launch</a></div>
+    <div class="plan pro"><h3>Pro</h3><div class="price">$14.99 <small>a month</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores</li><li>${PLANS.pro.photo} AI product pages a month</li><li>The store assistant</li></ul><a class="btn small" href="${web}/plans?buy=pro">Get Pro</a></div>
   </div>
+  <p class="note">Pay here with Stripe, then sign in to the Android app with the same email. Your plan works in both.</p>
 </div></section>
 </main>
 <footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="${web}">Web app</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a><span>support@snapfront.app</span></nav></div></footer>

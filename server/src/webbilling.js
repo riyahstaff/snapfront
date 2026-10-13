@@ -30,6 +30,9 @@ db.exec(`CREATE TABLE IF NOT EXISTS stripe_plan_purchases (
 )`);
 db.exec("CREATE TABLE IF NOT EXISTS stripe_plan_customers (account_id TEXT PRIMARY KEY, customer_id TEXT NOT NULL)");
 
+/** Where the website sends people to get the Android app (set PLAY_STORE_URL to override). */
+export const androidUrl = () => process.env.PLAY_STORE_URL || `https://play.google.com/store/apps/details?id=${config.playPackage || "com.sidebanc.snapfront"}`;
+
 /** Prices shown on the website's plan screen. */
 export const offers = () => Object.entries(PLANS).map(([plan, p]) => ({ plan, price: money(p.cents), sku: plan }));
 
@@ -85,6 +88,7 @@ async function inspect(row) {
   const s = stripeClient();
   const session = await s.checkout.sessions.retrieve(row.session_id);
   if (session.metadata?.snapfront_account !== row.account_id) return { ...row, status: "ended" };
+  row = { ...row, email: session.customer_details?.email || session.customer_email || null };
   if (session.status === "expired") return { ...row, status: "ended" };
   if (session.status !== "complete") return { ...row, status: "pending" };
   if (row.kind === "sub") {
@@ -107,13 +111,30 @@ function save(r) {
     .run(r.status, r.subscription_id ?? null, r.payment_intent ?? null, r.expires_at ?? null, r.session_id);
 }
 
-/** The browser came back from Stripe: check that checkout and unlock the plan. */
+/** The browser came back from Stripe: check that checkout and unlock the plan. Returns the plan
+ * and the email typed at checkout (offered as the email to save the purchase to). */
 export async function confirm(account, sessionId) {
   const row = db.prepare("SELECT * FROM stripe_plan_purchases WHERE session_id = ?").get(String(sessionId || ""));
-  if (!row) throw httpError(404, "We couldn't find that payment. Tap Restore purchases in a minute.");
+  if (!row) throw httpError(404, "We couldn't find that payment. Tap Check my purchases in a minute.");
   if (row.account_id !== account.id) throw httpError(409, "This payment belongs to another Snapfront account. Sign in with your email to get it back.");
-  save(await inspect(row));
-  return playbilling.applyPlan(account.id);
+  const checked = await inspect(row);
+  save(checked);
+  return { plan: playbilling.applyPlan(account.id), email: checked.email || null };
+}
+
+/**
+ * Someone paid on the website, then signed in with an email that already has a Snapfront account
+ * (proved with an emailed code): their website purchases move to that account with them.
+ */
+export function transferPurchases(fromAccountId, toAccountId) {
+  if (fromAccountId === toAccountId) return 0;
+  const moved = db.prepare("UPDATE stripe_plan_purchases SET account_id = ? WHERE account_id = ?").run(toAccountId, fromAccountId).changes;
+  if (!moved) return 0;
+  const had = db.prepare("SELECT 1 FROM stripe_plan_customers WHERE account_id = ?").get(toAccountId);
+  if (!had) db.prepare("UPDATE stripe_plan_customers SET account_id = ? WHERE account_id = ?").run(toAccountId, fromAccountId);
+  playbilling.applyPlan(fromAccountId);
+  playbilling.applyPlan(toAccountId);
+  return moved;
 }
 
 /** Re-check this account's Stripe plans (skipping ones checked in the last few minutes). */

@@ -31,15 +31,16 @@ export async function startBilling(id: string) {
   await finishReturnFromCheckout().catch(() => null);
 }
 
-let returning: Promise<Me | null> | null = null;
+export type CheckoutResult = Me & { checkout_email?: string | null };
+let returning: Promise<CheckoutResult | null> | null = null;
 /** The checkout the browser just came back from, if any: confirmed with Stripe by the server. */
-export function finishReturnFromCheckout(): Promise<Me | null> {
+export function finishReturnFromCheckout(): Promise<CheckoutResult | null> {
   if (returning) return returning;
   if (typeof window === "undefined") return Promise.resolve(null);
   const params = new URLSearchParams(window.location.search);
   const session = params.get("session_id");
   if (params.get("checkout") !== "done" || !session) return Promise.resolve(null);
-  returning ||= call<Me>("POST", "/api/billing/web/confirm", { session_id: session }).finally(() => {
+  returning ||= call<CheckoutResult>("POST", "/api/billing/web/confirm", { session_id: session }).finally(() => {
     params.delete("session_id"); params.delete("checkout");   // a refresh shouldn't repeat this
     const q = params.toString();
     window.history.replaceState(null, "", window.location.pathname + (q ? `?${q}` : ""));
@@ -49,9 +50,17 @@ export function finishReturnFromCheckout(): Promise<Me | null> {
 export const returningFromCheckout = () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("checkout") === "done";
 export const checkoutCanceled = () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("checkout") === "canceled";
 
+type OffersReply = { enabled: boolean; offers: Offer[]; android_url: string | null };
+let offersReply: Promise<OffersReply> | null = null;
+const offersOnce = () => (offersReply ||= call<OffersReply>("GET", "/api/billing/web/offers").catch((e) => { offersReply = null; throw e; }));
+
 export async function getOffers(): Promise<Offer[]> {
-  const r = await call<{ enabled: boolean; offers: Offer[] }>("GET", "/api/billing/web/offers");
+  const r = await offersOnce();
   return r.enabled ? r.offers : [];
+}
+/** Where to get the phone app (the Google Play listing). */
+export async function getAppInfo(): Promise<{ android_url: string | null }> {
+  return { android_url: (await offersOnce()).android_url };
 }
 
 /** Sends the browser to Stripe's secure checkout page. It comes back to /plans when done. */

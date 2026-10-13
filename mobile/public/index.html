@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Snapfront</title>
+    <title>Snapfront: snap a photo, open a store</title>
     <meta name="description" content="Snap a photo, get a store. AI product pages, Stripe checkout and marketing posts, on your phone or computer." />
     <meta name="theme-color" content="#090B0E" />
     <meta name="color-scheme" content="dark" />
@@ -12,11 +12,7 @@
       html, body { height: 100%; }
       body { overflow: hidden; margin: 0; background: #090B0E; color: #F5F6F8; }
       #root { display: flex; height: 100%; flex: 1; }
-      /* Laptops and big tablets: keep the app to a comfortable reading width, centered on graphite. */
-      @media (min-width: 900px) {
-        body { background: radial-gradient(1200px 600px at 50% -10%, #1D2128 0%, #090B0E 60%) fixed #090B0E; }
-        #root { max-width: 1040px; margin: 0 auto; border-left: 1px solid #1D2128; border-right: 1px solid #1D2128; box-shadow: 0 0 80px rgba(0,0,0,0.45); }
-      }
+      a { text-decoration: none; }
       noscript { display: block; padding: 24px; font: 16px system-ui, sans-serif; }
     </style>
     <script>

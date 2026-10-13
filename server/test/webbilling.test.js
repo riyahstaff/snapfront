@@ -173,3 +173,33 @@ test("the web app may call the API from its own address; other sites may not", a
   });
   assert.equal(other.headers["access-control-allow-origin"], undefined);
 });
+
+test("paying on the website, then signing in with an email that already has an account, moves the plan there", async () => {
+  const auth = await import("../src/auth.js");
+  const sent = [];
+  auth.setEmailSender(async (to, code) => { sent.push({ to, code }); });
+
+  // The person's existing account (say, from the phone app), with their email on it.
+  const phone = (await web("POST", "/api/sellers", null, {})).json();
+  await web("POST", "/api/auth/email/start", phone.token, { email: "maya@example.com" });
+  assert.equal((await web("POST", "/api/auth/email/verify", phone.token, { email: "maya@example.com", code: sent.at(-1).code })).json().status, "linked");
+
+  // A fresh browser buys Launch on the website.
+  const browser = (await web("POST", "/api/sellers", null, {})).json();
+  const offers = (await web("GET", "/api/billing/web/offers", browser.token)).json();
+  assert.equal(offers.android_url, "https://play.google.com/store/apps/details?id=com.sidebanc.snapfront");
+  (await web("POST", "/api/billing/web/checkout", browser.token, { plan: "launch" })).json();
+  const s = created.at(-1);
+  Object.assign(s, { status: "complete", payment_status: "paid", payment_intent: "pi_maya", customer_details: { email: "maya@example.com" } });
+  intents.set("pi_maya", { id: "pi_maya", latest_charge: { refunded: false } });
+  const confirmed = (await web("POST", "/api/billing/web/confirm", browser.token, { session_id: s.id })).json();
+  assert.equal(confirmed.account.plan, "launch");
+  assert.equal(confirmed.checkout_email, "maya@example.com");
+
+  // Saving the purchase to that email (with the emailed code) signs the browser in to her account, plan included.
+  await web("POST", "/api/auth/email/start", browser.token, { email: "maya@example.com" });
+  const v = (await web("POST", "/api/auth/email/verify", browser.token, { email: "maya@example.com", code: sent.at(-1).code })).json();
+  assert.equal(v.status, "switched");
+  assert.equal((await web("GET", "/api/me", v.token)).json().account.plan, "launch");
+  assert.equal((await web("GET", "/api/me", phone.token)).json().account.plan, "launch");   // the phone sees it too
+});
