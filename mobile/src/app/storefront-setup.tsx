@@ -1,17 +1,21 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import React, { useCallback, useRef, useState } from "react";
+import { ActivityIndicator, Keyboard, Platform, Pressable, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as WebBrowser from "expo-web-browser";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, H1, Notice, Pill, Screen, Segmented } from "@/components/ui";
-import { ThemePreview } from "@/components/theme-preview";
+import { ThemePicker } from "@/components/theme-picker";
+import { clearStorefrontSuggestions, loadStorefrontSuggestions, saveStorefrontSuggestions } from "@/lib/storefront-suggestions";
+import { isPremiumTheme } from "@/lib/theme-catalog";
+import { restoreStorefrontDraft, storefrontPatchBody, storefrontReadiness } from "@/lib/storefront-setup";
 import { account, useMe } from "@/lib/account-store";
-import { api, ApiError, type Me, type Product, type StorefrontCopy, type StorePatch, type StoreTheme, type ThemeGroup } from "@/lib/api";
+import { api, ApiError, type Me, type Product, type StorefrontCopy, type StoreTheme } from "@/lib/api";
 import {
   clearStorefrontDraft,
   loadStorefrontDraft,
+  mergeStorefrontDraft,
   newStorefrontDraft,
   saveStorefrontDraft,
   type HeroMotion,
@@ -24,28 +28,7 @@ type Busy = "photo" | "copy" | "preview" | "apply" | "saving" | null;
 
 const STEPS = ["Look", "Cover", "Words", "Products", "Review"];
 const errText = (error: unknown, fallback: string) => error instanceof ApiError ? error.message : fallback;
-const isPremium = (theme: StoreTheme) => theme.collection === "premium" || theme.id.startsWith("p-");
 const isMotion = (value: string): value is HeroMotion => value === "still" || value === "drift" || value === "pan";
-const groupName = (group: ThemeGroup) => group.charAt(0).toUpperCase() + group.slice(1);
-const themeSearchText = (theme: StoreTheme) => [theme.name, theme.category, theme.for, theme.vibe].filter(Boolean).join(" ").toLocaleLowerCase();
-
-/** Keep browser preview and final Apply exactly in sync. */
-function storefrontPatchBody(draft: StorefrontDraft, seller: Me): StorePatch {
-  return {
-    store_name: draft.store_name.trim() || seller.store_name,
-    theme: draft.theme,
-    hero_title: draft.hero_title.trim(),
-    hero_subtitle: draft.hero_subtitle.trim(),
-    hero_eyebrow: draft.hero_eyebrow.trim(),
-    hero_cta: draft.hero_cta.trim(),
-    hero_motion: draft.hero_motion,
-    tagline: draft.tagline.trim(),
-    about: draft.about.trim(),
-    announcement: draft.announcement.trim(),
-    ...(draft.banner_file ? { banner_file: draft.banner_file } : {}),
-  };
-}
-
 /**
  * A local-only setup flow. It stages copy and an owned cover-photo reference, then changes the
  * public storefront once, at Apply. It never publishes a product or changes billing or Stripe.
@@ -62,91 +45,98 @@ export default function StorefrontSetupScreen() {
   const [message, setMessage] = useState<Message>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
 
-  const premiumThemes = useMemo(() => themes.filter(isPremium), [themes]);
-  const selectedTheme = premiumThemes.find((theme) => theme.id === draft?.theme) ?? null;
+  const draftRef = useRef<StorefrontDraft | null>(null);
+  const storeIdRef = useRef<string | null>(null);
+  const storeSelectionRef = useRef(-1);
+  const [draftStoreId, setDraftStoreId] = useState<string | null>(null);
+  const operationRef = useRef(false);
+  const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
+  const saveRevision = useRef(0);
+  const [completed, setCompleted] = useState<{ seller: Me; cleared: boolean } | null>(null);
+  const completedStoreRef = useRef<string | null>(null);
+  const selectedTheme = themes.find((theme) => theme.id === draft?.theme) ?? null;
   const newestProductPhoto = products.find((product) => product.status === "live" && product.image_url)?.image_url ?? null;
   const coverUrl = draft?.banner_url ?? me?.banner_url ?? newestProductPhoto;
 
-  const loadProducts = useCallback(async () => {
-    try { setProducts(await api.products()); }
-    catch { /* Product list is supplementary; setup can continue if this refresh fails. */ }
-  }, []);
-
-  useEffect(() => {
+  // Reload on focus, not account usage updates. A returning route may now belong to another store.
+  useFocusEffect(useCallback(() => {
+    // A retry changes this callback identity so the focused route reloads immediately.
+    void loadAttempt;
     let alive = true;
+    setLoading(true); setMessage(null);
     async function load() {
-      setLoading(true); setMessage(null);
+      const selection = api.storeRevision();
       try {
         const [seller, nextThemes, nextProducts] = await Promise.all([account.refresh(), api.themes(), api.products()]);
         const saved = await loadStorefrontDraft(seller.id);
-        const premium = nextThemes.filter(isPremium);
-        const defaultTheme = premium.find((theme) => theme.id === seller.theme)?.id ?? premium[0]?.id ?? seller.theme;
-        const initial = newStorefrontDraft({
-          step: 1,
-          category: "All",
-          theme: defaultTheme,
-          hero_motion: seller.hero_motion,
-          store_name: seller.store_name,
-          hero_title: seller.hero_title,
-          hero_subtitle: seller.hero_subtitle,
-          hero_eyebrow: seller.hero_eyebrow,
-          hero_cta: seller.hero_cta,
-          tagline: seller.tagline,
-          about: seller.about,
-          announcement: seller.announcement,
-          tone: "considered",
-        });
-        if (!alive) return;
-        // A catalog can retire a premium id. Keep every saved seller field and staged photo, but
-        // replace only an unavailable id with a current pick before Preview or Apply can use it.
-        const restored = newStorefrontDraft({ ...initial, ...(saved ?? {}) });
-        const savedThemeIsAvailable = premium.some((theme) => theme.id === restored.theme);
-        const reconciled = newStorefrontDraft({ ...restored, theme: savedThemeIsAvailable ? restored.theme : defaultTheme });
-        setThemes(nextThemes);
-        setProducts(nextProducts);
-        setDraft(reconciled);
-        if (saved && !savedThemeIsAvailable && premium.length) {
-          void saveStorefrontDraft(seller.id, reconciled).catch(() => {});
-          setMessage({ text: `Your saved look is no longer in this catalog. We kept your words and staged cover, and selected ${premium.find((theme) => theme.id === defaultTheme)?.name ?? "a current look"} instead.`, tone: "info" });
-        }
+        const savedSuggestions = await loadStorefrontSuggestions(seller.id).catch(() => null);
+        if (!alive || selection !== api.storeRevision() || account.get()?.id !== seller.id) return;
+        if (completedStoreRef.current === seller.id) return;
+        const inMemory = storeIdRef.current === seller.id ? draftRef.current : null;
+        const restored = restoreStorefrontDraft(seller, nextThemes, inMemory ?? saved);
+        if (storeIdRef.current !== seller.id) { setCompleted(null); setSuggestions(null); completedStoreRef.current = null; }
+        storeIdRef.current = seller.id;
+        storeSelectionRef.current = selection;
+        setDraftStoreId(seller.id);
+        draftRef.current = restored.draft;
+        setSuggestions(savedSuggestions);
+        setThemes(nextThemes); setProducts(nextProducts); setDraft(restored.draft);
+        if (!saved || restored.replaced) {
+          try { await saveStorefrontDraft(seller.id, restored.draft); if (alive) setSaveState("saved"); }
+          catch { if (alive) setSaveState("error"); }
+        } else setSaveState("saved");
+        if (restored.replaced) setMessage({ text: `Your saved theme is no longer available. We kept your words and staged cover; review the replacement ${nextThemes.find((theme) => theme.id === restored.draft.theme)?.name ?? "theme"} before applying.`, tone: "info" });
       } catch (error) {
-        if (alive) setMessage({ text: errText(error, "Couldn’t load storefront setup. Pull down or try again."), tone: "error" });
-      } finally {
-        if (alive) setLoading(false);
-      }
+        if (alive) { setDraft(null); setMessage({ text: errText(error, "Couldn’t load setup. Check your connection and retry."), tone: "error" }); }
+      } finally { if (alive) setLoading(false); }
     }
     void load();
     return () => { alive = false; };
-  }, [loadAttempt]);
+  }, [loadAttempt]));
 
-  // The photo-to-product flow is outside this wizard. Refresh the list when a seller comes back.
-  useFocusEffect(useCallback(() => {
-    if (!loading) void loadProducts();
-  }, [loading, loadProducts]));
-
+  function ownsDraft(owner = storeIdRef.current) {
+    return Boolean(owner && storeIdRef.current === owner && account.get()?.id === owner && storeSelectionRef.current === api.storeRevision());
+  }
   function patch(values: Partial<StorefrontDraft>) {
-    setDraft((previous) => {
-      if (!previous) return previous;
-      const next = newStorefrontDraft({ ...previous, ...values });
-      if (me?.id) void saveStorefrontDraft(me.id, next).catch(() => {
-        setMessage({ text: "This setup is still open, but we couldn’t save its local resume draft.", tone: "error" });
-      });
-      return next;
+    if (!draftRef.current || !ownsDraft() || operationRef.current) return;
+    const next = newStorefrontDraft({ ...draftRef.current, ...values });
+    draftRef.current = next; setDraft(next);
+    const owner = storeIdRef.current!;
+    const revision = ++saveRevision.current;
+    setSaveState("saving");
+    return saveStorefrontDraft(owner, next).then(() => {
+      if (owner === storeIdRef.current && revision === saveRevision.current) setSaveState("saved");
+      return true;
+    }).catch(() => {
+      if (owner === storeIdRef.current && revision === saveRevision.current) {
+        setSaveState("error");
+        setMessage({ text: "Couldn’t save on this phone. Keep setup open and retry saving before leaving.", tone: "error" });
+      }
+      return false;
     });
   }
 
+  async function retrySave() {
+    if (!draftRef.current || !ownsDraft()) return;
+    patch({});
+  }
+
   function go(step: number) {
-    if (busy) return;
-    patch({ step });
+    if (busy || operationRef.current) return;
+    Keyboard.dismiss();
+    patch({ step, max_step: Math.max(draftRef.current?.max_step ?? 1, step) });
     setMessage(null);
   }
 
-  function discardStagedPhoto(file: string | null | undefined) {
-    if (file) void api.discardStorefrontPhoto(file).catch(() => { /* Cleanup is best-effort; 409 means it is now applied. */ });
+  function discardStagedPhoto(file: string | null | undefined, owner = storeIdRef.current) {
+    if (file && owner) void api.discardStorefrontPhoto(file, owner).catch(() => { /* Cleanup is best-effort; 409 means it is now applied. */ });
   }
 
   async function chooseCover() {
-    if (busy) return;
+    if (busy || operationRef.current || !ownsDraft()) return;
+    const owner = storeIdRef.current!;
+    const initiatingDraft = draftRef.current!;
+    operationRef.current = true;
     setBusy("photo"); setMessage(null);
     try {
       // SDK 57's library picker needs no permission except on iOS 10. Keeping the normal path
@@ -166,29 +156,48 @@ export default function StorefrontSetupScreen() {
         setMessage({ text: "That photo could not be read. Try a different image.", tone: "error" });
         return;
       }
-      const previousFile = draft?.banner_file;
-      const staged = await api.stageStorefrontPhoto(asset.base64, asset.mimeType || "image/jpeg");
-      patch({ banner_file: staged.image_file, banner_url: staged.image_url });
-      if (previousFile && previousFile !== staged.image_file) discardStagedPhoto(previousFile);
+      const previousFile = draftRef.current?.banner_file;
+      if (!ownsDraft(owner)) return;
+      const staged = await api.stageStorefrontPhoto(asset.base64, asset.mimeType || "image/jpeg", owner);
+      if (!ownsDraft(owner)) {
+        try {
+          await mergeStorefrontDraft(owner, { banner_file: staged.image_file, banner_url: staged.image_url }, initiatingDraft);
+          if (previousFile && previousFile !== staged.image_file) discardStagedPhoto(previousFile, owner);
+        } catch { discardStagedPhoto(staged.image_file, owner); }
+        return;
+      }
+      operationRef.current = false;
+      const saved = await patch({ banner_file: staged.image_file, banner_url: staged.image_url });
+      if (!saved) return;
+      if (previousFile && previousFile !== staged.image_file) discardStagedPhoto(previousFile, owner);
+      if (!ownsDraft(owner)) return;
       setMessage({ text: "Cover photo staged. Your live storefront will not change until you apply it in Review.", tone: "ok" });
     } catch (error) {
       setMessage({ text: errText(error, "Couldn’t upload that cover photo."), tone: "error" });
     } finally {
+      operationRef.current = false;
       setBusy(null);
     }
   }
 
   async function getSuggestions() {
-    if (!draft || busy) return;
+    if (!draft || busy || operationRef.current || !ownsDraft()) return;
+    const owner = storeIdRef.current!;
+    operationRef.current = true;
     setBusy("copy"); setMessage(null);
     try {
-      const next = await api.storefrontCopy({ notes: draft.notes, tone: draft.tone, theme: draft.theme, store_name: draft.store_name });
+      const next = await api.storefrontCopy({ notes: draft.notes, tone: draft.tone, theme: draft.theme, store_name: draft.store_name }, owner);
+      // Keep the result for its original store even if this route has lost focus or switched stores.
+      let retained = true;
+      try { await saveStorefrontSuggestions(owner, next); } catch { retained = false; }
+      if (!ownsDraft(owner)) return;
       setSuggestions(next);
       void account.refresh().catch(() => {});
-      setMessage({ text: "Suggestions are ready. Review them, then choose exactly which words to use.", tone: "ok" });
+      setMessage({ text: retained ? "Suggestions are ready. Review them, then choose exactly which words to use." : "Suggestions are ready in this session, but could not be saved for the next app restart. Review and copy the fields you need now.", tone: retained ? "ok" : "info" });
     } catch (error) {
       setMessage({ text: errText(error, "Couldn’t write suggestions. You can keep editing manually."), tone: "error" });
     } finally {
+      operationRef.current = false;
       setBusy(null);
     }
   }
@@ -200,72 +209,72 @@ export default function StorefrontSetupScreen() {
   }
 
   async function preview() {
-    if (!me || !draft || busy) return;
+    if (!me || !draft || busy || operationRef.current || !ownsDraft()) return;
     if (!selectedTheme) {
-      setMessage({ text: "Choose an available premium look before previewing your storefront.", tone: "error" });
+      setMessage({ text: "Choose an available theme before previewing your storefront.", tone: "error" });
       return;
     }
+    const owner = storeIdRef.current;
+    operationRef.current = true;
     setBusy("preview"); setMessage(null);
     try {
-      const { url } = await api.previewStorefront(storefrontPatchBody(draft, me));
-      await WebBrowser.openBrowserAsync(url);
+      const { url } = await api.previewStorefront(storefrontPatchBody(draft, me), me.id);
+      if (ownsDraft(owner)) await WebBrowser.openBrowserAsync(url);
     } catch (error) {
       setMessage({ text: errText(error, "Couldn’t open the storefront preview."), tone: "error" });
     } finally {
+      operationRef.current = false;
       setBusy(null);
     }
   }
 
   async function apply() {
-    if (!me || !draft || busy) return;
+    if (!me || !draft || busy || operationRef.current || !ownsDraft()) return;
     if (!selectedTheme) {
-      setMessage({ text: "Choose an available premium look before applying your storefront.", tone: "error" });
+      setMessage({ text: "Choose an available theme before applying your storefront.", tone: "error" });
       return;
     }
+    const owner = storeIdRef.current;
+    operationRef.current = true;
     setBusy("apply"); setMessage(null);
     let updated: Me;
     try {
-      updated = await api.updateStore(storefrontPatchBody(draft, me));
+      updated = await api.updateStore(storefrontPatchBody(draft, me), me.id);
     } catch (error) {
-      setMessage({ text: errText(error, "Couldn’t apply the storefront. Your setup draft is still saved on this phone."), tone: "error" });
-      setBusy(null);
+      setMessage({ text: errText(error, "Couldn’t apply the storefront. Your setup remains open; retry when you have a connection."), tone: "error" });
+      operationRef.current = false; setBusy(null);
       return;
     }
-    account.set(updated);
+    if (ownsDraft(owner)) account.set(updated);
     let cleared = true;
     try {
       await clearStorefrontDraft(me.id);
+      await clearStorefrontSuggestions(me.id);
     } catch {
       cleared = false;
     }
-    Alert.alert(
-      "Storefront applied",
-      cleared
-        ? "Your public storefront now has this look and wording. Products stay as they are: this does not publish any product. Your plan, Stripe connection and checkout stay unchanged."
-        : "Your public storefront now has this look and wording, but we couldn’t clear this phone’s resume draft. Products, your plan, Stripe connection and checkout are unchanged.",
-      [{ text: "Done", onPress: () => router.back() }],
-    );
-    if (!cleared) {
-      setMessage({ text: "Storefront applied. This phone’s old resume draft could not be cleared.", tone: "info" });
-    }
-    setBusy(null);
+    if (ownsDraft(owner)) { completedStoreRef.current = owner; setCompleted({ seller: updated, cleared }); }
+    operationRef.current = false; setBusy(null);
   }
 
-  async function leaveForProduct(path: "/" | "/create") {
-    if (!me || !draft || busy) return;
+  async function leaveForProduct(path: "/" | "/create" | { pathname: "/product/[id]"; params: { id: string } }) {
+    if (!me || !draft || busy || operationRef.current || !ownsDraft()) return;
+    const owner = storeIdRef.current;
+    operationRef.current = true;
     setBusy("saving"); setMessage(null);
     try {
       // Await the queued write before navigating away, so My Store can always resume step 4.
       await saveStorefrontDraft(me.id, newStorefrontDraft({ ...draft, step: 4 }));
-      router.push(path);
+      if (ownsDraft(owner)) router.push(path);
     } catch {
       setMessage({ text: "Couldn’t save this setup draft before opening products. Try again so you can resume it from My store.", tone: "error" });
     } finally {
+      operationRef.current = false;
       setBusy(null);
     }
   }
 
-  if (loading || !draft) {
+  if (loading || !draft || me?.id !== draftStoreId) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg, alignItems: "center", justifyContent: "center", padding: space.lg }}>
         {loading ? <ActivityIndicator color={c.accent} /> : (
@@ -278,29 +287,42 @@ export default function StorefrontSetupScreen() {
     );
   }
 
-  if (!premiumThemes.length) {
+  if (!themes.length) {
     return (
       <Screen>
-        <H1>Premium storefront setup</H1>
-        <Notice text={message?.text ?? "Premium looks aren’t available yet. Check your connection and try again."} tone="error" />
+        <H1>Storefront setup</H1>
+        <Notice text={message?.text ?? "Storefront themes aren’t available yet. Check your connection and try again."} tone="error" />
         <Button label="Retry" onPress={() => setLoadAttempt((attempt) => attempt + 1)} />
       </Screen>
     );
   }
 
+  if (completed) return (
+    <Screen>
+      <Pill text="Storefront applied" tone="good" />
+      <H1>Your storefront design is applied</H1>
+      <Body>Your selected theme, cover and words have been applied to {completed.seller.store_name}.</Body>
+      <Notice text="Products remain draft or live exactly as before. Your plan, Stripe connection and checkout have not changed." />
+      {!completed.cleared ? <Notice text="The design was applied, but this phone’s old resume draft could not be cleared." /> : null}
+      <Text selectable style={[type.small, { color: c.ink }]}>{completed.seller.store_url}</Text>
+      <Button label="Open my storefront" onPress={() => { void WebBrowser.openBrowserAsync(completed.seller.store_url).catch(() => setMessage({ text: "Couldn’t open the link. Your storefront was still applied successfully.", tone: "error" })); }} />
+      <Button label="Back to My store" variant="secondary" onPress={() => router.navigate("/store")} />
+      <Notice text={message?.text ?? null} tone={message?.tone === "error" ? "error" : "info"} />
+    </Screen>
+  );
+
   const nextLabel = draft.step === 1 ? "Continue to cover" : draft.step === 2 ? "Continue to words" : draft.step === 3 ? "Continue to products" : "Continue to review";
   const interactionLocked = busy !== null;
   return (
-    <Screen>
-      <WizardProgress step={draft.step} />
+    <Screen key={`${draftStoreId}-${draft.step}`}>
+      <WizardProgress step={draft.step} maxStep={draft.max_step} saveState={saveState} disabled={interactionLocked} onStep={go} />
       {draft.step === 1 ? (
-        <LookStep
-          themes={premiumThemes}
-          selected={draft.theme}
-          storeName={draft.store_name || me?.store_name || "Your store"}
-          coverUrl={coverUrl}
-          onTheme={(theme) => patch({ theme })}
-        />
+        <View style={{ gap: space.lg }}>
+          <H1>Choose your store’s look</H1>
+          <Body muted>Browse all {themes.length} themes. Thumbnails are illustrative demos, not your products. Choose a look now; nothing is applied until Review.</Body>
+          <ThemePicker themes={themes} selected={draft.theme} current={me?.theme} storeName={draft.store_name || me?.store_name || "Your store"} photo={coverUrl}
+            browse={draft.browse} onBrowse={(browse) => patch({ browse })} onSelect={(theme) => patch({ theme })} disabled={interactionLocked} />
+        </View>
       ) : null}
       {draft.step === 2 ? (
         <CoverStep
@@ -310,12 +332,13 @@ export default function StorefrontSetupScreen() {
           busy={interactionLocked}
           uploading={busy === "photo"}
           hasProductFallback={Boolean(newestProductPhoto)}
+          supportsMotion={Boolean(selectedTheme && isPremiumTheme(selectedTheme))}
           onChoose={chooseCover}
           onClear={() => {
             const previousFile = draft.banner_file;
-            patch({ banner_file: null, banner_url: null });
-            // This removes only the local staged choice; the public/current banner is untouched.
-            discardStagedPhoto(previousFile);
+            const owner = me?.id;
+            // Discard the old staged file only after the replacement draft is saved.
+            void patch({ banner_file: null, banner_url: null })?.then((saved) => { if (saved) discardStagedPhoto(previousFile, owner); });
           }}
           onMotion={(hero_motion) => patch({ hero_motion })}
         />
@@ -333,18 +356,20 @@ export default function StorefrontSetupScreen() {
           onUse={useSuggestion}
         />
       ) : null}
-      {draft.step === 4 ? <ProductsStep products={products} busy={interactionLocked} onAddPhoto={() => { void leaveForProduct("/"); }} onCreateDigital={() => { void leaveForProduct("/create"); }} /> : null}
+      {draft.step === 4 ? <ProductsStep products={products} busy={interactionLocked} onAddPhoto={() => { void leaveForProduct("/"); }} onCreateDigital={() => { void leaveForProduct("/create"); }} onReviewProduct={(id) => { void leaveForProduct({ pathname: "/product/[id]", params: { id } }); }} /> : null}
       {draft.step === 5 ? (
         <ReviewStep
           draft={draft}
           theme={selectedTheme}
           coverUrl={coverUrl}
-          liveProductCount={products.filter((product) => product.status === "live").length}
+          seller={me!}
+          products={products}
           onPreview={preview}
           onApply={apply}
           busy={busy}
         />
       ) : null}
+      {saveState === "error" ? <Button label="Retry saving draft" variant="secondary" disabled={interactionLocked} onPress={retrySave} /> : null}
       <Notice text={message?.text ?? null} tone={message?.tone === "ok" ? "ok" : message?.tone === "error" ? "error" : "info"} />
       {draft.step < 5 ? (
         <View style={{ flexDirection: "row", gap: space.sm, marginTop: space.sm }}>
@@ -358,111 +383,28 @@ export default function StorefrontSetupScreen() {
   );
 }
 
-function WizardProgress({ step }: { step: number }) {
+function WizardProgress({ step, maxStep, saveState, disabled, onStep }: { step: number; maxStep: number; saveState: "saved" | "saving" | "error"; disabled: boolean; onStep: (step: number) => void }) {
   const c = useColors();
-  return (
-    <View style={{ gap: space.sm }} accessibilityLabel={`Step ${step} of 5: ${STEPS[step - 1]}`}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Pill text={`Step ${step} of 5`} tone="flash" />
-        <Text style={[type.small, { color: c.muted }]}>Saved on this phone</Text>
-      </View>
-      <View style={{ flexDirection: "row", gap: 5 }} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 5, now: step }}>
-        {STEPS.map((label, index) => <View key={label} style={{ flex: 1, height: 5, borderRadius: 99, backgroundColor: index < step ? c.accent : c.line }} />)}
-      </View>
-      <Text style={[type.small, { color: c.muted }]}>{STEPS.map((label, index) => `${index + 1}. ${label}`).join("  ·  ")}</Text>
+  return <View style={{ gap: space.sm }} accessibilityLabel={`Step ${step} of 5: ${STEPS[step - 1]}`}>
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+      <Pill text={`Step ${step} of 5`} tone="flash" />
+      <Text style={[type.small, { color: saveState === "error" ? c.bad : c.muted }]}>{saveState === "saving" ? "Saving…" : saveState === "error" ? "Not saved on phone" : "Saved on this phone"}</Text>
     </View>
-  );
-}
-
-function LookStep({ themes, selected, storeName, coverUrl, onTheme }: {
-  themes: StoreTheme[]; selected: string; storeName: string; coverUrl: string | null; onTheme: (theme: string) => void;
-}) {
-  const c = useColors();
-  const [query, setQuery] = useState("");
-  const [group, setGroup] = useState<"all" | ThemeGroup>("all");
-  const [page, setPage] = useState(0);
-  const groups = useMemo(() => {
-    const found = new Set<ThemeGroup>();
-    themes.forEach((theme) => { if (theme.group) found.add(theme.group); });
-    return Array.from(found);
-  }, [themes]);
-  const activeGroup = group !== "all" && groups.includes(group) ? group : "all";
-  const matchingThemes = useMemo(() => {
-    const search = query.trim().toLocaleLowerCase();
-    return themes.filter((theme) => (activeGroup === "all" || theme.group === activeGroup) && (!search || themeSearchText(theme).includes(search)));
-  }, [themes, activeGroup, query]);
-  const pageCount = Math.max(1, Math.ceil(matchingThemes.length / 12));
-  const safePage = Math.min(page, pageCount - 1);
-  const visibleThemes = matchingThemes.slice(safePage * 12, safePage * 12 + 12);
-
-  return (
-    <View style={{ gap: space.lg }}>
-      <View style={{ gap: 6 }}>
-        <H1>Choose a premium look</H1>
-        <Body muted>Search by name, category, what you sell or vibe. Theme thumbnails are illustrative demo imagery; nothing is live until the final Apply step.</Body>
-      </View>
-      <Field label="Search premium looks" value={query} onChangeText={(value) => { setQuery(value); setPage(0); }} placeholder="Try skincare, cabin, bold…" returnKeyType="search" />
-      {groups.length ? (
-        <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: c.ink }]}>Collection group</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
-            {(["all", ...groups] as ("all" | ThemeGroup)[]).map((item) => {
-              const active = item === activeGroup;
-              return (
-                <Pressable key={item} accessibilityRole="radio" accessibilityState={{ selected: active }} onPress={() => { setGroup(item); setPage(0); }}
-                  style={{ borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: active ? c.accent : c.surface, borderWidth: 1, borderColor: active ? c.accent : c.line }}>
-                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: active ? c.onAccent : c.ink }}>{item === "all" ? "All premium" : groupName(item)}</Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      ) : null}
-      <Text accessibilityLiveRegion="polite" style={[type.small, { color: c.muted }]}>{matchingThemes.length} matching premium look{matchingThemes.length === 1 ? "" : "s"} from {themes.length} currently available</Text>
-      {matchingThemes.length ? (
-        <>
-          <View accessibilityRole="radiogroup" style={{ gap: space.md }}>
-            {visibleThemes.map((theme) => <PremiumThemeCard key={theme.id} theme={theme} selected={selected === theme.id} storeName={storeName} coverUrl={coverUrl} onPress={() => onTheme(theme.id)} />)}
-          </View>
-          {pageCount > 1 ? (
-            <View style={{ gap: space.sm }}>
-              <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Page {safePage + 1} of {pageCount}</Text>
-              <View style={{ flexDirection: "row", gap: space.sm }}>
-                <Button label="Previous" variant="secondary" style={{ flex: 1 }} disabled={safePage === 0} onPress={() => setPage(safePage - 1)} />
-                <Button label="Next" variant="secondary" style={{ flex: 1 }} disabled={safePage >= pageCount - 1} onPress={() => setPage(safePage + 1)} />
-              </View>
-            </View>
-          ) : null}
-        </>
-      ) : (
-        <View style={{ gap: space.sm }}>
-          <Notice text="No premium looks match that search or group. Try a broader word or clear the filters." />
-          <Button label="Clear filters" variant="secondary" onPress={() => { setQuery(""); setGroup("all"); setPage(0); }} />
-        </View>
-      )}
+    <View style={{ flexDirection: "row", gap: 5 }} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 5, now: step }}>
+      {STEPS.map((label, index) => <View key={label} style={{ flex: 1, height: 5, borderRadius: 99, backgroundColor: index < step ? c.accent : c.line }} />)}
     </View>
-  );
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+      {STEPS.map((label, index) => <Pressable key={label} disabled={disabled || index + 1 > maxStep} onPress={() => onStep(index + 1)}
+        accessibilityRole="button" accessibilityLabel={`Step ${index + 1}: ${label}`} accessibilityState={{ selected: step === index + 1, disabled: disabled || index + 1 > maxStep }}
+        style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 8, borderRadius: radius.sm, backgroundColor: step === index + 1 ? c.sunk : "transparent" }}>
+        <Text style={[type.small, { color: step === index + 1 ? c.accent : c.muted }]}>{index + 1}. {label}</Text>
+      </Pressable>)}
+    </View>
+  </View>;
 }
 
-function PremiumThemeCard({ theme, selected, storeName, coverUrl, onPress }: { theme: StoreTheme; selected: boolean; storeName: string; coverUrl: string | null; onPress: () => void }) {
-  const c = useColors();
-  return (
-    <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={`${theme.name}. ${theme.vibe}. ${selected ? "Selected" : ""}`}
-      style={({ pressed }) => ({ borderRadius: radius.lg, overflow: "hidden", backgroundColor: c.surface, borderColor: selected ? c.accent : c.line, borderWidth: selected ? 2 : 1, padding: selected ? 0 : 0, opacity: pressed ? 0.9 : 1 })}>
-      <ThemePreview theme={theme} storeName={storeName} photo={coverUrl} height={156} style={{ borderWidth: 0, borderRadius: 0 }} />
-      <View style={{ padding: space.md, gap: 3 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.sm }}>
-          <Text style={[type.heading, { color: c.ink, flex: 1 }]}>{theme.name}</Text>
-          <Text style={[type.label, { color: selected ? c.accent : c.muted }]}>{selected ? "Selected" : theme.group ? groupName(theme.group) : "Premium"}</Text>
-        </View>
-        <Text style={[type.small, { color: c.muted }]}>{theme.vibe} · {theme.family || theme.for}</Text>
-      </View>
-    </Pressable>
-  );
-}
-
-function CoverStep({ coverUrl, staged, motion, busy, uploading, hasProductFallback, onChoose, onClear, onMotion }: {
-  coverUrl: string | null; staged: boolean; motion: HeroMotion; busy: boolean; uploading: boolean; hasProductFallback: boolean;
+function CoverStep({ coverUrl, staged, motion, busy, uploading, hasProductFallback, supportsMotion, onChoose, onClear, onMotion }: {
+  coverUrl: string | null; staged: boolean; motion: HeroMotion; busy: boolean; uploading: boolean; hasProductFallback: boolean; supportsMotion: boolean;
   onChoose: () => void; onClear: () => void; onMotion: (motion: HeroMotion) => void;
 }) {
   const c = useColors();
@@ -484,11 +426,11 @@ function CoverStep({ coverUrl, staged, motion, busy, uploading, hasProductFallba
         {staged ? <Button label="Use current" variant="secondary" disabled={busy} onPress={onClear} /> : null}
       </View>
       <Notice text={hasProductFallback ? "No cover is required: if your store has no current cover, its newest live product photo is used as the storefront fallback." : "No cover is required. Use a dedicated cover, or publish a product separately if you want a live-product photo fallback."} />
-      <View style={{ gap: space.sm }}>
+      {supportsMotion ? <View style={{ gap: space.sm }}>
         <Text style={[type.heading, { color: c.ink }]}>Hero movement</Text>
         <Segmented value={motion} onChange={(value) => { if (!busy && isMotion(value)) onMotion(value); }} options={[{ value: "still", label: "Still" }, { value: "drift", label: "Drift" }, { value: "pan", label: "Pan" }]} />
         <Text style={[type.small, { color: c.muted }]}>Drift and pan are gentle storefront image effects. They do not generate a video, a 3D model, or a new product view.</Text>
-      </View>
+      </View> : <Notice text="Classic themes keep their original image behavior. Select a premium theme to configure still, drift or pan." />}
     </View>
   );
 }
@@ -498,15 +440,17 @@ function WordsStep({ draft, theme, suggestions, busy, generating, allowance, onP
   onPatch: (values: Partial<StorefrontDraft>) => void; onGenerate: () => void; onUse: <K extends keyof StorefrontCopy>(field: K) => void;
 }) {
   const c = useColors();
+  const premium = Boolean(theme && isPremiumTheme(theme));
   return (
     <View style={{ gap: space.lg }}>
       <View style={{ gap: 6 }}>
         <H1>Write the words</H1>
         <Body muted>Everything below is editable. Theme demos may use sample wording, not facts about your store; nothing is copied into these fields unless you choose it.</Body>
       </View>
-      <Field label="Store name" value={draft.store_name} onChangeText={(store_name) => onPatch({ store_name })} maxLength={80} />
+      <Field editable={!busy} label="Store name" value={draft.store_name} onChangeText={(store_name) => onPatch({ store_name })} maxLength={80} />
+      {!premium ? <Notice text="This classic theme uses your tagline as its headline and About text for its supporting story. Separate hero headline, eyebrow, button and motion settings are used only by premium themes." /> : null}
       <ThemeCopySuggestions theme={theme} disabled={busy} onUse={(field, value) => onPatch({ [field]: value })} />
-      <Field label="Notes for AI (optional)" hint="Describe your products, mood or audience. Don’t add claims you can’t support." value={draft.notes} onChangeText={(notes) => onPatch({ notes })} multiline maxLength={700} placeholder="Small-batch candle studio with quiet, warm evenings…" />
+      <Field editable={!busy} label="Notes for AI (optional)" hint="Describe your products, mood or audience. Don’t add claims you can’t support." value={draft.notes} onChangeText={(notes) => onPatch({ notes })} multiline maxLength={700} placeholder="Small-batch candle studio with quiet, warm evenings…" />
       <View style={{ gap: 6 }}>
         <Text style={[type.label, { color: c.ink }]}>Writing tone</Text>
         <Segmented value={draft.tone} onChange={(tone) => { if (!busy) onPatch({ tone }); }} options={[{ value: "considered", label: "Considered" }, { value: "warm", label: "Warm" }, { value: "bold", label: "Bold" }]} />
@@ -516,15 +460,17 @@ function WordsStep({ draft, theme, suggestions, busy, generating, allowance, onP
         <Text style={[type.small, { color: c.onFlash }]}>This uses one photo-to-page allowance ({allowance} used). Manual editing is always available and uses no AI allowance. Suggestions never save or go live by themselves.</Text>
         <Button label="Get AI suggestions" variant="secondary" loading={generating} disabled={busy} onPress={onGenerate} />
       </View>
-      {suggestions ? <SuggestionList suggestions={suggestions} disabled={busy} onUse={onUse} /> : null}
+      {suggestions ? <SuggestionList premium={premium} suggestions={suggestions} disabled={busy} onUse={onUse} /> : null}
       <View style={{ gap: space.md }}>
-        <Field label="Hero headline" hint="Up to 100 characters" value={draft.hero_title} onChangeText={(hero_title) => onPatch({ hero_title })} maxLength={100} />
-        <Field label="Hero subheadline" hint="Up to 220 characters" value={draft.hero_subtitle} onChangeText={(hero_subtitle) => onPatch({ hero_subtitle })} multiline maxLength={220} />
-        <Field label="Eyebrow" hint="A small line above the headline" value={draft.hero_eyebrow} onChangeText={(hero_eyebrow) => onPatch({ hero_eyebrow })} maxLength={48} />
-        <Field label="Button label" hint="For example: Shop the collection" value={draft.hero_cta} onChangeText={(hero_cta) => onPatch({ hero_cta })} maxLength={32} />
-        <Field label="Tagline" value={draft.tagline} onChangeText={(tagline) => onPatch({ tagline })} maxLength={160} />
-        <Field label="About your store" value={draft.about} onChangeText={(about) => onPatch({ about })} multiline maxLength={600} />
-        <Field label="Announcement" hint="Optional short strip above your menu" value={draft.announcement} onChangeText={(announcement) => onPatch({ announcement })} maxLength={90} />
+        {premium ? <>
+        <Field editable={!busy} label="Hero headline" hint="Up to 100 characters" value={draft.hero_title} onChangeText={(hero_title) => onPatch({ hero_title })} maxLength={100} />
+        <Field editable={!busy} label="Hero subheadline" hint="Up to 220 characters" value={draft.hero_subtitle} onChangeText={(hero_subtitle) => onPatch({ hero_subtitle })} multiline maxLength={220} />
+        <Field editable={!busy} label="Eyebrow" hint="A small line above the headline" value={draft.hero_eyebrow} onChangeText={(hero_eyebrow) => onPatch({ hero_eyebrow })} maxLength={48} />
+        <Field editable={!busy} label="Button label" hint="For example: Shop the collection" value={draft.hero_cta} onChangeText={(hero_cta) => onPatch({ hero_cta })} maxLength={32} />
+        </> : null}
+        <Field editable={!busy} label="Tagline" value={draft.tagline} onChangeText={(tagline) => onPatch({ tagline })} maxLength={160} />
+        <Field editable={!busy} label="About your store" value={draft.about} onChangeText={(about) => onPatch({ about })} multiline maxLength={600} />
+        <Field editable={!busy} label="Announcement" hint="Optional short strip above your menu" value={draft.announcement} onChangeText={(announcement) => onPatch({ announcement })} maxLength={90} />
       </View>
     </View>
   );
@@ -552,7 +498,7 @@ function ThemeCopySuggestions({ theme, disabled, onUse }: { theme: StoreTheme | 
   );
 }
 
-function SuggestionList({ suggestions, disabled, onUse }: { suggestions: StorefrontCopy; disabled: boolean; onUse: <K extends keyof StorefrontCopy>(field: K) => void }) {
+function SuggestionList({ suggestions, disabled, onUse, premium }: { premium: boolean; suggestions: StorefrontCopy; disabled: boolean; onUse: <K extends keyof StorefrontCopy>(field: K) => void }) {
   const c = useColors();
   const labels: { key: keyof StorefrontCopy; label: string }[] = [
     { key: "hero_title", label: "Hero headline" }, { key: "hero_subtitle", label: "Hero subheadline" }, { key: "hero_eyebrow", label: "Eyebrow" },
@@ -561,7 +507,7 @@ function SuggestionList({ suggestions, disabled, onUse }: { suggestions: Storefr
   return (
     <View style={{ gap: space.sm, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.md }}>
       <Text style={[type.heading, { color: c.ink }]}>AI suggestions — review before using</Text>
-      {labels.map(({ key, label }) => (
+      {labels.filter(({ key }) => premium || !key.startsWith("hero_")).map(({ key, label }) => (
         <View key={key} style={{ gap: 5, paddingTop: space.sm, borderTopWidth: key === "hero_title" ? 0 : 1, borderColor: c.line }}>
           <Text style={[type.label, { color: c.muted }]}>{label}</Text>
           <Text style={[type.small, { color: c.ink }]}>{suggestions[key] || "No suggestion"}</Text>
@@ -572,7 +518,7 @@ function SuggestionList({ suggestions, disabled, onUse }: { suggestions: Storefr
   );
 }
 
-function ProductsStep({ products, busy, onAddPhoto, onCreateDigital }: { products: Product[]; busy: boolean; onAddPhoto: () => void; onCreateDigital: () => void }) {
+function ProductsStep({ products, busy, onAddPhoto, onCreateDigital, onReviewProduct }: { products: Product[]; busy: boolean; onAddPhoto: () => void; onCreateDigital: () => void; onReviewProduct: (id: string) => void }) {
   const c = useColors();
   return (
     <View style={{ gap: space.lg }}>
@@ -583,7 +529,7 @@ function ProductsStep({ products, busy, onAddPhoto, onCreateDigital }: { product
       <View style={{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.lg, gap: space.sm }}>
         <Text style={[type.heading, { color: c.ink }]}>{products.length ? `${products.length} product${products.length === 1 ? "" : "s"} in this store` : "No products yet"}</Text>
         <Text style={[type.small, { color: c.muted }]}>{products.length ? `${products.filter((product) => product.status === "live").length} live · ${products.filter((product) => product.status !== "live").length} draft` : "Add a product now, or finish your store design first."}</Text>
-        {products.slice(0, 3).map((product) => <ProductRow key={product.id} product={product} />)}
+        {products.map((product) => <ProductRow key={product.id} product={product} disabled={busy} onPress={() => onReviewProduct(product.id)} />)}
       </View>
       <Button label="Add a product from a photo" icon={<Ionicons name="camera-outline" size={19} color={c.onAccent} />} loading={busy} disabled={busy} onPress={onAddPhoto} />
       <Button label="Create a digital product" variant="secondary" disabled={busy} onPress={onCreateDigital} />
@@ -592,42 +538,52 @@ function ProductsStep({ products, busy, onAddPhoto, onCreateDigital }: { product
   );
 }
 
-function ProductRow({ product }: { product: Product }) {
+function ProductRow({ product, disabled, onPress }: { product: Product; disabled: boolean; onPress: () => void }) {
   const c = useColors();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, paddingTop: space.sm, borderTopWidth: 1, borderColor: c.line }}>
+    <Pressable disabled={disabled} accessibilityRole="button" accessibilityLabel={`Review ${product.title}`} onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: space.sm, minHeight: 56, borderTopWidth: 1, borderColor: c.line }}>
       <View style={{ width: 42, height: 42, backgroundColor: c.sunk, borderRadius: radius.sm, overflow: "hidden" }}>{product.image_url ? <Image source={{ uri: product.image_url }} contentFit="cover" style={{ flex: 1 }} /> : null}</View>
-      <View style={{ flex: 1, gap: 2 }}><Text numberOfLines={1} style={[type.label, { color: c.ink }]}>{product.title}</Text><Text style={[type.small, { color: c.muted }]}>{product.status === "live" ? "Live" : "Draft"}</Text></View>
-    </View>
+      <View style={{ flex: 1, gap: 2 }}><Text numberOfLines={1} style={[type.label, { color: c.ink }]}>{product.title}</Text><Text style={[type.small, { color: c.muted }]}>{product.status === "live" ? "Live" : "Draft"} · {product.price.toFixed(2)}</Text></View>
+      <Ionicons name="chevron-forward" size={18} color={c.muted} />
+    </Pressable>
   );
 }
 
-function ReviewStep({ draft, theme, coverUrl, liveProductCount, onPreview, onApply, busy }: {
-  draft: StorefrontDraft; theme: StoreTheme | null; coverUrl: string | null; liveProductCount: number;
+function ReviewStep({ draft, theme, coverUrl, seller, products, onPreview, onApply, busy }: {
+  draft: StorefrontDraft; theme: StoreTheme | null; coverUrl: string | null; seller: Me; products: Product[];
   onPreview: () => void; onApply: () => void; busy: Busy;
 }) {
   const c = useColors();
+  const readiness = storefrontReadiness(seller, products);
+  const premium = Boolean(theme && isPremiumTheme(theme));
+  const liveProductCount = readiness.liveProducts;
   const previewing = busy === "preview";
   const applying = busy === "apply";
   return (
     <View style={{ gap: space.lg }}>
       <View style={{ gap: 6 }}>
-        <H1>Review before applying</H1>
+        <H1>Review and deploy</H1>
         <Body muted>Your local summary below includes your staged words and cover. It is not a public preview.</Body>
       </View>
       <View style={{ borderRadius: radius.lg, overflow: "hidden", backgroundColor: theme?.colors.bg ?? c.sunk, borderWidth: 1, borderColor: theme?.colors.line ?? c.line }}>
         <View style={{ height: 190, backgroundColor: theme?.colors.panel ?? c.surface }}>
           {coverUrl ? <Image source={{ uri: coverUrl }} contentFit="cover" style={{ position: "absolute", inset: 0 }} /> : null}
           <View style={{ position: "absolute", inset: 0, backgroundColor: coverUrl ? "rgba(0,0,0,0.36)" : "transparent", justifyContent: "flex-end", padding: space.lg, gap: 5 }}>
-            <Text style={{ color: coverUrl ? "#FFFFFF" : (theme?.colors.onPanel ?? c.ink), fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 1 }}>{draft.hero_eyebrow || theme?.copy?.eyebrow || "YOUR COLLECTION"}</Text>
-            <Text numberOfLines={2} style={{ color: coverUrl ? "#FFFFFF" : (theme?.colors.onPanel ?? c.ink), fontFamily: fonts.display, fontSize: 29, lineHeight: 31 }}>{draft.hero_title || "Your selected look"}</Text>
-            <Text numberOfLines={2} style={{ color: coverUrl ? "#FFFFFF" : (theme?.colors.onPanel ?? c.ink), fontFamily: fonts.body, fontSize: 13 }}>{draft.hero_subtitle || "Your editable storefront words will appear here."}</Text>
+            <Text style={{ color: coverUrl ? "#FFFFFF" : (theme?.colors.onPanel ?? c.ink), fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 1 }}>{premium ? draft.hero_eyebrow || theme?.copy?.eyebrow || "YOUR COLLECTION" : "CLASSIC STOREFRONT"}</Text>
+            <Text numberOfLines={2} style={{ color: coverUrl ? "#FFFFFF" : (theme?.colors.onPanel ?? c.ink), fontFamily: fonts.display, fontSize: 29, lineHeight: 31 }}>{(premium ? draft.hero_title : "") || draft.tagline || draft.store_name || "Your store"}</Text>
+            <Text numberOfLines={2} style={{ color: coverUrl ? "#FFFFFF" : (theme?.colors.onPanel ?? c.ink), fontFamily: fonts.body, fontSize: 13 }}>{(premium ? draft.hero_subtitle : "") || ((premium || draft.tagline) ? draft.about.split(/[.!?]/)[0] : "") || ""}</Text>
           </View>
         </View>
         <View style={{ padding: space.md, gap: 4 }}>
-          <Text style={[type.heading, { color: theme?.colors.ink ?? c.ink }]}>{draft.store_name || "Your store"} · {theme?.name || "Premium look"}</Text>
-          <Text style={[type.small, { color: theme?.colors.muted ?? c.muted }]}>Hero: {draft.hero_motion} · {liveProductCount} live product{liveProductCount === 1 ? "" : "s"} in preview</Text>
+          <Text style={[type.heading, { color: theme?.colors.ink ?? c.ink }]}>{draft.store_name || "Your store"} · {theme?.name || "Store look"}</Text>
+          <Text style={[type.small, { color: theme?.colors.muted ?? c.muted }]}>Hero: {premium ? draft.hero_motion : "Original classic behavior"} · {liveProductCount} live product{liveProductCount === 1 ? "" : "s"} in preview</Text>
         </View>
+      </View>
+      <View style={{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.md, gap: space.sm }}>
+        <Text style={[type.heading, { color: c.ink }]}>Ready to take orders?</Text>
+        <Text style={[type.small, { color: c.ink }]}>{liveProductCount} live · {readiness.draftProducts} draft products</Text>
+        <Text style={[type.small, { color: c.ink }]}>Plan: {readiness.liveAllowed ? "This store can go live" : "Build and preview only"} · Payments: {readiness.stripeReady ? "Connected" : "Stripe setup needed"}</Text>
+        {!readiness.canTakeOrders ? <Notice text="You can apply the design now. To take orders, this store needs a live-store plan, Stripe setup and a published product. Applying the design does not enable these." /> : null}
       </View>
       <View style={{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.md, gap: space.sm }}>
         <Text style={[type.heading, { color: c.ink }]}>Private storefront preview</Text>

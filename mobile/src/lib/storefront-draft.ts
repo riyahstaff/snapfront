@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { THEME_GROUPS, type ThemeBrowseState } from "./theme-catalog";
 
 /** A resumable local setup draft. It deliberately stores server photo references, never image base64. */
 export type HeroMotion = "still" | "drift" | "pan";
@@ -7,6 +8,8 @@ export type StorefrontDraft = {
   version: 1;
   step: number;
   category: string;
+  max_step: number;
+  browse: ThemeBrowseState;
   theme: string;
   banner_file: string | null;
   banner_url: string | null;
@@ -70,6 +73,13 @@ export function newStorefrontDraft(values: Partial<StorefrontDraft> = {}): Store
     version: 1,
     step: step(values.step),
     category: text(values.category, 64),
+    max_step: Math.max(step(values.step), step(values.max_step)),
+    browse: {
+      query: text(values.browse?.query, 120),
+      group: THEME_GROUPS.some(({ value }) => value === values.browse?.group) ? values.browse!.group : "all",
+      collection: values.browse?.collection === "classic" || values.browse?.collection === "premium" ? values.browse.collection : "all",
+      page: Math.max(0, Math.min(1000, Math.floor(Number(values.browse?.page) || 0))),
+    },
     theme: text(values.theme, 100),
     banner_file: validFile(values.banner_file) ? String(values.banner_file) : null,
     banner_url: imageUrl(values.banner_url),
@@ -89,6 +99,7 @@ export function newStorefrontDraft(values: Partial<StorefrontDraft> = {}): Store
 
 /** Load a single store's draft. Invalid or old local data is ignored rather than shown. */
 export async function loadStorefrontDraft(storeId: string): Promise<StorefrontDraft | null> {
+  await writeTails.get(key(storeId))?.catch(() => undefined);
   const raw = await SecureStore.getItemAsync(key(storeId));
   if (!raw || utf8Bytes(raw) > MAX_DRAFT_BYTES) return null;
   try {
@@ -111,4 +122,17 @@ export function saveStorefrontDraft(storeId: string, draft: StorefrontDraft): Pr
 export function clearStorefrontDraft(storeId: string): Promise<void> {
   const storageKey = key(storeId);
   return queueWrite(storageKey, () => SecureStore.deleteItemAsync(storageKey));
+}
+
+/** A late upload belongs to its initiating store; merge with that store's newest saved draft. */
+export function mergeStorefrontDraft(storeId: string, values: Partial<StorefrontDraft>, fallback: StorefrontDraft): Promise<void> {
+  const storageKey = key(storeId);
+  return queueWrite(storageKey, async () => {
+    const raw = await SecureStore.getItemAsync(storageKey);
+    let previous = fallback;
+    try { if (raw) previous = newStorefrontDraft(JSON.parse(raw)); } catch { /* Use the captured draft. */ }
+    const encoded = JSON.stringify(newStorefrontDraft({ ...previous, ...values }));
+    if (utf8Bytes(encoded) > MAX_DRAFT_BYTES) throw new Error("Storefront draft is too large to save on this device.");
+    await SecureStore.setItemAsync(storageKey, encoded);
+  });
 }

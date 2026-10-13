@@ -42,6 +42,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "test": "node --test test/*.test.cjs",
     "typecheck": "tsc --noEmit",
     "doctor": "npx expo-doctor",
     "build:ios": "npx eas-cli@latest build -p ios --profile production",

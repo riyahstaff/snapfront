@@ -241,8 +241,12 @@ export function onUpgradeNeeded(fn: typeof upgradeListener) { upgradeListener = 
 
 let tokenCache: string | null = null;
 let storeCache: string | null | undefined;
+let selectionRevision = 0;
 async function currentStore(): Promise<string | null> {
-  if (storeCache === undefined) storeCache = await SecureStore.getItemAsync(STORE_KEY);
+  if (storeCache === undefined) {
+    const stored = await SecureStore.getItemAsync(STORE_KEY);
+    if (storeCache === undefined) storeCache = stored;
+  }
   return storeCache ?? null;
 }
 async function token(): Promise<string> {
@@ -262,10 +266,10 @@ async function token(): Promise<string> {
   return data.token;
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, storeId?: string): Promise<T> {
   let res: Response;
   try {
-    const store = await currentStore();
+    const store = storeId ?? await currentStore();
     res = await fetch(`${API_URL}${path}`, {
       method,
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${await token()}`, ...(store ? { "X-Store": store } : {}) },
@@ -287,23 +291,25 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 }
 
 async function setStore(id: string | null) {
+  selectionRevision++;
   storeCache = id;
   if (id) await SecureStore.setItemAsync(STORE_KEY, id); else await SecureStore.deleteItemAsync(STORE_KEY);
 }
 
 export const api = {
+  storeRevision: () => selectionRevision,
   me: () => request<Me>("GET", "/api/me"),
-  updateStore: (patch: StorePatch) => request<Me>("PATCH", "/api/me", patch),
+  updateStore: (patch: StorePatch, storeId?: string) => request<Me>("PATCH", "/api/me", patch, storeId),
   /** Create a 30-minute browser preview without changing the public storefront. */
-  previewStorefront: (patch: StorePatch) => request<StorefrontPreview>("POST", "/api/storefront/preview", patch),
+  previewStorefront: (patch: StorePatch, storeId?: string) => request<StorefrontPreview>("POST", "/api/storefront/preview", patch, storeId),
   /** Upload a cover photo without changing the live storefront. The returned file is applied only in updateStore. */
-  stageStorefrontPhoto: (imageBase64: string, mediaType = "image/jpeg") =>
-    request<StagedStorefrontPhoto>("POST", "/api/storefront/photo", { imageBase64, mediaType }),
+  stageStorefrontPhoto: (imageBase64: string, mediaType = "image/jpeg", storeId?: string) =>
+    request<StagedStorefrontPhoto>("POST", "/api/storefront/photo", { imageBase64, mediaType }, storeId),
   /** Discard an unused staged cover; server protects the currently applied banner. */
-  discardStorefrontPhoto: (file: string) => request<void>("DELETE", `/api/storefront/photo/${encodeURIComponent(file)}`),
+  discardStorefrontPhoto: (file: string, storeId?: string) => request<void>("DELETE", `/api/storefront/photo/${encodeURIComponent(file)}`, undefined, storeId),
   /** AI storefront wording is suggestions only; the caller decides whether to put it into an editable local draft. */
-  storefrontCopy: (input: { notes?: string; tone?: string; theme?: string; store_name?: string }) =>
-    request<StorefrontCopy>("POST", "/api/storefront/copy", input),
+  storefrontCopy: (input: { notes?: string; tone?: string; theme?: string; store_name?: string }, storeId?: string) =>
+    request<StorefrontCopy>("POST", "/api/storefront/copy", input, storeId),
   setBanner: (imageBase64: string, mediaType = "image/jpeg") => request<Me>("PUT", "/api/me/banner", { imageBase64, mediaType }),
   removeBanner: () => request<Me>("DELETE", "/api/me/banner"),
   studioPresets: () => request<StudioPresets>("GET", "/api/studio"),
