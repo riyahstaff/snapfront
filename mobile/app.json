@@ -6,7 +6,8 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#090B0E",
     "description": "Snap a photo of a product and get a full product page with Stripe checkout, or generate best-selling digital products and sell them from your own storefront.",
     "ios": {
       "bundleIdentifier": "com.sidebanc.snapfront",
@@ -28,7 +29,7 @@
     "android": {
       "package": "com.sidebanc.snapfront",
       "adaptiveIcon": {
-        "backgroundColor": "#2C47F5",
+        "backgroundColor": "#090B0E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -52,13 +53,14 @@
       "expo-web-browser",
       "expo-font",
       "expo-image",
+      "expo-system-ui",
       [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 180,
           "resizeMode": "contain",
-          "backgroundColor": "#2C47F5"
+          "backgroundColor": "#090B0E"
         }
       ],
       [

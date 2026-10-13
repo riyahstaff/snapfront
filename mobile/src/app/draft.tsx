@@ -19,7 +19,7 @@ export default function DraftScreen() {
       <Screen>
         <H2>No draft yet</H2>
         <Body muted>Snap a product photo first and your page will appear here.</Body>
-        <Button label="Snap a product" onPress={() => router.replace("/")} />
+        <Button label="Snap a product" onPress={() => router.replace("/snap")} />
       </Screen>
     );
   }

@@ -35,7 +35,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: c.bg },
@@ -46,6 +46,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="snap" options={{ title: "Snap a product" }} />
         <Stack.Screen name="draft" options={{ title: "Your product page" }} />
         <Stack.Screen name="product/[id]" options={{ title: "Product" }} />
         <Stack.Screen name="settings" options={{ title: "Store settings", presentation: "modal" }} />

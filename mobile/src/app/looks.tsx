@@ -74,9 +74,9 @@ export default function LooksScreen() {
   return <View style={{ flex: 1, backgroundColor: c.bg }}>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: 230 + insets.bottom }}>
       <StorefrontDetails key={me?.id} />
-      <View style={{ gap: space.sm, backgroundColor: c.flash, borderRadius: radius.lg, padding: space.lg }}>
-        <Text style={[type.heading, { color: c.onFlash }]}>Build your storefront</Text>
-        <Text style={[type.small, { color: c.onFlash }]}>Choose from {themes.length} themes, upload a cover, write your story and review before deploying.</Text>
+      <View style={{ gap: space.sm, backgroundColor: c.surface, borderRadius: radius.lg, padding: space.lg }}>
+        <Text style={[type.heading, { color: c.ink }]}>Build your storefront</Text>
+        <Text style={[type.small, { color: c.ink }]}>Choose from {themes.length} themes, upload a cover, write your story and review before deploying.</Text>
         <Button label="Open guided setup" variant="secondary" onPress={() => router.push("/storefront-setup")} />
       </View>
       <H2>Browse store looks</H2>

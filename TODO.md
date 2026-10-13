@@ -17,3 +17,13 @@
 - [x] Users can generate AI suggestions, insert individual editable fields, or edit manually without an allowance; suggestions never deploy public copy automatically.
 - [x] Users can review real products/readiness, preview the private draft, and apply the design in one final action with an explicit completion view and actual store link; products, plan, Stripe and checkout stay unchanged.
 - [x] Deliver validated source via a GitHub pull request; document native-device/build gaps; do not submit an app-store release or mutate production sellers during tests.
+
+## Liquid Chrome native facelift with Noir Atelier logo
+- [x] The app uses the approved Liquid Chrome graphite/platinum frontend with Noir Atelier’s copper aperture/doorway logo, replacing the blue-square/yellow-dot brand throughout home, navigation, onboarding, launcher, adaptive icon, splash and favicon; existing app/Expo identifiers and permissions remain unchanged.
+- [x] Home presents real tappable setup/resume actions, API-fed theme discovery and one-tap photo/AI/sourcing/order access; retain every existing Find, Assistant, Create, My store, Trends and secondary feature; no fake inventory, revenue or storefront selections.
+- [x] Opening motion is real native decorative motion, does not delay interaction, has pause/resume, respects Reduce Motion on initial load and changes, and stops on blur/background/unmount; operational text and controls stay stationary.
+- [x] Photo-to-product creation and wizard/draft add-photo exits still work through a dedicated /snap route without changing upload/generation/publishing behavior; store-specific drafts and catalog selections remain isolated.
+- [x] Shared controls and screens have readable contrast, finger-sized touch targets, large-text/phone-friendly layout and consistent chrome surfaces; deliver source as a validated branch/archive and separate reviewable GitHub PR after recovered authorization, not a merged/released build, with clear signed-build/device testing boundaries.
+
+## Silver chrome logo finish revision
+- [x] Preserve the approved aperture/doorway symbol, recolor its material to brushed silver/platinum matching the Home gateway, and use it consistently in launcher/adaptive/themed/splash/favicon/in-app mark assets; preserve the graphite background, platform safe areas, interface, motion and app behavior; deliver a verified icon and updated local source without publishing a native release.

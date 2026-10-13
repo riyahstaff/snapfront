@@ -226,3 +226,33 @@ test("older overlapping refreshes and post-clear responses cannot replace newer 
   const third = m.account.refresh(); await tick(); m.account.clear();
   pending[2](response(seller())); await third; assert.equal(m.account.get(), null);
 });
+
+test("concurrent cold-start home and root requests create exactly one seller token", async () => {
+  const calls = [];
+  const m = loadNativeModules({}, async (url, init) => {
+    calls.push({ url, init });
+    if (url.endsWith("/api/sellers")) { await tick(); return response({ token: "single-device-token" }); }
+    if (url.endsWith("/api/themes")) return response({ themes: [] });
+    return response(seller());
+  });
+  await Promise.all([m.api.me(), m.api.themes(), m.account.refresh()]);
+  assert.equal(calls.filter(({ url }) => url.endsWith("/api/sellers")).length, 1);
+  assert.equal(m.memory.get("snapfront.token"), "single-device-token");
+  assert.ok(calls.filter(({ url }) => !url.endsWith("/api/sellers")).every(({ init }) => init.headers.Authorization === "Bearer single-device-token"));
+});
+
+test("a failed cold-start token bootstrap can retry without a stuck initialization promise", async () => {
+  let creates = 0;
+  const m = loadNativeModules({}, async (url) => {
+    if (url.endsWith("/api/sellers")) {
+      creates++;
+      if (creates === 1) throw new Error("Offline");
+      return response({ token: "retry-device-token" });
+    }
+    return response(seller());
+  });
+  const failed = await Promise.allSettled([m.api.me(), m.account.refresh()]);
+  assert.ok(failed.every((result) => result.status === "rejected")); assert.equal(creates, 1);
+  await Promise.all([m.api.me(), m.account.refresh()]); assert.equal(creates, 2);
+  assert.equal(m.memory.get("snapfront.token"), "retry-device-token");
+});

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Text, View } from "react-native";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import { Brand } from "@/components/brand";
 import { Body, Button, Field, Notice, Screen } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
@@ -36,6 +37,7 @@ export default function WelcomeScreen() {
 
   return (
     <Screen>
+      <Brand size={42} tagline />
       <View style={{ gap: space.sm, marginTop: space.lg }}>
         <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>What’s your{"\n"}store called?</Text>
         <Body muted>Buyers see this name on every page. You can change it any time in Store settings.</Body>
