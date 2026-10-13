@@ -1,0 +1,69 @@
+import React from "react";
+import { ActivityIndicator, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { router, type Href } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Button, Notice } from "./ui";
+import { ChromeHero } from "./chrome-hero";
+import { ThemePreview } from "./theme-preview";
+import { featuredThemes } from "@/lib/home-discovery";
+import type { Me, StoreTheme } from "@/lib/api";
+import { fonts, radius, space, type, useColors } from "@/lib/theme";
+
+type Props = { me: Me | null; themes: StoreTheme[] | null; draftStep: number | null; error: string | null; loading: boolean; onRetry: () => void };
+export function HomeDashboard({ me, themes, draftStep, error, loading, onRetry }: Props) {
+  const c = useColors();
+  const { width, fontScale } = useWindowDimensions();
+  const cards = themes ? featuredThemes(themes) : [];
+  const compact = width >= 360 && fontScale <= 1.3;
+  return (
+    <View style={{ gap: space.xl }}>
+      <View style={{ gap: 10 }}>
+        <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 10, letterSpacing: 2.8, color: c.brand }}>FROM IDEA TO ICONIC</Text>
+        <Text accessibilityRole="header" style={[type.hero, { color: c.ink, fontSize: width > 500 ? 48 : 38, lineHeight: width > 500 ? 53 : 42 }]}>Your vision.{"\n"}Beautifully built.</Text>
+        <Text style={[type.body, { color: c.muted, maxWidth: 450 }]}>Turn your photos into product pages. Give your brand a storefront worth discovering.</Text>
+      </View>
+      <View style={{ gap: space.md }}>
+        <ChromeHero />
+        <Button label={draftStep ? "Continue my storefront" : "Build my storefront"} icon={<Ionicons name="arrow-forward" color={c.onAccent} size={20} />} onPress={() => router.push("/storefront-setup")} />
+        {draftStep ? <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Saved on this phone · Step {draftStep} of 5</Text> : null}
+      </View>
+      <View style={{ gap: space.md }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <Text accessibilityRole="header" style={[type.title, { color: c.ink }]}>Designed to stand out.</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Browse all storefront themes" onPress={() => router.push("/looks")} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Text style={[type.small, { color: c.ink }]}>Explore{themes ? ` ${themes.length}` : ""} themes</Text><Ionicons name="arrow-forward" size={17} color={c.ink} />
+          </Pressable>
+        </View>
+        {cards.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.md }} accessibilityLabel="Featured storefront themes">
+          {cards.map((theme) => <Pressable key={theme.id} accessibilityRole="button" accessibilityLabel={`Explore ${theme.name} in the theme catalog. Does not select or apply it.`} onPress={() => router.push("/looks")}
+            style={({ pressed }) => ({ width: compact ? 224 : Math.max(200, width - 58), backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.md, overflow: "hidden", opacity: pressed ? 0.85 : 1 })}>
+            <ThemePreview theme={theme} storeName="Theme preview" height={144} style={{ borderWidth: 0, borderRadius: 0 }} />
+            <View style={{ padding: 14, gap: 4 }}><Text style={[type.heading, { color: c.ink }]}>{theme.name}</Text><Text style={[type.small, { color: c.muted }]}>{theme.category || theme.for}</Text></View>
+          </Pressable>)}
+        </ScrollView> : loading ? <ActivityIndicator color={c.accent} accessibilityLabel="Loading theme discovery" /> : <Text style={[type.body, { color: c.muted }]}>Open the catalog to discover your next look.</Text>}
+      </View>
+      {error ? <View style={{ gap: space.sm }}><Notice text={error} /><Button label="Refresh home" variant="secondary" onPress={onRetry} loading={loading} /></View> : null}
+      <View style={{ flexDirection: compact ? "row" : "column", flexWrap: "wrap", gap: space.md }}>
+        <ActionCard title="Snap a product" detail="A photo. A product page." icon="camera-outline" href="/snap" compact={compact} />
+        <ActionCard title="AI studio" detail="Create, refine, reimagine." icon="sparkles-outline" href="/studio" compact={compact} />
+        <ActionCard title="Your assistant" detail="Ideas with a next step." icon="chatbubbles-outline" href="/assistant" compact={compact} />
+        <ActionCard title="Find products" detail="Source your next collection." icon="search-outline" href="/find" compact={compact} />
+      </View>
+      {me ? <View style={{ backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.lg, padding: space.lg, gap: space.md }}>
+        <View style={{ gap: 4 }}><Text style={{ fontFamily: fonts.bodyMedium, color: c.brand, letterSpacing: 2, fontSize: 10 }}>YOUR WORKSPACE</Text><Text style={[type.title, { color: c.ink }]}>{me.store_name}</Text><Text style={[type.small, { color: c.muted }]}>Design your store. Review products. Keep every detail yours.</Text></View>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+          <Button label="My store" variant="secondary" style={{ flexGrow: 1 }} onPress={() => router.push("/store")} />
+          <Button label="Orders" variant="secondary" style={{ flexGrow: 1 }} onPress={() => router.push("/orders")} />
+        </View>
+      </View> : null}
+      <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 10, letterSpacing: 2, color: c.muted, textAlign: "center", paddingBottom: 4 }}>YOUR IDEAS. YOUR STOREFRONT.</Text>
+    </View>
+  );
+}
+function ActionCard({ title, detail, icon, href, compact }: { title: string; detail: string; icon: React.ComponentProps<typeof Ionicons>["name"]; href: Href; compact: boolean }) {
+  const c = useColors();
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${detail}`} onPress={() => router.push(href)} style={({ pressed }) => ({ width: compact ? "47%" : "100%", flexGrow: 1, backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.md, padding: space.lg, gap: space.md, opacity: pressed ? 0.8 : 1 })}>
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}><Ionicons name={icon} size={25} color={c.accent} /><Ionicons name="arrow-forward" size={16} color={c.muted} /></View>
+    <View style={{ gap: 4 }}><Text style={[type.heading, { color: c.ink }]}>{title}</Text><Text style={[type.small, { color: c.muted }]}>{detail}</Text></View>
+  </Pressable>;
+}

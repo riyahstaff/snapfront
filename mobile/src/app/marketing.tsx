@@ -76,7 +76,7 @@ export default function MarketingScreen() {
     <View style={{ flex: 1, backgroundColor: c.bg, padding: space.lg, gap: space.md }}>
       <H2>Add a product first</H2>
       <Body muted>Posts are made from your product photos. Snap or add a product, then come back here.</Body>
-      <Button label="Snap a product" onPress={() => router.navigate("/")} />
+      <Button label="Snap a product" onPress={() => router.navigate("/snap")} />
     </View>
   );
   const left = me ? Math.max(0, me.account.limits.post - me.account.usage.post) : null;

@@ -47,7 +47,7 @@ export default function StoreScreen() {
   const drafts = items.filter((p) => p.status !== "live").length;
   function addProduct() {
     Alert.alert("Add a product", "How do you want to add it?", [
-      { text: "Snap or upload a photo", onPress: () => router.navigate("/") },
+      { text: "Snap or upload a photo", onPress: () => router.navigate("/snap") },
       { text: "Create a digital product", onPress: () => router.navigate("/create") },
       { text: "Find a product to dropship", onPress: () => router.navigate("/find") },
       { text: "Browse the supplier directory", onPress: () => router.push("/sources") },
@@ -89,9 +89,9 @@ export default function StoreScreen() {
       ) : null}
       {/* Stripe setup appears once the seller has a plan that can take payments. */}
       {seller && seller.account.plan !== "free" && !seller.stripe_ready ? (
-        <View style={{ backgroundColor: c.flash, borderRadius: radius.lg, padding: space.lg, gap: space.sm }}>
-          <Text style={[type.heading, { color: c.onFlash }]}>{seller.stripe_connected ? "Finish your Stripe setup" : "Connect Stripe to get paid"}</Text>
-          <Text style={[type.small, { color: c.onFlash }]}>Payments go straight to your own Stripe account. It takes about five minutes.</Text>
+        <View style={{ backgroundColor: c.surface, borderRadius: radius.lg, padding: space.lg, gap: space.sm }}>
+          <Text style={[type.heading, { color: c.ink }]}>{seller.stripe_connected ? "Finish your Stripe setup" : "Connect Stripe to get paid"}</Text>
+          <Text style={[type.small, { color: c.ink }]}>Payments go straight to your own Stripe account. It takes about five minutes.</Text>
           <Button label={seller.stripe_connected ? "Continue setup" : "Connect Stripe"} onPress={connectStripe} style={{ alignSelf: "flex-start" }} />
         </View>
       ) : null}
@@ -147,8 +147,8 @@ export default function StoreScreen() {
           style={{ flex: 1, maxWidth: "50%", backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.line, overflow: "hidden" }}>
           <View style={{ aspectRatio: 1, backgroundColor: c.sunk }}>
             {item.image_url ? <Image source={{ uri: item.image_url }} style={{ flex: 1 }} contentFit="cover" /> : null}
-            <View style={{ position: "absolute", left: 8, bottom: 8, backgroundColor: c.flash, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Text style={{ fontFamily: fonts.display, fontSize: 14, color: c.onFlash }}>{money(item.price)}</Text>
+            <View style={{ position: "absolute", left: 8, bottom: 8, backgroundColor: c.surface, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2 }}>
+              <Text style={{ fontFamily: fonts.display, fontSize: 14, color: c.ink }}>{money(item.price)}</Text>
             </View>
           </View>
           <View style={{ padding: space.md, gap: 6 }}>
@@ -191,12 +191,12 @@ function PlanCard({ me }: { me: Me }) {
   const meter = (used: number, max: number, label: string) => `${Math.min(used, max)} of ${max} ${label}`;
   return (
     <Pressable onPress={() => router.push("/plans")} accessibilityRole="button" accessibilityLabel={free ? "See plans and go live" : `${a.plan_name} plan, see plans`}
-      style={({ pressed }) => ({ backgroundColor: free ? c.flash : c.surface, borderColor: c.line, borderWidth: free ? 0 : 1, borderRadius: radius.lg, padding: space.lg, gap: 6, opacity: pressed ? 0.9 : 1 })}>
+      style={({ pressed }) => ({ backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.lg, padding: space.lg, gap: 6, opacity: pressed ? 0.9 : 1 })}>
       {free ? (
         <>
-          <Text style={[type.heading, { color: c.onFlash }]}>Go live for $29</Text>
-          <Text style={[type.small, { color: c.onFlash }]}>Publish your store and take payments, with no fees on your sales. After that, you connect Stripe to get paid. {meter(a.usage.photo, a.limits.photo, "free AI pages")} used.</Text>
-          <Text style={[type.label, { color: c.onFlash, marginTop: 4, textDecorationLine: "underline" }]}>See plans</Text>
+          <Text style={[type.heading, { color: c.ink }]}>Go live for $29</Text>
+          <Text style={[type.small, { color: c.ink }]}>Publish your store and take payments, with no fees on your sales. After that, you connect Stripe to get paid. {meter(a.usage.photo, a.limits.photo, "free AI pages")} used.</Text>
+          <Text style={[type.label, { color: c.ink, marginTop: 4, textDecorationLine: "underline" }]}>See plans</Text>
         </>
       ) : (
         <>

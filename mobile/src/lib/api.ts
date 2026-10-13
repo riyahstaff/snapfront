@@ -240,6 +240,7 @@ let upgradeListener: ((plan: PlanId, message: string) => void) | null = null;
 export function onUpgradeNeeded(fn: typeof upgradeListener) { upgradeListener = fn; }
 
 let tokenCache: string | null = null;
+let tokenPromise: Promise<string> | null = null;
 let storeCache: string | null | undefined;
 let selectionRevision = 0;
 async function currentStore(): Promise<string | null> {
@@ -251,6 +252,10 @@ async function currentStore(): Promise<string | null> {
 }
 async function token(): Promise<string> {
   if (tokenCache) return tokenCache;
+  if (!tokenPromise) tokenPromise = initializeToken().finally(() => { tokenPromise = null; });
+  return tokenPromise;
+}
+async function initializeToken(): Promise<string> {
   tokenCache = await SecureStore.getItemAsync(TOKEN_KEY);
   if (tokenCache) return tokenCache;
   // First launch: create this device's store.

@@ -20,6 +20,10 @@ server/   Node API + public storefronts                               — Expres
 
 **My store → Build your storefront** opens Look → Cover → Words → Products → Review. The shared searchable thumbnail picker browses all 105 API-fed themes (20 classic and 85 premium), with collection/category filters and 12 cards per page. Upload a staged cover, insert optional editable AI suggestions, review actual products, privately preview, then apply the design in one final action. Store-specific phone drafts preserve browsing and progress. Applying the design never publishes products or changes plan/Stripe/checkout. See the [phone setup guide](docs/storefront-setup-guide.md). These controls require a native build containing the update; backend availability is separate from app-store release.
 
+### Liquid Chrome native identity
+
+Home now combines Liquid Chrome's graphite/platinum interface with the copper Noir Atelier aperture/doorway logo. It offers Build/Continue storefront setup, real catalog discovery and photo/studio/assistant/sourcing shortcuts. The original photo composer is available at `/snap`; all photo entry actions retain direct access. Decorative native hero motion supports Pause/Play, Reduce Motion and foreground/route lifecycle cleanup. Shared controls, navigation, onboarding and launcher/splash assets use the new identity. See [facelift notes and validation boundaries](docs/liquid-chrome-native-facelift.md). A new signed native build is required; this source update is not an app-store release.
+
 ## Pricing
 
 | Plan | Price | Live stores | AI pages / products / assistant |

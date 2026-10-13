@@ -10,10 +10,10 @@ export function Viewfinder({ uri, onPress, label = "Tap to take or choose a prod
   const corner = uri ? "#FFFFFF" : c.ink;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={uri ? "Change photo" : label} onPress={onPress}
-      style={[styles.box, { backgroundColor: c.sunk }]}>
+      style={[styles.box, { backgroundColor: c.surface, borderColor: c.line }]}>
       {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} /> : (
         <View style={styles.empty}>
-          <Ionicons name="camera" size={34} color={c.ink} />
+          <View style={{ width: 68, height: 68, borderRadius: 34, borderWidth: 1, borderColor: c.line, backgroundColor: c.sunk, alignItems: "center", justifyContent: "center" }}><Ionicons name="camera-outline" size={30} color={c.ink} /></View>
           <Text style={[type.heading, { color: c.ink, fontFamily: fonts.display, fontSize: 20 }]}>Snap a product</Text>
           <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>{label}</Text>
         </View>
@@ -37,7 +37,7 @@ export function Brackets({ color, size = 28, inset = 14, weight = 3 }: { color: 
 }
 
 const styles = StyleSheet.create({
-  box: { width: "100%", aspectRatio: 1, borderRadius: radius.lg, overflow: "hidden", alignItems: "center", justifyContent: "center" },
+  box: { width: "100%", aspectRatio: 1, borderRadius: radius.lg, borderWidth: 1, overflow: "hidden", alignItems: "center", justifyContent: "center" },
   empty: { alignItems: "center", gap: 8, paddingHorizontal: 40 },
   ready: { position: "absolute", top: 18, alignSelf: "center", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 },
 });

@@ -36,8 +36,8 @@ export function ThemePicker({ themes, selected, current, storeName, photo, brows
       </ScrollView>
       <Text accessibilityLiveRegion="polite" style={[type.small, { color: c.muted }]}>{result.matches.length} of {themes.length} themes{result.matches.length ? ` · ${result.page * 12 + 1}–${result.page * 12 + result.visible.length}` : ""}</Text>
       {chosen ? (
-        <View style={{ padding: space.md, backgroundColor: c.flash, borderRadius: radius.md, gap: 6 }}>
-          <Text style={[type.label, { color: c.onFlash }]}>Selected: {chosen.name}{current === selected ? " · Current look" : ""}</Text>
+        <View style={{ padding: space.md, backgroundColor: c.surface, borderRadius: radius.md, gap: 6 }}>
+          <Text style={[type.label, { color: c.ink }]}>Selected: {chosen.name}{current === selected ? " · Current look" : ""}</Text>
           {!result.visible.some((theme) => theme.id === selected) ? <Button label="Show selected theme" variant="secondary" disabled={disabled} onPress={() => onBrowse({ ...EMPTY_THEME_BROWSE, page: Math.floor(themes.findIndex((theme) => theme.id === selected) / 12) })} /> : null}
         </View>
       ) : null}

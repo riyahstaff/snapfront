@@ -1,75 +1,38 @@
-import React, { useState } from "react";
-import { Alert, View } from "react-native";
-import { router } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import { Body, Button, Field, H1, Notice, Screen, Segmented } from "@/components/ui";
-import { Viewfinder } from "@/components/viewfinder";
-import { api, ApiError } from "@/lib/api";
-import { draftStore } from "@/lib/draft-store";
-import { priceCheckPhoto } from "@/lib/price-check-store";
-import { space } from "@/lib/theme";
+import React, { useCallback, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { Screen } from "@/components/ui";
+import { HomeDashboard } from "@/components/home-dashboard";
+import { api, type StoreTheme } from "@/lib/api";
+import { account, useMe } from "@/lib/account-store";
+import { loadStorefrontDraft } from "@/lib/storefront-draft";
 
-type Photo = { uri: string; base64: string; mimeType: string };
-
-export default function SnapScreen() {
-  const [photo, setPhoto] = useState<Photo | null>(null);
-  const [kind, setKind] = useState<"physical" | "digital">("physical");
-  const [hint, setHint] = useState("");
-  const [price, setPrice] = useState("");
-  const [busy, setBusy] = useState(false);
+export default function HomeScreen() {
+  const me = useMe();
+  const [themes, setThemes] = useState<StoreTheme[] | null>(null);
+  const [draftState, setDraftState] = useState<{ storeId: string; step: number | null } | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  async function pick(source: "camera" | "library") {
-    setError(null);
-    const perm = source === "camera" ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      setError(source === "camera" ? "Allow camera access in Settings to snap a product." : "Allow photo access in Settings to choose a product photo.");
-      return;
+  const [attempt, setAttempt] = useState(0);
+  const generation = useRef(0);
+  const currentStoreId = me?.id;
+  useFocusEffect(useCallback(() => {
+    void attempt;
+    void currentStoreId;
+    const request = ++generation.current;
+    const revision = api.storeRevision();
+    let alive = true;
+    setLoading(true); setError(null);
+    async function load() {
+      const catalog = api.themes().then((next) => { if (alive) setThemes(next); }).catch(() => { if (alive) setError("Theme discovery couldn’t refresh. Your creative tools are still available."); });
+      const workspace = account.refresh().then(async (seller) => {
+        const saved = await loadStorefrontDraft(seller.id);
+        if (alive && request === generation.current && revision === api.storeRevision() && account.get()?.id === seller.id) setDraftState({ storeId: seller.id, step: saved?.step ?? null });
+      }).catch(() => { if (alive) setError("Your workspace couldn’t refresh. Open My store or retry when you have a connection."); });
+      await Promise.all([catalog, workspace]);
+      if (alive && request === generation.current) setLoading(false);
     }
-    const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.7, base64: true };
-    const res = source === "camera" ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
-    if (res.canceled || !res.assets?.[0]?.base64) return;
-    const a = res.assets[0];
-    // base64 output is JPEG data regardless of the source file type
-    setPhoto({ uri: a.uri, base64: a.base64!, mimeType: "image/jpeg" });
-  }
-
-  function choose() {
-    Alert.alert("Add a product photo", undefined, [
-      { text: "Take photo", onPress: () => pick("camera") },
-      { text: "Choose from library", onPress: () => pick("library") },
-      { text: "Cancel", style: "cancel" },
-    ]);
-  }
-
-  async function build() {
-    if (!photo) return;
-    setBusy(true); setError(null);
-    try {
-      const draft = await api.productFromPhoto({ imageBase64: photo.base64, mediaType: photo.mimeType, kind, hint, price, tone: "warm and friendly" });
-      draftStore.set({ ...draft, localUri: photo.uri });
-      router.push("/draft");
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Couldn't build the page. Try again.");
-    } finally { setBusy(false); }
-  }
-
-  return (
-    <Screen>
-      <View style={{ gap: space.sm }}>
-        <H1>Snap a photo.{"\n"}Get a storefront.</H1>
-        <Body muted>Snapfront writes the title, description, bullet points, FAQ and price, then sets up checkout with Stripe.</Body>
-      </View>
-      <Viewfinder uri={photo?.uri} onPress={choose} />
-      <Segmented value={kind} onChange={setKind} options={[{ value: "physical", label: "Physical item" }, { value: "digital", label: "Digital download" }]} />
-      <Field label="What is it?" hint='Optional. A few words help, like "hand-poured soy candle, 8 oz".' value={hint} onChangeText={setHint} placeholder="Leave blank and Snapfront will work it out" returnKeyType="done" />
-      <Field label="Price (USD)" hint="Leave blank for a suggested price." value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="e.g. 24" />
-      <Notice text={error} tone="error" />
-      <Button label={busy ? "Writing your page…" : "Build product page"} onPress={build} loading={busy} disabled={!photo} />
-      <Button label="Check market price first" variant="ghost" onPress={() => {
-        if (photo) priceCheckPhoto.set(photo);
-        router.push("/price-check");
-      }} />
-    </Screen>
-  );
+    void load();
+    return () => { alive = false; generation.current++; };
+  }, [attempt, currentStoreId]));
+  return <Screen><HomeDashboard me={me} themes={themes} draftStep={draftState?.storeId === me?.id ? draftState?.step ?? null : null} loading={loading} error={error} onRetry={() => setAttempt((value) => value + 1)} /></Screen>;
 }

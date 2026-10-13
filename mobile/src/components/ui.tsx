@@ -10,10 +10,10 @@ import { fonts, radius, space, type, useColors } from "@/lib/theme";
 export function Screen({ children, scroll = true }: { children: React.ReactNode; scroll?: boolean }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const pad = { paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: insets.bottom + space.xxl };
+  const pad = { paddingHorizontal: space.xl, paddingTop: space.lg, paddingBottom: insets.bottom + space.xxl };
   if (!scroll) return <View style={[{ flex: 1, backgroundColor: c.bg }, pad]}>{children}</View>;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={[pad, { gap: space.lg }]} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={[pad, { gap: space.xl }]} keyboardShouldPersistTaps="handled">
       {children}
     </ScrollView>
   );
@@ -59,12 +59,13 @@ export function Button({ label, onPress, variant = "primary", loading, disabled,
       onPress={() => { Haptics.selectionAsync().catch(() => {}); onPress(); }}
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: palette.bg, borderColor: palette.border, opacity: off ? 0.5 : pressed ? 0.85 : 1 },
+        { backgroundColor: palette.bg, borderColor: palette.border, opacity: off ? 0.5 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] },
         style,
       ]}
     >
+      {variant === "primary" && !off ? <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 18, right: 18, height: 2, borderRadius: 2, backgroundColor: "#FFFFFF" }} /> : null}
       {loading ? <ActivityIndicator color={palette.fg} /> : icon}
-      <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: palette.fg }}>{label}</Text>
+      <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: palette.fg, flexShrink: 1, textAlign: "center" }}>{label}</Text>
     </Pressable>
   );
 }
@@ -98,8 +99,8 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
         const on = o.value === value;
         return (
           <Pressable key={o.value} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => onChange(o.value)}
-            style={[styles.segItem, on && { backgroundColor: c.surface }]}>
-            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: on ? c.ink : c.muted }}>{o.label}</Text>
+            style={[styles.segItem, on && { backgroundColor: c.accent }]}>
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: on ? c.onAccent : c.muted, textAlign: "center" }}>{o.label}</Text>
           </Pressable>
         );
       })}
@@ -131,8 +132,8 @@ export function Pill({ text, tone = "neutral" }: { text: string; tone?: "neutral
 
 const styles = StyleSheet.create({
   button: { minHeight: 52, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: space.xl, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.sm },
-  input: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: 12, fontFamily: fonts.body, fontSize: 16 },
+  input: { minHeight: 52, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.lg, paddingVertical: 14, fontFamily: fonts.body, fontSize: 16 },
   seg: { flexDirection: "row", borderRadius: radius.md, padding: 3 },
-  segItem: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: radius.sm },
-  notice: { borderRadius: radius.md, padding: space.md },
+  segItem: { flex: 1, minHeight: 44, justifyContent: "center", alignItems: "center", paddingVertical: 10, paddingHorizontal: 6, borderRadius: radius.sm },
+  notice: { borderRadius: radius.md, padding: space.lg },
 });

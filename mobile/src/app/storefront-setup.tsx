@@ -257,7 +257,7 @@ export default function StorefrontSetupScreen() {
     operationRef.current = false; setBusy(null);
   }
 
-  async function leaveForProduct(path: "/" | "/create" | { pathname: "/product/[id]"; params: { id: string } }) {
+  async function leaveForProduct(path: "/snap" | "/create" | { pathname: "/product/[id]"; params: { id: string } }) {
     if (!me || !draft || busy || operationRef.current || !ownsDraft()) return;
     const owner = storeIdRef.current;
     operationRef.current = true;
@@ -356,7 +356,7 @@ export default function StorefrontSetupScreen() {
           onUse={useSuggestion}
         />
       ) : null}
-      {draft.step === 4 ? <ProductsStep products={products} busy={interactionLocked} onAddPhoto={() => { void leaveForProduct("/"); }} onCreateDigital={() => { void leaveForProduct("/create"); }} onReviewProduct={(id) => { void leaveForProduct({ pathname: "/product/[id]", params: { id } }); }} /> : null}
+      {draft.step === 4 ? <ProductsStep products={products} busy={interactionLocked} onAddPhoto={() => { void leaveForProduct("/snap"); }} onCreateDigital={() => { void leaveForProduct("/create"); }} onReviewProduct={(id) => { void leaveForProduct({ pathname: "/product/[id]", params: { id } }); }} /> : null}
       {draft.step === 5 ? (
         <ReviewStep
           draft={draft}
@@ -418,7 +418,9 @@ function CoverStep({ coverUrl, staged, motion, busy, uploading, hasProductFallba
         style={{ aspectRatio: 16 / 9, overflow: "hidden", borderRadius: radius.lg, backgroundColor: c.sunk, borderWidth: coverUrl ? 0 : 2, borderStyle: "dashed", borderColor: c.line, alignItems: "center", justifyContent: "center" }}>
         {coverUrl ? <Image source={{ uri: coverUrl }} contentFit="cover" style={{ position: "absolute", inset: 0 }} /> : null}
         {coverUrl ? <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.18)" }} /> : null}
-        {uploading ? <ActivityIndicator color={c.onAccent} /> : <View style={{ alignItems: "center", gap: 6, padding: space.lg }}><Ionicons name="image-outline" size={30} color={coverUrl ? c.onAccent : c.accent} /><Text style={[type.label, { color: coverUrl ? c.onAccent : c.accent }]}>{coverUrl ? "Choose a different photo" : "Choose a cover photo"}</Text></View>}
+        <View style={{ alignItems: "center", gap: 6, padding: space.lg, borderRadius: radius.md, backgroundColor: c.bg }}>
+          {uploading ? <ActivityIndicator color={c.ink} /> : <><Ionicons name="image-outline" size={30} color={c.ink} /><Text style={[type.label, { color: c.ink }]}>{coverUrl ? "Choose a different photo" : "Choose a cover photo"}</Text></>}
+        </View>
       </Pressable>
       {staged ? <Pill text="New cover staged — not live yet" tone="good" /> : null}
       <View style={{ flexDirection: "row", gap: space.sm }}>
@@ -455,9 +457,9 @@ function WordsStep({ draft, theme, suggestions, busy, generating, allowance, onP
         <Text style={[type.label, { color: c.ink }]}>Writing tone</Text>
         <Segmented value={draft.tone} onChange={(tone) => { if (!busy) onPatch({ tone }); }} options={[{ value: "considered", label: "Considered" }, { value: "warm", label: "Warm" }, { value: "bold", label: "Bold" }]} />
       </View>
-      <View style={{ backgroundColor: c.flash, borderRadius: radius.lg, padding: space.md, gap: 6 }}>
-        <Text style={[type.heading, { color: c.onFlash }]}>Optional AI suggestions</Text>
-        <Text style={[type.small, { color: c.onFlash }]}>This uses one photo-to-page allowance ({allowance} used). Manual editing is always available and uses no AI allowance. Suggestions never save or go live by themselves.</Text>
+      <View style={{ backgroundColor: c.surface, borderRadius: radius.lg, padding: space.md, gap: 6 }}>
+        <Text style={[type.heading, { color: c.ink }]}>Optional AI suggestions</Text>
+        <Text style={[type.small, { color: c.ink }]}>This uses one photo-to-page allowance ({allowance} used). Manual editing is always available and uses no AI allowance. Suggestions never save or go live by themselves.</Text>
         <Button label="Get AI suggestions" variant="secondary" loading={generating} disabled={busy} onPress={onGenerate} />
       </View>
       {suggestions ? <SuggestionList premium={premium} suggestions={suggestions} disabled={busy} onUse={onUse} /> : null}
@@ -566,12 +568,14 @@ function ReviewStep({ draft, theme, coverUrl, seller, products, onPreview, onApp
         <Body muted>Your local summary below includes your staged words and cover. It is not a public preview.</Body>
       </View>
       <View style={{ borderRadius: radius.lg, overflow: "hidden", backgroundColor: theme?.colors.bg ?? c.sunk, borderWidth: 1, borderColor: theme?.colors.line ?? c.line }}>
-        <View style={{ height: 190, backgroundColor: theme?.colors.panel ?? c.surface }}>
+        <View style={{ minHeight: 190, backgroundColor: theme?.colors.panel ?? c.surface }}>
           {coverUrl ? <Image source={{ uri: coverUrl }} contentFit="cover" style={{ position: "absolute", inset: 0 }} /> : null}
-          <View style={{ position: "absolute", inset: 0, backgroundColor: coverUrl ? "rgba(0,0,0,0.36)" : "transparent", justifyContent: "flex-end", padding: space.lg, gap: 5 }}>
-            <Text style={{ color: coverUrl ? "#FFFFFF" : (theme?.colors.onPanel ?? c.ink), fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 1 }}>{premium ? draft.hero_eyebrow || theme?.copy?.eyebrow || "YOUR COLLECTION" : "CLASSIC STOREFRONT"}</Text>
-            <Text numberOfLines={2} style={{ color: coverUrl ? "#FFFFFF" : (theme?.colors.onPanel ?? c.ink), fontFamily: fonts.display, fontSize: 29, lineHeight: 31 }}>{(premium ? draft.hero_title : "") || draft.tagline || draft.store_name || "Your store"}</Text>
-            <Text numberOfLines={2} style={{ color: coverUrl ? "#FFFFFF" : (theme?.colors.onPanel ?? c.ink), fontFamily: fonts.body, fontSize: 13 }}>{(premium ? draft.hero_subtitle : "") || ((premium || draft.tagline) ? draft.about.split(/[.!?]/)[0] : "") || ""}</Text>
+          <View style={{ padding: space.lg, paddingTop: 40, gap: 5 }}>
+            <View style={{ backgroundColor: c.bg, borderRadius: radius.md, padding: space.md, gap: 5 }}>
+            <Text style={{ color: c.ink, fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 1 }}>{premium ? draft.hero_eyebrow || theme?.copy?.eyebrow || "YOUR COLLECTION" : "CLASSIC STOREFRONT"}</Text>
+            <Text numberOfLines={2} style={{ color: c.ink, fontFamily: fonts.display, fontSize: 29, lineHeight: 31 }}>{(premium ? draft.hero_title : "") || draft.tagline || draft.store_name || "Your store"}</Text>
+            <Text numberOfLines={2} style={{ color: c.muted, fontFamily: fonts.body, fontSize: 13 }}>{(premium ? draft.hero_subtitle : "") || ((premium || draft.tagline) ? draft.about.split(/[.!?]/)[0] : "") || ""}</Text>
+            </View>
           </View>
         </View>
         <View style={{ padding: space.md, gap: 4 }}>
@@ -590,9 +594,9 @@ function ReviewStep({ draft, theme, coverUrl, seller, products, onPreview, onApp
         <Text style={[type.small, { color: c.muted }]}>Preview shows all staged cover, words and hero motion without changing your public storefront. Only existing live products appear. Store and product links navigate to your currently applied public store. This private preview expires after 30 minutes.</Text>
         <Button label="Preview my storefront" variant="secondary" icon={<Ionicons name="eye-outline" size={18} color={c.ink} />} loading={previewing} disabled={busy !== null} onPress={onPreview} />
       </View>
-      <View style={{ backgroundColor: c.flash, borderRadius: radius.lg, padding: space.md, gap: 6 }}>
-        <Text style={[type.heading, { color: c.onFlash }]}>Ready to change your public storefront?</Text>
-        <Text style={[type.small, { color: c.onFlash }]}>Apply updates the selected look, cover and words together. It does not publish products, alter your plan, or change Stripe or checkout.</Text>
+      <View style={{ backgroundColor: c.surface, borderRadius: radius.lg, padding: space.md, gap: 6 }}>
+        <Text style={[type.heading, { color: c.ink }]}>Ready to change your public storefront?</Text>
+        <Text style={[type.small, { color: c.ink }]}>Apply updates the selected look, cover and words together. It does not publish products, alter your plan, or change Stripe or checkout.</Text>
       </View>
       <Button label="Apply to public storefront" loading={applying} disabled={busy !== null} onPress={onApply} />
     </View>
