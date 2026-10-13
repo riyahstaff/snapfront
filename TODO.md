@@ -27,3 +27,12 @@
 
 ## Silver chrome logo finish revision
 - [x] Preserve the approved aperture/doorway symbol, recolor its material to brushed silver/platinum matching the Home gateway, and use it consistently in launcher/adaptive/themed/splash/favicon/in-app mark assets; preserve the graphite background, platform safe areas, interface, motion and app behavior; deliver a verified icon and updated local source without publishing a native release.
+
+## Photo-first Home and Meta publishing
+- [x] New users get Snap a product as the first prominent Home action; returning users keep Continue my storefront and actual saved-step restoration; photo, AI listing, theme setup and all existing routes remain usable and store-isolated.
+- [x] Real theme thumbnails auto-carousel with swipe, previous/next and Pause/Play; no automatic theme selection/application; unknown/Reduce Motion/screen-reader, offscreen, route/background and unmount states stop automatic movement.
+- [x] Sellers can authorize Facebook Pages and linked professional Instagram accounts through secure Meta OAuth, select exact destinations and disconnect/reconnect; encrypted per-store tokens/state and privacy callbacks prevent cross-store leakage; missing configuration is visible and never reported connected.
+- [x] Marketing keeps manual generation/Save/Share/TikTok and adds Facebook wording, reviewed Publish now/Schedule to selected Meta destinations, exact scheduling-time feedback, idempotent frozen caption/owned-media snapshots, status/history and cancel/safe retry; generated drafts never auto-publish without the seller's approval.
+- [x] Durable server-owned jobs survive restart, handle partial destination success, processing/rate delays and expired tokens safely, and do not blindly retry ambiguous public publishing; isolated mocked tests never publish or consume production allowances.
+- [x] Deliver a validated separate GitHub PR and setup/release guidance; preserve Google Play/Stripe billing and native IDs; do not merge, submit app-store builds, activate live social posting or change account permissions during tests.
+- [ ] Activate live Meta OAuth/publishing only after the owner configures the developer app/secrets/approved permissions and the updated backend/native app are deployed; report real-account verification as pending until performed.

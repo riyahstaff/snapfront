@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
+import { ownsSellerImage as ownsImageFile } from "./media-ownership.js";
 import { db, newId, slugify, uniqueSlug, rowToProduct } from "./db.js";
 import { generateDigitalProduct, httpError, PRODUCT_TYPES } from "./claude.js";
 import { renderCover, renderProductPdf, COVER_COLORS, writeFileSafe } from "./artwork.js";
@@ -131,10 +132,10 @@ export async function updateStoreChecked(seller, b) {
   }
   return updateStore(seller, b);
 }
-
 export function createProduct(seller, b, deliveryFile = null) {
   if (b.delivery_url && !/^https:\/\//.test(b.delivery_url)) throw httpError(400, "The download link must start with https://");
   if (b.image_file && !/^[\w-]+\.(jpg|png|webp|gif)$/.test(b.image_file)) throw httpError(400, "Invalid image reference.");
+  if (b.image_file && (!ownsImageFile(seller.id, b.image_file) || !fs.existsSync(path.join(dirs.images, b.image_file)))) throw httpError(400, "Upload a photo to this store before using it.");
   const id = newId("prd");
   const slug = uniqueSlug("products", "slug", slugify(b.title), seller.id);
   db.prepare(`INSERT INTO products (id, seller_id, slug, title, tagline, description, bullets, faq, tags, category, kind, price_cents, image_file, alt_text, seo_description, delivery_file, delivery_url)
@@ -166,7 +167,7 @@ export function updateProduct(seller, id, b) {
     .run(next.title, next.tagline, next.description, next.category, next.price_cents, next.delivery_url, next.bullets, next.tags, next.faq, row.id);
   if (b.image_file !== undefined && b.image_file !== null) {
     // A new photo from the photo studio (or swapping back to the original). Old files are kept so the seller can switch back.
-    if (!/^[\w-]+\.(jpg|png|webp|gif)$/.test(b.image_file) || !fs.existsSync(path.join(dirs.images, b.image_file))) throw httpError(400, "Invalid image reference.");
+    if (!ownsImageFile(seller.id, b.image_file) || !fs.existsSync(path.join(dirs.images, b.image_file))) throw httpError(400, "Invalid image reference.");
     db.prepare("UPDATE products SET image_file = ? WHERE id = ?").run(b.image_file, row.id);
   }
   applyCommerceFields(row.id, b);
@@ -250,6 +251,7 @@ export async function generateProduct(seller, { type = "guide", niche, color = "
   const hex = COVER_COLORS[color] || COVER_COLORS.cobalt;
   const cover = renderCover({ title: r.title, tagline: r.tagline, type, color: hex });
   const image_file = writeFileSafe(dirs.images, `${crypto.randomUUID()}.png`, cover);
+  db.prepare("INSERT OR IGNORE INTO seller_media (image_file,seller_id) VALUES (?,?)").run(image_file, seller.id);
   const pdf = await renderProductPdf({ ...r, type, storeName: seller.store_name }, cover, hex);
   const delivery_file = writeFileSafe(dirs.files, `${crypto.randomUUID()}.pdf`, pdf);
   return createProduct(seller, {

@@ -72,6 +72,14 @@ db.exec(`CREATE TABLE IF NOT EXISTS storefront_photos (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS storefront_photos_seller ON storefront_photos (seller_id);`);
+// Private image assets may exist before they are attached to a product. Keep their seller owner
+// so a URL-looking filename cannot be borrowed as a marketing/studio source by another store.
+db.exec(`CREATE TABLE IF NOT EXISTS seller_media (
+  image_file TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS seller_media_seller ON seller_media (seller_id, created_at);`);
 addCol("sellers", "shipping_flat_cents", "INTEGER NOT NULL DEFAULT 0");
 addCol("sellers", "free_shipping_over_cents", "INTEGER");
 addCol("sellers", "ship_countries", "TEXT NOT NULL DEFAULT 'US,CA,GB,AU,NZ,IE'");
@@ -229,3 +237,108 @@ export function rowToProduct(r) {
   p.in_stock = p.variants.length ? p.variants.some((v) => v.inventory == null || v.inventory > 0) : (r.inventory == null || r.inventory > 0);
   return p;
 }
+
+/* ---------- seller-owned Meta connections and durable publishing queue ---------- */
+// Tokens never leave this database. `access_token_enc` is AES-256-GCM ciphertext created only
+// when META_TOKEN_ENCRYPTION_KEY is a valid 32-byte key; an invalid configuration disables Meta.
+db.exec(`
+CREATE TABLE IF NOT EXISTS social_oauth_states (
+  state_hash TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS social_oauth_states_expiry ON social_oauth_states (expires_at);
+
+CREATE TABLE IF NOT EXISTS social_connections (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  meta_user_id TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('instagram','facebook')),
+  remote_id TEXT NOT NULL,
+  page_id TEXT,
+  name TEXT NOT NULL,
+  access_token_enc TEXT NOT NULL,
+  user_access_token_enc TEXT,
+  token_expires_at TEXT,
+  data_access_expires_at TEXT,
+  user_token_expires_at TEXT,
+  user_data_access_expires_at TEXT,
+  status TEXT NOT NULL DEFAULT 'connected' CHECK (status IN ('connected','reconnect_required')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (seller_id, platform, remote_id)
+);
+CREATE INDEX IF NOT EXISTS social_connections_seller ON social_connections (seller_id, created_at);
+CREATE INDEX IF NOT EXISTS social_connections_meta_user ON social_connections (meta_user_id);
+
+CREATE TABLE IF NOT EXISTS social_renders (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK (kind IN ('image','carousel','reel')),
+  format TEXT NOT NULL,
+  files_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS social_renders_seller ON social_renders (seller_id, created_at);
+
+CREATE TABLE IF NOT EXISTS social_posts (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  connection_id TEXT NOT NULL REFERENCES social_connections(id) ON DELETE CASCADE,
+  render_id TEXT NOT NULL REFERENCES social_renders(id) ON DELETE RESTRICT,
+  platform TEXT NOT NULL CHECK (platform IN ('instagram','facebook')),
+  account_name TEXT NOT NULL,
+  caption TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('image','carousel','reel')),
+  media_json TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('queued','processing','published','failed','uncertain','canceled')),
+  publish_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  error TEXT,
+  permalink TEXT,
+  remote_post_id TEXT,
+  retryable INTEGER NOT NULL DEFAULT 0,
+  idempotency_key TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS social_posts_seller ON social_posts (seller_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS social_posts_idempotency ON social_posts (seller_id, idempotency_key);
+
+CREATE TABLE IF NOT EXISTS social_publish_requests (
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  idempotency_key TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  post_ids_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (seller_id, idempotency_key)
+);
+
+CREATE TABLE IF NOT EXISTS social_publish_jobs (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL UNIQUE REFERENCES social_posts(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('queued','processing','published','failed','uncertain','canceled')),
+  run_at TEXT NOT NULL,
+  lease_owner TEXT,
+  lease_until TEXT,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  safe_retries INTEGER NOT NULL DEFAULT 0,
+  poll_count INTEGER NOT NULL DEFAULT 0,
+  stage TEXT NOT NULL DEFAULT 'start',
+  remote_ids_json TEXT NOT NULL DEFAULT '{}',
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS social_publish_jobs_due ON social_publish_jobs (status, run_at, lease_until);
+
+CREATE TABLE IF NOT EXISTS social_deletion_requests (
+  id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  completed_at TEXT NOT NULL
+);
+`);
+// These fields are kept separately because Page and long-lived User tokens have different
+// lifetimes and are used by different documented Meta publishing endpoints.
+addCol("social_connections", "user_access_token_enc", "TEXT");
+addCol("social_connections", "user_token_expires_at", "TEXT");
+addCol("social_connections", "user_data_access_expires_at", "TEXT");
+addCol("social_posts", "remote_post_id", "TEXT");

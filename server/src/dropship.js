@@ -59,6 +59,7 @@ export async function importProduct(account, seller, source, pid, { price, vids,
 
   const img = await downloadImage(p.images[0], a.name);
   const image_file = writeFileSafe(dirs.images, `${crypto.randomUUID()}.${img.ext}`, img.buf);
+  db.prepare("INSERT OR IGNORE INTO seller_media (image_file,seller_id) VALUES (?,?)").run(image_file, seller.id);
   const image_url = `${config.publicUrl}/img/${image_file}`;
 
   const hint = `Supplier listing title: "${p.title}". Supplier details: ${p.description.slice(0, 1500) || "none"}.

@@ -12,6 +12,7 @@ import sharp from "sharp";
 import { Resvg } from "@resvg/resvg-js";
 import ffmpegPath from "ffmpeg-static";
 import { config, dirs } from "./config.js";
+import { ownsSellerImage as sellerOwnsOverride } from "./media-ownership.js";
 import { askJson, httpError } from "./claude.js";
 import { themeOf } from "./themes.js";
 import { fontFile, familyOf, weightOf, wrap, fitSize, measure } from "./fonts.js";
@@ -37,8 +38,11 @@ const clamp = (s, n) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
 /* ---------- AI copy ---------- */
 export async function writeCopy(seller, product, { platform = "instagram", tone = "", offer = "" } = {}) {
   const url = storeUrl(seller.store_slug, `/${product.slug}`).replace(/^https?:\/\//, "");
+  const platformVoice = platform === "tiktok" ? "TikTok (casual, punchy, hook in the first line)"
+    : platform === "facebook" ? "Facebook Page (clear, friendly and community-minded; make the first line useful)"
+      : "Instagram (warm, polished)";
   const out = await askJson([{ type: "text", text: `Write a social media post that sells this product.
-Platform: ${platform === "tiktok" ? "TikTok (casual, punchy, hook in the first line)" : "Instagram (warm, polished)"}
+Platform: ${platformVoice}
 Store: ${seller.store_name}${seller.tagline ? ` — ${seller.tagline}` : ""}
 Product: ${product.title}
 Tagline: ${product.tagline || ""}
@@ -71,8 +75,8 @@ async function kit(seller) {
   const upper = t.upper === "titles" || t.upper === "all";
   return { t, c: t.c, files, fam, weight, track, upper };
 }
-const fileOf = (imageUrl) => { const m = String(imageUrl || "").match(/\/img\/([\w-]+\.(?:jpg|png|webp|gif))$/); return m ? path.join(dirs.images, m[1]) : null; };
-
+const imageFileOf = (imageUrl) => { const m = String(imageUrl || "").match(/\/img\/([\w-]+\.(?:jpg|png|webp|gif))$/); return m ? m[1] : null; };
+const fileOf = (imageUrl) => { const file = imageFileOf(imageUrl); return file ? path.join(dirs.images, file) : null; };
 async function photoData(src, w, h, radius = 0) {
   let img = sharp(src).rotate().resize(Math.round(w), Math.round(h), { fit: "cover", position: "attention" });
   if (radius > 0) {
@@ -230,7 +234,16 @@ export async function renderPost(seller, product, { kind = "image", template = "
   if (!TEMPLATES.some((t) => t.id === template)) throw httpError(400, "Pick one of the designs.");
   if (!FORMATS[format]) throw httpError(400, "Pick post, square or story.");
   if (!["image", "carousel", "reel"].includes(kind)) throw httpError(400, "Pick an image, a carousel or a reel.");
-  const src = fileOf(image_url && fileOf(image_url) ? image_url : product.image_url);
+  let src;
+  if (image_url) {
+    const file = imageFileOf(image_url);
+    if (!sellerOwnsOverride(seller.id, file)) throw httpError(403, "Choose a photo that belongs to this store.");
+    src = file ? path.join(dirs.images, file) : null;
+  } else {
+    // The route already resolves product through ownProduct, so its current standard image is an
+    // owned source even for stores created before seller_media existed.
+    src = fileOf(product.image_url);
+  }
   if (!src || !fs.existsSync(src)) throw httpError(400, "This product needs a photo first.");
   const c = {
     headline: clamp(copy?.headline || product.title, 40), subline: clamp(copy?.subline || product.tagline, 80),

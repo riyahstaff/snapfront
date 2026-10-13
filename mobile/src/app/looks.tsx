@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Button, Field, H2, Notice } from "@/components/ui";
 import { ThemePicker } from "@/components/theme-picker";
@@ -18,6 +18,11 @@ const errText = (e: unknown, fallback: string) => e instanceof ApiError ? e.mess
 
 /** Quick storefront edits and the same complete catalog used by the setup wizard. */
 export default function LooksScreen() {
+  const params = useLocalSearchParams<{ query?: string }>();
+  const query = typeof params.query === "string" ? params.query.slice(0, 120) : "";
+  return <LooksEditor key={query} initialQuery={query} />;
+}
+function LooksEditor({ initialQuery }: { initialQuery: string }) {
   const c = useColors();
   const me = useMe();
   const insets = useSafeAreaInsets();
@@ -27,7 +32,7 @@ export default function LooksScreen() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const [catalogAttempt, setCatalogAttempt] = useState(0);
-  const [browse, setBrowse] = useState<ThemeBrowseState>({ ...EMPTY_THEME_BROWSE });
+  const [browse, setBrowse] = useState<ThemeBrowseState>({ ...EMPTY_THEME_BROWSE, query: initialQuery });
   const current = me?.theme ?? "classic";
   const picked = pickState?.storeId === me?.id ? pickState?.id ?? null : null;
   const photo = photoState?.storeId === me?.id ? photoState?.url ?? null : null;

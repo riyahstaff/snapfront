@@ -43,6 +43,14 @@ export const config = {
   downloadSecret: env.DOWNLOAD_SIGNING_SECRET || "dev-only-secret-change-me",
   resendKey: env.RESEND_API_KEY || "",
   emailFrom: env.EMAIL_FROM || "Snapfront <orders@example.com>",
+  // Meta seller-owned publishing. This stays off until the owner has completed Meta review and
+  // deployed with a persistent volume. Tokens are rejected unless the key is exactly 32 bytes.
+  metaAppId: env.META_APP_ID || "",
+  metaAppSecret: env.META_APP_SECRET || "",
+  metaLoginConfigId: env.META_LOGIN_CONFIG_ID || "",
+  metaTokenEncryptionKey: env.META_TOKEN_ENCRYPTION_KEY || "",
+  metaGraphVersion: /^v\d+\.\d+$/.test(String(env.META_GRAPH_VERSION || "")) ? env.META_GRAPH_VERSION : "v26.0",
+  metaPublishingEnabled: String(env.META_PUBLISHING_ENABLED || "").toLowerCase() === "true",
 };
 
 export const dirs = {

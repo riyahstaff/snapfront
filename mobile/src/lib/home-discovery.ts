@@ -1,8 +1,7 @@
 import type { StoreTheme } from "./api";
-
 /** Discover, never select: return at most four real themes, prioritizing distinct categories. */
 export function featuredThemes(themes: StoreTheme[]): StoreTheme[] {
-  const preferred = ["p-jewelry", "p-furniture", "p-skincare", "p-fashion"];
+  const preferred = ["p-jewelry", "p-furniture", "p-skincare", "p-audio"];
   const ordered = [...preferred.map((id) => themes.find((theme) => theme.id === id)).filter((theme): theme is StoreTheme => Boolean(theme)), ...themes];
   const result: StoreTheme[] = [];
   const seen = new Set<string>();
