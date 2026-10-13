@@ -240,15 +240,17 @@ async function makeProducts({ lifetimePrice = PLAY_PRICES.lifetime, proPrice = P
   }
   // Pro: a new $69 monthly base plan on the existing subscription (old subscribers keep theirs).
   const pp = await prices(proPrice);
+  const existing = await play("GET", `/subscriptions/${PRO}`);
+  const existing0 = existing.status === 200;   // a new subscription can make its only base plan legacy compatible
   const basePlan = {
     basePlanId: PRO_BASE_PLAN,
-    autoRenewingBasePlanType: { billingPeriodDuration: "P1M", gracePeriodDuration: "P7D", resubscribeState: "RESUBSCRIBE_STATE_ACTIVE", legacyCompatible: true },
+    // Only one base plan may be "legacy compatible" (the old $14.99 one is); the app buys with offer tokens.
+    autoRenewingBasePlanType: { billingPeriodDuration: "P1M", gracePeriodDuration: "P7D", resubscribeState: "RESUBSCRIBE_STATE_ACTIVE", legacyCompatible: !existing0 },
     regionalConfigs: pp.regions.map((x) => ({ regionCode: x.regionCode, price: x.price, newSubscriberAvailability: true })),
     ...(pp.other ? { otherRegionsConfig: { usdPrice: pp.other.usdPrice, eurPrice: pp.other.eurPrice, newSubscriberAvailability: true } } : {}),
   };
   const listings = [{ languageCode: "en-US", title: "Snapfront Pro", description: "Everything in Snapfront, billed monthly: stores, AI products, email marketing, affiliates and more.",
     benefits: ["Up to 10 live stores", "Email marketing and affiliates", "AI product pages, photos and video"] }];
-  const existing = await play("GET", `/subscriptions/${PRO}`);
   const version = encodeURIComponent(pp.version || "2022/02");
   if (existing.status === 200) {
     const plans = (existing.body.basePlans || []).filter((b) => b.basePlanId !== PRO_BASE_PLAN);
