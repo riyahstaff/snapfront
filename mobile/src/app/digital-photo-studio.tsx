@@ -409,7 +409,11 @@ export default function DigitalPhotoStudioScreen() {
     <Screen>
       <Stack.Screen options={{ title: "Digital Photo Studio" }} />
       <StudioHero product={ownedProduct} />
-      {!artworkContextReady && ownedProduct ? <Button label="Open my editable digital design" variant="secondary" onPress={() => router.push({ pathname: "/digital-editor", params: { productId: ownedProduct.id } })} /> : null}
+      {!artworkContextReady && ownedProduct ? <Button label="Open my editable digital design" variant="secondary" onPress={() => {
+        const started = beginSession();
+        if (!started) return;
+        router.push({ pathname: "/digital-editor", params: { id: started.productId, storeId: started.storeId } });
+      }} /> : null}
       <Segmented value={tab} options={[{ value: "artwork", label: "Artwork" }, { value: "mockups", label: "Product presentations" }]} onChange={setTab} />
       {sourceHint ? <Notice tone="info" text="A requested source was ignored until this studio re-read the current product. Only owned server sources can be sent to a job." /> : null}
       <QuotaStatus options={options} providerReady={providerReady} artAllowance={artAllowance} mockupAllowance={mockupAllowance} />
