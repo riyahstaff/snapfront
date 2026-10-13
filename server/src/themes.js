@@ -1,3 +1,6 @@
+import { PREMIUM_THEMES } from "./premium-themes.js";
+import { config } from "./config.js";
+
 // Storefront themes. A theme is a palette and a font pair plus a set of section designs:
 //   header    split (logo left, menu beside it) | center (menu left, logo centred) | stack (logo above menu)
 //   hero      overlay (full-width photo, text on top) | split (photo beside a colour panel) | collage (three photos)
@@ -129,6 +132,7 @@ export const THEMES = [
     c: { bg: "#0B0B0B", surface: "#161616", ink: "#F5F5F0", muted: "#A3A39A", line: "#2A2A2A", accent: "#E4FF3A", onAccent: "#0B0B0B", badge: "#E4FF3A", onBadge: "#0B0B0B",
       panel: "#161616", onPanel: "#F5F5F0", foot: "#000000", onFoot: "#BDBDB5", bar: "#E4FF3A", onBar: "#0B0B0B" },
     dark: true, header: "split", hero: "overlay", heroAlign: "left", cats: "circle", card: "boxed", ratio: "4/5", rCard: 6, rBtn: 4, upper: "all", heroScale: 1.5, ts: 1.3, announce: "marquee", band: true }),
+  ...PREMIUM_THEMES,
 ];
 
 export const THEME_IDS = new Set(THEMES.map((t) => t.id));
@@ -137,13 +141,18 @@ export const themeOf = (id) => THEMES.find((t) => t.id === id) || THEMES[0];
 /** What the app shows in the theme picker. */
 export const publicThemes = () => THEMES.map((t) => ({
   id: t.id, name: t.name, for: t.for, vibe: t.vibe, dark: Boolean(t.dark),
+  collection: t.collection || "classic", category: t.category || t.for, family: t.family || null,
+  motion: t.motion || "still", copy: { eyebrow: t.copy?.eyebrow || "", collection: t.copy?.collection || "Shop all", cta: t.copy?.cta || "Shop now", ...(t.collection === "premium" ? { title: t.copy?.title || "", subtitle: t.copy?.subtitle || "" } : {}) },
+  ...(t.group ? { group: t.group } : {}),
+  ...(t.preview ? { preview_url: `${config.publicUrl}${t.preview}` } : {}),
+  ...(t.demo ? { demo_url: `${config.publicUrl}${t.demo}` } : {}),
   fonts: { display: t.fonts.display[0], body: t.fonts.body[0] },
   colors: { bg: t.c.bg, surface: t.c.surface, ink: t.c.ink, muted: t.c.muted, accent: t.c.accent, onAccent: t.c.onAccent, badge: t.c.badge, onBadge: t.c.onBadge,
     line: t.c.line, panel: t.c.panel, onPanel: t.c.onPanel, bar: t.c.bar, onBar: t.c.onBar, foot: t.c.foot },
   shape: { radius: t.rCard, button: t.rBtn, ratio: t.ratio, card: t.card, header: t.header, hero: t.hero, upper: t.upper || null },
 }));
 
-const SERIFS = /Garamond|Playfair|Fraunces|Young Serif|DM Serif|Bodoni|Zilla|Instrument Serif|Marcellus|Cinzel|Lora/;
+const SERIFS = /Garamond|Cormorant Infant|Playfair|Fraunces|Young Serif|DM Serif|Bodoni|Zilla|Instrument Serif|Marcellus|Cinzel|Lora|Newsreader|Libre Baskerville/;
 const stack = (family) => `"${family}",${SERIFS.test(family) ? "Georgia,'Times New Roman',serif" : "system-ui,-apple-system,'Segoe UI',sans-serif"}`;
 
 export function fontsUrl(t) {
@@ -167,4 +176,4 @@ export function themeCss(t) {
 
 /** Classes on <body> that switch the page's structure. */
 const LIVELY = new Set(["citrus", "candy", "arcade", "volt", "street", "market", "sorbet"]);
-export const bodyClass = (t) => [`th-${t.id}`, `hd-${t.header}`, `cd-${t.card}`, LIVELY.has(t.id) ? "mo-lively" : "mo-calm", t.upper ? `up-${t.upper}` : "", t.italicHero ? "ital" : "", t.dark ? "dark" : ""].filter(Boolean).join(" ");
+export const bodyClass = (t) => [`th-${t.id}`, `hd-${t.header}`, `cd-${t.card}`, LIVELY.has(t.id) ? "mo-lively" : "mo-calm", t.collection === "premium" ? "premium" : "", t.family ? `fam-${t.family}` : "", t.upper ? `up-${t.upper}` : "", t.italicHero ? "ital" : "", t.dark ? "dark" : ""].filter(Boolean).join(" ");

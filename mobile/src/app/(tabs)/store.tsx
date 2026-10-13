@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Button, Notice, Pill } from "@/components/ui";
 import { api, ApiError, money, type Me, type Product } from "@/lib/api";
 import { account } from "@/lib/account-store";
+import { loadStorefrontDraft } from "@/lib/storefront-draft";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
 
 export default function StoreScreen() {
@@ -16,12 +17,14 @@ export default function StoreScreen() {
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [setupDraftStep, setSetupDraftStep] = useState<number | null>(null);
 
   const load = useCallback(async () => {
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const [me, list] = await Promise.all([account.refresh(), api.products()]);
-      setSeller(me); setItems(list);
+      const setupDraft = await loadStorefrontDraft(me.id).catch(() => null);
+      setSeller(me); setItems(list); setSetupDraftStep(setupDraft?.step ?? null);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Couldn't load your store.");
     } finally { setLoading(false); }
@@ -88,6 +91,8 @@ export default function StoreScreen() {
         </View>
       ) : null}
       <Button label="Add a product" icon={<Ionicons name="add-circle-outline" size={20} color={c.onAccent} />} onPress={addProduct} />
+      <Button label={setupDraftStep ? `Resume premium storefront · step ${setupDraftStep}` : "Build a premium storefront"} variant="secondary" icon={<Ionicons name="sparkles-outline" size={20} color={c.ink} />} onPress={() => router.push("/storefront-setup")} />
+      {setupDraftStep ? <Notice text="Your premium storefront setup is saved on this phone. Resume it here when you’re ready." /> : null}
       {drafts > 0 ? (
         <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start", backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, padding: space.md }}>
           <Ionicons name="information-circle-outline" size={20} color={c.accent} />

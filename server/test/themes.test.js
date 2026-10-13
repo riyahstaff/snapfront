@@ -29,10 +29,19 @@ function req(host, method, url, { body, token } = {}) {
   });
 }
 
-test("there are 20 distinct, complete themes", () => {
-  assert.equal(THEMES.length, 20);
-  assert.equal(new Set(THEMES.map((t) => t.id)).size, 20);
-  assert.equal(new Set(THEMES.map((t) => `${t.fonts.display[0]}|${t.c.bg}|${t.c.accent}`)).size, 20);
+test("there are 20 preserved classic and 85 complete independent product-specific themes", () => {
+  assert.equal(THEMES.length, 105);
+  assert.equal(new Set(THEMES.map((t) => t.id)).size, 105);
+  assert.equal(THEMES.filter((t) => !t.collection || t.collection === "classic").length, 20);
+  const premium = THEMES.filter((t) => t.collection === "premium");
+  assert.equal(premium.length, 85);
+  assert.equal(new Set(premium.map((t) => t.id)).size, 85);
+  assert.equal(new Set(premium.map((t) => t.family)).size, 85);
+  assert.ok(premium.some((t) => t.id === "p-audio"));
+  assert.ok(premium.some((t) => t.id === "p-skincare"));
+  assert.ok(premium.some((t) => t.id === "p-tires"));
+  const original = JSON.parse(fs.readFileSync(new URL("./fixtures/classic-themes.json", import.meta.url), "utf8"));
+  assert.deepEqual(THEMES.slice(0, 20), original, "Original Claude themes are unchanged");
   const hex = /^#[0-9A-F]{6}$/i;
   for (const t of THEMES) {
     for (const k of ["bg", "surface", "ink", "muted", "line", "accent", "onAccent", "badge", "onBadge"]) assert.match(t.c[k], hex, `${t.id}.${k}`);
@@ -40,6 +49,13 @@ test("there are 20 distinct, complete themes", () => {
     assert.match(themeCss(t), /--accent:#/);
     assert.match(bodyClass(t), new RegExp(`th-${t.id} hd-\\w+ cd-\\w+`));
     assert.ok(["overlay", "split", "collage", "editorial", "type", "spotlight"].includes(t.hero), t.id);
+  }
+  for (const t of premium) {
+    assert.match(t.id, /^p-/);
+    assert.ok(t.category);
+    assert.ok(["still", "drift", "pan"].includes(t.motion));
+    assert.ok(t.copy.eyebrow && t.copy.collection && t.copy.cta);
+    assert.match(bodyClass(t), new RegExp(`premium fam-${t.family}`));
   }
 });
 
@@ -58,9 +74,13 @@ test("every theme renders the store, product and cart pages", () => {
 
 test("sellers choose a look; buyers see it; ?theme= previews another without saving", async () => {
   const list = (await req("themes.test", "GET", "/api/themes")).json().themes;
-  assert.equal(list.length, 20);
-  assert.deepEqual(Object.keys(list[1]).sort(), ["colors", "dark", "fonts", "for", "id", "name", "shape", "vibe"]);
+  assert.equal(list.length, 105);
+  assert.deepEqual(Object.keys(list[1]).sort(), ["category", "collection", "colors", "copy", "dark", "family", "fonts", "for", "id", "motion", "name", "shape", "vibe"]);
   assert.equal(new Set(list.map((t) => t.shape.hero)).size, 6);
+  const skin = list.find((t) => t.id === "p-skincare");
+  assert.ok(skin.copy.eyebrow && skin.copy.collection && skin.copy.cta, "Skincare exposes editable copy cues");
+  assert.equal(skin.collection, "premium");
+  assert.equal(skin.family, "skincare");
 
   const s = (await req("themes.test", "POST", "/api/sellers", { body: { store_name: "Fern Shop" } })).json();
   let me = (await req("themes.test", "PATCH", "/api/me", { token: s.token, body: { store_name: "Fern Shop" } })).json();
@@ -80,6 +100,9 @@ test("sellers choose a look; buyers see it; ?theme= previews another without sav
   assert.match(r.text, /Previewing the Volt look/);
   assert.match(r.text, /<meta name="robots" content="noindex">/);
   assert.match((await req(host, "GET", "/cart?theme=volt")).text, /<body class="th-volt /);
+  r = await req(host, "GET", "/?theme=p-skincare");
+  assert.match(r.text, /<body class="th-p-skincare /);
+  assert.match(r.text, /Previewing the .* look/);
   assert.match((await req(host, "GET", "/?theme=nope")).text, /<body class="th-noir /);
   assert.equal((await req("themes.test", "GET", "/api/me", { token: s.token })).json().theme, "noir");
 });

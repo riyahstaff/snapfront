@@ -30,6 +30,9 @@ export const publicSeller = (s) => ({
   theme: THEME_IDS.has(s.theme) ? s.theme : "classic",
   about: s.about || "", announcement: s.announcement || "",
   banner_url: s.banner_file ? `${config.publicUrl}/img/${s.banner_file}` : null,
+  hero_title: s.hero_title || "", hero_subtitle: s.hero_subtitle || "",
+  hero_eyebrow: s.hero_eyebrow || "", hero_cta: s.hero_cta || "",
+  hero_motion: ["still", "drift", "pan"].includes(s.hero_motion) ? s.hero_motion : "still",
   links: growth.linksOf(s), abandoned_emails: s.abandoned_emails !== 0, ...(({ links, feeds }) => ({ links_url: links, feeds }))(growth.storeLinks(s)),
 });
 
@@ -50,7 +53,41 @@ export function listProducts(seller) {
   return db.prepare("SELECT * FROM products WHERE seller_id = ? ORDER BY created_at DESC").all(seller.id).map((r) => withPage(seller, r));
 }
 
+export const HERO_LIMITS = { hero_title: 100, hero_subtitle: 220, hero_eyebrow: 48, hero_cta: 32 };
+
+/** Pure validation shared by preview and apply. Uploaded files must belong to this store. */
+export function storefrontPatch(seller, b) {
+  const out = {};
+  if (b.theme != null) {
+    if (!THEME_IDS.has(b.theme)) throw httpError(400, "That store look doesn't exist.");
+    out.theme = b.theme;
+  }
+  if (b.hero_motion != null) {
+    if (!["still", "drift", "pan"].includes(b.hero_motion)) throw httpError(400, "Choose Still, Gentle float or Slow pan for hero motion.");
+    out.hero_motion = b.hero_motion;
+  }
+  for (const [key, limit] of Object.entries(HERO_LIMITS)) {
+    if (b[key] != null) out[key] = clampStr(b[key], limit).replace(/\s+/g, " ").trim();
+  }
+  if (b.banner_file !== undefined) {
+    const file = b.banner_file;
+    if (file !== null && (typeof file !== "string" || !/^[\w-]+\.(jpg|png|webp|gif)$/.test(file) ||
+        (file !== seller.banner_file && !db.prepare("SELECT 1 FROM storefront_photos WHERE seller_id = ? AND image_file = ?").get(seller.id, file)) ||
+        !fs.existsSync(path.join(dirs.images, file)))) {
+      throw httpError(400, "Upload a cover photo to this store before using it.");
+    }
+    out.banner_file = file;
+  }
+  for (const [key, limit] of Object.entries({ store_name: 80, tagline: 160, about: 600, announcement: 90 })) {
+    if (b[key] != null) out[key] = clampStr(b[key], limit).trim();
+  }
+  if (out.store_name === "") throw httpError(400, "Add a name for your store.");
+  return out;
+}
+
 export function updateStore(seller, b) {
+  const hero = storefrontPatch(seller, b);
+  return db.transaction(() => {
   const name = b.store_name != null ? clampStr(b.store_name, 80).trim() : seller.store_name;
   const tagline = b.tagline != null ? clampStr(b.tagline, 160) : seller.tagline;
   // The address follows the name until the seller picks one; an address they type must be free.
@@ -75,10 +112,13 @@ export function updateStore(seller, b) {
   if (b.links != null) db.prepare("UPDATE sellers SET links = ? WHERE id = ?").run(JSON.stringify(growth.cleanLinks(b.links)), seller.id);
   if (b.abandoned_emails != null) db.prepare("UPDATE sellers SET abandoned_emails = ? WHERE id = ?").run(b.abandoned_emails ? 1 : 0, seller.id);
   if (b.theme != null) {
-    if (!THEME_IDS.has(b.theme)) throw httpError(400, "That store look doesn't exist.");
     db.prepare("UPDATE sellers SET theme = ? WHERE id = ?").run(b.theme, seller.id);
   }
+  for (const key of [...Object.keys(HERO_LIMITS), "hero_motion", "banner_file"]) {
+    if (Object.hasOwn(hero, key)) db.prepare(`UPDATE sellers SET ${key} = ? WHERE id = ?`).run(hero[key], seller.id);
+  }
   return publicSeller(fresh(seller.id));
+  })();
 }
 
 /** updateStore, but turning on sales tax first checks the seller's Stripe Tax setup is complete. */

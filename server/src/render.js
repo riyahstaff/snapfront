@@ -4,8 +4,11 @@ import { storeUrl } from "./urls.js";
 import { config } from "./config.js";
 import { themeOf, themeCss, fontsUrl, bodyClass } from "./themes.js";
 import { CSS } from "./storefront-css.js";
+import { CATEGORY_CSS } from "./category-storefront-css.js";
 import { reviewsFor, ratingsBySeller, reviewToken, linksOf } from "./growth.js";
 import { isAiImage } from "./aimedia.js";
+import { CATEGORY_REGISTRY } from "./premium-themes.js";
+import { categoryContext, CATEGORY_BASE_CSS } from "./category-theme-kit.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const money = (cents, cur = "usd") => new Intl.NumberFormat("en-US", { style: "currency", currency: cur.toUpperCase() }).format(cents / 100);
@@ -69,6 +72,8 @@ const img = (src, alt, extra = "") => (src ? `<img src="${esc(src)}" alt="${esc(
 function shell({ title, description, store, image, body, canonical, cats = [], facts = null, current = null }) {
   const t = themeOf(store._theme || store.theme);
   const preview = Boolean(store._theme);
+  const module = CATEGORY_REGISTRY.get(t.id);
+  const demo = Boolean(store._themeDemo);
   const notes = facts?.notes || [store.announcement || "Secure checkout with Stripe"];
   const ann = t.announce === "marquee"
     ? `<div class="ann mq" aria-label="${esc(notes.join(". "))}"><div class="trk" aria-hidden="true">${[0, 1].map(() => notes.concat(notes).map((n) => `<span>${esc(n)}</span><i>✦</i>`).join("")).join("")}</div></div>`
@@ -79,12 +84,12 @@ function shell({ title, description, store, image, body, canonical, cats = [], f
   const year = new Date().getFullYear();
   const ship = facts?.ship || shipping(store);
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title><meta name="description" content="${esc(description)}">${preview ? `<meta name="robots" content="noindex">` : ""}
+<title>${esc(title)}</title><meta name="description" content="${esc(description)}">${preview || demo ? `<meta name="robots" content="noindex">` : ""}
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}">${image ? `<meta property="og:image" content="${esc(image)}">` : ""}
 ${canonical ? `<link rel="canonical" href="${esc(canonical)}">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="${t.c.bg}">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${esc(fontsUrl(t))}">
-<style>${themeCss(t)}${CSS}</style></head><body class="${bodyClass(t)}">
-${preview ? `<div class="pv" role="note">Previewing the ${esc(t.name)} look. Buyers still see your current look until you choose this one in the app.</div>` : ""}${ann}
+<style>${themeCss(t)}${module ? CATEGORY_CSS + CATEGORY_BASE_CSS + module.css : CSS}</style></head><body class="${bodyClass(t)}">
+${demo ? `<div class="pv" role="note">Illustrative ${esc(t.name)} theme demo — photos, products and prices are examples, not a live seller store. <a href="/themes" style="color:inherit">Browse all themes</a></div>` : ""}${preview ? `<div class="pv" role="note">${store._draftPreview ? "Private draft preview — your cover, words and motion are not live. Product links open your currently applied store." : `Previewing the ${esc(t.name)} look. Buyers still see your current look until you choose this one in the app.`}</div>` : ""}${ann}
 <header class="hd"><div class="wrap"><a class="brand" href="${esc(home(store))}">${esc(store.store_name)}</a><nav class="nav" aria-label="Shop">${nav}</nav>
 <div class="acts"><a class="cart" href="${esc(base(store))}/cart" aria-label="Cart">${ICON.bag}<b data-cart-count></b></a></div></div></header>
 ${CART_JS(store.store_slug)}<main>${body}</main>
@@ -92,24 +97,27 @@ ${CART_JS(store.store_slug)}<main>${body}</main>
 <nav aria-label="Shop links"><h4>Shop</h4><a href="${esc(base(store))}/#shop">All products</a>${cats.slice(0, 5).map((c) => `<a href="${esc(catHref(store, c.name))}">${esc(c.name)}</a>`).join("")}</nav>
 <nav aria-label="Help"><h4>Help</h4><a href="${esc(base(store))}/cart">Your cart</a>${store.about ? `<a href="${esc(base(store))}/#about">About us</a>` : ""}${facts?.physical !== false ? `<span>${esc(ship.title)}</span>${ship.where ? `<span>${esc(ship.where)}</span>` : ""}` : ""}<span>Secure checkout by Stripe</span></nav></div>
 <div class="wrap bot"><span>© ${year} ${esc(store.store_name)}</span><span>Made with Snapfront</span></div></footer>
-<script>(function(){if(!("IntersectionObserver" in window)||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+${module ? `<script>(function(){var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;document.querySelectorAll("[data-hero-motion-control]").forEach(function(btn){var hero=btn.closest(".hero");if(!hero||reduce)return;btn.addEventListener("click",function(){var paused=hero.classList.toggle("is-motion-paused");btn.setAttribute("aria-pressed",String(paused));btn.setAttribute("aria-label",paused?"Play hero motion":"Pause hero motion");btn.textContent=paused?"Play motion":"Pause motion"})})})();</script>` : `<script>(function(){if(!("IntersectionObserver" in window)||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
 var els=document.querySelectorAll(".sec-h,.pc,.cat-c,.cat-t,.perk,.feat .pic,.feat .txt,.story .pic,.story .txt,.rev,.lk,.strip a");
 var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{rootMargin:"0px 0px -8% 0px"});
 els.forEach(function(el){var sib=el.parentElement?Array.prototype.indexOf.call(el.parentElement.children,el):0;el.style.setProperty("--d",Math.min(sib,6)*0.07+"s");el.classList.add("rv");io.observe(el)});
-var hero=document.querySelector(".h-ov>img");if(hero){var tick=false;addEventListener("scroll",function(){if(tick)return;tick=true;requestAnimationFrame(function(){hero.style.transform="translateY("+Math.min(scrollY*0.25,200)+"px) scale(1.06)";tick=false})},{passive:true})}})();</script>
-${preview ? `<script>document.querySelectorAll('a[href^="/"]').forEach(function(a){var u=new URL(a.href);u.searchParams.set("theme",${JSON.stringify(t.id)});a.href=u.pathname+u.search+u.hash})</script>` : ""}</body></html>`;
+var hero=document.querySelector(".h-ov>img");if(hero){var tick=false;addEventListener("scroll",function(){if(tick)return;tick=true;requestAnimationFrame(function(){hero.style.transform="translateY("+Math.min(scrollY*0.25,200)+"px) scale(1.06)";tick=false})},{passive:true})}})();</script>`}
+${preview && !store._draftPreview ? `<script>document.querySelectorAll('a[href^="/"]').forEach(function(a){var u=new URL(a.href);u.searchParams.set("theme",${JSON.stringify(t.id)});a.href=u.pathname+u.search+u.hash})</script>` : ""}</body></html>`;
 }
 
 /* ---------- sections ---------- */
 const stars = (avg) => `<span class="stars" aria-label="${avg} out of 5 stars">${[1, 2, 3, 4, 5].map((i) => `<i class="${avg >= i - 0.25 ? "on" : avg >= i - 0.75 ? "half" : ""}">★</i>`).join("")}</span>`;
 function card(store, p) {
   const r = store._ratings?.get(p.id);
-  return `<a class="pc" href="${esc(base(store))}/${esc(p.slug)}"><div class="im">${img(p.image_url, p.alt_text || p.title, ' loading="lazy"')}
+  const category = CATEGORY_REGISTRY.has(store._theme || store.theme);
+  return `<a class="pc${category ? " product-card" : ""}" href="${esc(base(store))}/${esc(p.slug)}"><div class="im${category ? " product-image" : ""}">${img(p.image_url, p.alt_text || p.title, ' loading="lazy"')}
 ${!p.in_stock ? `<span class="tag out">Sold out</span>` : p.label ? `<span class="tag">${esc(p.label)}</span>` : p.kind === "digital" ? `<span class="tag">Digital</span>` : ""}<span class="go" aria-hidden="true">View product</span></div>
 <div class="bd"><h3>${esc(p.title)}</h3><span class="pr">${priceLabel(p)}</span>${r ? `<span class="rt">${stars(r.avg)} <small>${r.count}</small></span>` : ""}</div></a>`;
 }
 
 function hero(store, t, products) {
+  const module = CATEGORY_REGISTRY.get(t.id);
+  if (module) return module.hero(categoryContext(store, t, products, categories(products), card));
   const pics = [bannerUrl(store), ...products.map((p) => p.image_url)].filter(Boolean);
   const head = store.tagline || store.store_name;
   const long = head.length > (t.hero === "type" ? 26 : 56);
@@ -147,6 +155,7 @@ export function storePage(store, products, baseUrl, { category } = {}) {
   const t = themeOf(store._theme || store.theme);
   if (store.id) store = { ...store, _ratings: ratingsBySeller(store.id) };
   const cats = categories(products);
+  const module = CATEGORY_REGISTRY.get(t.id);
   const facts = storeFacts(store, products);
   const current = category ? cats.find((c) => c.name.toLowerCase() === String(category).toLowerCase())?.name : null;
   const shown = current ? products.filter((p) => String(p.category || "").trim().toLowerCase() === current.toLowerCase()) : products;
@@ -161,10 +170,11 @@ export function storePage(store, products, baseUrl, { category } = {}) {
   const band = t.band ? `<div class="band" aria-hidden="true"><div class="trk">${[0, 1].map(() => [store.tagline || store.store_name, store.store_name, facts.perks[0][1]].concat([store.tagline || store.store_name, store.store_name, facts.perks[0][1]])
     .map((x) => `<span>${esc(x)}</span><i>✦</i>`).join("")).join("")}</div></div>` : "";
   const aboutPic = bannerUrl(store) && t.hero !== "overlay" && t.hero !== "split" && t.hero !== "editorial" ? bannerUrl(store) : (products[1] || products[0])?.image_url;
+  const shopHeading = t.collection === "premium" ? (t.copy?.collection || "Shop all") : (products.length > 8 ? "Latest arrivals" : "Shop all");
   const body = `${hero(store, t, products)}
 <section class="perks" aria-label="Why shop here"><div class="wrap">${facts.perks.map(([i, b, s]) => `<div class="perk">${i}<div><b>${esc(b)}</b><span>${esc(s)}</span></div></div>`).join("")}</div></section>
-${catsSection(store, t, cats).replace('class="sec tight"', 'class="sec"')}
-<section id="shop" class="sec${cats.length >= 2 && t.cats !== "pill" ? " tight" : ""}"><div class="wrap"><div class="sec-h"><h2>${products.length > 8 ? "Latest arrivals" : "Shop all"}</h2>${chips(store, cats, null)}</div>${grid}</div></section>
+${module ? module.discovery(categoryContext(store, t, products, cats, card)) : catsSection(store, t, cats).replace('class="sec tight"', 'class="sec"')}
+<section id="shop" class="sec${cats.length >= 2 && t.cats !== "pill" ? " tight" : ""}"><div class="wrap"><div class="sec-h"><h2>${esc(shopHeading)}</h2>${chips(store, cats, null)}</div>${grid}</div></section>
 ${feat ? `<section class="sec feat"><div class="wrap"><div class="pic">${img(feat.image_url, feat.alt_text || feat.title, ' loading="lazy"')}</div><div class="txt">${feat.category ? `<span class="kick">${esc(feat.category)}</span>` : ""}<h2>${esc(feat.title)}</h2>
 ${feat.tagline ? `<p class="tl">${esc(feat.tagline)}</p>` : ""}<div class="price">${priceLabel(feat)}</div><a class="btn" href="${esc(base(store))}/${esc(feat.slug)}">Shop now</a></div></div></section>` : ""}
 ${band}

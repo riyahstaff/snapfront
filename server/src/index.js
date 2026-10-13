@@ -26,14 +26,16 @@ import * as marketing from "./marketing.js";
 import * as aimedia from "./aimedia.js";
 import * as growth from "./growth.js";
 import * as playbilling from "./playbilling.js";
+import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, esc } from "./render.js";
+import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
 
 export const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 /* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
-const SHARED_PATHS = /^\/(api|img|d|thanks|stripe|suppliers|health|privacy|terms|builds)(\/|$)/;
+const SHARED_PATHS = /^\/(api|img|d|thanks|stripe|suppliers|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview)(\/|$)/;
 const sameSecret = (a, b) => { const x = Buffer.from(String(a || "")), y = Buffer.from(String(b || "")); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 app.use((req, res, next) => {
   if (!config.storeDomain) return next();
@@ -165,6 +167,52 @@ app.post("/api/sellers", signupLimit, (req, res) => {
 });
 
 const me = (req) => ({ ...store.publicSeller(plans.storesOf(req.account.id).find((s) => s.id === req.seller.id)), account: plans.publicAccount(plans.getAccount(req.account.id), req.seller.id) });
+const storefrontPreviews = new Map();
+app.post("/api/storefront/preview", auth, (req, res) => {
+  const now = Date.now();
+  for (const [token, entry] of storefrontPreviews) if (entry.expires < now) storefrontPreviews.delete(token);
+  if (storefrontPreviews.size >= 1000) throw httpError(429, "Previews are busy right now. Try again shortly.");
+  const patch = store.storefrontPatch(req.seller, req.body || {});
+  // Keep at most five temporary snapshots per store, without touching live data.
+  const own = [...storefrontPreviews.entries()].filter(([, entry]) => entry.sellerId === req.seller.id);
+  for (const [token] of own.slice(0, Math.max(0, own.length - 4))) storefrontPreviews.delete(token);
+  const token = crypto.randomBytes(24).toString("base64url");
+  storefrontPreviews.set(token, { sellerId: req.seller.id, patch, expires: now + 30 * 60e3 });
+  res.set("Cache-Control", "no-store").json({ url: `${config.publicUrl}/storefront-preview/${token}`, expires_in: 1800 });
+});
+app.get("/storefront-preview/:token", (req, res) => {
+  res.set("Cache-Control", "no-store").set("Referrer-Policy", "no-referrer").set("X-Robots-Tag", "noindex, nofollow");
+  const entry = storefrontPreviews.get(req.params.token);
+  if (!entry || entry.expires < Date.now()) return res.status(410).send("This preview has expired. Open a new preview from Storefront setup.");
+  const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(entry.sellerId);
+  if (!seller) return res.status(410).send("This store preview is no longer available.");
+  const snapshot = { ...seller, ...entry.patch, _draftPreview: true, _theme: entry.patch.theme || seller.theme, _base: `/s/${seller.store_slug}` };
+  res.send(storePage(snapshot, store.listProducts(seller).filter((p) => p.status === "live"), config.publicUrl));
+});
+// Upload without applying. Each staged cover belongs to exactly one seller.
+app.post("/api/storefront/photo", auth, (req, res) => {
+  const count = db.prepare("SELECT COUNT(*) AS n FROM storefront_photos WHERE seller_id = ?").get(req.seller.id).n;
+  if (count >= 100) throw httpError(429, "This store has reached its saved cover limit. Use an existing cover for now.");
+  if (!sniffImage(req.body?.imageBase64)) throw httpError(400, "Use a JPG, PNG, WebP or GIF photo.");
+  const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg");
+  db.prepare("INSERT INTO storefront_photos (image_file, seller_id) VALUES (?,?)").run(file, req.seller.id);
+  res.status(201).json({ image_file: file, image_url: `${config.publicUrl}/img/${file}` });
+});
+app.delete("/api/storefront/photo/:file", auth, (req, res) => {
+  const file = req.params.file;
+  if (!/^[\w-]+\.(jpg|png|webp|gif)$/.test(file)) throw httpError(400, "Invalid cover reference.");
+  if (req.seller.banner_file === file) throw httpError(409, "Your applied cover cannot be discarded as a staged photo.");
+  const row = db.prepare("SELECT 1 FROM storefront_photos WHERE seller_id = ? AND image_file = ?").get(req.seller.id, file);
+  if (!row) throw httpError(404, "This staged cover does not belong to your store.");
+  db.prepare("DELETE FROM storefront_photos WHERE seller_id = ? AND image_file = ?").run(req.seller.id, file);
+  fs.rmSync(path.join(dirs.images, file), { force: true });
+  for (const [token, entry] of storefrontPreviews) if (entry.sellerId === req.seller.id && entry.patch.banner_file === file) storefrontPreviews.delete(token);
+  res.status(204).end();
+});
+app.post("/api/storefront/copy", auth, aiLimit, wrap(async (req, res) => {
+  const result = await plans.withAllowance(req.account, "photo", () => suggestStorefrontCopy(req.seller, store.listProducts(req.seller), req.body || {}));
+  res.json(result);
+}));
 // Storefront cover photo: the big picture at the top of the store.
 app.put("/api/me/banner", auth, (req, res) => {
   const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg");
@@ -187,6 +235,12 @@ app.patch("/api/me", auth, wrap(async (req, res) => { await store.updateStoreChe
 /** Things kept per store outside the cascading tables: visit counts and AI photos/clips. */
 function purgeStores(sellerIds) {
   for (const id of sellerIds) {
+    const seller = db.prepare("SELECT banner_file FROM sellers WHERE id = ?").get(id);
+    const covers = db.prepare("SELECT image_file FROM storefront_photos WHERE seller_id = ?").all(id).map((p) => p.image_file);
+    if (seller?.banner_file) covers.push(seller.banner_file);
+    for (const file of new Set(covers)) {
+      if (/^[\w-]+\.(jpg|png|webp|gif)$/.test(file)) fs.rm(path.join(dirs.images, file), { force: true }, () => {});
+    }
     for (const j of db.prepare("SELECT result FROM media_jobs WHERE seller_id = ? AND result IS NOT NULL").all(id)) {
       try {
         const r = JSON.parse(j.result);
@@ -551,6 +605,28 @@ app.get("/stripe/return", stripeDone("Stripe setup saved"));
 app.get("/stripe/refresh", stripeDone("That link expired"));
 
 /* ---------- public storefront ---------- */
+const THEME_ASSETS = path.resolve(new URL("../assets/themes/", import.meta.url).pathname);
+app.get("/theme-assets/:file", (req, res) => {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*-(hero|preview)\.webp$/.test(req.params.file)) return res.status(404).end();
+  res.set("Cache-Control", "public, max-age=3600");
+  res.sendFile(path.join(THEME_ASSETS, req.params.file), (err) => err && !res.headersSent && res.status(404).end());
+});
+app.get("/themes", (_req, res) => res.set("Cache-Control", "no-cache").send(themeGalleryPage()));
+app.get("/theme-demo/:id", (req, res) => {
+  const html = themeDemoPage(req.params.id, { category: typeof req.query.c === "string" ? req.query.c.slice(0, 60) : null, motion: req.query.motion });
+  if (!html) return res.status(404).send("That theme isn't available.");
+  res.set("X-Robots-Tag", "noindex, nofollow").set("Cache-Control", "no-cache").send(html);
+});
+app.get("/theme-demo/:id/cart", (req, res) => {
+  const html = themeDemoCart(req.params.id);
+  if (!html) return res.status(404).end();
+  res.set("X-Robots-Tag", "noindex, nofollow").send(html);
+});
+app.get("/theme-demo/:id/:product", (req, res) => {
+  const html = themeDemoProduct(req.params.id, req.params.product);
+  if (!html) return res.status(404).end();
+  res.set("X-Robots-Tag", "noindex, nofollow").send(html);
+});
 app.get("/img/:file", (req, res) => {
   if (!/^[\w-]+\.(jpg|png|webp|gif)$/.test(req.params.file)) return res.status(404).end();
   res.set("Cache-Control", "public, max-age=31536000, immutable");
