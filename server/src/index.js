@@ -30,6 +30,7 @@ import * as growth from "./growth.js";
 import * as playbilling from "./playbilling.js";
 import * as social from "./social.js";
 import * as digitalDesigns from "./digital-designs.js";
+import * as imageAssistant from "./image-assistant.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, esc } from "./render.js";
 import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
@@ -313,6 +314,14 @@ function purgeStores(sellerIds) {
         if (r.image_file && /^[\w-]+\.\w+$/.test(r.image_file)) fs.rm(path.join(dirs.images, r.image_file), { force: true }, () => {});
       } catch { /* unreadable result: nothing to remove */ }
     }
+    // image_assistant_jobs records both an original source and a copied, durable result. They are
+    // protected by media-ownership during ordinary product/staged-photo cleanup, but all become
+    // orphaned when the entire store is deleted.
+    for (const j of db.prepare("SELECT source_file, result_file FROM image_assistant_jobs WHERE seller_id=?").all(id)) {
+      for (const file of [j.source_file, j.result_file]) {
+        if (/^[\w-]+\.(jpg|jpeg|png|webp|gif)$/.test(String(file || ""))) fs.rm(path.join(dirs.images, file), { force: true }, () => {});
+      }
+    }
     const registered = db.prepare("SELECT files_json AS files FROM social_renders WHERE seller_id=? UNION ALL SELECT media_json AS files FROM social_posts WHERE seller_id=?").all(id, id);
     for (const row of registered) {
       let files; try { files = JSON.parse(row.files); } catch { continue; }
@@ -324,6 +333,8 @@ function purgeStores(sellerIds) {
     // so a store/account cascade must not reach its render before its queued jobs are removed.
     db.prepare("DELETE FROM social_posts WHERE seller_id=?").run(id);
     db.prepare("DELETE FROM media_jobs WHERE seller_id = ?").run(id);
+    db.prepare("DELETE FROM ai_images WHERE file IN (SELECT result_file FROM image_assistant_jobs WHERE seller_id=?)").run(id);
+    db.prepare("DELETE FROM image_assistant_jobs WHERE seller_id = ?").run(id);
     db.prepare("DELETE FROM store_visits WHERE seller_id = ?").run(id);
   }
 }
@@ -623,6 +634,11 @@ app.post("/api/agent/runs", auth, aiLimit, (req, res) => {
 });
 app.get("/api/agent/runs/:id", auth, (req, res) => res.json(agent.getRun(req.seller, req.params.id, Number(req.query.after) || 0)));
 
+/* ---------- separate storefront and digital image studios ---------- */
+// Completion deliberately only creates seller-owned media. Applying any result to a storefront
+// slot, listing, or editable document remains an explicit client action.
+imageAssistant.routes(app, { auth, wrap });
+
 /* ---------- products ---------- */
 // The template catalogue is intentionally public so native can browse it before a seller starts a
 // draft. Thumbnail files are packaged assets only; the route accepts no filesystem path.
@@ -881,6 +897,7 @@ app.get("/privacy", legal("Privacy policy", `
 <li>If you connect a supplier (CJdropshipping, AliExpress or Printful), the key or sign-in token for that account, stored encrypted, so we can place orders there for you.</li></ul>
 <h2>Optional Meta publishing</h2><p>If you choose to connect Facebook or Instagram, Snapfront receives the access tokens, Page and professional Instagram identifiers, and display names Meta returns for your selected destinations. Tokens are encrypted at rest and are not shown in the app. We use them only to show your connected destinations and carry out a post that you have reviewed and explicitly approved.</p>
 <p>For an approved publish or schedule request, we keep the selected destination, exact approved caption, owned media-file snapshot, requested schedule, processing status and any returned post identifier or permalink. We send the caption and media URL to Meta only when the queue reaches that seller-approved destination. Generating a graphic or caption alone does not publish it.</p>
+<h2>Optional image tools</h2><p>When you create a Storefront Photo Agent or Digital Photo Studio image, we keep your prompt, chosen source-file reference, store photo spot or digital product, requested shape, processing status, returned image and allowance record so you can resume the same request. Source pictures and prompts are sent to Runpod only for an image request you start. A completed image is not inserted into your storefront or digital pages automatically; you review and choose whether to use it. Digital presentation frames use your real cover on our server without an AI image-generation request. Refreshing a storefront preview does not generate an image.</p>
 <h2>What we collect about your buyers</h2><ul>
 <li>Order records: what was bought, amounts, and the buyer's name, email, shipping address and phone number, so digital downloads can be delivered and physical orders shipped.</li>
 <li>Reviews buyers choose to leave: their name, star rating and comment.</li>
@@ -889,7 +906,7 @@ app.get("/privacy", legal("Privacy policy", `
 <h2>How we use it</h2><p>To write your product pages and marketing posts, edit your photos, host your storefront, take payments, send order and review emails, and fulfil dropshipped orders. We don't sell data or use it for advertising.</p>
 <h2>Who we share it with</h2><ul>
 <li>Anthropic (Claude): photos and text, to write product pages, posts and answers.</li>
-<li>Runpod: product photos, when you make AI lifestyle photos or video clips.</li>
+<li>Runpod: prompts and selected source pictures, when you choose to make or edit storefront or digital artwork, lifestyle photos or video clips.</li>
 <li>Stripe: payments, seller identity checks and sales tax.</li>
 <li>Google Play and the App Store: plan purchases.</li>
 <li>Resend: sending sign-in codes, order confirmations, review requests and checkout reminders.</li>
@@ -919,6 +936,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   // The durable SQLite queue is deliberately started only by the real server process, never by
   // imported test apps. Disabled or incomplete Meta configuration starts no worker at all.
   if (social.startWorker()) console.log("[meta] seller publishing worker started");
+  if (imageAssistant.startWorker()) console.log("[image-assistant] durable image worker started");
   // AI video and lifestyle photos: check the Runpod key, then collect finished jobs.
   if (aimedia.enabled()) {
     aimedia.check().then((st) => console.log(`[runpod] key ${st === 200 ? "ok" : `check returned ${st}`}`)).catch((e) => console.error("[runpod] check", e.message));

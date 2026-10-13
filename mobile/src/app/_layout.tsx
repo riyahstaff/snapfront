@@ -54,7 +54,8 @@ export default function RootLayout() {
         <Stack.Screen name="discounts" options={{ title: "Discount codes" }} />
         <Stack.Screen name="looks" options={{ title: "Store look" }} />
         <Stack.Screen name="storefront-setup" options={{ title: "Storefront setup" }} />
-        <Stack.Screen name="studio" options={{ title: "Photo studio" }} />
+        <Stack.Screen name="studio" options={{ title: "Product Photo Cleanup" }} />
+        <Stack.Screen name="digital-photo-studio" options={{ title: "Digital Photo Studio" }} />
         <Stack.Screen name="sources" options={{ title: "Supplier directory" }} />
         <Stack.Screen name="marketing" options={{ title: "Marketing posts" }} />
         <Stack.Screen name="ai-media" options={{ title: "AI photos & video" }} />

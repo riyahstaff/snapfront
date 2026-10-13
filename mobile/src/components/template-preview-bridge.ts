@@ -8,6 +8,7 @@ export type TemplatePreviewProps = {
   onRetry: () => void;
   onPhoto: (index: 0 | 1 | 2) => void;
   onWords?: () => void;
+  renderRevision?: number;
 };
 
 export type PreviewBridgeMessage = { type: "photo"; index: 0 | 1 | 2 };
@@ -42,6 +43,19 @@ function documentParts(html: string) {
   const classes = safe.match(/<body\b[^>]*\bclass=["']([^"']*)["']/i)?.[1] ?? "";
   const bodyClass = classes.split(/\s+/).filter((value) => /^[a-zA-Z0-9_-]+$/.test(value)).join(" ").slice(0, 1000);
   return { styles: fonts + "\n" + styles, bodyClass, body: body.replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, "") };
+}
+
+/** Cache-bust only owned public picture endpoints; never alter signed/external/data URLs. */
+export function refreshTemplateImages(html: string, revision: number, origin: string): string {
+  if (!Number.isSafeInteger(revision) || revision < 1) return html;
+  return html.replace(/https:\/\/[^\s"'<>\)]+/g, (resource) => {
+    try {
+      const url = new URL(resource.replace(/&amp;/g, "&"));
+      if (url.origin !== new URL(origin).origin || !/^\/(?:img|theme-assets)\/[\w.-]+$/.test(url.pathname) || url.search) return resource;
+      url.searchParams.set("sf_preview", String(revision));
+      return url.toString();
+    } catch { return resource; }
+  });
 }
 
 /** Build an about:blank-only document. The only JavaScript is this bounded photo-slot bridge. */

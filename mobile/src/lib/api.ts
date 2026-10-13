@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import type { DigitalDocument, DigitalFormat, DigitalTemplateSummary } from "./digital-design";
 export type { DigitalBlock, DigitalBlockKind, DigitalDocument, DigitalFormat, DigitalFonts, DigitalPage, DigitalPageKind, DigitalPalette, DigitalTemplateSummary } from "./digital-design";
 
-const API_URL: string = (Constants.expoConfig?.extra?.apiUrl as string) || "http://localhost:8080";
+export const API_URL: string = (Constants.expoConfig?.extra?.apiUrl as string) || "http://localhost:8080";
 const TOKEN_KEY = "snapfront.token";
 const STORE_KEY = "snapfront.store";
 
@@ -322,29 +322,47 @@ async function initializeToken(): Promise<string> {
   return data.token;
 }
 
-async function request<T>(method: string, path: string, body?: unknown, storeId?: string): Promise<T> {
-  let res: Response;
-  try {
+async function request<T>(method: string, path: string, body?: unknown, storeId?: string, timeoutMs?: number): Promise<T> {
+  const controller = timeoutMs ? new AbortController() : null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const work = async (): Promise<T> => {
     const store = storeId ?? await currentStore();
-    res = await fetch(`${API_URL}${path}`, {
+    const auth = await token();
+    const res = await fetch(`${API_URL}${path}`, {
       method,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await token()}`, ...(store ? { "X-Store": store } : {}) },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth}`, ...(store ? { "X-Store": store } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
+      ...(controller ? { signal: controller.signal } : {}),
     });
-  } catch (e) {
-    if (e instanceof ApiError) throw e;
+    if (res.status === 204) return undefined as T;
+    const data = await res.json().catch((error: unknown) => { if (controller?.signal.aborted) throw error; return {}; });
+    if (!res.ok) {
+      const { error, upgrade } = data as { error?: string; upgrade?: PlanId | null };
+      const err = new ApiError(error || "Something went wrong. Try again.", res.status, upgrade ?? null);
+      if (res.status === 402 && upgrade && upgradeListener) upgradeListener(upgrade, err.message);
+      throw err;
+    }
+    return data as T;
+  };
+  try {
+    if (!timeoutMs || !controller) return await work();
+    const timeout = new Promise<T>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new ApiError("Snapfront took too long to respond. Your draft is safe. Retry without regenerating any image.", 0));
+      }, timeoutMs);
+    });
+    return await Promise.race([work(), timeout]);
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new ApiError("Couldn't reach Snapfront. Check your connection and try again.", 0);
+  } finally {
+    if (timer !== null) clearTimeout(timer);
   }
-  if (res.status === 204) return undefined as T;
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const { error, upgrade } = data as { error?: string; upgrade?: PlanId | null };
-    const err = new ApiError(error || "Something went wrong. Try again.", res.status, upgrade ?? null);
-    if (res.status === 402 && upgrade && upgradeListener) upgradeListener(upgrade, err.message);
-    throw err;
-  }
-  return data as T;
 }
+
+/** Short owner-bound image job/control requests; generation itself runs durably on the server. */
+export const imageRequest = <T>(method: string, path: string, body: unknown, storeId: string): Promise<T> => request<T>(method, path, body, storeId, 45_000);
 
 /** This endpoint is public: catalog discovery must not wait for or create a seller token. */
 async function themeCatalog(): Promise<StoreTheme[]> {
@@ -384,13 +402,14 @@ async function setStore(id: string | null) {
 
 export const api = {
   storeRevision: () => selectionRevision,
+  selectedStore: () => storeCache ?? null,
   me: () => request<Me>("GET", "/api/me"),
   updateStore: (patch: StorePatch, storeId?: string) => request<Me>("PATCH", "/api/me", patch, storeId),
   /** Create a 30-minute browser preview without changing the public storefront. */
   previewStorefront: (patch: StorePatch, storeId?: string) => request<StorefrontPreview>("POST", "/api/storefront/preview", patch, storeId),
   /** Render an owner-bound setup frame. The returned HTML remains local to the app's constrained preview frame. */
   templatePreview: (patch: StorePatch, mode: "template" | "final", storeId?: string) =>
-    request<TemplatePreview>("POST", "/api/storefront/template-preview", { ...patch, mode }, storeId),
+    request<TemplatePreview>("POST", "/api/storefront/template-preview", { ...patch, mode }, storeId, 30_000),
   /** Upload a cover photo without changing the live storefront. The returned file is applied only in updateStore. */
   stageStorefrontPhoto: (imageBase64: string, mediaType = "image/jpeg", storeId?: string) =>
     request<StagedStorefrontPhoto>("POST", "/api/storefront/photo", { imageBase64, mediaType }, storeId),
@@ -481,7 +500,7 @@ export const api = {
   products: (storeId?: string) => request<Product[]>("GET", "/api/products", undefined, storeId),
   product: (id: string, storeId?: string) => request<Product>("GET", `/api/products/${id}`, undefined, storeId),
   createProduct: (d: Draft) => request<Product>("POST", "/api/products", d),
-  updateProduct: (id: string, patch: ProductPatch) => request<Product>("PATCH", `/api/products/${id}`, patch),
+  updateProduct: (id: string, patch: ProductPatch, storeId?: string) => request<Product>("PATCH", `/api/products/${id}`, patch, storeId),
   deleteProduct: (id: string) => request<void>("DELETE", `/api/products/${id}`),
   publish: (id: string) => request<Product>("POST", `/api/products/${id}/publish`),
   orders: () => request<Order[]>("GET", "/api/orders"),

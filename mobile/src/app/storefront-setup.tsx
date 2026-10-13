@@ -45,9 +45,10 @@ export default function StorefrontSetupScreen() {
   const [photoSlot, setPhotoSlot] = useState<0 | 1 | 2>(0);
   const [showMotion, setShowMotion] = useState(false);
   const [previewAttempt, setPreviewAttempt] = useState(0);
+  const previewRequest = useRef(0);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const [previewRecord, setPreviewRecord] = useState<{ owner: string; patch: string; mode: "template" | "final"; data: TemplatePreviewData } | null>(null);
+  const [previewRecord, setPreviewRecord] = useState<{ owner: string; patch: string; mode: "template" | "final"; revision: number; data: TemplatePreviewData } | null>(null);
   const [themes, setThemes] = useState<StoreTheme[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [draft, setDraft] = useState<StorefrontDraft | null>(null);
@@ -82,12 +83,14 @@ export default function StorefrontSetupScreen() {
     let alive = true;
     const owner = draftStoreId;
     const selection = api.storeRevision();
+    const request = ++previewRequest.current;
     const timer = setTimeout(() => {
       if (!alive) return;
       setPreviewLoading(true); setPreviewError(null);
       void api.templatePreview(JSON.parse(previewPatch), previewMode, owner).then((data) => {
         if (!alive || selection !== api.storeRevision() || account.get()?.id !== owner) return;
-        setPreviewRecord({ owner, patch: previewPatch, mode: previewMode, data });
+        setPreviewRecord({ owner, patch: previewPatch, mode: previewMode, revision: request, data });
+        if (previewAttempt > 0) setMessage({ text: "Preview refreshed. This refresh used no AI credits. Your live store is unchanged.", tone: "ok" });
       }).catch((error) => {
         if (!alive || selection !== api.storeRevision() || account.get()?.id !== owner) return;
         setPreviewError(errText(error, "Your draft is safe. The live design preview could not load. Check your connection and retry."));
@@ -396,8 +399,8 @@ export default function StorefrontSetupScreen() {
 
   const nextLabel = ["Use this design", "Next: change the words", "Next: add products", "Next: check my store"][draft.step - 1];
   const interactionLocked = busy !== null;
-  const previewElement = <TemplatePreview preview={previewData} loading={previewLoading} error={previewError} theme={selectedTheme}
-    onRetry={() => setPreviewAttempt((value) => value + 1)}
+  const previewElement = <TemplatePreview renderRevision={previewRecord?.revision ?? 0} preview={previewData} loading={previewLoading} error={previewError} theme={selectedTheme}
+    onRetry={() => { if (previewLoading || !ownsDraft()) return; setPreviewLoading(true); setPreviewError(null); setPreviewAttempt((value) => value + 1); }}
     onPhoto={(slot) => { if (interactionLocked) return; setPhotoSlot(slot); if (draft.step !== 2) go(2); }}
     onWords={() => { if (!interactionLocked && draft.step !== 3) go(3); }} />;
   return (

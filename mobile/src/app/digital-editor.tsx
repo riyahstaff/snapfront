@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Body, Button, H1, H2, Notice, Pill, Screen, Segmented } from "@/components/ui";
 import { DigitalDocumentControls } from "@/components/digital-document-controls";
@@ -24,6 +24,7 @@ import {
   type DigitalPage,
 } from "@/lib/digital-design";
 import { appendDigitalUndo, applyDigitalTemplateStyle, digitalSaveError, isCurrentDigitalExport } from "@/lib/digital-editor-session";
+import { consumeDigitalArtwork } from "@/lib/image-assistant";
 import { radius, space, type, useColors } from "@/lib/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -274,15 +275,16 @@ export default function DigitalEditorScreen() {
     ]);
   }
 
-  async function saveDraft() {
+  /** Returns true only when the exact private source snapshot was accepted for this owner/product session. */
+  async function saveDraft(): Promise<boolean> {
     const source = documentRef.current;
     const started = beginSession();
-    if (!source || !started || busy) return;
+    if (!source || !started || busy) return false;
     const validation = validateDigitalDocument(source);
-    if (validation) { setMessage({ text: validation, tone: "error" }); return; }
+    if (validation) { setMessage({ text: validation, tone: "error" }); return false; }
     if (!design?.source_available && !pendingLegacyRebuild) {
       setMessage({ text: "Choose a fresh source sample and explicitly confirm the rebuild before saving. The existing PDF cannot be recovered as editable source.", tone: "error" });
-      return;
+      return false;
     }
     const snapshot = cloneDigitalDocument(source);
     const savingGeneration = draftGenerationRef.current;
@@ -291,7 +293,7 @@ export default function DigitalEditorScreen() {
     setMessage({ text: "Saving a private editable draft. This does not publish or replace the buyer file.", tone: "info" });
     try {
       const result = await api.saveDigitalDesign(started.storeId, started.productId, { document: snapshot, revision: savingRevision, ...(pendingLegacyRebuild ? { rebuild_legacy: true as const } : {}) });
-      if (!ownsSession(started)) return;
+      if (!ownsSession(started)) return false;
       setDesign(result);
       setRevision(result.revision);
       setExported(null);
@@ -304,11 +306,61 @@ export default function DigitalEditorScreen() {
         setDocument(serverSource);
       }
       setMessage({ text: "Private source draft saved. Nothing has been published or attached.", tone: "ok" });
+      return true;
     } catch (error) {
       if (ownsSession(started)) setMessage({ text: digitalSaveError(error instanceof ApiError ? error : null), tone: "error" });
+      return false;
     } finally {
       if (ownsSession(started)) setBusy(null);
     }
+  }
+
+  // The studio cannot mutate a document directly. On return, consume one owner/product-scoped selection
+  // and apply it only when the exact image block still survives in this editor session.
+  useFocusEffect(useCallback(() => {
+    if (loading) return;
+    const started = beginSession();
+    const source = documentRef.current;
+    if (!started || !source) return;
+    const artwork = consumeDigitalArtwork(started.storeId, started.productId);
+    if (!artwork) return;
+    if (!ownsSession(started) || artwork.storeId !== started.storeId || artwork.productId !== started.productId) return;
+    const page = source.pages.find((candidate) => candidate.id === artwork.pageId);
+    const block = page?.blocks.find((candidate) => candidate.id === artwork.blockId);
+    if (!page || !block || block.kind !== "image" || (artwork.previousImageFile !== undefined && (block.image_file ?? null) !== artwork.previousImageFile)) {
+      setMessage({ text: "The artwork candidate was not applied because its original image block was removed or changed while the studio was open.", tone: "info" });
+      return;
+    }
+    commitDocument({
+      ...source,
+      pages: source.pages.map((candidate) => candidate.id === artwork.pageId ? {
+        ...candidate,
+        blocks: candidate.blocks.map((item) => item.id === artwork.blockId ? { ...item, image_file: artwork.image_file, image_fit: item.image_fit ?? "contain" } : item),
+      } : candidate),
+    });
+    setSelection({ type: "block", pageId: artwork.pageId, blockId: artwork.blockId });
+    setMessage({ text: "Reviewed artwork is now referenced by this existing image block. Save the private source again before previewing or exporting.", tone: "ok" });
+  }, [beginSession, commitDocument, ownsSession, loading]));
+
+  async function openDigitalPhotoStudio(pageId: string, block: DigitalBlock) {
+    const beforeSave = beginSession();
+    const source = documentRef.current;
+    if (!beforeSave || !source || busy || block.kind !== "image") return;
+    const exists = source.pages.some((page) => page.id === pageId && page.blocks.some((candidate) => candidate.id === block.id && candidate.kind === "image"));
+    if (!exists) {
+      setMessage({ text: "That image block changed before Digital Photo Studio could open. No image request was made.", tone: "error" });
+      return;
+    }
+    // A studio handoff is never allowed to race an unsaved private source. If this fails, stay here.
+    const saved = await saveDraft();
+    if (!saved || !ownsSession(beforeSave)) return;
+    const afterSave = documentRef.current;
+    const stillExists = afterSave?.pages.some((page) => page.id === pageId && page.blocks.some((candidate) => candidate.id === block.id && candidate.kind === "image"));
+    if (!stillExists) {
+      setMessage({ text: "The saved source no longer contains that image block, so Digital Photo Studio was not opened.", tone: "error" });
+      return;
+    }
+    router.push({ pathname: "/digital-photo-studio", params: { product: beforeSave.productId, page: pageId, block: block.id } });
   }
 
   async function renderPreview() {
@@ -504,7 +556,7 @@ export default function DigitalEditorScreen() {
           <Notice text={preview && !previewCurrent ? "This frame is from an earlier source revision. It remains visible for reference only; update it before export or attach." : null} tone="info" />
           <DigitalPreview preview={preview} pageIndex={previewPage} loading={previewLoading} error={previewError} onPageIndex={setPreviewPage} onSelect={setSelection} onRetry={() => { void renderPreview(); }} />
           <Button label="Update actual preview" variant="secondary" loading={busy === "preview"} disabled={busy !== null} onPress={() => { void renderPreview(); }} />
-          <DigitalDocumentControls document={document} selection={selection} undoCount={undoCount} busy={busy !== null} onChange={commitDocument} onUndo={undo} onAddPage={addPage} onDuplicatePage={duplicatePage} onMovePage={movePage} onDeletePage={confirmDeletePage} onAddBlock={addBlock} onMoveBlock={moveBlock} onDeleteBlock={confirmDeleteBlock} onUploadImage={uploadImage} />
+          <DigitalDocumentControls document={document} selection={selection} undoCount={undoCount} busy={busy !== null} onChange={commitDocument} onUndo={undo} onAddPage={addPage} onDuplicatePage={duplicatePage} onMovePage={movePage} onDeletePage={confirmDeletePage} onAddBlock={addBlock} onMoveBlock={moveBlock} onDeleteBlock={confirmDeleteBlock} onUploadImage={uploadImage} onOpenDigitalPhotoStudio={openDigitalPhotoStudio} />
           <Button label="Save private draft" loading={busy === "save"} disabled={busy !== null} onPress={saveDraft} />
           <Button label="Choose another visual template" variant="ghost" disabled={busy !== null} onPress={() => router.push({ pathname: "/digital-designs", params: { edit_product_id: productId, storeId: routeStoreId } })} />
           <Button label="Reload server source" variant="ghost" disabled={busy !== null} onPress={reloadServerCopy} />

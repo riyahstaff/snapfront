@@ -57,3 +57,10 @@
 - [x] Real page previews and PDF/PNG-cover exports use the same measured, paginated layout and bundled fonts/images; all 50 previews load locally, long text is preserved without clipping, errors/conflicts/late responses stay bound to their initiating store/product.
 - [x] Export and Attach are separate reviewed actions; private export/draft saves never replace buyer files or publish products; attaching validates current draft/export ownership and explicit live-file replacement acknowledgement, retains previous paid-order delivery, and preserves prices/plans/Stripe/Play billing.
 - [x] Validate native/server regressions, types/lint, exact 50 assets/renderers, ownership/safety/fidelity and platform bundles; deliver reviewable source and verified next signed AAB with backend deployment and physical-device gaps explicit; no Play submission, production test mutations or silent merge/deploy.
+
+## Separated image studios and reliable storefront Refresh
+- [x] Refresh fetches a fresh preview, visibly reloads the frame/images even for identical HTML, reports timeout/render errors and completion, and works without paid allowances while retaining safe drafts.
+- [x] Storefront Photo Agent accepts complete seller prompts and real photo/decorative inputs, keeps original/candidate previews, persists owner-bound jobs, and inserts only explicitly chosen results into the correct local photo slot.
+- [x] Digital Photo Studio provides original prompted artwork/refinement plus polished true-cover mockups, preserves editable words/pages/PDF and supports reviewed page-image/listing-image use with current-store guards.
+- [x] Keep provider availability, allowance exhaustion and test-account access distinct; no silent account upgrade, cross-store result, purchase, fabricated inventory, duplicate charge or automatic public apply.
+- [x] Validate isolated server/native/UI regressions and Android/iOS bundles; deliver reviewable source and visual evidence with PR #7 dependency, backend/native activation and tester-identity gaps explicit.

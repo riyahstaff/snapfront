@@ -98,7 +98,7 @@ test("My Store and Marketing photo shortcuts point directly to the relocated com
 test("store setup uses the actual template preview and keeps native photo/text controls separate from arbitrary imagery", () => {
   const wizard = fs.readFileSync(path.join(root, "src/app/storefront-setup.tsx"), "utf8");
   assert.ok(!wizard.includes('coverUrl ? c.onAccent'));
-  assert.ok(wizard.includes('<TemplatePreview preview={previewData}'));
+  assert.ok(wizard.includes('<TemplatePreview renderRevision={previewRecord?.revision ?? 0} preview={previewData}'));
   assert.ok(wizard.includes('<PhotoSwapPanel slot={photoSlot}'));
   assert.ok(wizard.includes('finalPreviewReady || missingPhotos.length || sampleWords.length'));
   assert.ok(wizard.includes('Finish: save my store design'));

@@ -78,13 +78,15 @@ export default function ProductScreen() {
           <H2>Digital design</H2>
           <Body muted>Edit the original source pages when available. Previewing and exporting stay private until you explicitly attach a reviewed revision.</Body>
           <Button label="Design my digital product" variant="secondary" disabled={busy !== null} onPress={() => router.push({ pathname: "/digital-editor", params: { id: p.id, storeId: me.id } })} />
+          <Button label="Open Digital Photo Studio" variant="secondary" disabled={busy !== null} onPress={() => router.push({ pathname: "/digital-photo-studio", params: { product: p.id } })} />
+          <Body muted>Generate private artwork candidates or review an honest product mockup. A mockup can change only this listing image after confirmation; it never changes the buyer delivery file.</Body>
         </View>
       ) : null}
       <Button label="Continue customizing my storefront" variant="secondary" disabled={busy !== null}
         onPress={() => router.navigate("/storefront-setup")} />
       <Body muted>Your saved design opens again. See this item in the layout while you finish your photos and words. Draft items stay private until published.</Body>
-      {p.image_file ? (
-        <Button label="Change the background" variant="secondary" icon={<Ionicons name="color-wand-outline" size={18} color={c.ink} />}
+      {p.kind === "physical" && p.image_file ? (
+        <Button label="Product Photo Cleanup" variant="secondary" icon={<Ionicons name="color-wand-outline" size={18} color={c.ink} />}
           onPress={() => router.push({ pathname: "/studio", params: { target: p.id, image_file: p.image_file!, image_url: p.image_url ?? "" } })} />
       ) : null}
       <View style={{ gap: space.md }}>

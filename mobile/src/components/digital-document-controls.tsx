@@ -30,6 +30,8 @@ type Props = {
   onMoveBlock: (pageId: string, blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (pageId: string, block: DigitalBlock) => void;
   onUploadImage: (pageId: string, block: DigitalBlock) => void;
+  /** Opens the separate studio only for an existing image block; it never creates a block implicitly. */
+  onOpenDigitalPhotoStudio: (pageId: string, block: DigitalBlock) => void;
 };
 
 const coverFields = [
@@ -114,6 +116,7 @@ export function DigitalDocumentControls(props: Props) {
             onMoveBlock={(blockId, direction) => props.onMoveBlock(page.id, blockId, direction)}
             onDeleteBlock={(block) => props.onDeleteBlock(page.id, block)}
             onUploadImage={(block) => props.onUploadImage(page.id, block)}
+            onOpenDigitalPhotoStudio={(block) => props.onOpenDigitalPhotoStudio(page.id, block)}
           />
         ))}
         <Button label="Add source page" variant="secondary" disabled={busy || document.pages.length >= 60} onPress={props.onAddPage} />
@@ -123,7 +126,7 @@ export function DigitalDocumentControls(props: Props) {
 }
 
 function PageEditor({
-  page, pageIndex, pageCount, selection, busy, recentImages, onReplacePage, onReplaceBlock, onDuplicate, onMovePage, onDeletePage, onAddBlock, onMoveBlock, onDeleteBlock, onUploadImage,
+  page, pageIndex, pageCount, selection, busy, recentImages, onReplacePage, onReplaceBlock, onDuplicate, onMovePage, onDeletePage, onAddBlock, onMoveBlock, onDeleteBlock, onUploadImage, onOpenDigitalPhotoStudio,
 }: {
   page: DigitalPage;
   pageIndex: number;
@@ -140,6 +143,7 @@ function PageEditor({
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: DigitalBlock) => void;
   onUploadImage: (block: DigitalBlock) => void;
+  onOpenDigitalPhotoStudio: (block: DigitalBlock) => void;
 }) {
   const c = useColors();
   return (
@@ -169,6 +173,7 @@ function PageEditor({
             onMove={(direction) => onMoveBlock(block.id, direction)}
             onDelete={() => onDeleteBlock(block)}
             onUpload={() => onUploadImage(block)}
+            onOpenDigitalPhotoStudio={() => onOpenDigitalPhotoStudio(block)}
           />
         ))}
       </View>
@@ -180,7 +185,7 @@ function PageEditor({
   );
 }
 
-function BlockEditor({ page, block, blockIndex, selected, busy, recentImages, onReplace, onMove, onDelete, onUpload }: {
+function BlockEditor({ page, block, blockIndex, selected, busy, recentImages, onReplace, onMove, onDelete, onUpload, onOpenDigitalPhotoStudio }: {
   page: DigitalPage;
   block: DigitalBlock;
   blockIndex: number;
@@ -191,6 +196,7 @@ function BlockEditor({ page, block, blockIndex, selected, busy, recentImages, on
   onMove: (direction: -1 | 1) => void;
   onDelete: () => void;
   onUpload: () => void;
+  onOpenDigitalPhotoStudio: () => void;
 }) {
   const c = useColors();
   const isList = block.kind === "list";
@@ -209,7 +215,7 @@ function BlockEditor({ page, block, blockIndex, selected, busy, recentImages, on
         })}
       </View>
       {isList ? <ListEditor block={block} onReplace={onReplace} /> : null}
-      {isImage ? <ImageEditor block={block} recentImages={recentImages} onReplace={onReplace} onUpload={onUpload} /> : null}
+      {isImage ? <ImageEditor block={block} recentImages={recentImages} onReplace={onReplace} onUpload={onUpload} onOpenDigitalPhotoStudio={onOpenDigitalPhotoStudio} /> : null}
       {!isList && !isImage ? <Field label={blockTextLabel(block.kind)} value={block.text ?? ""} onChangeText={(text) => onReplace({ ...block, text })} maxLength={12000} multiline={block.kind !== "heading"} /> : null}
       <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
         <SmallAction label="Move up" disabled={busy || blockIndex === 0} onPress={() => onMove(-1)} />
@@ -229,11 +235,13 @@ function ListEditor({ block, onReplace }: { block: DigitalBlock; onReplace: (blo
   </View>;
 }
 
-function ImageEditor({ block, recentImages, onReplace, onUpload }: { block: DigitalBlock; recentImages: string[]; onReplace: (block: DigitalBlock) => void; onUpload: () => void }) {
+function ImageEditor({ block, recentImages, onReplace, onUpload, onOpenDigitalPhotoStudio }: { block: DigitalBlock; recentImages: string[]; onReplace: (block: DigitalBlock) => void; onUpload: () => void; onOpenDigitalPhotoStudio: () => void }) {
   const c = useColors();
   return <View style={{ gap: space.sm }}>
     <Text style={[type.small, { color: c.muted }]}>{block.image_file ? `Using owned image: ${block.image_file}` : "Choose an image stored in your seller account. URLs are not accepted."}</Text>
     <Button label="Upload an image" variant="secondary" onPress={onUpload} />
+    <Button label="Make artwork in Digital Photo Studio" variant="secondary" onPress={onOpenDigitalPhotoStudio} />
+    <Text style={[type.small, { color: c.muted }]}>The studio saves only a reviewed artwork candidate back to this existing image block. It never adds a new page or block.</Text>
     {recentImages.length ? <View style={{ gap: 4 }}><Text style={[type.small, { color: c.muted }]}>Reuse an image already in this design</Text><View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>{recentImages.map((file) => <SmallAction key={file} label={file} onPress={() => onReplace({ ...block, image_file: file })} />)}</View></View> : null}
     {block.image_file ? <Button label="Remove image reference" variant="ghost" onPress={() => onReplace({ ...block, image_file: null })} style={{ alignSelf: "flex-start", minHeight: 36, paddingHorizontal: 0 }} /> : null}
     <Text style={[type.label, { color: c.ink }]}>Image fit</Text>

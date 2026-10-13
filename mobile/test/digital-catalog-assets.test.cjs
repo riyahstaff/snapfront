@@ -43,7 +43,7 @@ test('every original design has a unique real rendered local thumbnail identical
 });
 test('the studio release keeps silver branding, original product camera and existing storefront flows', () => {
   const app = JSON.parse(fs.readFileSync(path.join(root, 'app.json'), 'utf8')).expo;
-  assert.equal(app.version, '1.1.0'); assert.equal(app.android.package, 'com.sidebanc.snapfront');
+  assert.equal(app.version, '1.1.1'); assert.equal(app.android.package, 'com.sidebanc.snapfront');
   assert.equal(app.owner, 'snapfront'); assert.equal(app.icon, './assets/icon.png');
   assert.ok(fs.readFileSync(path.join(root, 'src/components/home-dashboard.tsx'), 'utf8').includes('<ThemeCarousel'));
   assert.ok(fs.existsSync(path.join(root, 'src/app/snap.tsx')));

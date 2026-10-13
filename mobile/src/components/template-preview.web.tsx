@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Notice, Pill } from "@/components/ui";
+import { API_URL } from "@/lib/api";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
 import { TemplatePreviewFallback } from "./template-preview-fallback";
 import {
   buildTemplatePreviewDocument,
+  refreshTemplateImages,
   previewBridgeMessage,
   setupPreviewNeedsLatestBackend,
   type TemplatePreviewProps,
@@ -14,10 +16,10 @@ import {
 export type { TemplatePreviewProps } from "./template-preview-bridge";
 
 /** Browser implementation: a sandboxed srcDoc iframe whose messages must come from this exact frame. */
-export function TemplatePreview({ preview, loading, error, theme, onRetry, onPhoto, onWords }: TemplatePreviewProps) {
+export function TemplatePreview({ preview, loading, error, theme, onRetry, onPhoto, onWords, renderRevision = 0 }: TemplatePreviewProps) {
   const c = useColors();
   const frame = useRef<HTMLIFrameElement | null>(null);
-  const html = useMemo(() => preview ? buildTemplatePreviewDocument(preview.html, "web") : "", [preview]);
+  const html = useMemo(() => preview ? buildTemplatePreviewDocument(refreshTemplateImages(preview.html, renderRevision, API_URL), "web") : "", [preview, renderRevision]);
   useEffect(() => {
     const receive = (event: MessageEvent) => {
       if (event.source !== frame.current?.contentWindow || event.origin !== "null") return;
@@ -37,12 +39,12 @@ export function TemplatePreview({ preview, loading, error, theme, onRetry, onPho
         {loading ? <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><ActivityIndicator size="small" color={c.accent} /><Text style={[type.small, { color: c.muted }]}>Updating…</Text></View> : <Pill text={preview.mode === "final" ? "Review" : "Template"} />}
       </View>
       <View style={[styles.frame, { borderColor: previewTheme.colors.line, backgroundColor: previewTheme.colors.bg }]}>
-        <iframe ref={frame} title="Storefront setup preview" sandbox="allow-scripts" srcDoc={html} style={styles.iframe as React.CSSProperties} />
+        <iframe key={renderRevision} ref={frame} title="Storefront setup preview" sandbox="allow-scripts" srcDoc={html} style={styles.iframe as React.CSSProperties} />
       </View>
       {sample ? <Notice text="Example photos and products help you see the design. Replace them with yours. You cannot shop in this private preview." /> : <Notice text="This private preview does not change your live store. Customers only see your design after you finish." />}
       {error ? <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}><Text style={[type.small, { color: c.bad, flex: 1 }]}>{error}</Text><Pressable accessibilityRole="button" onPress={onRetry} style={{ minHeight: 44, justifyContent: "center" }}><Text style={{ fontFamily: fonts.bodyBold, color: c.accent }}>Retry</Text></Pressable></View> : null}
       <View style={{ flexDirection: "row", gap: space.sm }}>
-        <Pressable accessibilityRole="button" onPress={onRetry} style={[styles.control, { borderColor: c.line, backgroundColor: c.surface }]}><Ionicons name="refresh-outline" size={17} color={c.ink} /><Text style={{ fontFamily: fonts.bodyBold, color: c.ink }}>Refresh</Text></Pressable>
+        <Pressable accessibilityRole="button" disabled={loading} accessibilityState={{ disabled: loading, busy: loading }} onPress={onRetry} style={[styles.control, { borderColor: c.line, backgroundColor: c.surface }]}><Ionicons name="refresh-outline" size={17} color={c.ink} /><Text style={{ fontFamily: fonts.bodyBold, color: c.ink }}>{loading ? "Refreshing…" : "Refresh"}</Text></Pressable>
         {onWords ? <Pressable accessibilityRole="button" onPress={onWords} style={[styles.control, { borderColor: c.line, backgroundColor: c.surface }]}><Ionicons name="create-outline" size={17} color={c.ink} /><Text style={{ fontFamily: fonts.bodyBold, color: c.ink }}>Edit words</Text></Pressable> : null}
       </View>
     </View>
