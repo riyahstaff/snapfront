@@ -1,43 +1,40 @@
-# Premium storefront builder
+# Snapfront: 105 editable storefront themes
 
-## Scope
+## Authorized scope
 
-Add 25 premium storefront themes alongside the 20 existing themes. Preserve existing theme IDs, store data, products, cart behavior, Stripe checkout, plan gating and domain handling. Work on `feature/premium-storefront-builder`; deliver a pull request, not a production deployment or app-store submission.
+Keep Claude’s original 20 theme definitions and their rendering behavior unchanged. Replace the rejected 25 palette variants with responsive, genuinely product-specific implementations of the 25 newly approved visual concepts. Create 60 additional product-specific themes in the same broad categories, producing exactly 105 selectable themes (20 classic + 25 approved + 60 new). Push the validated changes to the existing GitHub deployment branch/main so the already-connected Railway service deploys them. Do not move infrastructure, change billing/access, submit an app-store release, or modify existing sellers’ chosen themes, products or checkout.
 
-The new catalog uses five coordinated layout families: maison (luxury editorial split), luminous (airy floating-product split), cinema (dark product spotlight), gallery (asymmetric design-object composition), and journal (image-first campaign editorial). Each family has five differentiated palettes, font pairs, category recommendations and copy cues. This is one shared rendering system, not 25 independent websites.
+The user authorized deployment on October 12, 2026. Production currently exposes 20 themes. GitHub main reports a successful Railway status for the existing snapfront-api service; no Railway credential is present, so use the existing GitHub auto-deploy and verify its status and public API rather than changing the hosting configuration.
 
-## Design
+## Design contract
 
-Movement: editorial luxury commerce, combined with restrained product-design gallery aesthetics. Core principles: photography first, deliberate typography, clear buying actions and mobile-first restraint. Warm ivory and oxblood express boutique luxury; pearl and sage express beauty; charcoal and copper express premium hardware. Asymmetric split heroes, sculptural media frames and gallery-like unboxed products differentiate templates from color-only variants.
+Each new theme is an independent category-led composition, not one of five shared templates with a changed palette. The approved 25 use their exact reference images as visual guidance. Additional 60 cover different product specialties: fashion and accessories, beauty, home, technology, outdoor/automotive and lifestyle. Each receives its own responsive hero markup, scoped CSS, typography, product imagery, collection treatment and discovery structure. A shared low-level helper provides safe HTML/media primitives and links, not the theme’s layout.
 
-Typography pairs expressive serif or geometric display families with readable sans-serif body fonts. Wordmarks use theme-specific tracking and hierarchy. Signature elements are oversized product media, small tracked collection labels and elegant rectangular calls to action. Brand essence is a seller-owned boutique with premium art direction; personality: considered, confident, expressive. Copy examples: “Make the ordinary extraordinary.” and “Less noise. More feeling.” These are editable examples, not automatically claimed product facts.
+The movement is editorial commerce adapted to the product: campaign/atelier composition for fashion; precise architectural product staging for hardware; tactile room/ritual narratives for home and beauty; equipment-led landscapes for outdoor; expressive play and cultural worlds for games, toys and books. Core principles: recognizable products, distinct composition, legible selling actions and real inventory. Palette and typography belong to each category’s world. Wordmarks use the seller’s actual store name in theme-specific treatment. Copy should be concise and suggestive, never fabricate seller facts. Example voice: “Objects for the days that linger.” / “Build your own listening room.”
 
-Motion is optional: still, drift (gentle CSS floating/tilt) or pan (slow image zoom). Animate only hero media, never navigation or copy. Include an accessible pause/play button, honor reduced-motion preferences and retain a static image fallback. This does not generate new video, recreate a true 3D object rotation from one photograph, or call RunPod.
+All copy stays real HTML. Generated hero photography is demonstration imagery only, not a baked-in screenshot of a website, and never becomes a seller’s inventory. Public stores use the seller’s uploaded cover and/or actual live product photos; blank stores retain usable empty states. Theme thumbnails and demonstration routes are explicitly labeled illustrative. Product prices, stock, discounts, shipping and checkout derive from existing data. Discovery controls must use actual categories/products; do not show fake fitment/configurator/material/size controls without a corresponding real data source.
 
-## Phone experience
+Motion remains optional still/drift/pan, confined to clipped hero media with pause/play and reduced-motion support. No paid video generation, RunPod calls or simulated new product views. Navigation, text and buying controls remain stationary.
 
-Add an accessible `storefront-setup` screen reachable from Store look and My store. Five stages: 1 choose a premium look with category filters, 2 upload/select a cover photo and choose motion, 3 edit store name and words with optional AI suggestions, 4 add/review products through the existing photo-to-product draft flow, 5 preview and explicitly apply the storefront settings. Save staged local drafts per store so users can resume; apply storefront text/theme/motion together at the final action. Photo upload can be stored immediately, but explain that to existing-store owners if not staged. Prefer staged hero-photo upload that does not change live banner until apply.
+## Architecture
 
-AI already suggests product titles, descriptions, bullets and more from product photos. Add `POST /api/storefront/copy` to suggest storefront words from seller notes and their existing products. Return suggestions only; do not persist them until the seller explicitly applies. Reuse existing Anthropic helper and existing photo allowance; clearly label that allowance in UI. Manual text editing works without AI. Do not invent shipping offers, ratings, material claims, certifications or medical claims.
+- `server/src/category-themes/<key>.js`: one module per new theme; exports theme metadata, responsive hero renderer, discovery renderer and scoped CSS.
+- `server/src/category-theme-kit.js`: safe low-level rendering context, common accessible media/motion primitives and metadata constructor; no category layout decisions.
+- `server/src/premium-themes.js`: registry for 85 new modules, replacing only the rejected premium collection.
+- `server/src/themes.js`: preserve original entries; expose additional preview/category metadata additively and include registry.
+- `server/src/render.js`: delegate new theme heroes/discovery through registry, retaining classic paths and existing commerce pages.
+- `server/assets/themes`: optimized generated demo heroes and actual-renderer thumbnails, served from the existing server with shared-path handling for store/custom domains.
+- Server demo gallery and preview routes: read-only fixtures, no seller creation or payment actions; render the actual templates rather than static UI concept images.
+- `mobile/src/app/looks.tsx`, `storefront-setup.tsx`, `mobile/src/lib/api.ts`: searchable category/theme catalog with real preview thumbnails and five-step phone flow. Avoid loading 85 large images at once; keep existing upload/copy/apply behavior.
+- `server/test`: exact 105 unique selectable themes; classic-definition parity; all storefront/product/cart paths; asset/API/demo isolation; safe content; media motion and empty states.
+- `docs`: updated seller instructions and deployment/mobile-release caveats.
 
-## Shared API contract
+## Implementation orchestration
 
-New optional seller fields: `hero_title` (max 100), `hero_subtitle` (max 220), `hero_eyebrow` (max 48), `hero_cta` (max 32), `hero_motion` (`still`, `drift`, `pan`, default still). Existing `tagline`, `about`, `announcement` stay intact. Accept blank values to restore theme defaults/fallbacks.
+A single workflow handles 85 independent category modules: 25 reference implementations and 60 original directions. One dedicated worker per theme with a deterministic output path. Each produces its own implementation and planned hero photography; failures are reported, not counted as complete. The parent integrates and validates the registry, app browsing, routes and deployment. No Git operations or production access in workers. Large-workflow confirmation is handled by the dedicated approval gate.
 
-`StoreTheme` gains optional `collection: 'premium' | 'classic'`, `category`, `family`, `motion` and `copy` (eyebrow, collection, cta). Keep `shape.hero` within the existing six values; family-specific body classes add the new presentation. Prefix new theme IDs `p-` to avoid collisions. Premium theme names include Maison Aurel, Lune and Forma; complete set lives in `server/src/premium-themes.js`.
+## Toolchain and delivery
 
-`POST /api/storefront/copy` input: `{ notes?: string, tone?: string, theme?: string, store_name?: string }`; output: `{ hero_title, hero_subtitle, hero_eyebrow, hero_cta, tagline, about, announcement }` with the limits above plus tagline 160, about 600, announcement 90. Auth and hourly AI limit apply, reuse photo allowance. Caller can retain/edit individual suggestions; no automatic save.
+This is an existing GitHub-only Expo/Node project, not a Manus-hosted scaffold. Managed post-edit diagnostics return “No active project”; use explicit Node syntax checks, the existing server tests, Expo TypeScript and lint. Node 22.23.3 is available and previously passed the native SQLite tests. Expo SDK 57 documentation was read before phone changes. Railway deploys `server` with Railpack, npm start and `/health`; preserve this configuration.
 
-Staged photo: `POST /api/storefront/photo` accepts the same imageBase64/mediaType shape as existing banner upload and returns `{ image_file, image_url }`, records ownership in a dedicated table. `PATCH /api/me` can set `banner_file` only to one of this seller's staged files or current banner. Do not allow another store's file. No arbitrary URLs or video uploads.
-
-## Project structure
-
-`server/src/premium-themes.js`: new catalog; `themes.js`: exports and CSS variables/classes; `storefront-css.js` and `render.js`: actual responsive family layouts and hero motion; `storefront-copy.js`: AI suggestions. `db.js`, `store.js`, `index.js`: additive migrations, validation, uploads and API routing. `mobile/src/app/storefront-setup.tsx`: guided flow; `mobile/src/lib/api.ts`: matching types and calls; `mobile/src/lib/storefront-draft.ts`: store-scoped resume helpers; existing Store look/My store provide links. `server/test`: catalog, rendering, API, ownership and backward compatibility coverage. `docs/storefront-setup-guide.md`: seller-facing numbered instructions.
-
-## Delivery boundary
-
-Managed diagnostics cannot bind to this GitHub-only repo (no active Manus project); use Node syntax checks, existing server tests, mobile TypeScript and Expo lint instead. No replacement scaffold or infrastructure migration. Actual native photo-picker behavior needs later device testing; no native release build or live AI calls are required here.
-
-## Implemented refinements
-
-The final builder provides full staged server snapshots via POST /api/storefront/preview rather than a theme-only preview. Temporary private URLs last 30 minutes and never save storefront fields; they show only live products. Unused staged photos can be disposed of through an owner-scoped DELETE endpoint and the phone invokes it on replace/clear. Premium motion is restricted to hero images; existing classic reveal behavior is preserved. Category filters are seven broad groups rather than 25 niche chips.
+Deliver only what is verified. A successful push is not a successful deploy: check GitHub Railway status and public `/api/themes` count/IDs. Existing shipped native builds may require an app update for new browsing/wizard UI, although their existing API-fed theme picker can receive all catalog entries immediately. Do not claim a mobile release was submitted.

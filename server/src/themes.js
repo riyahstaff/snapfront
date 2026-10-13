@@ -1,4 +1,5 @@
 import { PREMIUM_THEMES } from "./premium-themes.js";
+import { config } from "./config.js";
 
 // Storefront themes. A theme is a palette and a font pair plus a set of section designs:
 //   header    split (logo left, menu beside it) | center (menu left, logo centred) | stack (logo above menu)
@@ -141,7 +142,10 @@ export const themeOf = (id) => THEMES.find((t) => t.id === id) || THEMES[0];
 export const publicThemes = () => THEMES.map((t) => ({
   id: t.id, name: t.name, for: t.for, vibe: t.vibe, dark: Boolean(t.dark),
   collection: t.collection || "classic", category: t.category || t.for, family: t.family || null,
-  motion: t.motion || "still", copy: { eyebrow: t.copy?.eyebrow || "", collection: t.copy?.collection || "Shop all", cta: t.copy?.cta || "Shop now" },
+  motion: t.motion || "still", copy: { eyebrow: t.copy?.eyebrow || "", collection: t.copy?.collection || "Shop all", cta: t.copy?.cta || "Shop now", ...(t.collection === "premium" ? { title: t.copy?.title || "", subtitle: t.copy?.subtitle || "" } : {}) },
+  ...(t.group ? { group: t.group } : {}),
+  ...(t.preview ? { preview_url: `${config.publicUrl}${t.preview}` } : {}),
+  ...(t.demo ? { demo_url: `${config.publicUrl}${t.demo}` } : {}),
   fonts: { display: t.fonts.display[0], body: t.fonts.body[0] },
   colors: { bg: t.c.bg, surface: t.c.surface, ink: t.c.ink, muted: t.c.muted, accent: t.c.accent, onAccent: t.c.onAccent, badge: t.c.badge, onBadge: t.c.onBadge,
     line: t.c.line, panel: t.c.panel, onPanel: t.c.onPanel, bar: t.c.bar, onBar: t.c.onBar, foot: t.c.foot },
@@ -172,4 +176,4 @@ export function themeCss(t) {
 
 /** Classes on <body> that switch the page's structure. */
 const LIVELY = new Set(["citrus", "candy", "arcade", "volt", "street", "market", "sorbet"]);
-export const bodyClass = (t) => [`th-${t.id}`, `hd-${t.header}`, `cd-${t.card}`, LIVELY.has(t.id) ? "mo-lively" : "mo-calm", t.collection === "premium" ? "premium" : "classic", t.family ? `fam-${t.family}` : "", t.upper ? `up-${t.upper}` : "", t.italicHero ? "ital" : "", t.dark ? "dark" : ""].filter(Boolean).join(" ");
+export const bodyClass = (t) => [`th-${t.id}`, `hd-${t.header}`, `cd-${t.card}`, LIVELY.has(t.id) ? "mo-lively" : "mo-calm", t.collection === "premium" ? "premium" : "", t.family ? `fam-${t.family}` : "", t.upper ? `up-${t.upper}` : "", t.italicHero ? "ital" : "", t.dark ? "dark" : ""].filter(Boolean).join(" ");

@@ -1,5 +1,6 @@
 // snapfront.app home page: what Snapfront does, what it costs, where to get it.
 import { PLANS } from "./plans.js";
+import { THEMES } from "./themes.js";
 
 const PLAY_URL = process.env.PLAY_STORE_URL || "";   // set once the Google Play listing is public
 
@@ -44,7 +45,7 @@ section{padding:56px 0;border-top:1px solid var(--line)}
 footer{padding:36px 0 48px;color:var(--muted);font-size:15px;border-top:1px solid var(--line)}footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
 footer nav{display:flex;gap:18px}
 </style></head><body>
-<header><div class="wrap"><a class="logo" href="/">Snapfront</a></div></header>
+<header><div class="wrap"><a class="logo" href="/">Snapfront</a><a href="/themes">${THEMES.length} storefront themes</a></div></header>
 <main>
 <div class="wrap hero">
   <div class="frame"><i></i><i></i><i></i><i></i><h1>Snap a photo.<br>Open a store.</h1></div>
@@ -59,6 +60,11 @@ footer nav{display:flex;gap:18px}
     <li><b>Share your store</b><span>Your store gets its own address, like yourshop.snapfront.app. Buyers pay with Stripe and your supplier ships.</span></li>
   </ol>
   <div class="suppliers" aria-label="Suppliers you can connect"><span>CJdropshipping</span><span>Printful</span><span>AliExpress</span><span>Your own stock</span></div>
+</div></section>
+<section><div class="wrap">
+  <h2>${THEMES.length} themes. Your own storefront.</h2>
+  <p class="lede">Choose a product-specific look for fashion, beauty, electronics, home, outdoor goods and more. Upload your photos, edit the words and preview before applying. Your products, prices and checkout stay yours.</p>
+  <p><a class="play" href="/themes">Explore all ${THEMES.length} themes</a></p>
 </div></section>
 <section><div class="wrap">
   <h2>Simple pricing. <span class="zero">0% fees</span> on your sales.</h2>

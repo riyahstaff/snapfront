@@ -1,13 +1,11 @@
-# Premium storefront builder outcomes
+# Snapfront 105-theme release outcomes
 
-- [x] Add 25 premium themes in five structural families alongside the 20 existing themes, including Maison Aurel, Lune and Forma. All themes render storefront, product and cart pages, retain existing theme IDs and allow non-saving theme previews.
-- [x] Add optional still/drift/pan hero motion with pause/play, reduced-motion support, static fallback, and animation confined to media. No RunPod integration, paid video generation or fabricated 3D rotation.
-- [x] Add editable storefront AI suggestions using the existing provider and photo allowance, with authentication, rate limiting and no automatic persistence. Product photo-to-text remains available.
-- [x] Add safe seller-owned staged photo uploads, additive optional hero fields and validation; preserve products, prices, checkout, plan gating and live stores until apply.
-- [x] Add a five-step portrait phone wizard: choose look, upload/select photo and motion, enter/edit/suggest words, add/review products, preview/apply. Store-scoped drafts resume, manual entry works without AI and preview is distinguished from apply.
-- [x] Add seller-facing numbered instructions and implementation documentation. Validate server tests, Node syntax, mobile TypeScript and Expo lint; clearly state native device and live AI verification gaps.
-- [x] Deliver a reviewable GitHub pull request and guide without merging, deploying or submitting a new app release. PR: https://github.com/riyahstaff/snapfront/pull/1
-
-## Verification
-
-Server: 68 tests passed on Node 22.23.3. Phone: TypeScript and Expo lint passed. Chromium: all 25 premium themes checked at 1440px and 390px (50 layouts), with no horizontal overflow, hero pause/play and reduced-motion behavior verified. Native iOS/Android photo picker, SecureStore resume and live Anthropic output remain release checks.
+- [x] Leave the original 20 Claude themes unchanged, including definitions, IDs and rendering behavior; do not change any existing seller’s applied theme, products, prices, inventory, plan, Stripe or checkout.
+- [x] Implement all 25 approved product-specific visual concepts as editable, responsive storefront code, replacing the rejected color-variation premium set; do not deploy static concept screenshots as websites.
+- [x] Create exactly 60 additional original product-specialty themes in the same broad categories, with distinct hero/discovery structures and category-appropriate imagery, producing exactly 105 unique selectable themes.
+- [x] Preserve the five-step phone setup: choose look, stage upload/photo and optional still/drift/pan motion, manually enter or optionally suggest editable words, add/review products, preview/apply. Suggestions and preview never apply themselves. Keep original classic-editor functionality.
+- [x] Make the 105-theme collection easy to browse on a phone with category/search controls and actual-template thumbnails; demonstrate every new theme in a read-only gallery using labeled illustrative products, never generated imagery as real seller inventory.
+- [x] Keep motion only on clipped hero media, with pause/play and reduced-motion fallback. Use actual categories/products for all public shopping controls; do not fabricate vehicle fitment, configurations, size/material filtering or seller claims.
+- [x] Validate server syntax/tests, classic parity, all 105 storefront/product/cart renders, preview isolation, asset routing, thumbnail completeness, phone TypeScript/lint and responsive layouts. Fix confirmed defects before push.
+- [ ] Push approved changes through the existing GitHub/Railway auto-deployment, verify GitHub Railway status and the live theme API, and report whether 105 themes are confirmed deployed. Do not submit a native app-store release or change Railway infrastructure/billing/access.
+- [x] Update seller instructions and release notes; clearly distinguish live backend theme availability from phone UI changes that need a new native release.

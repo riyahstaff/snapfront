@@ -86,14 +86,22 @@ export type Seller = {
   abandoned_emails: boolean;
 };
 /** A storefront look the seller can pick (server/src/themes.js). */
+export type ThemeGroup = "fashion" | "beauty" | "home" | "technology" | "outdoor" | "lifestyle";
 export type StoreTheme = {
   id: string; name: string; for: string; vibe: string; dark: boolean;
   /** Classic looks omit these fields; premium looks provide them for the setup wizard. */
   collection?: "premium" | "classic";
   category?: string;
   family?: string;
+  /** A broad catalog filter. Omitted by older catalogs. */
+  group?: ThemeGroup;
+  /** HTTPS-rendered catalog artwork; it is illustrative rather than seller storefront content. */
+  preview_url?: string;
+  /** Optional illustrative theme demo route, distinct from a seller's own store preview. */
+  demo_url?: string;
   motion?: "still" | "drift" | "pan";
-  copy?: { eyebrow?: string; collection?: string; cta?: string };
+  /** Suggested wording is never copied into seller fields until the seller explicitly chooses it. */
+  copy?: { title?: string; subtitle?: string; eyebrow?: string; collection?: string; cta?: string };
   fonts: { display: string; body: string };
   colors: { bg: string; surface: string; ink: string; muted: string; accent: string; onAccent: string; badge: string; onBadge: string; line: string;
     panel: string; onPanel: string; bar: string; onBar: string; foot: string };

@@ -87,7 +87,7 @@ test("cross-store photos and invalid settings fail before any partial update", a
 
 test("hero text is bounded, removable, and escaped in rendered HTML", async () => {
   const seller = await signup("Editable words");
-  const changed = await req("PATCH", "/api/me", seller.token, { hero_title: "x".repeat(180), hero_subtitle: "s".repeat(400), hero_eyebrow: "e".repeat(90), hero_cta: "b".repeat(90) });
+  const changed = await req("PATCH", "/api/me", seller.token, { theme: "p-womenswear", hero_title: "x".repeat(180), hero_subtitle: "s".repeat(400), hero_eyebrow: "e".repeat(90), hero_cta: "b".repeat(90) });
   assert.equal(changed.json.hero_title.length, 100);
   assert.equal(changed.json.hero_subtitle.length, 220);
   assert.equal(changed.json.hero_eyebrow.length, 48);

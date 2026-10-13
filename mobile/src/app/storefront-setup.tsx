@@ -6,8 +6,9 @@ import * as WebBrowser from "expo-web-browser";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, H1, Notice, Pill, Screen, Segmented } from "@/components/ui";
+import { ThemePreview } from "@/components/theme-preview";
 import { account, useMe } from "@/lib/account-store";
-import { api, ApiError, type Me, type Product, type StorefrontCopy, type StorePatch, type StoreTheme } from "@/lib/api";
+import { api, ApiError, type Me, type Product, type StorefrontCopy, type StorePatch, type StoreTheme, type ThemeGroup } from "@/lib/api";
 import {
   clearStorefrontDraft,
   loadStorefrontDraft,
@@ -25,6 +26,8 @@ const STEPS = ["Look", "Cover", "Words", "Products", "Review"];
 const errText = (error: unknown, fallback: string) => error instanceof ApiError ? error.message : fallback;
 const isPremium = (theme: StoreTheme) => theme.collection === "premium" || theme.id.startsWith("p-");
 const isMotion = (value: string): value is HeroMotion => value === "still" || value === "drift" || value === "pan";
+const groupName = (group: ThemeGroup) => group.charAt(0).toUpperCase() + group.slice(1);
+const themeSearchText = (theme: StoreTheme) => [theme.name, theme.category, theme.for, theme.vibe].filter(Boolean).join(" ").toLocaleLowerCase();
 
 /** Keep browser preview and final Apply exactly in sync. */
 function storefrontPatchBody(draft: StorefrontDraft, seller: Me): StorePatch {
@@ -60,11 +63,6 @@ export default function StorefrontSetupScreen() {
   const [loadAttempt, setLoadAttempt] = useState(0);
 
   const premiumThemes = useMemo(() => themes.filter(isPremium), [themes]);
-  const categories = useMemo(() => ["All", ...Array.from(new Set(premiumThemes.map((theme) => theme.category || "Premium")))], [premiumThemes]);
-  const filteredThemes = useMemo(() => {
-    if (!draft || draft.category === "" || draft.category === "All") return premiumThemes;
-    return premiumThemes.filter((theme) => (theme.category || "Premium") === draft.category);
-  }, [draft, premiumThemes]);
   const selectedTheme = premiumThemes.find((theme) => theme.id === draft?.theme) ?? null;
   const newestProductPhoto = products.find((product) => product.status === "live" && product.image_url)?.image_url ?? null;
   const coverUrl = draft?.banner_url ?? me?.banner_url ?? newestProductPhoto;
@@ -99,9 +97,18 @@ export default function StorefrontSetupScreen() {
           tone: "considered",
         });
         if (!alive) return;
+        // A catalog can retire a premium id. Keep every saved seller field and staged photo, but
+        // replace only an unavailable id with a current pick before Preview or Apply can use it.
+        const restored = newStorefrontDraft({ ...initial, ...(saved ?? {}) });
+        const savedThemeIsAvailable = premium.some((theme) => theme.id === restored.theme);
+        const reconciled = newStorefrontDraft({ ...restored, theme: savedThemeIsAvailable ? restored.theme : defaultTheme });
         setThemes(nextThemes);
         setProducts(nextProducts);
-        setDraft(newStorefrontDraft({ ...initial, ...(saved ?? {}) }));
+        setDraft(reconciled);
+        if (saved && !savedThemeIsAvailable && premium.length) {
+          void saveStorefrontDraft(seller.id, reconciled).catch(() => {});
+          setMessage({ text: `Your saved look is no longer in this catalog. We kept your words and staged cover, and selected ${premium.find((theme) => theme.id === defaultTheme)?.name ?? "a current look"} instead.`, tone: "info" });
+        }
       } catch (error) {
         if (alive) setMessage({ text: errText(error, "Couldn’t load storefront setup. Pull down or try again."), tone: "error" });
       } finally {
@@ -194,6 +201,10 @@ export default function StorefrontSetupScreen() {
 
   async function preview() {
     if (!me || !draft || busy) return;
+    if (!selectedTheme) {
+      setMessage({ text: "Choose an available premium look before previewing your storefront.", tone: "error" });
+      return;
+    }
     setBusy("preview"); setMessage(null);
     try {
       const { url } = await api.previewStorefront(storefrontPatchBody(draft, me));
@@ -206,7 +217,11 @@ export default function StorefrontSetupScreen() {
   }
 
   async function apply() {
-    if (!me || !draft || !selectedTheme || busy) return;
+    if (!me || !draft || busy) return;
+    if (!selectedTheme) {
+      setMessage({ text: "Choose an available premium look before applying your storefront.", tone: "error" });
+      return;
+    }
     setBusy("apply"); setMessage(null);
     let updated: Me;
     try {
@@ -280,13 +295,10 @@ export default function StorefrontSetupScreen() {
       <WizardProgress step={draft.step} />
       {draft.step === 1 ? (
         <LookStep
-          themes={filteredThemes}
-          categories={categories}
-          category={draft.category || "All"}
+          themes={premiumThemes}
           selected={draft.theme}
           storeName={draft.store_name || me?.store_name || "Your store"}
           coverUrl={coverUrl}
-          onCategory={(category) => patch({ category })}
           onTheme={(theme) => patch({ theme })}
         />
       ) : null}
@@ -311,6 +323,7 @@ export default function StorefrontSetupScreen() {
       {draft.step === 3 ? (
         <WordsStep
           draft={draft}
+          theme={selectedTheme}
           suggestions={suggestions}
           busy={interactionLocked}
           generating={busy === "copy"}
@@ -361,58 +374,87 @@ function WizardProgress({ step }: { step: number }) {
   );
 }
 
-function LookStep({ themes, categories, category, selected, storeName, coverUrl, onCategory, onTheme }: {
-  themes: StoreTheme[]; categories: string[]; category: string; selected: string; storeName: string; coverUrl: string | null;
-  onCategory: (category: string) => void; onTheme: (theme: string) => void;
+function LookStep({ themes, selected, storeName, coverUrl, onTheme }: {
+  themes: StoreTheme[]; selected: string; storeName: string; coverUrl: string | null; onTheme: (theme: string) => void;
 }) {
   const c = useColors();
+  const [query, setQuery] = useState("");
+  const [group, setGroup] = useState<"all" | ThemeGroup>("all");
+  const [page, setPage] = useState(0);
+  const groups = useMemo(() => {
+    const found = new Set<ThemeGroup>();
+    themes.forEach((theme) => { if (theme.group) found.add(theme.group); });
+    return Array.from(found);
+  }, [themes]);
+  const activeGroup = group !== "all" && groups.includes(group) ? group : "all";
+  const matchingThemes = useMemo(() => {
+    const search = query.trim().toLocaleLowerCase();
+    return themes.filter((theme) => (activeGroup === "all" || theme.group === activeGroup) && (!search || themeSearchText(theme).includes(search)));
+  }, [themes, activeGroup, query]);
+  const pageCount = Math.max(1, Math.ceil(matchingThemes.length / 12));
+  const safePage = Math.min(page, pageCount - 1);
+  const visibleThemes = matchingThemes.slice(safePage * 12, safePage * 12 + 12);
+
   return (
     <View style={{ gap: space.lg }}>
       <View style={{ gap: 6 }}>
         <H1>Choose a premium look</H1>
-        <Body muted>Filter by what you sell, then choose an art direction. Nothing is live until the final Apply step.</Body>
+        <Body muted>Search by name, category, what you sell or vibe. Theme thumbnails are illustrative demo imagery; nothing is live until the final Apply step.</Body>
       </View>
-      <View style={{ gap: space.sm }}>
-        <Text style={[type.label, { color: c.ink }]}>Category</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
-          {categories.map((item) => {
-            const active = item === category;
-            return (
-              <Pressable key={item} accessibilityRole="radio" accessibilityState={{ selected: active }} onPress={() => onCategory(item)}
-                style={{ borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: active ? c.accent : c.surface, borderWidth: 1, borderColor: active ? c.accent : c.line }}>
-                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: active ? c.onAccent : c.ink }}>{item === "All" ? "All premium" : item}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
-      <View accessibilityRole="radiogroup" style={{ gap: space.md }}>
-        {themes.map((theme) => <PremiumThemeCard key={theme.id} theme={theme} selected={selected === theme.id} storeName={storeName} coverUrl={coverUrl} onPress={() => onTheme(theme.id)} />)}
-        {!themes.length ? <Notice text="No premium looks match this category. Try All premium." /> : null}
-      </View>
+      <Field label="Search premium looks" value={query} onChangeText={(value) => { setQuery(value); setPage(0); }} placeholder="Try skincare, cabin, bold…" returnKeyType="search" />
+      {groups.length ? (
+        <View style={{ gap: space.sm }}>
+          <Text style={[type.label, { color: c.ink }]}>Collection group</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
+            {(["all", ...groups] as ("all" | ThemeGroup)[]).map((item) => {
+              const active = item === activeGroup;
+              return (
+                <Pressable key={item} accessibilityRole="radio" accessibilityState={{ selected: active }} onPress={() => { setGroup(item); setPage(0); }}
+                  style={{ borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: active ? c.accent : c.surface, borderWidth: 1, borderColor: active ? c.accent : c.line }}>
+                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: active ? c.onAccent : c.ink }}>{item === "all" ? "All premium" : groupName(item)}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : null}
+      <Text accessibilityLiveRegion="polite" style={[type.small, { color: c.muted }]}>{matchingThemes.length} matching premium look{matchingThemes.length === 1 ? "" : "s"} from {themes.length} currently available</Text>
+      {matchingThemes.length ? (
+        <>
+          <View accessibilityRole="radiogroup" style={{ gap: space.md }}>
+            {visibleThemes.map((theme) => <PremiumThemeCard key={theme.id} theme={theme} selected={selected === theme.id} storeName={storeName} coverUrl={coverUrl} onPress={() => onTheme(theme.id)} />)}
+          </View>
+          {pageCount > 1 ? (
+            <View style={{ gap: space.sm }}>
+              <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Page {safePage + 1} of {pageCount}</Text>
+              <View style={{ flexDirection: "row", gap: space.sm }}>
+                <Button label="Previous" variant="secondary" style={{ flex: 1 }} disabled={safePage === 0} onPress={() => setPage(safePage - 1)} />
+                <Button label="Next" variant="secondary" style={{ flex: 1 }} disabled={safePage >= pageCount - 1} onPress={() => setPage(safePage + 1)} />
+              </View>
+            </View>
+          ) : null}
+        </>
+      ) : (
+        <View style={{ gap: space.sm }}>
+          <Notice text="No premium looks match that search or group. Try a broader word or clear the filters." />
+          <Button label="Clear filters" variant="secondary" onPress={() => { setQuery(""); setGroup("all"); setPage(0); }} />
+        </View>
+      )}
     </View>
   );
 }
 
 function PremiumThemeCard({ theme, selected, storeName, coverUrl, onPress }: { theme: StoreTheme; selected: boolean; storeName: string; coverUrl: string | null; onPress: () => void }) {
   const c = useColors();
-  const colors = theme.colors;
   return (
     <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={`${theme.name}. ${theme.vibe}. ${selected ? "Selected" : ""}`}
-      style={({ pressed }) => ({ borderRadius: radius.lg, overflow: "hidden", backgroundColor: c.surface, borderColor: selected ? c.accent : c.line, borderWidth: selected ? 2 : 1, opacity: pressed ? 0.9 : 1 })}>
-      <View style={{ height: 156, backgroundColor: colors.bg, overflow: "hidden" }} importantForAccessibility="no-hide-descendants">
-        {coverUrl ? <Image source={{ uri: coverUrl }} contentFit="cover" style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "52%" }} /> : <View style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "52%", backgroundColor: colors.panel }} />}
-        <View style={{ width: "58%", height: "100%", padding: 16, justifyContent: "flex-end", gap: 6, backgroundColor: colors.bg }}>
-          <Text numberOfLines={1} style={{ fontFamily: fonts.display, fontSize: 23, lineHeight: 25, color: colors.ink }}>{storeName}</Text>
-          <View style={{ width: 70, height: 5, borderRadius: 4, backgroundColor: colors.muted, opacity: 0.75 }} />
-          <View style={{ width: 62, height: 20, borderRadius: Math.min(theme.shape.button, 8), backgroundColor: colors.accent }} />
-        </View>
-        <View style={{ position: "absolute", top: 12, right: 12, backgroundColor: selected ? c.accent : colors.surface, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 4 }}>
-          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: selected ? c.onAccent : colors.ink }}>{selected ? "Selected" : theme.category || "Premium"}</Text>
-        </View>
-      </View>
+      style={({ pressed }) => ({ borderRadius: radius.lg, overflow: "hidden", backgroundColor: c.surface, borderColor: selected ? c.accent : c.line, borderWidth: selected ? 2 : 1, padding: selected ? 0 : 0, opacity: pressed ? 0.9 : 1 })}>
+      <ThemePreview theme={theme} storeName={storeName} photo={coverUrl} height={156} style={{ borderWidth: 0, borderRadius: 0 }} />
       <View style={{ padding: space.md, gap: 3 }}>
-        <Text style={[type.heading, { color: c.ink }]}>{theme.name}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.sm }}>
+          <Text style={[type.heading, { color: c.ink, flex: 1 }]}>{theme.name}</Text>
+          <Text style={[type.label, { color: selected ? c.accent : c.muted }]}>{selected ? "Selected" : theme.group ? groupName(theme.group) : "Premium"}</Text>
+        </View>
         <Text style={[type.small, { color: c.muted }]}>{theme.vibe} · {theme.family || theme.for}</Text>
       </View>
     </Pressable>
@@ -451,8 +493,8 @@ function CoverStep({ coverUrl, staged, motion, busy, uploading, hasProductFallba
   );
 }
 
-function WordsStep({ draft, suggestions, busy, generating, allowance, onPatch, onGenerate, onUse }: {
-  draft: StorefrontDraft; suggestions: StorefrontCopy | null; busy: boolean; generating: boolean; allowance: string;
+function WordsStep({ draft, theme, suggestions, busy, generating, allowance, onPatch, onGenerate, onUse }: {
+  draft: StorefrontDraft; theme: StoreTheme | null; suggestions: StorefrontCopy | null; busy: boolean; generating: boolean; allowance: string;
   onPatch: (values: Partial<StorefrontDraft>) => void; onGenerate: () => void; onUse: <K extends keyof StorefrontCopy>(field: K) => void;
 }) {
   const c = useColors();
@@ -460,9 +502,10 @@ function WordsStep({ draft, suggestions, busy, generating, allowance, onPatch, o
     <View style={{ gap: space.lg }}>
       <View style={{ gap: 6 }}>
         <H1>Write the words</H1>
-        <Body muted>Everything below is editable. Blank hero fields use the selected look’s own fallback copy.</Body>
+        <Body muted>Everything below is editable. Theme demos may use sample wording, not facts about your store; nothing is copied into these fields unless you choose it.</Body>
       </View>
       <Field label="Store name" value={draft.store_name} onChangeText={(store_name) => onPatch({ store_name })} maxLength={80} />
+      <ThemeCopySuggestions theme={theme} disabled={busy} onUse={(field, value) => onPatch({ [field]: value })} />
       <Field label="Notes for AI (optional)" hint="Describe your products, mood or audience. Don’t add claims you can’t support." value={draft.notes} onChangeText={(notes) => onPatch({ notes })} multiline maxLength={700} placeholder="Small-batch candle studio with quiet, warm evenings…" />
       <View style={{ gap: 6 }}>
         <Text style={[type.label, { color: c.ink }]}>Writing tone</Text>
@@ -483,6 +526,28 @@ function WordsStep({ draft, suggestions, busy, generating, allowance, onPatch, o
         <Field label="About your store" value={draft.about} onChangeText={(about) => onPatch({ about })} multiline maxLength={600} />
         <Field label="Announcement" hint="Optional short strip above your menu" value={draft.announcement} onChangeText={(announcement) => onPatch({ announcement })} maxLength={90} />
       </View>
+    </View>
+  );
+}
+
+function ThemeCopySuggestions({ theme, disabled, onUse }: { theme: StoreTheme | null; disabled: boolean; onUse: (field: "hero_title" | "hero_subtitle", value: string) => void }) {
+  const c = useColors();
+  const choices = [
+    { field: "hero_title" as const, label: "Suggested headline", value: theme?.copy?.title },
+    { field: "hero_subtitle" as const, label: "Suggested subheadline", value: theme?.copy?.subtitle },
+  ].filter((choice): choice is { field: "hero_title" | "hero_subtitle"; label: string; value: string } => Boolean(choice.value));
+  if (!choices.length) return null;
+  return (
+    <View style={{ gap: space.sm, backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.line, padding: space.md }}>
+      <Text style={[type.heading, { color: c.ink }]}>Theme wording ideas — optional</Text>
+      <Text style={[type.small, { color: c.muted }]}>These are illustrative suggestions from {theme?.name}, not claims about your store. Use one only if you want to edit it as your own.</Text>
+      {choices.map((choice) => (
+        <View key={choice.field} style={{ gap: 5 }}>
+          <Text style={[type.label, { color: c.muted }]}>{choice.label}</Text>
+          <Text style={[type.small, { color: c.ink }]}>{choice.value}</Text>
+          <Button label={`Use suggested ${choice.field === "hero_title" ? "headline" : "subheadline"}`} variant="secondary" disabled={disabled} onPress={() => onUse(choice.field, choice.value)} />
+        </View>
+      ))}
     </View>
   );
 }

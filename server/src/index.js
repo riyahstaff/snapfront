@@ -28,13 +28,14 @@ import * as growth from "./growth.js";
 import * as playbilling from "./playbilling.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, esc } from "./render.js";
+import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
 
 export const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 /* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
-const SHARED_PATHS = /^\/(api|img|d|thanks|stripe|suppliers|health|privacy|terms|builds)(\/|$)/;
+const SHARED_PATHS = /^\/(api|img|d|thanks|stripe|suppliers|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview)(\/|$)/;
 const sameSecret = (a, b) => { const x = Buffer.from(String(a || "")), y = Buffer.from(String(b || "")); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 app.use((req, res, next) => {
   if (!config.storeDomain) return next();
@@ -604,6 +605,28 @@ app.get("/stripe/return", stripeDone("Stripe setup saved"));
 app.get("/stripe/refresh", stripeDone("That link expired"));
 
 /* ---------- public storefront ---------- */
+const THEME_ASSETS = path.resolve(new URL("../assets/themes/", import.meta.url).pathname);
+app.get("/theme-assets/:file", (req, res) => {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*-(hero|preview)\.webp$/.test(req.params.file)) return res.status(404).end();
+  res.set("Cache-Control", "public, max-age=3600");
+  res.sendFile(path.join(THEME_ASSETS, req.params.file), (err) => err && !res.headersSent && res.status(404).end());
+});
+app.get("/themes", (_req, res) => res.set("Cache-Control", "no-cache").send(themeGalleryPage()));
+app.get("/theme-demo/:id", (req, res) => {
+  const html = themeDemoPage(req.params.id, { category: typeof req.query.c === "string" ? req.query.c.slice(0, 60) : null, motion: req.query.motion });
+  if (!html) return res.status(404).send("That theme isn't available.");
+  res.set("X-Robots-Tag", "noindex, nofollow").set("Cache-Control", "no-cache").send(html);
+});
+app.get("/theme-demo/:id/cart", (req, res) => {
+  const html = themeDemoCart(req.params.id);
+  if (!html) return res.status(404).end();
+  res.set("X-Robots-Tag", "noindex, nofollow").send(html);
+});
+app.get("/theme-demo/:id/:product", (req, res) => {
+  const html = themeDemoProduct(req.params.id, req.params.product);
+  if (!html) return res.status(404).end();
+  res.set("X-Robots-Tag", "noindex, nofollow").send(html);
+});
 app.get("/img/:file", (req, res) => {
   if (!/^[\w-]+\.(jpg|png|webp|gif)$/.test(req.params.file)) return res.status(404).end();
   res.set("Cache-Control", "public, max-age=31536000, immutable");
