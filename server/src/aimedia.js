@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
+import { ownsSellerImage as sellerOwnsImage } from "./media-ownership.js";
 import { db, newId } from "./db.js";
 import { httpError } from "./claude.js";
 import * as plans from "./plans.js";
@@ -77,8 +78,9 @@ export async function check() {
   return r.status === 401 || r.status === 403 ? r.status : 200;
 }
 
-const publicImage = (file) => {
+const publicImage = (seller, file) => {
   if (!/^[\w-]+\.(jpg|jpeg|png|webp)$/.test(String(file || "")) || !fs.existsSync(path.join(dirs.images, file))) throw httpError(400, "Choose a product photo first.");
+  if (!sellerOwnsImage(seller.id, file)) throw httpError(403, "Choose a photo that belongs to this store.");
   return `${config.publicUrl}/img/${file}`;
 };
 const kindOf = (k) => (k === "video" ? "video" : "scene");
@@ -117,7 +119,7 @@ export async function start(account, seller, { kind, image_file, preset, prompt 
   if (preset && !p) throw httpError(400, "That option isn't available.");
   const custom = String(prompt || "").replace(/\s+/g, " ").trim().slice(0, 300);
   if (!p && custom.length < 3) throw httpError(400, kind === "video" ? "Pick a motion or describe one." : "Pick a scene or describe one.");
-  const image = publicImage(image_file);
+  const image = publicImage(seller, image_file);
   plans.assertAllowance(account, kind);
   const input = kind === "video"
     ? { image, prompt: `${p ? p.prompt : custom}. The product itself stays exactly the same: same shape, colors, logo and label. No text.`, negative_prompt: "text, watermark, distorted product, extra limbs, blurry", size: "720*1280", duration: 5, seed: -1,
@@ -167,6 +169,7 @@ export async function poll(id = null) {
           const name = `${crypto.randomUUID()}.jpg`;
           fs.writeFileSync(path.join(dirs.images, name), buf);
           db.prepare("INSERT OR IGNORE INTO ai_images (file) VALUES (?)").run(name);
+          db.prepare("INSERT OR IGNORE INTO seller_media (image_file,seller_id) VALUES (?,?)").run(name, job.seller_id);
           result = { image_file: name, url: `${config.publicUrl}/img/${name}` };
         }
         db.prepare("UPDATE media_jobs SET status='done', result=?, updated_at=datetime('now') WHERE id=?").run(JSON.stringify({ ...result, cost: r.output?.cost ?? null }), job.id);
@@ -196,7 +199,10 @@ export function jobFor(seller, id) {
 
 /** One-off edit that waits for the result: the photo studio's "describe your own background". */
 export async function editNow(imageFile, prompt) {
-  const image = publicImage(imageFile);
+  // This internal helper is only called by studio.restyle after the authenticated route has
+  // validated seller ownership of the source. It intentionally cannot be reached as an API.
+  if (!/^[\w-]+\.(jpg|jpeg|png|webp)$/.test(String(imageFile || "")) || !fs.existsSync(path.join(dirs.images, imageFile))) throw httpError(400, "Choose a product photo first.");
+  const image = `${config.publicUrl}/img/${imageFile}`;
   const r = await rp(`${EP.scene}/runsync`, { input: { images: [image], prompt: `Place this exact product ${prompt}. Professional product photography. ${KEEP}`, size: "1280*1280", output_format: "jpeg", seed: -1 } });
   let out = r;
   for (let i = 0; i < 30 && out.status !== "COMPLETED" && !["FAILED", "CANCELLED", "TIMED_OUT"].includes(out.status); i++) {

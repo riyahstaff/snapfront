@@ -1,46 +1,51 @@
-import React from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import React, { useState } from "react";
+import { ActivityIndicator, Pressable, Text, View, useWindowDimensions } from "react-native";
 import { router, type Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Button, Notice } from "./ui";
 import { ChromeHero } from "./chrome-hero";
-import { ThemePreview } from "./theme-preview";
+import { ThemeCarousel } from "./theme-carousel";
 import { featuredThemes } from "@/lib/home-discovery";
+import { carouselInViewport, homePrimaryAction } from "@/lib/home-carousel";
 import type { Me, StoreTheme } from "@/lib/api";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
 
-type Props = { me: Me | null; themes: StoreTheme[] | null; draftStep: number | null; error: string | null; loading: boolean; onRetry: () => void };
-export function HomeDashboard({ me, themes, draftStep, error, loading, onRetry }: Props) {
+type Props = { me: Me | null; themes: StoreTheme[] | null; draftStep: number | null; hasProducts?: boolean | null; viewport?: { y: number; height: number }; error: string | null; loading: boolean; onRetry: () => void };
+export function HomeDashboard({ me, themes, draftStep, hasProducts = null, viewport, error, loading, onRetry }: Props) {
   const c = useColors();
   const { width, fontScale } = useWindowDimensions();
   const cards = themes ? featuredThemes(themes) : [];
   const compact = width >= 360 && fontScale <= 1.3;
+  const [rail, setRail] = useState({ top: 0, height: 0 });
+  const [sectionTop, setSectionTop] = useState(0);
+  const hasDesign = Boolean(me && (me.theme !== "classic" || me.banner_url || me.about || me.hero_title));
+  const primary = homePrimaryAction(draftStep, hasProducts, hasDesign);
+  const determining = loading && draftStep === null && hasProducts === null && !hasDesign;
+  const undetermined = !loading && draftStep === null && hasProducts === null && !hasDesign;
+  const visible = viewport ? carouselInViewport(sectionTop + rail.top, rail.height, viewport.y, viewport.height) : true;
   return (
     <View style={{ gap: space.xl }}>
       <View style={{ gap: 10 }}>
         <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 10, letterSpacing: 2.8, color: c.brand }}>FROM IDEA TO ICONIC</Text>
         <Text accessibilityRole="header" style={[type.hero, { color: c.ink, fontSize: width > 500 ? 48 : 38, lineHeight: width > 500 ? 53 : 42 }]}>Your vision.{"\n"}Beautifully built.</Text>
-        <Text style={[type.body, { color: c.muted, maxWidth: 450 }]}>Turn your photos into product pages. Give your brand a storefront worth discovering.</Text>
+        <Text style={[type.body, { color: c.muted, maxWidth: 450 }]}>Start with a product photo. Turn it into a page, then give your brand a storefront worth discovering.</Text>
       </View>
-      <View style={{ gap: space.md }}>
-        <ChromeHero />
-        <Button label={draftStep ? "Continue my storefront" : "Build my storefront"} icon={<Ionicons name="arrow-forward" color={c.onAccent} size={20} />} onPress={() => router.push("/storefront-setup")} />
-        {draftStep ? <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Saved on this phone · Step {draftStep} of 5</Text> : null}
+      <View style={{ gap: space.sm }}>
+        <Button label={determining ? "Opening your workspace…" : undetermined ? "Open my store" : primary.label} loading={determining} icon={<Ionicons name={primary.returning || undetermined ? "arrow-forward" : "camera-outline"} color={c.onAccent} size={20} />} onPress={() => router.push(undetermined ? "/store" : primary.route)} />
+        {draftStep ? <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Saved on this phone · Step {draftStep} of 5</Text> : primary.returning ? <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Your products and applied look stay yours. Review your next changes.</Text> : <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Take or choose a photo → review your product page → style your store.</Text>}
+        <Button label={primary.returning ? "Snap another product" : undetermined ? "Snap a product" : "Choose my storefront look"} variant="ghost" onPress={() => router.push(primary.returning || undetermined ? "/snap" : "/storefront-setup")} />
       </View>
-      <View style={{ gap: space.md }}>
+      <ChromeHero />
+      <View onLayout={(event) => setSectionTop(event.nativeEvent.layout.y)} style={{ gap: space.md }}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           <Text accessibilityRole="header" style={[type.title, { color: c.ink }]}>Designed to stand out.</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Browse all storefront themes" onPress={() => router.push("/looks")} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 5 }}>
             <Text style={[type.small, { color: c.ink }]}>Explore{themes ? ` ${themes.length}` : ""} themes</Text><Ionicons name="arrow-forward" size={17} color={c.ink} />
           </Pressable>
         </View>
-        {cards.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.md }} accessibilityLabel="Featured storefront themes">
-          {cards.map((theme) => <Pressable key={theme.id} accessibilityRole="button" accessibilityLabel={`Explore ${theme.name} in the theme catalog. Does not select or apply it.`} onPress={() => router.push("/looks")}
-            style={({ pressed }) => ({ width: compact ? 224 : Math.max(200, width - 58), backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.md, overflow: "hidden", opacity: pressed ? 0.85 : 1 })}>
-            <ThemePreview theme={theme} storeName="Theme preview" height={144} style={{ borderWidth: 0, borderRadius: 0 }} />
-            <View style={{ padding: 14, gap: 4 }}><Text style={[type.heading, { color: c.ink }]}>{theme.name}</Text><Text style={[type.small, { color: c.muted }]}>{theme.category || theme.for}</Text></View>
-          </Pressable>)}
-        </ScrollView> : loading ? <ActivityIndicator color={c.accent} accessibilityLabel="Loading theme discovery" /> : <Text style={[type.body, { color: c.muted }]}>Open the catalog to discover your next look.</Text>}
+        {cards.length ? <ThemeCarousel key={cards.map((theme) => theme.id).join(":")} themes={cards} visible={visible}
+          onLayout={(event) => { const { y, height } = event.nativeEvent.layout; setRail((value) => value.top === y && value.height === height ? value : { top: y, height }); }} />
+          : loading ? <ActivityIndicator color={c.accent} accessibilityLabel="Loading theme discovery" /> : <Text style={[type.body, { color: c.muted }]}>Open the catalog to discover your next look.</Text>}
       </View>
       {error ? <View style={{ gap: space.sm }}><Notice text={error} /><Button label="Refresh home" variant="secondary" onPress={onRetry} loading={loading} /></View> : null}
       <View style={{ flexDirection: compact ? "row" : "column", flexWrap: "wrap", gap: space.md }}>

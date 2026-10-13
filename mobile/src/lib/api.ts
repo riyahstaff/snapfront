@@ -120,7 +120,30 @@ export type PostCopy = { headline: string; subline: string; bullets: string[]; c
 export type PostKind = "image" | "carousel" | "reel";
 export type PostFormat = "post" | "square" | "story";
 export type MarketingOptions = { templates: { id: string; name: string; about: string }[]; formats: PostFormat[]; ai: AiPresets };
-export type RenderedPost = { kind: PostKind; files: { file: string; url: string }[] };
+/** `render_id`/`format` are additive: a pre-Meta backend can still return the original shape. */
+export type RenderedPost = { kind: PostKind; files: { file: string; url: string }[]; render_id?: string; format?: PostFormat };
+export type SocialAccount = {
+  id: string;
+  platform: "instagram" | "facebook";
+  name: string;
+  status: "connected" | "reconnect_required";
+};
+export type SocialAccounts = { enabled: boolean; setup_required: string | null; accounts: SocialAccount[] };
+export type SocialPost = {
+  id: string;
+  platform: "instagram" | "facebook";
+  account_name: string;
+  status: "queued" | "processing" | "published" | "failed" | "uncertain" | "canceled";
+  caption: string;
+  kind: PostKind;
+  publish_at: string;
+  created_at: string;
+  error: string | null;
+  permalink: string | null;
+  retryable: boolean;
+};
+export type SocialPosts = { posts: SocialPost[] };
+export type SocialPublishInput = { render_id: string; caption: string; account_ids: string[]; publish_at?: string | null; idempotency_key: string };
 /** AI video clips and lifestyle photos (Runpod) */
 export type AiPresets = { enabled: boolean; motions: { id: string; name: string }[]; scenes: { id: string; name: string }[] };
 export type AiJob = { id: string; kind: "video" | "scene"; status: "queued" | "running" | "done" | "failed"; error: string | null; created_at: string; url?: string; file?: string; image_file?: string };
@@ -320,10 +343,19 @@ export const api = {
   studioPresets: () => request<StudioPresets>("GET", "/api/studio"),
   studio: (input: { image_file?: string; imageBase64?: string; mediaType?: string; style: StudioStyle }) => request<StudioResult>("POST", "/api/studio", input),
   sources: () => request<SourceDirectory>("GET", "/api/sources"),
-  marketing: () => request<MarketingOptions>("GET", "/api/marketing"),
-  postCopy: (input: { product_id: string; platform: "instagram" | "tiktok"; offer?: string; tone?: string }) => request<PostCopy>("POST", "/api/marketing/copy", input),
-  renderPost: (input: { product_id: string; kind: PostKind; template: string; format: PostFormat; copy: Partial<PostCopy>; offer?: string; image_url?: string }) =>
-    request<RenderedPost>("POST", "/api/marketing/render", input),
+  marketing: (storeId?: string) => request<MarketingOptions>("GET", "/api/marketing", undefined, storeId),
+  /** The explicit store binds copy generation to the initiating seller even when the selector changes in flight. */
+  postCopy: (input: { product_id: string; platform: "instagram" | "facebook" | "tiktok"; offer?: string; tone?: string }, storeId?: string) => request<PostCopy>("POST", "/api/marketing/copy", input, storeId),
+  renderPost: (input: { product_id: string; kind: PostKind; template: string; format: PostFormat; copy: Partial<PostCopy>; offer?: string; image_url?: string }, storeId?: string) =>
+    request<RenderedPost>("POST", "/api/marketing/render", input, storeId),
+  /** Public connection metadata only; the server keeps OAuth tokens and state. */
+  socialAccounts: (storeId?: string) => request<SocialAccounts>("GET", "/api/social/accounts", undefined, storeId),
+  socialAuthorize: (storeId?: string) => request<{ url: string; redirect_url: "snapfront://marketing" }>("POST", "/api/social/authorize", undefined, storeId),
+  disconnectSocialAccount: (id: string, storeId?: string) => request<SocialAccounts>("DELETE", `/api/social/accounts/${encodeURIComponent(id)}`, undefined, storeId),
+  socialPosts: (storeId?: string) => request<SocialPosts>("GET", "/api/social/posts", undefined, storeId),
+  createSocialPosts: (input: SocialPublishInput, storeId?: string) => request<SocialPosts>("POST", "/api/social/posts", input, storeId),
+  cancelSocialPost: (id: string, storeId?: string) => request<SocialPosts>("POST", `/api/social/posts/${encodeURIComponent(id)}/cancel`, undefined, storeId),
+  retrySocialPost: (id: string, storeId?: string) => request<SocialPosts>("POST", `/api/social/posts/${encodeURIComponent(id)}/retry`, undefined, storeId),
   aiMedia: () => request<AiPresets & { jobs: AiJob[] }>("GET", "/api/ai-media"),
   startAiMedia: (input: { kind: "video" | "scene"; image_file: string; preset?: string; prompt?: string }) => request<AiJob>("POST", "/api/ai-media", input),
   aiJob: (id: string) => request<AiJob>("GET", `/api/ai-media/${id}`),
@@ -369,8 +401,8 @@ export const api = {
   generate: (input: { type: string; niche: string; color: string; price?: number }) => request<Product>("POST", "/api/ai/generate", input),
   productTypes: () => request<ProductType[]>("GET", "/api/product-types"),
   trends: () => request<Trend[]>("GET", "/api/trends"),
-  products: () => request<Product[]>("GET", "/api/products"),
-  product: (id: string) => request<Product>("GET", `/api/products/${id}`),
+  products: (storeId?: string) => request<Product[]>("GET", "/api/products", undefined, storeId),
+  product: (id: string, storeId?: string) => request<Product>("GET", `/api/products/${id}`, undefined, storeId),
   createProduct: (d: Draft) => request<Product>("POST", "/api/products", d),
   updateProduct: (id: string, patch: ProductPatch) => request<Product>("PATCH", `/api/products/${id}`, patch),
   deleteProduct: (id: string) => request<void>("DELETE", `/api/products/${id}`),

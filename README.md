@@ -22,7 +22,11 @@ server/   Node API + public storefronts                               — Expres
 
 ### Liquid Chrome native identity
 
-Home now combines Liquid Chrome's graphite/platinum interface with the Noir Atelier aperture/doorway logo in a brushed-silver chrome finish matching the Home gateway. It offers Build/Continue storefront setup, real catalog discovery and photo/studio/assistant/sourcing shortcuts. The original photo composer is available at `/snap`; all photo entry actions retain direct access. Decorative native hero motion supports Pause/Play, Reduce Motion and foreground/route lifecycle cleanup. Shared controls, navigation, onboarding and launcher/splash assets use the new identity. See [facelift notes and validation boundaries](docs/liquid-chrome-native-facelift.md). A new signed native build is required; this source update is not an app-store release.
+Home combines Liquid Chrome's graphite/platinum interface with the Noir Atelier aperture/doorway logo in a brushed-silver chrome finish matching the Home gateway. New users get **Snap a product** as the first prominent action; returning stores get **Continue my storefront**, restoring saved setup progress where available. The original photo composer remains at `/snap`. Real catalog cards automatically rotate every five seconds with swipe, manual controls and Pause/Play, stopping when offscreen, backgrounded, blurred or accessibility preferences require stillness. Card taps search the catalog and never apply a theme. Decorative gateway motion remains separate. See [Home and publishing release notes](docs/photo-first-home-and-meta-release.md) and [facelift notes](docs/liquid-chrome-native-facelift.md). A new signed native build is required; this source update is not an app-store release.
+
+### Seller-owned Meta marketing
+
+Marketing retains editable AI/manual copy and image/carousel/video generation, Save/Share and TikTok export. Sellers can connect authorized Facebook Pages and linked professional Instagram accounts, choose explicit destinations, and review the exact caption/media before **Publish now** or a future **Schedule**. A durable SQLite worker runs approved jobs in the deployed server; the app shows history, cancellation and safe retry. Rendering alone never publishes. Meta OAuth credentials, encrypted storage, HTTPS media, App Review and a durable deployed volume are required; the integration is disabled with a setup-required state by default. See [Meta configuration and activation](docs/meta-publishing-setup.md). No billing changes are included.
 
 ## Pricing
 
@@ -95,7 +99,7 @@ The app ID is `com.sidebanc.snapfront` (iOS and Android) and the support contact
 
 ## App store notes
 
-- Sellers' customers pay on the web through Stripe for goods sold by the seller; the app doesn't sell digital content to its own users, so no in-app purchase is involved. If you later charge sellers a subscription inside the app, Apple and Google require their in-app billing for that.
+- Sellers' customers pay on the web through Stripe for goods sold by the seller. Snapfront's Android plan upgrades already use Google Play Billing; that code is unchanged by the Home/Meta update. Platform billing rules for in-app digital services differ from physical-product checkout and have policy/program exceptions; verify current requirements before a native release.
 - In-app account deletion (Store settings → Delete my store) and the `/privacy` page cover the stores' account and privacy requirements.
 - Camera and photo permission strings are set in `app.json`.
 
@@ -107,6 +111,11 @@ The app ID is `com.sidebanc.snapfront` (iOS and Android) and the support contact
 | GET / PATCH / DELETE | `/api/me` | Read, edit (name, tagline, shipping, tax) or delete the store |
 | POST | `/api/ai/product-from-photo` | Photo (base64) → product page copy |
 | POST | `/api/ai/generate` | Niche + format → digital product, cover and PDF |
+| GET | `/api/social/accounts` | Public seller-owned Meta destination metadata and setup readiness |
+| POST | `/api/social/authorize` | Fixed secure Facebook Login for Business connection URL |
+| DELETE | `/api/social/accounts/:id` | Disconnect one destination and stop its future jobs |
+| GET / POST | `/api/social/posts` | Publishing history / enqueue exact reviewed owned media |
+| POST | `/api/social/posts/:id/cancel`, `/api/social/posts/:id/retry` | Cancel queued publication or retry only safe known failures |
 | GET / POST | `/api/products` | List or create products |
 | GET / PATCH / DELETE | `/api/products/:id` | Read, edit or delete one product |
 | POST | `/api/products/:id/publish` | Put a product on sale (Stripe must be ready) |

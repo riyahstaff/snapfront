@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
+import { ownsSellerImage as sellerOwnsImage } from "./media-ownership.js";
 import { db, newId, hashToken, slugify, uniqueSlug, rowToProduct } from "./db.js";
 import { productFromPhoto, httpError, PRODUCT_TYPES, sniffImage } from "./claude.js";
 import { writeFileSafe } from "./artwork.js";
@@ -26,6 +27,7 @@ import * as marketing from "./marketing.js";
 import * as aimedia from "./aimedia.js";
 import * as growth from "./growth.js";
 import * as playbilling from "./playbilling.js";
+import * as social from "./social.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, esc } from "./render.js";
 import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
@@ -35,7 +37,7 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 /* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
-const SHARED_PATHS = /^\/(api|img|d|thanks|stripe|suppliers|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview)(\/|$)/;
+const SHARED_PATHS = /^\/(api|img|media|d|thanks|stripe|suppliers|social|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview)(\/|$)/;
 const sameSecret = (a, b) => { const x = Buffer.from(String(a || "")), y = Buffer.from(String(b || "")); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 app.use((req, res, next) => {
   if (!config.storeDomain) return next();
@@ -137,13 +139,20 @@ function aiLimit(req, _res, next) {
 }
 
 const IMAGE_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
-function saveImage(base64, mediaType) {
+function saveImage(base64, mediaType, sellerId = null) {
   const buf = Buffer.from(String(base64 || ""), "base64");
   const ext = IMAGE_TYPES[sniffImage(buf) || mediaType];
   if (!ext) throw httpError(400, "Use a JPG, PNG, WebP or GIF photo.");
   if (buf.length < 100) throw httpError(400, "The photo didn't come through. Try again.");
   if (buf.length > 8 * 1024 * 1024) throw httpError(413, "That photo is over 8 MB. Choose a smaller one.");
-  return writeFileSafe(dirs.images, `${crypto.randomUUID()}.${ext}`, buf);
+  const file = writeFileSafe(dirs.images, `${crypto.randomUUID()}.${ext}`, buf);
+  if (sellerId) db.prepare("INSERT OR IGNORE INTO seller_media (image_file,seller_id) VALUES (?,?)").run(file, sellerId);
+  return file;
+}
+function assertSellerImage(seller, imageFile) {
+  if (!/^[\w-]+\.(jpg|jpeg|png|webp|gif)$/.test(String(imageFile || ""))) throw httpError(400, "Invalid image reference.");
+  if (!sellerOwnsImage(seller.id, imageFile) || !fs.existsSync(path.join(dirs.images, imageFile))) throw httpError(404, "That image does not belong to this store.");
+  return imageFile;
 }
 
 const clampStr = store.clampStr, strList = store.strList, faqList = store.faqList;
@@ -151,6 +160,36 @@ const clampStr = store.clampStr, strList = store.strList, faqList = store.faqLis
 /* ---------- account ---------- */
 app.get("/health", (_req, res) => res.json({ ok: true }));
 app.get("/", (_req, res) => res.send(landingPage()));
+
+/* ---------- fixed Meta callbacks: no client-controlled redirects or secret-bearing pages ---------- */
+const metaReturn = (state) => `snapfront://marketing?social=${state === "connected" ? "connected" : "error"}`;
+app.get("/social/meta/callback", wrap(async (req, res) => {
+  // Denial and malformed callbacks consume a valid state as well, preventing replay.
+  if (req.query.error || !req.query.code) {
+    social.cancelAuthorization(req.query.state);
+    return res.redirect(303, metaReturn("error"));
+  }
+  try {
+    await social.finishAuthorization(req.query.state, req.query.code);
+    return res.redirect(303, metaReturn("connected"));
+  } catch (e) {
+    // Do not expose OAuth codes, Graph responses, tokens, or configuration details in the browser.
+    console.warn("[meta] OAuth callback was not completed", e.status || 500);
+    return res.redirect(303, metaReturn("error"));
+  }
+}));
+app.post("/social/meta/deauthorize", express.urlencoded({ extended: false, limit: "16kb" }), (req, res) => {
+  social.deauthorize(req.body?.signed_request);
+  res.status(200).json({});
+});
+app.post("/social/meta/data-deletion", express.urlencoded({ extended: false, limit: "16kb" }), (req, res) => {
+  res.status(200).json(social.dataDeletion(req.body?.signed_request));
+});
+app.get("/social/meta/data-deletion/:id", (req, res) => {
+  const record = social.deletionStatus(req.params.id);
+  if (!record) return res.status(404).type("text/plain").send("Deletion request not found.");
+  res.type("html").send(`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Data deletion status</title><p>Snapfront completed this Meta data deletion request on ${esc(record.completed_at)}.</p>`);
+});
 
 const signups = new Map();
 function signupLimit(req, _res, next) {
@@ -194,7 +233,7 @@ app.post("/api/storefront/photo", auth, (req, res) => {
   const count = db.prepare("SELECT COUNT(*) AS n FROM storefront_photos WHERE seller_id = ?").get(req.seller.id).n;
   if (count >= 100) throw httpError(429, "This store has reached its saved cover limit. Use an existing cover for now.");
   if (!sniffImage(req.body?.imageBase64)) throw httpError(400, "Use a JPG, PNG, WebP or GIF photo.");
-  const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg");
+  const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg", req.seller.id);
   db.prepare("INSERT INTO storefront_photos (image_file, seller_id) VALUES (?,?)").run(file, req.seller.id);
   res.status(201).json({ image_file: file, image_url: `${config.publicUrl}/img/${file}` });
 });
@@ -215,7 +254,7 @@ app.post("/api/storefront/copy", auth, aiLimit, wrap(async (req, res) => {
 }));
 // Storefront cover photo: the big picture at the top of the store.
 app.put("/api/me/banner", auth, (req, res) => {
-  const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg");
+  const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg", req.seller.id);
   const old = req.seller.banner_file;
   db.prepare("UPDATE sellers SET banner_file = ? WHERE id = ?").run(file, req.seller.id);
   if (old) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
@@ -237,6 +276,7 @@ function purgeStores(sellerIds) {
   for (const id of sellerIds) {
     const seller = db.prepare("SELECT banner_file FROM sellers WHERE id = ?").get(id);
     const covers = db.prepare("SELECT image_file FROM storefront_photos WHERE seller_id = ?").all(id).map((p) => p.image_file);
+    covers.push(...db.prepare("SELECT image_file FROM seller_media WHERE seller_id=?").all(id).map((row) => row.image_file));
     if (seller?.banner_file) covers.push(seller.banner_file);
     for (const file of new Set(covers)) {
       if (/^[\w-]+\.(jpg|png|webp|gif)$/.test(file)) fs.rm(path.join(dirs.images, file), { force: true }, () => {});
@@ -248,6 +288,16 @@ function purgeStores(sellerIds) {
         if (r.image_file && /^[\w-]+\.\w+$/.test(r.image_file)) fs.rm(path.join(dirs.images, r.image_file), { force: true }, () => {});
       } catch { /* unreadable result: nothing to remove */ }
     }
+    const registered = db.prepare("SELECT files_json AS files FROM social_renders WHERE seller_id=? UNION ALL SELECT media_json AS files FROM social_posts WHERE seller_id=?").all(id, id);
+    for (const row of registered) {
+      let files; try { files = JSON.parse(row.files); } catch { continue; }
+      for (const file of Array.isArray(files) ? files : []) {
+        if (/^[\w-]+\.(jpg|mp4)$/.test(String(file?.file || ""))) fs.rmSync(path.join(dirs.media, file.file), { force: true });
+      }
+    }
+    // Remove child posts first: the render foreign key is RESTRICT to protect active snapshots,
+    // so a store/account cascade must not reach its render before its queued jobs are removed.
+    db.prepare("DELETE FROM social_posts WHERE seller_id=?").run(id);
     db.prepare("DELETE FROM media_jobs WHERE seller_id = ?").run(id);
     db.prepare("DELETE FROM store_visits WHERE seller_id = ?").run(id);
   }
@@ -416,7 +466,7 @@ app.post("/api/auth/email/verify", auth, (req, res) => res.json(auth2.verifyEmai
 app.post("/api/ai/product-from-photo", auth, aiLimit, wrap(async (req, res) => {
   const { imageBase64, mediaType = "image/jpeg", kind = "physical", hint, price, tone } = req.body || {};
   plans.assertAllowance(req.account, "photo");
-  const image_file = saveImage(imageBase64, mediaType);
+  const image_file = saveImage(imageBase64, mediaType, req.seller.id);
   const r = await productFromPhoto({ imageBase64, mediaType, kind, hint: clampStr(hint, 300), price: price ? Number(price) : null, tone: clampStr(tone, 40) });
   res.json({
     image_file, image_url: `${config.publicUrl}/img/${image_file}`, kind: kind === "digital" ? "digital" : "physical",
@@ -438,9 +488,10 @@ app.post("/api/studio", auth, aiLimit, wrap(async (req, res) => {
   const { imageBase64, mediaType = "image/jpeg", image_file, style } = req.body || {};
   studio.fieldsFor(style);   // check the choice before using an allowance
   plans.assertAllowance(req.account, "studio");
-  const source = imageBase64 ? saveImage(imageBase64, mediaType) : image_file;
+  const source = imageBase64 ? saveImage(imageBase64, mediaType, req.seller.id) : assertSellerImage(req.seller, image_file);
   studio.sourcePath(source);
   const { file, notice } = await plans.withAllowance(req.account, "studio", () => studio.restyle(source, style));
+  db.prepare("INSERT OR IGNORE INTO seller_media (image_file,seller_id) VALUES (?,?)").run(file, req.seller.id);
   res.json({ image_file: file, image_url: `${config.publicUrl}/img/${file}`, source_file: source, notice });
 }));
 
@@ -454,8 +505,19 @@ app.post("/api/marketing/copy", auth, aiLimit, wrap(async (req, res) => {
 }));
 app.post("/api/marketing/render", auth, aiLimit, wrap(async (req, res) => {
   const b = req.body || {};
-  res.json(await marketing.renderPost(req.seller, ownProduct(req, b.product_id), { kind: b.kind, template: b.template, format: b.format, copy: b.copy, offer: b.offer, image_url: b.image_url }));
+  const rendered = await marketing.renderPost(req.seller, ownProduct(req, b.product_id), { kind: b.kind, template: b.template, format: b.format, copy: b.copy, offer: b.offer, image_url: b.image_url });
+  const owned = await social.registerRender(req.seller, rendered, b.format || "post");
+  res.json({ ...rendered, ...owned });
 }));
+// Seller-owned Meta destinations and durable marketing publishing. The auth middleware resolves
+// both the account and its X-Store seller before any social data is read or changed.
+app.get("/api/social/accounts", auth, (req, res) => res.json(social.accounts(req.seller)));
+app.post("/api/social/authorize", auth, (req, res) => res.json(social.authorize(req.seller, req.account)));
+app.delete("/api/social/accounts/:id", auth, (req, res) => res.json(social.disconnect(req.seller, req.params.id)));
+app.get("/api/social/posts", auth, (req, res) => res.json(social.posts(req.seller)));
+app.post("/api/social/posts", auth, (req, res) => res.status(201).json(social.createPosts(req.seller, req.body || {})));
+app.post("/api/social/posts/:id/cancel", auth, (req, res) => res.json(social.cancelPost(req.seller, req.params.id)));
+app.post("/api/social/posts/:id/retry", auth, (req, res) => res.json(social.retryPost(req.seller, req.params.id)));
 app.get("/api/ai-media", auth, (req, res) => res.json({ ...aimedia.presets(), jobs: aimedia.jobsFor(req.seller) }));
 app.post("/api/ai-media", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await aimedia.start(req.account, req.seller, req.body || {}))));
 app.get("/api/ai-media/:id", auth, wrap(async (req, res) => {
@@ -483,7 +545,7 @@ app.post("/api/research/price-check", auth, aiLimit, wrap(async (req, res) => {
   const { imageBase64, mediaType = "image/jpeg", image_file, image_url, cost } = req.body || {};
   plans.assertAllowance(req.account, "research");
   let url;
-  if (imageBase64) url = `${config.publicUrl}/img/${saveImage(imageBase64, mediaType)}`;
+  if (imageBase64) url = `${config.publicUrl}/img/${saveImage(imageBase64, mediaType, req.seller.id)}`;
   else if (image_file && /^[\w-]+\.(jpg|png|webp|gif)$/.test(image_file)) url = `${config.publicUrl}/img/${image_file}`;
   else if (image_url && /^https:\/\//.test(image_url)) url = String(image_url).slice(0, 1000);
   else throw httpError(400, "Add a photo or screenshot of the product.");
@@ -766,6 +828,8 @@ app.get("/privacy", legal("Privacy policy", `
 <li>A random device token that signs you in. If you choose to sign in with email, your email address.</li>
 <li>Your plan and purchase status from Google Play or the App Store. We never see your card.</li>
 <li>If you connect a supplier (CJdropshipping, AliExpress or Printful), the key or sign-in token for that account, stored encrypted, so we can place orders there for you.</li></ul>
+<h2>Optional Meta publishing</h2><p>If you choose to connect Facebook or Instagram, Snapfront receives the access tokens, Page and professional Instagram identifiers, and display names Meta returns for your selected destinations. Tokens are encrypted at rest and are not shown in the app. We use them only to show your connected destinations and carry out a post that you have reviewed and explicitly approved.</p>
+<p>For an approved publish or schedule request, we keep the selected destination, exact approved caption, owned media-file snapshot, requested schedule, processing status and any returned post identifier or permalink. We send the caption and media URL to Meta only when the queue reaches that seller-approved destination. Generating a graphic or caption alone does not publish it.</p>
 <h2>What we collect about your buyers</h2><ul>
 <li>Order records: what was bought, amounts, and the buyer's name, email, shipping address and phone number, so digital downloads can be delivered and physical orders shipped.</li>
 <li>Reviews buyers choose to leave: their name, star rating and comment.</li>
@@ -780,8 +844,9 @@ app.get("/privacy", legal("Privacy policy", `
 <li>Resend: sending sign-in codes, order confirmations, review requests and checkout reminders.</li>
 <li>CJdropshipping, AliExpress and Printful: the buyer's name, address and phone number for orders of their products.</li>
 <li>SerpApi (Google Lens): product photos, to compare prices at other stores.</li>
-<li>Cloudflare and Railway: hosting, including stores on their own domains.</li></ul>
-<h2>Deleting your data</h2><p>In the app, open Settings and tap "Delete my account". This removes your account, every store, product and photo from our servers. Order records your buyers need (for example, download links) are removed with the store. You can also email us to ask for deletion.</p>
+<li>Cloudflare and Railway: hosting, including stores on their own domains.</li>
+<li>Meta: the seller-approved caption and owned media URL needed to publish to the Page or Instagram account the seller selected.</li></ul>
+<h2>Deleting your data</h2><p>You can disconnect a Meta destination in Marketing at any time. This removes its stored token and its associated queued and publishing history from Snapfront; it does not delete content already published by Meta. Meta's signed deauthorization and data-deletion requests remove matching connected tokens and related social request snapshots. In the app, open Settings and tap "Delete my account". This removes your account, every store, product and photo from our servers. Order records your buyers need (for example, download links) are removed with the store. You can also email us to ask for deletion.</p>
 <h2>Children</h2><p>Snapfront is for adults running a business and isn't meant for children under 13.</p>
 <h2>Contact</h2><p><a href="mailto:support@snapfront.app">support@snapfront.app</a></p>`));
 app.get("/terms", legal("Terms of use", `
@@ -800,6 +865,9 @@ app.use((err, _req, res, _next) => {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   app.listen(config.port, () => console.log(`Snapfront API on ${config.publicUrl} (port ${config.port})`));
+  // The durable SQLite queue is deliberately started only by the real server process, never by
+  // imported test apps. Disabled or incomplete Meta configuration starts no worker at all.
+  if (social.startWorker()) console.log("[meta] seller publishing worker started");
   // AI video and lifestyle photos: check the Runpod key, then collect finished jobs.
   if (aimedia.enabled()) {
     aimedia.check().then((st) => console.log(`[runpod] key ${st === 200 ? "ok" : `check returned ${st}`}`)).catch((e) => console.error("[runpod] check", e.message));

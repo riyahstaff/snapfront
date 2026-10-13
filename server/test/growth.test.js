@@ -69,7 +69,10 @@ test("set up a store with a live product and a photo", async () => {
   me = (await call("PATCH", "/api/me", { store_name: "Glow Lab", tagline: "Simple skincare", theme: "bloom" })).body;
   const photo = await sharp({ create: { width: 800, height: 800, channels: 3, background: "#d9c7b5" } }).jpeg().toBuffer();
   fs.writeFileSync(path.join(tmp, "images", "serum.jpg"), photo);
-  product = (await call("POST", "/api/products", { title: "Glow Serum", tagline: "Vitamin C", price: 46, kind: "physical", image_file: "serum.jpg", category: "Serums", description: "Bright skin." })).body;
+  db.prepare("INSERT INTO seller_media (image_file,seller_id) VALUES (?,?)").run("serum.jpg", me.id);
+  const created = await call("POST", "/api/products", { title: "Glow Serum", tagline: "Vitamin C", price: 46, kind: "physical", image_file: "serum.jpg", category: "Serums", description: "Bright skin." });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  product = created.body;
   db.prepare("UPDATE products SET status = 'live' WHERE id = ?").run(product.id);
 });
 
