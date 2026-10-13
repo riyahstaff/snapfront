@@ -241,6 +241,7 @@ function StorePanel({ products, wide }: { products: Product[] | null; wide: bool
         ) : null}
         <CTA label="Add a product" icon="add-circle-outline" href="/snap" small />
         <CTA label="Build your storefront" icon="sparkles-outline" href="/storefront-setup" small />
+        <CTA label="Sales & profit" icon="cash-outline" href="/business" small />
         <CTA label="Orders" icon="receipt-outline" href="/orders" small />
       </View>
     </View>

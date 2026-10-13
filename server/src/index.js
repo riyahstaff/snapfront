@@ -29,6 +29,7 @@ import * as aimedia from "./aimedia.js";
 import * as growth from "./growth.js";
 import * as playbilling from "./playbilling.js";
 import * as webbilling from "./webbilling.js";
+import * as business from "./business.js";
 import * as social from "./social.js";
 import * as digitalDesigns from "./digital-designs.js";
 import * as imageAssistant from "./image-assistant.js";
@@ -147,6 +148,10 @@ app.use(express.json({ limit: "12mb" }));
 async function completeOrder(orderId, session) {
   const before = db.prepare("SELECT status FROM orders WHERE id = ?").get(orderId);
   const order = commerce.finalizeOrder(orderId, session);
+  if (order && ["paid", "fulfilled"].includes(order.status)) {
+    business.snapshotCost(order.id);
+    setTimeout(() => business.syncDue(order.seller_id, 5).catch(() => {}), 30_000).unref?.();   // Stripe's fee settles a moment later
+  }
   if (order && before?.status === "pending" && order.status === "paid") {
     const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(order.seller_id);
     await pay.emailOrder(order.email, {
@@ -619,6 +624,28 @@ app.get("/api/insights", auth, (req, res) => {
   if (plans.effectivePlan(req.account) !== "pro") throw httpError(402, "Store insights come with Pro.", { upgrade: "pro" });
   res.json(growth.insights(req.seller, req.query.days));
 });
+/* ---------- Sales & profit: each seller's back office ---------- */
+const freshMoney = (seller) => Promise.race([business.syncDue(seller.id, 15).catch(() => 0), new Promise((r) => setTimeout(r, 4000))]);
+app.get("/api/business/summary", auth, wrap(async (req, res) => { await freshMoney(req.seller); res.json(business.summary(req.seller, req.query)); }));
+app.get("/api/business/sales", auth, (req, res) => res.json(business.sales(req.seller, req.query)));
+app.get("/api/business/customers", auth, (req, res) => res.json(business.customers(req.seller, req.query)));
+app.get("/api/business/customers/:email", auth, (req, res) => res.json(business.customer(req.seller, req.params.email)));
+app.patch("/api/business/customers/:email", auth, (req, res) => res.json(business.updateCustomer(req.seller, req.params.email, req.body || {})));
+app.get("/api/business/expenses", auth, (req, res) => res.json(business.listExpenses(req.seller, req.query)));
+app.post("/api/business/expenses", auth, (req, res) => res.status(201).json(business.addExpense(req.seller, req.body || {})));
+app.delete("/api/business/expenses/:id", auth, (req, res) => { business.deleteExpense(req.seller, req.params.id); res.status(204).end(); });
+app.get("/api/business/balance", auth, wrap(async (req, res) => res.json(await business.balance(req.seller).catch((e) => {
+  console.warn("[business] balance", e.message);
+  return { connected: Boolean(req.seller.stripe_account_id), error: "Stripe didn't answer. Try again in a minute." };
+}))));
+app.post("/api/business/export", auth, (req, res) => res.json(business.exportLink(req.seller, String(req.body?.kind || ""), req.body || {})));
+// Signed download link (opens in a browser or the phone's share sheet without the sign-in header).
+app.get("/api/business/export", (req, res) => {
+  try {
+    const f = business.exportFile(req.query);
+    res.set("Cache-Control", "no-store").attachment(f.name).type("text/csv").send(f.body);
+  } catch (e) { res.status(e.status || 500).type("text/plain").send(e.message); }
+});
 app.get("/api/reviews", auth, (req, res) => res.json(growth.sellerReviews(req.seller)));
 app.patch("/api/reviews/:id", auth, (req, res) => { growth.setReviewStatus(req.seller, req.params.id, req.body?.status); res.json(growth.sellerReviews(req.seller)); });
 app.get("/api/qr", auth, wrap(async (req, res) => {
@@ -1016,6 +1043,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   ensureCutoutModel().catch((e) => console.error("[cutout] model", e.message));
   // Google Play subscriptions: notice renewals, cancellations and refunds.
   setInterval(() => playbilling.sweep().catch((e) => console.error("[play] sweep", e.message)), 30 * 60e3).unref();
+  // Sales & profit: Stripe fees and refunds for each order.
+  setInterval(() => business.syncDue().catch((e) => console.error("[business] sync", e.message)), 20 * 60e3).unref();
   // Website plans (Stripe): notice renewals, cancellations and refunds.
   setInterval(() => webbilling.sweep().catch((e) => console.error("[webbilling] sweep", e.message)), 30 * 60e3).unref();
   // Create the Launch and Pro products in Play (retries hourly until Google allows it).

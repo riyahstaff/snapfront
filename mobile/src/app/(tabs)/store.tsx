@@ -114,6 +114,7 @@ export default function StoreScreen() {
       </View>
       <Text style={[type.heading, { color: c.ink, marginTop: space.sm }]}>Grow your store</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+        <GrowTile icon="cash-outline" label="Sales & profit" sub="Profit, customers, payouts" onPress={() => router.push("/business")} />
         <GrowTile icon="megaphone-outline" label="Marketing posts" sub="Posts, carousels and Reels" onPress={() => router.push("/marketing")} />
         <GrowTile icon="sparkles-outline" label="AI photos & video" sub="Lifestyle shots and clips" onPress={() => router.push("/ai-media")} />
         <GrowTile icon="people-outline" label="Get more buyers" sub="Link in bio, QR, Google" onPress={() => router.push("/channels")} />

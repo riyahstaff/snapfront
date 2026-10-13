@@ -196,6 +196,12 @@ function applyCommerceFields(id, b) {
   if (b.label != null) db.prepare("UPDATE products SET label = ? WHERE id = ?").run(clampStr(b.label, 24).replace(/\s+/g, " ").trim(), id);
   if (b.inventory !== undefined) db.prepare("UPDATE products SET inventory = ? WHERE id = ?").run(stock(b.inventory), id);
   if (b.sku != null) db.prepare("UPDATE products SET sku = ? WHERE id = ?").run(clampStr(b.sku, 64), id);
+  // What one item costs the seller (materials, wholesale or supplier price), for Sales & profit.
+  if (b.cost !== undefined) {
+    const c = b.cost === null || b.cost === "" ? null : Math.round(Number(b.cost) * 100);
+    if (c !== null && !(c >= 0 && c <= 100_000_000)) throw httpError(400, "Enter the cost per item, like 4.50.");
+    db.prepare("UPDATE products SET cost_cents = ? WHERE id = ?").run(c, id);
+  }
   if (b.tax_code !== undefined) {
     if (b.tax_code && !TAX_CODE.test(b.tax_code)) throw httpError(400, "Tax codes look like txcd_99999999.");
     db.prepare("UPDATE products SET tax_code = ? WHERE id = ?").run(b.tax_code || null, id);

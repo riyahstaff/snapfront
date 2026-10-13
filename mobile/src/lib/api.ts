@@ -59,6 +59,8 @@ export type Product = Draft & {
 };
 export type ProductPatch = Partial<Draft> & {
   inventory?: number | null;
+  /** What one item costs the seller, for Sales & profit. null clears it. */
+  cost?: number | null;
   option_name?: string;
   variants?: VariantInput[];
   status?: "draft";
@@ -530,6 +532,38 @@ export const api = {
   taxSetup: () => request<{ url: string }>("POST", "/api/stripe/tax-setup"),
   taxStatus: () => request<{ active: boolean; missing: string[]; registrations: string[] }>("GET", "/api/stripe/tax"),
   stripeDashboard: () => request<{ url: string }>("POST", "/api/stripe/dashboard"),
+};
+
+/* ---------- Sales & profit ---------- */
+export type BizRange = { range?: string; from?: string; to?: string };
+export type BizSummary = {
+  range: { from: string; to: string; label: string };
+  totals: { revenue: number; orders: number; average_order: number; net_profit: number; margin: number; customers: number; new_customers: number; returning_customers: number; visitors: number; views: number; conversion: number };
+  pnl: { gross_sales: number; discounts: number; shipping_charged: number; revenue: number; refunds: number; stripe_fees: number; product_costs: number; expenses: number; net_profit: number; tax_collected: number; refunded_orders: number; estimated_fee_orders: number; expense_categories: { category: string; amount: number }[] };
+  series: { bucket: "day" | "week" | "month"; points: { period: string; revenue: number; profit: number; orders: number; visitors: number }[] };
+  products: { id: string; title: string; units: number; revenue: number; cost: number; profit: number; visitors: number; conversion: number }[];
+  sources: { source: string; visitors: number }[];
+  missing_costs: number;
+};
+export type BizSale = { id: string; paid_at: string; status: string; customer_name: string | null; email: string | null; items: { title: string; variant: string | null; qty: number }[]; total: number; tax: number; discount: number; shipping: number; refunded: number; fee: number; fee_estimated: boolean; cost: number; profit: number; discount_code: string | null };
+export type BizCustomer = { email: string; name: string | null; orders: number; spent: number; first_order: string; last_order: string; repeat: boolean; location: string | null; tags: string[]; note: string };
+export type BizExpense = { id: string; day: string; label: string; category: string; amount: number };
+export type BizBalance = { connected: boolean; available?: number; pending?: number; payouts?: { id: string; amount: number; status: string; arrival_date: string | null }[]; dashboard_url?: string; error?: string };
+const bizQuery = (q: Record<string, string | number | undefined>) => {
+  const p = Object.entries(q).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");
+  return p ? `?${p}` : "";
+};
+export const business = {
+  summary: (r: BizRange) => request<BizSummary>("GET", `/api/business/summary${bizQuery(r)}`),
+  sales: (r: BizRange & { q?: string; status?: string; page?: number }) => request<{ total: number; page: number; page_size: number; orders: BizSale[] }>("GET", `/api/business/sales${bizQuery(r)}`),
+  customers: (q: { q?: string; sort?: string; tag?: string; filter?: string }) => request<{ total: number; stats: { customers: number; repeat: number; lifetime_value: number }; tags: string[]; customers: BizCustomer[] }>("GET", `/api/business/customers${bizQuery(q)}`),
+  customer: (email: string) => request<BizCustomer & { orders_list: BizSale[] }>("GET", `/api/business/customers/${encodeURIComponent(email)}`),
+  updateCustomer: (email: string, patch: { tags?: string[]; note?: string }) => request<BizCustomer & { orders_list: BizSale[] }>("PATCH", `/api/business/customers/${encodeURIComponent(email)}`, patch),
+  expenses: (r: BizRange) => request<{ categories: string[]; expenses: BizExpense[] }>("GET", `/api/business/expenses${bizQuery(r)}`),
+  addExpense: (e: { label: string; amount: number; category: string; day?: string }) => request<BizExpense>("POST", "/api/business/expenses", e),
+  deleteExpense: (id: string) => request<void>("DELETE", `/api/business/expenses/${encodeURIComponent(id)}`),
+  balance: () => request<BizBalance>("GET", "/api/business/balance"),
+  exportLink: (kind: "sales" | "customers" | "expenses", r: BizRange = {}) => request<{ url: string }>("POST", "/api/business/export", { kind, ...r }),
 };
 
 export const money = (n: number) => `$${(Number(n) || 0).toFixed(2)}`;

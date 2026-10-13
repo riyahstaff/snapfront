@@ -11,7 +11,8 @@ import { fonts, useColors } from "@/lib/theme";
 export const NAV: { label: string; href: Href; match: (p: string) => boolean }[] = [
   { label: "Create", href: "/snap", match: (p) => p.startsWith("/snap") || p.startsWith("/draft") },
   { label: "Digital products", href: "/create", match: (p) => p.startsWith("/create") || p.startsWith("/digital") },
-  { label: "My store", href: "/store", match: (p) => ["/store", "/orders", "/discounts", "/looks", "/storefront-setup", "/insights", "/reviews", "/product"].some((x) => p.startsWith(x)) },
+  { label: "My store", href: "/store", match: (p) => ["/store", "/discounts", "/looks", "/storefront-setup", "/insights", "/reviews", "/product"].some((x) => p.startsWith(x)) },
+  { label: "Sales & profit", href: "/business", match: (p) => p.startsWith("/business") || p.startsWith("/orders") },
   { label: "Marketing", href: "/marketing", match: (p) => ["/marketing", "/ai-media", "/channels", "/studio"].some((x) => p.startsWith(x)) },
   { label: "Find products", href: "/find", match: (p) => ["/find", "/sources", "/supplier", "/price-check", "/trends"].some((x) => p.startsWith(x)) },
   { label: "Assistant", href: "/assistant", match: (p) => p.startsWith("/assistant") },

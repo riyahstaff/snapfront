@@ -17,6 +17,7 @@ export default function ProductScreen() {
   const { id, note } = useLocalSearchParams<{ id: string; note?: string }>();
   const [p, setP] = useState<Product | null>(null);
   const [price, setPrice] = useState("");
+  const [cost, setCost] = useState("");
   const [words, setWords] = useState({ title: "", tagline: "", label: "", category: "", description: "" });
   const [msg, setMsg] = useState<{ text: string; tone: "error" | "ok" | "info" } | null>(note ? { text: note, tone: /^Saved as a draft/.test(note) ? "info" : "ok" } : null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -24,7 +25,7 @@ export default function ProductScreen() {
 
   const load = useCallback(() => {
     api.product(id).then((x) => {
-      setP(x); setPrice(String(x.price));
+      setP(x); setPrice(String(x.price)); setCost(x.cost != null ? String(x.cost) : "");
       setWords({ title: x.title, tagline: x.tagline, label: x.label ?? "", category: x.category, description: x.description });
     }).catch((e) => setMsg({ text: e instanceof ApiError ? e.message : "Couldn't load this product.", tone: "error" }));
   }, [id]);
@@ -114,6 +115,11 @@ export default function ProductScreen() {
         <Field label="Price (USD)" hint={live ? "New prices apply to your store right away." : undefined} value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
         <Button label="Save price" variant="secondary" loading={busy === "price"} onPress={() => run("price", async () => {
           const next = await api.updateProduct(p.id, { price: Number(price) || 0 }); setP({ ...p, ...next }); setMsg({ text: "Price saved.", tone: "ok" });
+        })} />
+        <Field label="Cost per item (USD)" hint={p.source === "cj" ? "Filled in from CJdropshipping. Add their shipping if you want it counted." : "What one costs you to make or buy. Used for profit in Sales & profit. Only you see it."}
+          value={cost} onChangeText={setCost} keyboardType="decimal-pad" placeholder="e.g. 4.50" />
+        <Button label="Save cost" variant="secondary" loading={busy === "cost"} onPress={() => run("cost", async () => {
+          const next = await api.updateProduct(p.id, { cost: cost.trim() === "" ? null : Number(cost.replace(/[$,]/g, "")) }); setP({ ...p, ...next }); setMsg({ text: "Cost saved.", tone: "ok" });
         })} />
       </View>
       <StockEditor product={p} onSaved={setP} />
