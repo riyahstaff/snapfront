@@ -18,7 +18,7 @@ server/   Node API + public storefronts                               — Expres
 
 ### Guided storefront setup
 
-**My store → Build your storefront** opens Look → Cover → Words → Products → Review. The shared searchable thumbnail picker browses all 105 API-fed themes (20 classic and 85 premium), with collection/category filters and 12 cards per page. Upload a staged cover, insert optional editable AI suggestions, review actual products, privately preview, then apply the design in one final action. Store-specific phone drafts preserve browsing and progress. Applying the design never publishes products or changes plan/Stripe/checkout. See the [phone setup guide](docs/storefront-setup-guide.md). These controls require a native build containing the update; backend availability is separate from app-store release.
+**My store → Build your storefront** opens Design → Photos → Words → Products → Finish. The shared searchable thumbnail picker browses all 105 themes (20 classic and 85 premium). **Customize this design** opens the actual filled responsive layout, keeping its colors, fonts and photo positions while sellers upload/reuse photos or explicitly choose optional Photo Studio results. Sample content is preview-only, not inventory. Simple main fields, optional AI/details, a product-to-setup return button, saved progress, and a real final preview replace the blank-canvas handoff. Finish requires reviewed wording and real pictures in the used layout spots; it never publishes products or changes plans/payment setup. See the [simple template-first guide](docs/template-first-storefront-setup.md) and [backend preview contract](docs/template-first-storefront-preview-api.md). Both the updated backend and a new native build are required; the installed app does not change merely because source is updated.
 
 ### Liquid Chrome native identity
 
@@ -109,6 +109,7 @@ The app ID is `com.sidebanc.snapfront` (iOS and Android) and the support contact
 |---|---|---|
 | POST | `/api/sellers` | Create a store for this device, returns a bearer token |
 | GET / PATCH / DELETE | `/api/me` | Read, edit (name, tagline, shipping, tax) or delete the store |
+| POST | `/api/storefront/template-preview` | Private actual-layout editing/final preview with owned photo slots; no commerce or writes |
 | POST | `/api/ai/product-from-photo` | Photo (base64) → product page copy |
 | POST | `/api/ai/generate` | Niche + format → digital product, cover and PDF |
 | GET | `/api/social/accounts` | Public seller-owned Meta destination metadata and setup readiness |

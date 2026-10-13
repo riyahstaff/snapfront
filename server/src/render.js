@@ -9,6 +9,7 @@ import { reviewsFor, ratingsBySeller, reviewToken, linksOf } from "./growth.js";
 import { isAiImage } from "./aimedia.js";
 import { CATEGORY_REGISTRY } from "./premium-themes.js";
 import { categoryContext, CATEGORY_BASE_CSS } from "./category-theme-kit.js";
+import { storefrontMediaSlots, storefrontPreviewMediaSlots } from "./storefront-media.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const money = (cents, cur = "usd") => new Intl.NumberFormat("en-US", { style: "currency", currency: cur.toUpperCase() }).format(cents / 100);
@@ -66,7 +67,12 @@ const priceLabel = (p) => {
   const prices = (p.variants || []).map((v) => v.price_cents ?? p.price_cents);
   return `${prices.length && new Set(prices).size > 1 ? "From " : ""}${money(Math.min(p.price_cents, ...prices), p.currency)}`;
 };
-const img = (src, alt, extra = "") => (src ? `<img src="${esc(src)}" alt="${esc(alt)}"${extra}>` : `<div class="noimg"></div>`);
+const img = (source, alt, extra = "") => {
+  const src = typeof source === "object" && source ? source.url : source;
+  const slot = typeof source === "object" && source && source.preview && Number.isInteger(source.index) && source.index >= 0 && source.index <= 2
+    ? ` data-sf-photo="${source.index}"` : "";
+  return src ? `<img src="${esc(src)}" alt="${esc(alt)}"${slot}${extra}>` : `<div class="noimg"${slot}></div>`;
+};
 
 /* ---------- the frame every page shares ---------- */
 function shell({ title, description, store, image, body, canonical, cats = [], facts = null, current = null }) {
@@ -110,7 +116,8 @@ const stars = (avg) => `<span class="stars" aria-label="${avg} out of 5 stars">$
 function card(store, p) {
   const r = store._ratings?.get(p.id);
   const category = CATEGORY_REGISTRY.has(store._theme || store.theme);
-  return `<a class="pc${category ? " product-card" : ""}" href="${esc(base(store))}/${esc(p.slug)}"><div class="im${category ? " product-image" : ""}">${img(p.image_url, p.alt_text || p.title, ' loading="lazy"')}
+  const photo = p._sfPhotoSlot == null ? p.image_url : { url: p.image_url, index: p._sfPhotoSlot, preview: Boolean(store._templatePreview) };
+  return `<a class="pc${category ? " product-card" : ""}" href="${esc(base(store))}/${esc(p.slug)}"><div class="im${category ? " product-image" : ""}">${img(photo, p.alt_text || p.title, ' loading="lazy"')}
 ${!p.in_stock ? `<span class="tag out">Sold out</span>` : p.label ? `<span class="tag">${esc(p.label)}</span>` : p.kind === "digital" ? `<span class="tag">Digital</span>` : ""}<span class="go" aria-hidden="true">View product</span></div>
 <div class="bd"><h3>${esc(p.title)}</h3><span class="pr">${priceLabel(p)}</span>${r ? `<span class="rt">${stars(r.avg)} <small>${r.count}</small></span>` : ""}</div></a>`;
 }
@@ -118,7 +125,12 @@ ${!p.in_stock ? `<span class="tag out">Sold out</span>` : p.label ? `<span class
 function hero(store, t, products) {
   const module = CATEGORY_REGISTRY.get(t.id);
   if (module) return module.hero(categoryContext(store, t, products, categories(products), card));
-  const pics = [bannerUrl(store), ...products.map((p) => p.image_url)].filter(Boolean);
+  const pics = store._templatePreview
+    ? storefrontPreviewMediaSlots(store, products).map((slot) => ({ ...slot, alt: slot.alt || `${store.store_name}` }))
+    : [
+      ...storefrontMediaSlots(store).map((slot) => ({ ...slot })),
+      ...products.filter((p) => p.image_url).map((p) => ({ url: p.image_url, alt: p.alt_text || p.title })),
+    ];
   const head = store.tagline || store.store_name;
   const long = head.length > (t.hero === "type" ? 26 : 56);
   const sub = store.tagline ? (store.about ? store.about.split(/(?<=[.!?])\s/)[0].slice(0, 180) : "") : "";

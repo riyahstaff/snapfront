@@ -81,7 +81,8 @@
           "granularPermissions": []
         }
       ],
-      "expo-iap"
+      "expo-iap",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true

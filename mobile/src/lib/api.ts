@@ -78,6 +78,10 @@ export type Seller = {
   announcement: string;
   /** Storefront cover photo */
   banner_url: string | null;
+  /** Server-owned reference for the currently applied storefront cover, when available. */
+  banner_file?: string | null;
+  /** Main and detail images selected for a template-first storefront. Null entries are intentionally empty slots. */
+  design_photos?: (null | { image_file: string; image_url: string })[];
   /** Link-in-bio buttons */
   links: { label: string; url: string }[];
   links_url: string;
@@ -173,6 +177,14 @@ export type DomainView = {
 export type StagedStorefrontPhoto = { image_file: string; image_url: string };
 /** An unauthenticated, temporary URL that renders a staged storefront without saving it. */
 export type StorefrontPreview = { url: string; expires_in: number };
+/** A self-contained, owner-bound storefront frame for the setup wizard. It is never a public storefront URL. */
+export type TemplatePreview = {
+  html: string;
+  photo_slots: { index: 0 | 1 | 2; label: string; image_url: string | null; sample: boolean }[];
+  sample_products: number;
+  mode: "template" | "final";
+  theme: { id: string; name: string };
+};
 /** Suggestions are intentionally separate from saved seller data until the seller chooses to apply them. */
 export type StorefrontCopy = {
   hero_title: string; hero_subtitle: string; hero_eyebrow: string; hero_cta: string;
@@ -198,6 +210,8 @@ export type PriceCheckInput = { imageBase64?: string; mediaType?: string; image_
 export type StorePatch = Partial<Pick<Seller, "store_name" | "store_slug" | "tagline" | "shipping_flat" | "free_shipping_over" | "ship_countries" | "tax_enabled" | "theme" | "hero_title" | "hero_subtitle" | "hero_eyebrow" | "hero_cta" | "hero_motion" | "about" | "announcement" | "links" | "abandoned_emails">> & {
   /** Only a staged storefront photo owned by this seller, or the current banner, is accepted by the server. */
   banner_file?: string;
+  /** Detail photo references in template slot order. `null` deliberately clears that detail slot. */
+  design_photos?: (string | null)[];
 };
 export type OrderItem = { title: string; variant: string | null; qty: number; kind: "physical" | "digital"; unit: number };
 export type Address = { line1?: string; line2?: string | null; city?: string; state?: string | null; postal_code?: string; country?: string };
@@ -344,6 +358,9 @@ export const api = {
   updateStore: (patch: StorePatch, storeId?: string) => request<Me>("PATCH", "/api/me", patch, storeId),
   /** Create a 30-minute browser preview without changing the public storefront. */
   previewStorefront: (patch: StorePatch, storeId?: string) => request<StorefrontPreview>("POST", "/api/storefront/preview", patch, storeId),
+  /** Render an owner-bound setup frame. The returned HTML remains local to the app's constrained preview frame. */
+  templatePreview: (patch: StorePatch, mode: "template" | "final", storeId?: string) =>
+    request<TemplatePreview>("POST", "/api/storefront/template-preview", { ...patch, mode }, storeId),
   /** Upload a cover photo without changing the live storefront. The returned file is applied only in updateStore. */
   stageStorefrontPhoto: (imageBase64: string, mediaType = "image/jpeg", storeId?: string) =>
     request<StagedStorefrontPhoto>("POST", "/api/storefront/photo", { imageBase64, mediaType }, storeId),
@@ -355,7 +372,8 @@ export const api = {
   setBanner: (imageBase64: string, mediaType = "image/jpeg") => request<Me>("PUT", "/api/me/banner", { imageBase64, mediaType }),
   removeBanner: () => request<Me>("DELETE", "/api/me/banner"),
   studioPresets: () => request<StudioPresets>("GET", "/api/studio"),
-  studio: (input: { image_file?: string; imageBase64?: string; mediaType?: string; style: StudioStyle }) => request<StudioResult>("POST", "/api/studio", input),
+  /** The explicit owner keeps a late studio result bound to the store that initiated it. */
+  studio: (input: { image_file?: string; imageBase64?: string; mediaType?: string; style: StudioStyle }, storeId?: string) => request<StudioResult>("POST", "/api/studio", input, storeId),
   sources: () => request<SourceDirectory>("GET", "/api/sources"),
   marketing: (storeId?: string) => request<MarketingOptions>("GET", "/api/marketing", undefined, storeId),
   /** The explicit store binds copy generation to the initiating seller even when the selector changes in flight. */
