@@ -43,8 +43,8 @@ export default function PixelsScreen() {
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">
       <Text style={[type.body, { color: c.muted }]}>Running ads? Add your pixel IDs so Meta, TikTok, Google and Pinterest can see who buys, measure your ads and find more people like your customers.</Text>
       {!data.allowed ? (
-        <Card title="Ad pixels come with Launch and Pro">
-          <Button label="See plans" onPress={() => router.push({ pathname: "/plans", params: { highlight: "launch" } })} />
+        <Card title="Ad pixels come with Snapfront Pro">
+          <Button label="See plans" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
         </Card>
       ) : null}
       <Card>

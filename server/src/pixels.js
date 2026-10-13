@@ -29,7 +29,7 @@ export function update(seller, b = {}) {
     const raw = String(b[p.key] || "").trim();
     const v = p.clean(raw);
     if (raw && !p.re.test(v)) throw httpError(400, `That ${p.name} ID doesn't look right. ${p.hint}.`);
-    if (v && !allowed(seller)) throw httpError(402, "Ad pixels come with Launch and Pro.", { upgrade: "launch" });
+    if (v && !allowed(seller)) throw httpError(402, "Ad pixels come with Snapfront Pro.", { upgrade: "pro" });
     set[p.key] = v;
   }
   const keys = Object.keys(set);

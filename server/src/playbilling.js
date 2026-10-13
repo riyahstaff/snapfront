@@ -1,6 +1,8 @@
 // Snapfront's own plans, sold in the Android app through Google Play Billing.
-//   snapfront_launch  one-time product, $29: the Launch plan for good
-//   snapfront_pro     subscription with a monthly base plan, $14.99: the Pro plan while it's paid up
+//   snapfront_lifetime  one-time product, $299: everything (the Pro plan) for good
+//   snapfront_pro       subscription, base plan "pro-monthly-69" at $69 a month: the Pro plan while it's paid up
+//   snapfront_launch    one-time product, $29 (no longer sold; buyers keep the Launch plan)
+//   snapfront_pro / "monthly" base plan at $14.99 (no longer sold; existing subscribers keep it)
 // The phone sends each purchase token here; we ask Google about it with our service account,
 // acknowledge it (Google refunds purchases that aren't acknowledged within 3 days), remember it,
 // and set the account's plan from what Google says. The server never trusts the phone's word.
@@ -11,7 +13,22 @@ import { httpError } from "./claude.js";
 
 export const LAUNCH = "snapfront_launch";
 export const PRO = "snapfront_pro";
-export const PRO_BASE_PLAN = "monthly";
+export const LIFETIME = "snapfront_lifetime";
+export const PRO_BASE_PLAN = "pro-monthly-69";
+export const OLD_PRO_BASE_PLAN = "monthly";
+export const PLAY_PRICES = { lifetime: process.env.PLAY_LIFETIME_PRICE || "299.00", pro: process.env.PLAY_PRO_PRICE || "69.00" };
+const ONCE = new Set([LAUNCH, LIFETIME]);
+// Partner commissions hear when a Play purchase starts or stops counting.
+const listeners = [];
+export const onPurchaseChange = (fn) => listeners.push(fn);
+function notify(token, before) {
+  const r = db.prepare("SELECT * FROM play_purchases WHERE token = ?").get(token);
+  if (!r || r.status === before) return;
+  for (const fn of listeners) {
+    try { fn({ source: "play", ref: token, account_id: r.account_id, plan: r.product_id === LIFETIME ? "lifetime" : r.product_id === PRO ? "pro" : "launch", status: r.status,
+      amount_cents: r.product_id === LIFETIME ? Math.round(Number(PLAY_PRICES.lifetime) * 100) : null }); } catch (e) { console.warn("[play] listener", e.message); }
+  }
+}
 const API = "https://androidpublisher.googleapis.com/androidpublisher/v3/applications";
 
 db.exec(`CREATE TABLE IF NOT EXISTS play_purchases (
@@ -77,17 +94,17 @@ const SUB_OK = new Set(["SUBSCRIPTION_STATE_ACTIVE", "SUBSCRIPTION_STATE_IN_GRAC
 /** Ask Google about one purchase and acknowledge it. Returns the row to store. */
 async function inspect(productId, purchaseToken) {
   const t = encodeURIComponent(purchaseToken);
-  if (productId === LAUNCH) {
-    const r = await play("GET", `/purchases/products/${LAUNCH}/tokens/${t}`);
+  if (ONCE.has(productId)) {
+    const r = await play("GET", `/purchases/products/${productId}/tokens/${t}`);
     if (r.status === 404 || r.status === 400) throw httpError(400, "Google Play doesn't recognise that purchase.");
     if (r.status !== 200) { console.error("[play] product", r.status, JSON.stringify(r.body).slice(0, 300)); throw httpError(502, "Couldn't check your purchase with Google Play. Try again in a minute."); }
     const p = r.body;
     const status = p.purchaseState === 0 ? "active" : p.purchaseState === 2 ? "pending" : "ended";
     if (status === "active" && p.acknowledgementState === 0) {
-      const a = await play("POST", `/purchases/products/${LAUNCH}/tokens/${t}:acknowledge`, {});
-      if (a.status >= 300) console.warn("[play] acknowledge launch", a.status, JSON.stringify(a.body).slice(0, 200));
+      const a = await play("POST", `/purchases/products/${productId}/tokens/${t}:acknowledge`, {});
+      if (a.status >= 300) console.warn("[play] acknowledge", productId, a.status, JSON.stringify(a.body).slice(0, 200));
     }
-    return { product_id: LAUNCH, kind: "once", status, expires_at: null, order_id: p.orderId || null, test: p.purchaseType === 0 ? 1 : 0, owner: p.obfuscatedExternalAccountId || null };
+    return { product_id: productId, kind: "once", status, expires_at: null, order_id: p.orderId || null, test: p.purchaseType === 0 ? 1 : 0, owner: p.obfuscatedExternalAccountId || null };
   }
   if (productId === PRO) {
     const r = await play("GET", `/purchases/subscriptionsv2/tokens/${t}`);
@@ -112,9 +129,11 @@ async function inspect(productId, purchaseToken) {
 export function planFromPurchases(accountId, now = Date.now()) {
   const rows = db.prepare("SELECT * FROM play_purchases WHERE account_id = ? AND status = 'active'").all(accountId);
   if (rows.some((r) => r.kind === "sub" && r.expires_at && Date.parse(r.expires_at) > now)) return "pro";
+  if (rows.some((r) => r.kind === "once" && r.product_id === LIFETIME)) return "pro";
   if (rows.some((r) => r.kind === "once")) return "launch";
   return "free";
 }
+export const hasLifetime = (accountId) => Boolean(db.prepare("SELECT 1 FROM play_purchases WHERE account_id = ? AND product_id = ? AND status = 'active'").get(accountId, LIFETIME));
 // Other places a plan can be bought (the website's Stripe checkout) register here; the best plan wins.
 const RANK = { free: 0, launch: 1, pro: 2 };
 const planSources = [planFromPurchases];
@@ -140,9 +159,11 @@ export async function recordPurchase(account, { productId, purchaseToken }) {
   if ((owner && owner !== account.id) || (existing && existing.account_id !== account.id)) {
     throw httpError(409, "This purchase belongs to another Snapfront account. Sign in with your email in Settings to get it back.");
   }
+  const before = db.prepare("SELECT status FROM play_purchases WHERE token = ?").get(tok)?.status;
   db.prepare(`INSERT INTO play_purchases (token, account_id, product_id, kind, status, expires_at, order_id, test) VALUES (?,?,?,?,?,?,?,?)
     ON CONFLICT(token) DO UPDATE SET status = excluded.status, expires_at = excluded.expires_at, order_id = COALESCE(excluded.order_id, order_id), checked_at = datetime('now')`)
     .run(tok, account.id, row.product_id, row.kind, row.status, row.expires_at, row.order_id, row.test);
+  notify(tok, before);
   return { plan: applyPlan(account.id), status: row.status };
 }
 
@@ -156,6 +177,7 @@ export async function refreshAccount(accountId, { olderThanMinutes = 0 } = {}) {
       if (e.status === 400) db.prepare("UPDATE play_purchases SET status = 'ended', checked_at = datetime('now') WHERE token = ?").run(r.token);
       else throw e;
     }
+    notify(r.token, r.status);
   }
   return applyPlan(accountId);
 }
@@ -195,13 +217,13 @@ export async function createProducts(opts = {}) {
   try { await makeProducts(opts, log); } catch (e) { log.push(["error", 0, e.message]); }
   return log;
 }
-async function makeProducts({ launchPrice = "29.00", proPrice = "14.99" } = {}, log) {
-  // Launch: a one-time product with one "buy" purchase option.
-  const lp = await prices(launchPrice);
+async function makeProducts({ lifetimePrice = PLAY_PRICES.lifetime, proPrice = PLAY_PRICES.pro } = {}, log) {
+  // Lifetime: a one-time product with one "buy" purchase option.
+  const lp = await prices(lifetimePrice);
   if (lp.usOnly) log.push(["prices", 0, "Google refused the currency conversion, so these are US-only for now"]);
   const once = {
-    packageName: config.playPackage, productId: LAUNCH,
-    listings: [{ languageCode: "en-US", title: "Snapfront Launch", description: "Put your store live and take orders. One payment, yours for good." }],
+    packageName: config.playPackage, productId: LIFETIME,
+    listings: [{ languageCode: "en-US", title: "Snapfront Lifetime", description: "Everything in Snapfront, for life. One payment, no monthly bill." }],
     taxAndComplianceSettings: {},
     purchaseOptions: [{
       purchaseOptionId: "buy", buyOption: { legacyCompatible: true },
@@ -210,31 +232,44 @@ async function makeProducts({ launchPrice = "29.00", proPrice = "14.99" } = {}, 
     }],
   };
   // Google documents this one path in lower case (get and activate use oneTimeProducts).
-  let r = await play("PATCH", `/onetimeproducts/${LAUNCH}?allowMissing=true&updateMask=listings,purchaseOptions&regionsVersion.version=${encodeURIComponent(lp.version || "2022/02")}`, once);
-  log.push(["launch product", r.status, r.status >= 300 ? r.body : "ok"]);
+  let r = await play("PATCH", `/onetimeproducts/${LIFETIME}?allowMissing=true&updateMask=listings,purchaseOptions&regionsVersion.version=${encodeURIComponent(lp.version || "2022/02")}`, once);
+  log.push(["lifetime product", r.status, r.status >= 300 ? r.body : "ok"]);
   if (r.status < 300) {
-    r = await play("POST", `/oneTimeProducts/${LAUNCH}/purchaseOptions:batchUpdateStates`, { requests: [{ activatePurchaseOptionRequest: { packageName: config.playPackage, productId: LAUNCH, purchaseOptionId: "buy" } }] });
-    log.push(["launch activate", r.status, r.status >= 300 ? r.body : "ok"]);
+    r = await play("POST", `/oneTimeProducts/${LIFETIME}/purchaseOptions:batchUpdateStates`, { requests: [{ activatePurchaseOptionRequest: { packageName: config.playPackage, productId: LIFETIME, purchaseOptionId: "buy" } }] });
+    log.push(["lifetime activate", r.status, r.status >= 300 ? r.body : "ok"]);
   }
-  // Pro: a subscription with a monthly auto-renewing base plan.
+  // Pro: a new $69 monthly base plan on the existing subscription (old subscribers keep theirs).
   const pp = await prices(proPrice);
-  const sub = {
-    packageName: config.playPackage, productId: PRO,
-    listings: [{ languageCode: "en-US", title: "Snapfront Pro", description: "Up to 10 live stores, far bigger AI allowances, AI video and the store assistant.",
-      benefits: ["Up to 10 live stores", "300 AI product pages a month", "AI video clips and lifestyle photos"] }],
-    basePlans: [{
-      basePlanId: PRO_BASE_PLAN,
-      autoRenewingBasePlanType: { billingPeriodDuration: "P1M", gracePeriodDuration: "P7D", resubscribeState: "RESUBSCRIBE_STATE_ACTIVE", legacyCompatible: true },
-      regionalConfigs: pp.regions.map((x) => ({ regionCode: x.regionCode, price: x.price, newSubscriberAvailability: true })),
-      ...(pp.other ? { otherRegionsConfig: { usdPrice: pp.other.usdPrice, eurPrice: pp.other.eurPrice, newSubscriberAvailability: true } } : {}),
-    }],
+  const basePlan = {
+    basePlanId: PRO_BASE_PLAN,
+    autoRenewingBasePlanType: { billingPeriodDuration: "P1M", gracePeriodDuration: "P7D", resubscribeState: "RESUBSCRIBE_STATE_ACTIVE", legacyCompatible: true },
+    regionalConfigs: pp.regions.map((x) => ({ regionCode: x.regionCode, price: x.price, newSubscriberAvailability: true })),
+    ...(pp.other ? { otherRegionsConfig: { usdPrice: pp.other.usdPrice, eurPrice: pp.other.eurPrice, newSubscriberAvailability: true } } : {}),
   };
-  r = await play("POST", `/subscriptions?productId=${PRO}&regionsVersion.version=${encodeURIComponent(pp.version || "2022/02")}`, sub);
+  const listings = [{ languageCode: "en-US", title: "Snapfront Pro", description: "Everything in Snapfront, billed monthly: stores, AI products, email marketing, affiliates and more.",
+    benefits: ["Up to 10 live stores", "Email marketing and affiliates", "AI product pages, photos and video"] }];
+  const existing = await play("GET", `/subscriptions/${PRO}`);
+  const version = encodeURIComponent(pp.version || "2022/02");
+  if (existing.status === 200) {
+    const plans = (existing.body.basePlans || []).filter((b) => b.basePlanId !== PRO_BASE_PLAN);
+    r = await play("PATCH", `/subscriptions/${PRO}?updateMask=basePlans,listings&regionsVersion.version=${version}`, { packageName: config.playPackage, productId: PRO, listings, basePlans: [...plans, basePlan] });
+  } else {
+    r = await play("POST", `/subscriptions?productId=${PRO}&regionsVersion.version=${version}`, { packageName: config.playPackage, productId: PRO, listings, basePlans: [basePlan] });
+  }
   log.push(["pro subscription", r.status, r.status >= 300 ? r.body : "ok"]);
-  if (r.status < 300 || r.status === 409) {
+  if (r.status < 300) {
     r = await play("POST", `/subscriptions/${PRO}/basePlans/${PRO_BASE_PLAN}:activate`, {});
     log.push(["pro activate", r.status, r.status >= 300 ? r.body : "ok"]);
   }
+  return log;
+}
+/** Stop selling the old $29 Launch and $14.99 Pro in older app versions (people who have them keep them). */
+export async function retireOldProducts() {
+  const log = [];
+  let r = await play("POST", `/subscriptions/${PRO}/basePlans/${OLD_PRO_BASE_PLAN}:deactivate`, {});
+  log.push(["old pro base plan", r.status, r.status >= 300 ? r.body : "ok"]);
+  r = await play("POST", `/oneTimeProducts/${LAUNCH}/purchaseOptions:batchUpdateStates`, { requests: [{ deactivatePurchaseOptionRequest: { packageName: config.playPackage, productId: LAUNCH, purchaseOptionId: "buy" } }] });
+  log.push(["launch", r.status, r.status >= 300 ? r.body : "ok"]);
   return log;
 }
 
@@ -246,13 +281,13 @@ let productsReady = false;
 export async function ensureProducts() {
   if (productsReady || !enabled()) return productsReady;
   const sub = await play("GET", `/subscriptions/${PRO}`);
-  const once = await play("GET", `/oneTimeProducts/${LAUNCH}`);
+  const once = await play("GET", `/oneTimeProducts/${LIFETIME}`);
   const subActive = sub.status === 200 && (sub.body.basePlans || []).some((b) => b.basePlanId === PRO_BASE_PLAN && b.state === "ACTIVE");
   const onceActive = once.status === 200 && (once.body.purchaseOptions || []).some((o) => o.state === "ACTIVE");
-  if (subActive && onceActive) { productsReady = true; console.log("[play] Launch and Pro are on sale"); return true; }
+  if (subActive && onceActive) { productsReady = true; console.log("[play] Lifetime and Pro are on sale"); return true; }
   const log = await createProducts();
   const failed = log.filter((l) => l[1] >= 300 || l[0] === "error");
   if (failed.length) console.warn("[play] products not ready yet:", JSON.stringify(failed).slice(0, 400));
-  else { productsReady = true; console.log("[play] created Launch and Pro:", JSON.stringify(log).slice(0, 300)); }
+  else { productsReady = true; console.log("[play] created Lifetime and Pro:", JSON.stringify(log).slice(0, 300)); }
   return productsReady;
 }

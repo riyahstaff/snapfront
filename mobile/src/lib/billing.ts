@@ -10,11 +10,12 @@ import {
 } from "expo-iap";
 import { api, type Me } from "./api";
 
-export const LAUNCH = "snapfront_launch";
+export const LAUNCH = "snapfront_launch";     // no longer sold; still restored for people who bought it
+export const LIFETIME = "snapfront_lifetime";
 export const PRO = "snapfront_pro";
-const PRO_BASE_PLAN = "monthly";
+const PRO_BASE_PLAN = "pro-monthly-69";
 
-export type Offer = { plan: "launch" | "pro"; price: string; sku: string; offerToken?: string };
+export type Offer = { plan: "lifetime" | "pro"; price: string; sku: string; offerToken?: string };
 type SubOffer = { basePlanIdAndroid?: string | null; offerTokenAndroid?: string | null; displayPrice: string };
 
 let accountId: string | null = null;
@@ -37,7 +38,7 @@ const tokenOf = (p: Purchase) => (p as { purchaseToken?: string | null }).purcha
 
 /** Send one purchase to the server, then tell Google Play we've handled it. */
 async function deliver(p: Purchase): Promise<Me | null> {
-  if (p.productId !== LAUNCH && p.productId !== PRO) return null;
+  if (p.productId !== LAUNCH && p.productId !== LIFETIME && p.productId !== PRO) return null;
   if (p.purchaseState === "pending") return null;   // e.g. paying with cash at a shop: it arrives later
   const token = tokenOf(p);
   if (!token) return null;
@@ -79,13 +80,14 @@ export async function startBilling(id: string) {
 export async function getOffers(): Promise<Offer[]> {
   if (!(await connect())) return [];
   const out: Offer[] = [];
-  const once = (await fetchProducts({ skus: [LAUNCH], type: "in-app" }).catch(() => [])) as Product[];
-  const launch = once.find((p) => p.id === LAUNCH);
-  if (launch) out.push({ plan: "launch", price: launch.displayPrice, sku: LAUNCH });
+  const once = (await fetchProducts({ skus: [LIFETIME], type: "in-app" }).catch(() => [])) as Product[];
+  const lifetime = once.find((p) => p.id === LIFETIME);
+  if (lifetime) out.push({ plan: "lifetime", price: lifetime.displayPrice, sku: LIFETIME });
   const subs = (await fetchProducts({ skus: [PRO], type: "subs" }).catch(() => [])) as ProductSubscription[];
   const pro = subs.find((p) => p.id === PRO);
   const offers: SubOffer[] = (pro as { subscriptionOffers?: SubOffer[] | null } | undefined)?.subscriptionOffers ?? [];
-  const monthly = offers.find((o) => o.basePlanIdAndroid === PRO_BASE_PLAN && o.offerTokenAndroid) ?? offers.find((o) => o.offerTokenAndroid);
+  // Only the current monthly price: the old $14.99 base plan stays for people who already have it.
+  const monthly = offers.find((o) => o.basePlanIdAndroid === PRO_BASE_PLAN && o.offerTokenAndroid);
   if (pro && monthly?.offerTokenAndroid) out.push({ plan: "pro", price: monthly.displayPrice || pro.displayPrice, sku: PRO, offerToken: monthly.offerTokenAndroid });
   return out;
 }
@@ -96,7 +98,7 @@ export async function buy(offer: Offer): Promise<Me | null> {
   listen();
   const done = new Promise<Me | null>((resolve, reject) => { waiting = { sku: offer.sku, resolve, reject }; });
   try {
-    if (offer.plan === "launch") {
+    if (offer.plan === "lifetime") {
       await requestPurchase({ type: "in-app", request: { google: { skus: [offer.sku], obfuscatedAccountId: accountId } } });
     } else {
       await requestPurchase({ type: "subs", request: { google: { skus: [offer.sku], obfuscatedAccountId: accountId,

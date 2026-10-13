@@ -5,9 +5,33 @@
 import * as SecureStore from "expo-secure-store";
 import { API_URL, ApiError, api, type Me } from "./api";
 
-export const LAUNCH = "launch";
+export const LIFETIME = "lifetime";
 export const PRO = "pro";
-export type Offer = { plan: "launch" | "pro"; price: string; sku: string; offerToken?: string };
+export type Offer = { plan: "lifetime" | "pro"; price: string; sku: string; offerToken?: string };
+
+/* ---------- Snapfront Partners: who sent this person ---------- */
+// A partner link (snapfront.app/r/CODE) leaves a cookie on .snapfront.app; a link straight to the
+// website can carry ?via=CODE. The first one is kept, and the server records it on the account.
+const VIA = "snapfront.via";
+function readVia(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const saved = window.localStorage.getItem(VIA);
+    if (saved) return saved;
+    const fromUrl = new URLSearchParams(window.location.search).get("via");
+    const fromCookie = /(?:^|;\s*)sf_via=([^;]+)/.exec(document.cookie)?.[1];
+    const v = fromCookie ? decodeURIComponent(fromCookie) : fromUrl ? `${fromUrl}.${Date.now()}` : null;
+    if (v) window.localStorage.setItem(VIA, v);
+    return v;
+  } catch { return null; }
+}
+let claimed = false;
+async function claimReferral() {
+  const via = readVia();
+  if (!via || claimed) return;
+  claimed = true;
+  await call("POST", "/api/partners/claim", { code: via }).catch(() => { claimed = false; });
+}
 
 let accountId: string | null = null;
 export const billingAvailable = () => true;
@@ -28,6 +52,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 /** Called when the app opens: if the browser just came back from Stripe, unlock the plan. */
 export async function startBilling(id: string) {
   accountId = id;
+  void claimReferral();
   await finishReturnFromCheckout().catch(() => null);
 }
 
@@ -66,7 +91,7 @@ export async function getAppInfo(): Promise<{ android_url: string | null }> {
 /** Sends the browser to Stripe's secure checkout page. It comes back to /plans when done. */
 export async function buy(offer: Offer): Promise<Me | null> {
   if (!accountId) accountId = (await api.me()).account.id;
-  const { url } = await call<{ url: string }>("POST", "/api/billing/web/checkout", { plan: offer.plan });
+  const { url } = await call<{ url: string }>("POST", "/api/billing/web/checkout", { plan: offer.plan, ref: readVia() });
   window.location.assign(url);
   return new Promise<Me | null>(() => {});   // the page is leaving for Stripe
 }

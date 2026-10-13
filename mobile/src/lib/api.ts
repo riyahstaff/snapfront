@@ -178,6 +178,7 @@ export type Account = {
   email: string | null;
   plan: PlanId;
   plan_name: string;
+  lifetime?: boolean;
   limits: PlanLimits;
   period: string;  // "YYYY-MM", or "trial" on the free plan
   usage: { photo: number; product: number; agent: number; research: number; studio: number; post: number; scene: number; video: number };
@@ -648,3 +649,19 @@ export const autodm = {
 };
 
 export const money = (n: number) => `$${(Number(n) || 0).toFixed(2)}`;
+
+/* ---------- Snapfront Partners (earn by sharing Snapfront) ---------- */
+export type PartnerProgram = { rate: number; monthly_rate: number; hold_days: number; window_days: number; lifetime_price: number; per_sale: number; terms: string[] };
+export type PartnerCommission = { id: string; created_at: string; plan: string; sale: number; commission: number; status: "pending" | "approved" | "paid" | "void"; available_at: string; paid_at: string | null; note: string };
+export type PartnerView = {
+  joined: boolean; has_email?: boolean; program: PartnerProgram;
+  code?: string; status?: "active" | "suspended"; link?: string; home_link?: string;
+  stats?: { clicks: number; signups: number; sales: number; pending: number; ready: number; paid: number };
+  payout?: { method: "stripe" | "paypal" | "none"; detail: string; paypal_email: string | null };
+  commissions?: PartnerCommission[];
+};
+export const partners = {
+  me: () => request<PartnerView>("GET", "/api/partners/me"),
+  join: (b: { agree: boolean; paypal_email?: string; code?: string }) => request<PartnerView>("POST", "/api/partners/join", b),
+  update: (b: { paypal_email?: string | null; code?: string }) => request<PartnerView>("PATCH", "/api/partners/me", b),
+};

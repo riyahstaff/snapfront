@@ -1,4 +1,5 @@
-// Pricing: Free (try it), Launch ($29 once: one live store), Pro ($14.99/month: up to 10 stores,
+// Pricing: Free (try it) and Pro: everything, bought once for life ($299, "Lifetime") or monthly ($69).
+// Launch ($29 once: one live store) is no longer sold; people who bought it keep it. Pro: up to 10 stores,
 // bigger AI allowances and the store assistant). Purchases happen in the Android app through Google
 // Play Billing (playbilling.js) or on the website through Stripe Checkout (webbilling.js); the server checks both itself.
 import crypto from "node:crypto";
@@ -80,9 +81,9 @@ export function assertAllowance(account, kind) {
   if (kind === "agent" && !limit) throw httpError(402, "The store assistant comes with Pro.", { upgrade: "pro" });
   if (kind === "video" && !limit) throw httpError(402, "AI video clips come with Pro: 10 a month.", { upgrade: "pro" });
   if (used(account.id, period(planId), kind) >= limit) {
-    const upgrade = planId === "free" ? "launch" : planId === "launch" ? "pro" : null;
+    const upgrade = planId === "pro" ? null : "pro";
     const msg = planId === "free"
-      ? `You've used your free ${KIND_LABEL[kind]}. Get Launch to keep creating and go live.`
+      ? `You've used your free ${KIND_LABEL[kind]}. Get Snapfront Pro (${webbilling.priceLine()}) to keep creating and go live.`
       : planId === "launch" ? `You've used this month's ${KIND_LABEL[kind]}. Pro gives you far more.`
       : `You've used this month's ${KIND_LABEL[kind]}. They reset on the 1st.`;
     throw httpError(402, msg, { upgrade });
@@ -116,8 +117,8 @@ export function storeCanSell(store) {
 export function assertCanPublish(store) {
   if (storeCanSell(store)) return;
   const planId = effectivePlan(getAccount(store.account_id));
-  throw httpError(402, planId === "free" ? "Get Launch ($29, one time) to publish your store and start selling." : "Your plan covers fewer live stores. Upgrade to Pro to sell from up to 10 stores.",
-    { upgrade: planId === "free" ? "launch" : "pro" });
+  throw httpError(402, planId === "free" ? `Get Snapfront Pro (${webbilling.priceLine()}) to publish your store and start selling.` : "Your plan covers fewer live stores. Upgrade to Pro to sell from up to 10 stores.",
+    { upgrade: "pro" });
 }
 
 export function publicAccount(account, currentStoreId) {
@@ -126,7 +127,7 @@ export function publicAccount(account, currentStoreId) {
   const stores = storesOf(account.id);
   const plan = PLANS[planId];
   return {
-    id: account.id, email: account.email, plan: planId, plan_name: plan.name,
+    id: account.id, email: account.email, plan: planId, plan_name: webbilling.hasLifetime(account.id) ? "Pro Lifetime" : plan.name, lifetime: webbilling.hasLifetime(account.id),
     limits: plan, period: p,
     usage: Object.fromEntries(["photo", "product", "agent", "research", "studio", "post", "scene", "video"].map((k) => [k, used(account.id, p, k)])),
     stores: stores.map((s, i) => ({ id: s.id, store_name: s.store_name, store_slug: s.store_slug, live_allowed: i < plan.liveStores, current: s.id === currentStoreId })),

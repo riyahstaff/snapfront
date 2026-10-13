@@ -77,6 +77,6 @@ test("the endpoint searches with a public image link and counts toward the plan"
   assert.equal((await call({ image_url: "https://cf.cjdropshipping.com/b.jpg" })).status, 200);
   const over = await call({ image_url: "https://cf.cjdropshipping.com/c.jpg" });
   assert.equal(over.status, 402);
-  assert.equal((await over.json()).upgrade, "launch");
+  assert.equal((await over.json()).upgrade, "pro");
   assert.equal(db.prepare("SELECT count FROM usage WHERE account_id = ? AND kind = 'research'").get(reg.account.id).count, 3);
 });

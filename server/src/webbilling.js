@@ -8,10 +8,14 @@ import { httpError } from "./claude.js";
 import { stripeClient } from "./payments.js";
 import * as playbilling from "./playbilling.js";
 
+// What's on sale: everything in Snapfront, either once for good (Lifetime) or monthly (Pro).
+// Both unlock the "pro" plan. Launch ($29 once) is no longer sold; people who bought it keep it.
+const cents = (env, fallback) => (Number.isInteger(Number(process.env[env])) && Number(process.env[env]) >= 100 ? Number(process.env[env]) : fallback);
 export const PLANS = {
-  launch: { name: "Snapfront Launch", cents: 2900, mode: "payment", description: "Put your store live and take orders. One payment, yours for good." },
-  pro: { name: "Snapfront Pro", cents: 1499, mode: "subscription", description: "Up to 10 live stores, bigger AI allowances and the store assistant." },
+  lifetime: { name: "Snapfront Lifetime", cents: cents("LIFETIME_PRICE_CENTS", 29900), mode: "payment", grants: "pro", description: "Everything in Snapfront, for life. One payment, no monthly bill." },
+  pro: { name: "Snapfront Pro", cents: cents("PRO_PRICE_CENTS", 6900), mode: "subscription", grants: "pro", description: "Everything in Snapfront, billed monthly. Cancel any time." },
 };
+const LEGACY = { launch: { grants: "launch" } };
 export const enabled = () => Boolean(config.stripeKey);
 const webAppUrl = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
 const money = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
@@ -19,7 +23,7 @@ const money = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 db.exec(`CREATE TABLE IF NOT EXISTS stripe_plan_purchases (
   session_id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL,
-  plan TEXT NOT NULL,                     -- launch | pro
+  plan TEXT NOT NULL,                     -- lifetime | pro (launch: no longer sold)
   kind TEXT NOT NULL,                     -- once | sub
   status TEXT NOT NULL DEFAULT 'pending', -- pending | active | ended
   subscription_id TEXT,
@@ -29,20 +33,32 @@ db.exec(`CREATE TABLE IF NOT EXISTS stripe_plan_purchases (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 )`);
 db.exec("CREATE TABLE IF NOT EXISTS stripe_plan_customers (account_id TEXT PRIMARY KEY, customer_id TEXT NOT NULL)");
+// The account that opened the checkout (Stripe's metadata names it), kept when a purchase moves to another account.
+if (!db.prepare("PRAGMA table_info(stripe_plan_purchases)").all().some((c) => c.name === "buyer_account")) db.exec("ALTER TABLE stripe_plan_purchases ADD COLUMN buyer_account TEXT");
+if (!db.prepare("PRAGMA table_info(stripe_plan_purchases)").all().some((c) => c.name === "amount_cents")) db.exec("ALTER TABLE stripe_plan_purchases ADD COLUMN amount_cents INTEGER");
+
+// Other parts of Snapfront (partner commissions) hear when a purchase starts or stops counting.
+const listeners = [];
+export const onPurchaseChange = (fn) => listeners.push(fn);
 
 /** Where the website sends people to get the Android app (set PLAY_STORE_URL to override). */
 export const androidUrl = () => process.env.PLAY_STORE_URL || `https://play.google.com/store/apps/details?id=${config.playPackage || "com.sidebanc.snapfront"}`;
 
+/** "$299 for life or $69 a month", for upgrade messages. */
+export const priceLine = () => `${money(PLANS.lifetime.cents)} for life or ${money(PLANS.pro.cents)} a month`;
 /** Prices shown on the website's plan screen. */
 export const offers = () => Object.entries(PLANS).map(([plan, p]) => ({ plan, price: money(p.cents), sku: plan }));
 
 export function planFromPurchases(accountId, now = Date.now()) {
   const rows = db.prepare("SELECT * FROM stripe_plan_purchases WHERE account_id = ? AND status = 'active'").all(accountId);
   if (rows.some((r) => r.kind === "sub" && (!r.expires_at || Date.parse(r.expires_at) > now))) return "pro";
+  if (rows.some((r) => r.kind === "once" && (PLANS[r.plan] || LEGACY[r.plan])?.grants === "pro")) return "pro";
   if (rows.some((r) => r.kind === "once")) return "launch";
   return "free";
 }
 playbilling.addPlanSource(planFromPurchases);
+/** Has this account bought Lifetime (on the website or in the app)? */
+export const hasLifetime = (accountId) => Boolean(db.prepare("SELECT 1 FROM stripe_plan_purchases WHERE account_id = ? AND plan = 'lifetime' AND status = 'active'").get(accountId)) || playbilling.hasLifetime(accountId);
 
 async function customerFor(account) {
   const known = db.prepare("SELECT customer_id FROM stripe_plan_customers WHERE account_id = ?").get(account.id)?.customer_id;
@@ -53,11 +69,13 @@ async function customerFor(account) {
 }
 
 /** Open Stripe Checkout for a plan. Returns the page to send the browser to. */
-export async function startCheckout(account, plan) {
+export async function startCheckout(account, plan, { ref = null } = {}) {
+  if (plan === "launch") plan = "lifetime";   // old links
   const p = PLANS[plan];
-  if (!p) throw httpError(400, "Pick Launch or Pro.");
-  const current = playbilling.bestPlan(account.id);
-  if (current === "pro" || current === plan) throw httpError(409, `You already have ${current === "pro" ? "Pro" : "Launch"}.`);
+  if (!p) throw httpError(400, "Pick Lifetime or Pro monthly.");
+  if (hasLifetime(account.id)) throw httpError(409, "You already have Snapfront Lifetime.");
+  // Monthly subscribers can still switch to Lifetime (their subscription is then stopped).
+  if (plan === "pro" && playbilling.bestPlan(account.id) === "pro") throw httpError(409, "You already have Snapfront Pro.");
   const s = stripeClient();
   const price_data = { currency: "usd", unit_amount: p.cents, product_data: { name: p.name, description: p.description },
     ...(p.mode === "subscription" ? { recurring: { interval: "month" } } : {}) };
@@ -66,14 +84,14 @@ export async function startCheckout(account, plan) {
     customer: await customerFor(account),
     client_reference_id: account.id,
     line_items: [{ price_data, quantity: 1 }],
-    metadata: { snapfront_plan: plan, snapfront_account: account.id },
+    metadata: { snapfront_plan: plan, snapfront_account: account.id, ...(ref ? { snapfront_partner: ref } : {}) },
     ...(p.mode === "subscription" ? { subscription_data: { metadata: { snapfront_plan: plan, snapfront_account: account.id } } } : {}),
     success_url: `${webAppUrl()}/plans?checkout=done&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${webAppUrl()}/plans?checkout=canceled`,
     allow_promotion_codes: true,
   });
-  db.prepare("INSERT INTO stripe_plan_purchases (session_id, account_id, plan, kind) VALUES (?,?,?,?)")
-    .run(session.id, account.id, plan, p.mode === "subscription" ? "sub" : "once");
+  db.prepare("INSERT INTO stripe_plan_purchases (session_id, account_id, plan, kind, buyer_account, amount_cents) VALUES (?,?,?,?,?,?)")
+    .run(session.id, account.id, plan, p.mode === "subscription" ? "sub" : "once", account.id, p.cents);
   return { url: session.url };
 }
 
@@ -87,7 +105,7 @@ const periodEnd = (sub) => {
 async function inspect(row) {
   const s = stripeClient();
   const session = await s.checkout.sessions.retrieve(row.session_id);
-  if (session.metadata?.snapfront_account !== row.account_id) return { ...row, status: "ended" };
+  if (session.metadata?.snapfront_account !== (row.buyer_account || row.account_id)) return { ...row, status: "ended" };
   row = { ...row, email: session.customer_details?.email || session.customer_email || null };
   if (session.status === "expired") return { ...row, status: "ended" };
   if (session.status !== "complete") return { ...row, status: "pending" };
@@ -104,11 +122,23 @@ async function inspect(row) {
     const pi = await s.paymentIntents.retrieve(piId, { expand: ["latest_charge"] });
     if (pi.latest_charge && typeof pi.latest_charge === "object" && pi.latest_charge.refunded) status = "ended";
   }
-  return { ...row, payment_intent: piId || null, status };
+  return { ...row, payment_intent: piId || null, status, amount_cents: session.amount_total ?? row.amount_cents };
 }
 function save(r) {
-  db.prepare("UPDATE stripe_plan_purchases SET status = ?, subscription_id = ?, payment_intent = ?, expires_at = ?, checked_at = datetime('now') WHERE session_id = ?")
-    .run(r.status, r.subscription_id ?? null, r.payment_intent ?? null, r.expires_at ?? null, r.session_id);
+  const before = db.prepare("SELECT status FROM stripe_plan_purchases WHERE session_id = ?").get(r.session_id)?.status;
+  db.prepare("UPDATE stripe_plan_purchases SET status = ?, subscription_id = ?, payment_intent = ?, expires_at = ?, amount_cents = COALESCE(?, amount_cents), checked_at = datetime('now') WHERE session_id = ?")
+    .run(r.status, r.subscription_id ?? null, r.payment_intent ?? null, r.expires_at ?? null, r.amount_cents ?? null, r.session_id);
+  if (before !== r.status) {
+    const row = db.prepare("SELECT * FROM stripe_plan_purchases WHERE session_id = ?").get(r.session_id);
+    for (const fn of listeners) { try { fn({ source: "stripe", ref: row.session_id, account_id: row.account_id, plan: row.plan, status: row.status, amount_cents: row.amount_cents }); } catch (e) { console.warn("[webbilling] listener", e.message); } }
+  }
+}
+/** After Lifetime is bought, stop any monthly web subscription at the end of the paid month. */
+async function endMonthlyAfterLifetime(accountId) {
+  if (!hasLifetime(accountId)) return;
+  for (const r of db.prepare("SELECT * FROM stripe_plan_purchases WHERE account_id = ? AND kind = 'sub' AND status = 'active' AND subscription_id IS NOT NULL").all(accountId)) {
+    await stripeClient().subscriptions.update(r.subscription_id, { cancel_at_period_end: true }).catch((e) => console.warn("[webbilling] end monthly", e.message));
+  }
 }
 
 /** The browser came back from Stripe: check that checkout and unlock the plan. Returns the plan
@@ -119,6 +149,7 @@ export async function confirm(account, sessionId) {
   if (row.account_id !== account.id) throw httpError(409, "This payment belongs to another Snapfront account. Sign in with your email to get it back.");
   const checked = await inspect(row);
   save(checked);
+  if (checked.status === "active" && row.plan === "lifetime") await endMonthlyAfterLifetime(account.id);
   return { plan: playbilling.applyPlan(account.id), email: checked.email || null };
 }
 
@@ -128,7 +159,7 @@ export async function confirm(account, sessionId) {
  */
 export function transferPurchases(fromAccountId, toAccountId) {
   if (fromAccountId === toAccountId) return 0;
-  const moved = db.prepare("UPDATE stripe_plan_purchases SET account_id = ? WHERE account_id = ?").run(toAccountId, fromAccountId).changes;
+  const moved = db.prepare("UPDATE stripe_plan_purchases SET buyer_account = COALESCE(buyer_account, account_id), account_id = ? WHERE account_id = ?").run(toAccountId, fromAccountId).changes;
   if (!moved) return 0;
   const had = db.prepare("SELECT 1 FROM stripe_plan_customers WHERE account_id = ?").get(toAccountId);
   if (!had) db.prepare("UPDATE stripe_plan_customers SET account_id = ? WHERE account_id = ?").run(toAccountId, fromAccountId);

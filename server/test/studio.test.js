@@ -115,7 +115,7 @@ test("the allowance runs out, and failures don't use one up", async () => {
   db.prepare("UPDATE usage SET count = 10 WHERE account_id = ? AND kind = 'studio'").run(me.account.id);
   let r = await call("POST", "/api/studio", { image_file: original, style: { color: "sage" } });
   assert.equal(r.status, 402);
-  assert.equal(r.body.upgrade, "launch");
+  assert.equal(r.body.upgrade, "pro");
   db.prepare("UPDATE accounts SET plan = 'launch' WHERE id = ?").run(me.account.id);
   fail = 400;
   r = await call("POST", "/api/studio", { image_file: original, style: { prompt: "on the moon" } });

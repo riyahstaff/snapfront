@@ -102,7 +102,7 @@ function allowance(seller) {
   return { plan, cap, used, left: Math.max(0, cap - used), broadcasts: cap > 0, automations: plan === "pro" };
 }
 function requireBroadcasts(seller) {
-  if (!allowance(seller).broadcasts) throw httpError(402, "Email broadcasts come with Launch and Pro.", { upgrade: "launch" });
+  if (!allowance(seller).broadcasts) throw httpError(402, "Email broadcasts come with Snapfront Pro.", { upgrade: "pro" });
 }
 function requireAddress(seller) {
   if (String(seller.mail_address || "").trim().length < 10) throw httpError(400, "Add your mailing address in Email settings first. The law requires it in every marketing email.");

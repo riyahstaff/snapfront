@@ -34,6 +34,7 @@ export function WebNav() {
   const menu: { label: string; href: Href; match: (p: string) => boolean }[] = [
     { label: "Home", href: "/", match: (p) => p === "/" }, ...NAV,
     { label: "Plans", href: "/plans", match: (p) => p.startsWith("/plans") },
+    { label: "Earn with Snapfront", href: "/earn", match: (p) => p.startsWith("/earn") },
     { label: "Settings", href: "/settings", match: (p) => p.startsWith("/settings") },
   ];
 
@@ -56,7 +57,7 @@ export function WebNav() {
             </Pressable>
           ) : (
             <Pressable accessibilityRole="link" onPress={() => go("/plans")} style={{ borderWidth: 1, borderColor: c.line, borderRadius: 999, paddingHorizontal: 12, height: 32, justifyContent: "center" }}>
-              <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.good }}>{plan === "pro" ? "Pro" : "Launch"}</Text>
+              <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.good }}>{plan === "pro" ? (me?.account.lifetime ? "Lifetime" : "Pro") : "Launch"}</Text>
             </Pressable>
           )}
           <Pressable accessibilityRole="link" accessibilityLabel="Account and store settings" onPress={() => go("/settings")}

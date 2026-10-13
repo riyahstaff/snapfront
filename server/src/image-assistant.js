@@ -98,8 +98,8 @@ function quota(account, kind) {
 function chargeInTransaction(account, kind) {
   const q = quota(account, kind);
   if (q.remaining <= 0) {
-    const upgrade = q.planId === "free" ? "launch" : q.planId === "launch" ? "pro" : null;
-    throw httpError(402, q.planId === "free" ? "You've used your free image studio allowance. Get Launch to keep creating." : "You've used this month's image studio allowance. It resets on the 1st.", { upgrade });
+    const upgrade = q.planId === "pro" ? null : "pro";
+    throw httpError(402, q.planId === "free" ? "You've used your free image studio allowance. Get Snapfront Pro to keep creating." : "You've used this month's image studio allowance. It resets on the 1st.", { upgrade });
   }
   db.prepare(`INSERT INTO usage (account_id,period,kind,count) VALUES (?,?,?,1)
     ON CONFLICT(account_id,period,kind) DO UPDATE SET count=count+1`).run(account.id, q.period, kind);

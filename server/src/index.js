@@ -34,6 +34,7 @@ import * as audience from "./audience.js";
 import * as affiliates from "./affiliates.js";
 import * as pixels from "./pixels.js";
 import * as autodm from "./autodm.js";
+import * as partners from "./partners.js";
 import * as social from "./social.js";
 import * as digitalDesigns from "./digital-designs.js";
 import * as imageAssistant from "./image-assistant.js";
@@ -229,7 +230,15 @@ const clampStr = store.clampStr, strList = store.strList, faqList = store.faqLis
 
 /* ---------- account ---------- */
 app.get("/health", (_req, res) => res.json({ ok: true }));
-app.get("/", (_req, res) => res.send(landingPage()));
+app.get("/", (req, res) => {
+  if (typeof req.query.via === "string") partners.recordClick(req, res, req.query.via);
+  res.send(landingPage());
+});
+// Snapfront Partners: short share links (snapfront.app/r/CODE) land on the home page with the code remembered.
+app.get("/r/:code", (req, res) => {
+  partners.recordClick(req, res, req.params.code);
+  res.redirect(302, "/");
+});
 // The home page's images (brand mark and chrome art).
 app.use("/site", express.static(path.resolve(new URL("../assets/site/", import.meta.url).pathname), { maxAge: "30d", fallthrough: false }));
 
@@ -557,7 +566,39 @@ app.post("/api/billing/sync", auth, wrap(async (req, res) => {
 }));
 // Plans bought on the website, through Stripe Checkout on Snapfront's own Stripe account.
 app.get("/api/billing/web/offers", auth, (_req, res) => res.json({ enabled: webbilling.enabled(), offers: webbilling.enabled() ? webbilling.offers() : [], android_url: webbilling.androidUrl() }));
-app.post("/api/billing/web/checkout", auth, wrap(async (req, res) => res.json(await webbilling.startCheckout(req.account, String(req.body?.plan || "")))));
+app.post("/api/billing/web/checkout", auth, wrap(async (req, res) => {
+  if (req.body?.ref) { partners.claim(req.account, String(req.body.ref)); req.account = plans.getAccount(req.account.id); }
+  res.json(await webbilling.startCheckout(req.account, String(req.body?.plan || "")));
+}));
+/* ---------- Snapfront Partners (affiliates who sell Snapfront) ---------- */
+app.get("/api/partners/me", auth, (req, res) => res.json(partners.view(req.account)));
+app.post("/api/partners/join", auth, (req, res) => res.status(201).json(partners.join(req.account, req.body || {})));
+app.patch("/api/partners/me", auth, (req, res) => res.json(partners.update(req.account, req.body || {})));
+app.post("/api/partners/claim", auth, (req, res) => res.json(partners.claim(req.account, String(req.body?.code || ""))));
+app.get("/api/admin/partners", adminOnly, (_req, res) => res.json(partners.adminSummary()));
+app.post("/api/admin/partners/:id/paid", adminOnly, (req, res) => res.json(partners.markPaid(req.params.id, req.body?.note)));
+app.post("/api/admin/partners/:id/status", adminOnly, (req, res) => res.json(partners.setStatus(req.params.id, req.body?.status)));
+app.post("/api/admin/partners/sweep", adminOnly, wrap(async (_req, res) => res.json({ paid: await partners.sweep() })));
+// A small page for Snapfront's owner: partners, what they sold, and PayPal payouts to mark paid.
+app.get("/admin/partners", (_req, res) => {
+  res.set({ "Cache-Control": "no-store", "X-Robots-Tag": "noindex" }).type("html").send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Partners · Snapfront admin</title>
+<style>body{margin:0;background:#0E1013;color:#EEF0F3;font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;padding:24px}h1{font-size:24px;margin:0 0 16px}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #2A2F37;vertical-align:top}th{color:#9AA3AF;font-weight:500}input,button{font:inherit;border-radius:10px;border:1px solid #363C46;background:#171A1F;color:#EEF0F3;padding:8px 12px}button{background:#E5E9F0;color:#11151B;border:0;font-weight:700;cursor:pointer}.wrap{overflow-x:auto}.muted{color:#9AA3AF}#out{margin-top:16px}</style></head>
+<body><h1>Snapfront Partners</h1><form id="f"><input id="t" type="password" placeholder="Admin token" autocomplete="off"> <button>Load</button></form><div id="out"></div>
+<script>
+const $=(s)=>document.querySelector(s),money=(n)=>"$"+Number(n).toFixed(2);
+let tok=sessionStorage.getItem("sf_admin")||"";$("#t").value=tok;
+async function api(m,u,b){const r=await fetch(u,{method:m,headers:{Authorization:"Bearer "+tok,"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined});const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);return j}
+function cell(t){const td=document.createElement("td");td.textContent=t;return td}
+async function load(){const o=$("#out");o.textContent="Loading…";try{const d=await api("GET","/api/admin/partners");o.textContent="";
+const p=document.createElement("p");p.className="muted";p.textContent="Commission "+d.rate+"% of Lifetime. Automatic Stripe payouts: "+(d.auto_payouts?"on":"off")+". Pay PayPal partners their Ready amount, then mark it paid.";o.appendChild(p);
+const w=document.createElement("div");w.className="wrap";const t=document.createElement("table");t.innerHTML="<thead><tr><th>Partner</th><th>Code</th><th>Clicks</th><th>Sign-ups</th><th>Sales</th><th>Revenue</th><th>Held</th><th>Ready</th><th>Paid</th><th>Pays by</th><th></th></tr></thead>";const b=document.createElement("tbody");
+d.partners.forEach((x)=>{const tr=document.createElement("tr");[x.email+(x.status!=="active"?" (suspended)":""),x.code,x.clicks,x.signups,x.sales,money(x.revenue),money(x.pending),money(x.ready),money(x.paid),x.payout==="paypal"?"PayPal "+x.paypal_email:x.payout].forEach((v)=>tr.appendChild(cell(String(v))));
+const td=document.createElement("td");if(x.ready>0&&x.payout!=="stripe"){const btn=document.createElement("button");btn.textContent="Mark "+money(x.ready)+" paid";btn.onclick=async()=>{const note=prompt("Payment note (e.g. PayPal transaction id)")||"PayPal";try{await api("POST","/api/admin/partners/"+x.account_id+"/paid",{note});load()}catch(e){alert(e.message)}};td.appendChild(btn)}tr.appendChild(td);b.appendChild(tr)});
+t.appendChild(b);w.appendChild(t);o.appendChild(w);if(!d.partners.length)o.appendChild(Object.assign(document.createElement("p"),{textContent:"No partners yet.",className:"muted"}))}catch(e){o.textContent=e.message}}
+$("#f").onsubmit=(e)=>{e.preventDefault();tok=$("#t").value.trim();sessionStorage.setItem("sf_admin",tok);load()};if(tok)load();
+</script></body></html>`);
+});
+app.post("/api/admin/play/retire-old", adminOnly, wrap(async (_req, res) => res.json({ log: await playbilling.retireOldProducts() })));
 app.post("/api/billing/web/confirm", auth, wrap(async (req, res) => {
   const { email } = await webbilling.confirm(req.account, req.body?.session_id);
   req.account = plans.getAccount(req.account.id);
@@ -878,7 +919,7 @@ app.delete("/api/discounts/:id", auth, (req, res) => { commerce.deleteDiscount(r
 app.post("/api/stripe/onboard", auth, wrap(async (req, res) => {
   // Payments come with a paid plan, so Stripe setup starts after the upgrade.
   if (plans.effectivePlan(req.account) === "free" && !req.seller.stripe_account_id) {
-    throw httpError(402, "Get Launch ($29, one time) to take payments, then connect Stripe.", { upgrade: "launch" });
+    throw httpError(402, `Get Snapfront Pro (${webbilling.priceLine()}) to take payments, then connect Stripe.`, { upgrade: "pro" });
   }
   const { accountId, url } = await pay.onboardingLink(req.seller);
   // One Stripe account per person: every store on the account gets paid into it.
@@ -1176,9 +1217,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   setInterval(() => playbilling.sweep().catch((e) => console.error("[play] sweep", e.message)), 30 * 60e3).unref();
   // Sales & profit: Stripe fees and refunds for each order.
   setInterval(() => business.syncDue().catch((e) => console.error("[business] sync", e.message)), 20 * 60e3).unref();
+  // Snapfront Partners: release commissions after the refund window and pay them.
+  setInterval(() => partners.sweep().catch((e) => console.error("[partners] sweep", e.message)), 6 * 3600e3).unref();
   // Website plans (Stripe): notice renewals, cancellations and refunds.
   setInterval(() => webbilling.sweep().catch((e) => console.error("[webbilling] sweep", e.message)), 30 * 60e3).unref();
-  // Create the Launch and Pro products in Play (retries hourly until Google allows it).
+  // Create the Lifetime and Pro products in Play (retries hourly until Google allows it).
   const products = () => playbilling.ensureProducts().catch((e) => console.error("[play] products", e.message));
   setTimeout(products, 15e3).unref();
   setInterval(products, 60 * 60e3).unref();

@@ -120,6 +120,7 @@ export default function StoreScreen() {
         <GrowTile icon="chatbubble-ellipses-outline" label="Instagram AutoDM" sub="Reply to keywords with your link" onPress={() => router.push("/autodm")} />
         <GrowTile icon="ribbon-outline" label="Affiliates" sub="Fans earn for each sale" onPress={() => router.push("/affiliates")} />
         <GrowTile icon="pulse-outline" label="Ad pixels" sub="Meta, TikTok, Google, Pinterest" onPress={() => router.push("/pixels")} />
+        <GrowTile icon="cash-outline" label="Earn with Snapfront" sub="Share your link, earn per sale" onPress={() => router.push("/earn")} />
         <GrowTile icon="sparkles-outline" label="AI photos & video" sub="Lifestyle shots and clips" onPress={() => router.push("/ai-media")} />
         <GrowTile icon="people-outline" label="Get more buyers" sub="Link in bio, QR, Google" onPress={() => router.push("/channels")} />
         <GrowTile icon="bar-chart-outline" label="Insights" sub="Visitors and sales" onPress={() => router.push("/insights")} />
@@ -199,7 +200,7 @@ function PlanCard({ me }: { me: Me }) {
       style={({ pressed }) => ({ backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.lg, padding: space.lg, gap: 6, opacity: pressed ? 0.9 : 1 })}>
       {free ? (
         <>
-          <Text style={[type.heading, { color: c.ink }]}>Go live for $29</Text>
+          <Text style={[type.heading, { color: c.ink }]}>Go live with Snapfront Pro</Text>
           <Text style={[type.small, { color: c.ink }]}>Publish your store and take payments, with no fees on your sales. After that, you connect Stripe to get paid. {meter(a.usage.photo, a.limits.photo, "free AI pages")} used.</Text>
           <Text style={[type.label, { color: c.ink, marginTop: 4, textDecorationLine: "underline" }]}>See plans</Text>
         </>

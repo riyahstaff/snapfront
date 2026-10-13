@@ -30,7 +30,7 @@ export default function EmailScreen() {
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.md }}>
         <Tile label="Subscribers" value={count(data.counts.subscribed)} sub={data.counts.unsubscribed ? `${count(data.counts.unsubscribed)} unsubscribed` : "on your list"} wide={wide} />
         <Tile label="New this month" value={count(data.counts.new_30d)} sub="joined in the last 30 days" wide={wide} />
-        <Tile label="Emails left" value={data.can_broadcast ? count(left) : "—"} sub={data.can_broadcast ? `of ${count(data.monthly_limit)} this month` : "with Launch or Pro"} wide={wide} />
+        <Tile label="Emails left" value={data.can_broadcast ? count(left) : "—"} sub={data.can_broadcast ? `of ${count(data.monthly_limit)} this month` : "with Snapfront Pro"} wide={wide} />
       </View>
       <Segmented value={tab} onChange={setTab} options={[{ value: "list", label: "Subscribers" }, { value: "send", label: "Emails" }, { value: "auto", label: "Automatic" }, { value: "settings", label: "Settings" }]} />
       {!data.mail_address && tab !== "settings" && tab !== "list" ? (
@@ -178,8 +178,8 @@ function Broadcasts({ overview, onChanged }: { overview: EmailOverview; onChange
   if (!overview.can_broadcast) {
     return (
       <Card title="Email your list" sub="Send news, new products and offers to your subscribers.">
-        <Text style={[type.body, { color: c.muted }]}>Launch includes 500 emails a month and Pro includes 5,000, with open and click stats for every email.</Text>
-        <Button label="See plans" onPress={() => router.push({ pathname: "/plans", params: { highlight: "launch" } })} />
+        <Text style={[type.body, { color: c.muted }]}>Snapfront Pro includes 5,000 emails a month, with open and click stats for every email.</Text>
+        <Button label="See plans" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
       </Card>
     );
   }

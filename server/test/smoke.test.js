@@ -62,8 +62,8 @@ test("register, photo → draft, save, storefront", async () => {
   r = await call("POST", `/api/products/${prod.id}/publish`);
   assert.equal(r.status, 402);
   const up = await r.json();
-  assert.equal(up.upgrade, "launch");
-  assert.match(up.error, /Launch/);
+  assert.equal(up.upgrade, "pro");
+  assert.match(up.error, /Get Snapfront Pro/);
 
   // With Launch but no Stripe, publishing is refused with a clear message
   db.prepare("UPDATE accounts SET plan = 'launch'").run();

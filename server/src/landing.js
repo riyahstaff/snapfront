@@ -1,12 +1,14 @@
 // snapfront.app home page: what Snapfront does, what it costs, where to get it. Styled in the
 // app's Liquid Chrome look (graphite, platinum, the silver aperture mark and the chrome gateway art).
 import { PLANS } from "./plans.js";
+import { PLANS as PRICES } from "./webbilling.js";
 import { THEMES } from "./themes.js";
 import { config } from "./config.js";
 
 const PLAY_URL = process.env.PLAY_STORE_URL || "";   // set once the Google Play listing is public
 const webAppUrl = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
 
+const usd = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 export function landingPage() {
   const year = new Date().getFullYear();
   const web = webAppUrl();
@@ -108,12 +110,12 @@ footer nav{display:flex;flex-wrap:wrap;gap:18px}
   <p class="sub">Buyers pay you directly through Stripe. Stripe’s standard processing fees apply.</p>
   <div class="plans">
     <div class="plan"><h3>Free</h3><div class="price">$0</div><ul><li>Build your store and try the AI</li><li>${PLANS.free.photo} AI product pages</li><li>${PLANS.free.research} price checks</li></ul><a class="btn ghost small" href="${web}">Start free</a></div>
-    <div class="plan"><h3>Launch</h3><div class="price">$29 <small>one time</small></div><ul><li>Publish one store and take payments</li><li>${PLANS.launch.photo} AI product pages a month</li><li>${PLANS.launch.research} price checks a month</li></ul><a class="btn small" href="${web}/plans?buy=launch">Get Launch</a></div>
-    <div class="plan pro"><h3>Pro</h3><div class="price">$14.99 <small>a month</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores</li><li>${PLANS.pro.photo} AI product pages a month</li><li>The store assistant</li></ul><a class="btn small" href="${web}/plans?buy=pro">Get Pro</a></div>
+    <div class="plan pro"><h3>Lifetime</h3><div class="price">${usd(PRICES.lifetime.cents)} <small>once, for life</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>Every new feature we add</li></ul><a class="btn small" href="${web}/plans?buy=lifetime">Get Lifetime</a></div>
+    <div class="plan"><h3>Monthly</h3><div class="price">${usd(PRICES.pro.cents)} <small>a month</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>Cancel any time</li></ul><a class="btn small" href="${web}/plans?buy=pro">Start monthly</a></div>
   </div>
   <p class="note">Pay here with Stripe, then sign in to the Android app with the same email. Your plan works in both.</p>
 </div></section>
 </main>
-<footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="${web}">Web app</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a><span>support@snapfront.app</span></nav></div></footer>
+<footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="${web}">Web app</a><a href="${web}/earn">Earn with Snapfront</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a><span>support@snapfront.app</span></nav></div></footer>
 </body></html>`;
 }

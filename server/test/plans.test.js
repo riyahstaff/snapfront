@@ -70,7 +70,7 @@ test("free plan: a taste of the AI, one store, no publishing", async () => {
 
   for (let i = 0; i < 3; i++) await json(await photo(A.token), 200);
   const over = await json(await photo(A.token), 402);
-  assert.equal(over.upgrade, "launch");
+  assert.equal(over.upgrade, "pro");
 
   const me = await json(await call(A.token, "GET", "/api/me"), 200);
   assert.equal(me.account.usage.photo, 3);
@@ -80,9 +80,9 @@ test("free plan: a taste of the AI, one store, no publishing", async () => {
   assert.equal(more.upgrade, "pro");
 
   const p = await json(await call(A.token, "POST", "/api/products", { title: "Mug", price: 18 }), 201);
-  assert.equal((await json(await call(A.token, "POST", `/api/products/${p.id}/publish`), 402)).upgrade, "launch");
+  assert.equal((await json(await call(A.token, "POST", `/api/products/${p.id}/publish`), 402)).upgrade, "pro");
   // Stripe setup starts after upgrading
-  assert.equal((await json(await call(A.token, "POST", "/api/stripe/onboard"), 402)).upgrade, "launch");
+  assert.equal((await json(await call(A.token, "POST", "/api/stripe/onboard"), 402)).upgrade, "pro");
 });
 
 test("buying Launch through Google Play unlocks publishing and resets to monthly allowances", async () => {

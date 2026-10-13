@@ -28,7 +28,7 @@ if (madeBuild) {
 
 // Stripe stand-in: checkout sessions, subscriptions, payments and the billing portal.
 const sessions = new Map(), subs = new Map(), intents = new Map();
-let created = [], customers = 0, canceled = [];
+let created = [], customers = 0, canceled = [], updated = [];
 pay.setStripeClient({
   customers: { async create(p) { customers++; return { id: `cus_${customers}`, ...p }; } },
   checkout: { sessions: {
@@ -38,6 +38,7 @@ pay.setStripeClient({
   subscriptions: {
     async retrieve(id) { return subs.get(id); },
     async cancel(id) { canceled.push(id); subs.get(id).status = "canceled"; return subs.get(id); },
+    async update(id, p) { updated.push([id, p]); return { ...subs.get(id), ...p }; },
   },
   paymentIntents: { async retrieve(id) { return intents.get(id); } },
   billingPortal: { sessions: { async create(p) { return { url: `https://billing.stripe.com/p/${p.customer}` }; } } },
@@ -81,28 +82,29 @@ test("app.<domain> serves the web app on every page, and the API on the same add
   assert.equal((await web("POST", "/")).status, 404);
 });
 
-test("buying Launch on the website: Stripe Checkout, then the plan unlocks only once Stripe says it's paid", async () => {
+test("buying Lifetime on the website: Stripe Checkout, then Pro unlocks for good only once Stripe says it's paid", async () => {
   const { token, seller } = (await web("POST", "/api/sellers", null, {})).json();
   const offers = (await web("GET", "/api/billing/web/offers", token)).json();
   assert.equal(offers.enabled, true);
-  assert.deepEqual(offers.offers.map((o) => [o.plan, o.price]), [["launch", "$29"], ["pro", "$14.99"]]);
+  assert.deepEqual(offers.offers.map((o) => [o.plan, o.price]), [["lifetime", "$299"], ["pro", "$69"]]);
 
-  const r = (await web("POST", "/api/billing/web/checkout", token, { plan: "launch" })).json();
+  const r = (await web("POST", "/api/billing/web/checkout", token, { plan: "lifetime" })).json();
   assert.match(r.url, /^https:\/\/checkout\.stripe\.com\//);
   const s = created.at(-1);
   assert.equal(s.mode, "payment");
-  assert.equal(s.line_items[0].price_data.unit_amount, 2900);
-  assert.equal(s.metadata.snapfront_plan, "launch");
+  assert.equal(s.line_items[0].price_data.unit_amount, 29900);
+  assert.equal(s.metadata.snapfront_plan, "lifetime");
   assert.match(s.success_url, /^https:\/\/app\.shopdomain\.test\/plans\?checkout=done&session_id=\{CHECKOUT_SESSION_ID\}$/);
 
   // Back from Stripe before paying: still free.
   let me = (await web("POST", "/api/billing/web/confirm", token, { session_id: s.id })).json();
   assert.equal(me.account.plan, "free");
-  // Paid: Launch.
+  // Paid: Pro, for good.
   Object.assign(s, { status: "complete", payment_status: "paid", payment_intent: "pi_1" });
   intents.set("pi_1", { id: "pi_1", latest_charge: { refunded: false } });
   me = (await web("POST", "/api/billing/web/confirm", token, { session_id: s.id })).json();
-  assert.equal(me.account.plan, "launch");
+  assert.equal(me.account.plan, "pro");
+  assert.equal((await web("POST", "/api/billing/web/checkout", token, { plan: "pro" })).status, 409);   // already has everything
 
   // Someone else can't claim this checkout.
   const other = (await web("POST", "/api/sellers", null, {})).json();
@@ -123,14 +125,14 @@ test("Pro on the website follows the Stripe subscription, and deleting the accou
   const s = created.at(-1);
   assert.equal(s.mode, "subscription");
   assert.deepEqual(s.line_items[0].price_data.recurring, { interval: "month" });
-  assert.equal(s.line_items[0].price_data.unit_amount, 1499);
+  assert.equal(s.line_items[0].price_data.unit_amount, 6900);
 
   const end = Math.floor(Date.now() / 1000) + 30 * 864e2;
   subs.set("sub_1", { id: "sub_1", status: "active", items: { data: [{ current_period_end: end }] } });
   Object.assign(s, { status: "complete", payment_status: "paid", subscription: "sub_1" });
   let me = (await web("POST", "/api/billing/web/confirm", token, { session_id: s.id })).json();
   assert.equal(me.account.plan, "pro");
-  assert.equal((await web("POST", "/api/billing/web/checkout", token, { plan: "launch" })).status, 409);   // already has Pro
+  assert.equal((await web("POST", "/api/billing/web/checkout", token, { plan: "pro" })).status, 409);   // already has Pro
 
   const portal = (await web("POST", "/api/billing/web/portal", token)).json();
   assert.match(portal.url, /^https:\/\/billing\.stripe\.com\/p\/cus_/);
@@ -188,18 +190,42 @@ test("paying on the website, then signing in with an email that already has an a
   const browser = (await web("POST", "/api/sellers", null, {})).json();
   const offers = (await web("GET", "/api/billing/web/offers", browser.token)).json();
   assert.equal(offers.android_url, "https://play.google.com/store/apps/details?id=com.sidebanc.snapfront");
-  (await web("POST", "/api/billing/web/checkout", browser.token, { plan: "launch" })).json();
+  (await web("POST", "/api/billing/web/checkout", browser.token, { plan: "lifetime" })).json();
   const s = created.at(-1);
   Object.assign(s, { status: "complete", payment_status: "paid", payment_intent: "pi_maya", customer_details: { email: "maya@example.com" } });
   intents.set("pi_maya", { id: "pi_maya", latest_charge: { refunded: false } });
   const confirmed = (await web("POST", "/api/billing/web/confirm", browser.token, { session_id: s.id })).json();
-  assert.equal(confirmed.account.plan, "launch");
+  assert.equal(confirmed.account.plan, "pro");
   assert.equal(confirmed.checkout_email, "maya@example.com");
 
   // Saving the purchase to that email (with the emailed code) signs the browser in to her account, plan included.
   await web("POST", "/api/auth/email/start", browser.token, { email: "maya@example.com" });
   const v = (await web("POST", "/api/auth/email/verify", browser.token, { email: "maya@example.com", code: sent.at(-1).code })).json();
   assert.equal(v.status, "switched");
-  assert.equal((await web("GET", "/api/me", v.token)).json().account.plan, "launch");
-  assert.equal((await web("GET", "/api/me", phone.token)).json().account.plan, "launch");   // the phone sees it too
+  assert.equal((await web("GET", "/api/me", v.token)).json().account.plan, "pro");
+  assert.equal((await web("GET", "/api/me", phone.token)).json().account.plan, "pro");   // the phone sees it too
+  // Later checks with Stripe still recognise the moved purchase (Stripe names the account that paid).
+  db.prepare("UPDATE stripe_plan_purchases SET checked_at = datetime('now', '-1 hour')").run();
+  assert.equal((await web("POST", "/api/billing/sync", v.token)).json().account.plan, "pro");
+});
+
+test("monthly subscribers can switch to Lifetime; the monthly plan then stops at the end of the month", async () => {
+  const { token } = (await web("POST", "/api/sellers", null, {})).json();
+  (await web("POST", "/api/billing/web/checkout", token, { plan: "pro" })).json();
+  const end = Math.floor(Date.now() / 1000) + 30 * 864e2;
+  subs.set("sub_9", { id: "sub_9", status: "active", current_period_end: end });
+  Object.assign(created.at(-1), { status: "complete", payment_status: "paid", subscription: "sub_9" });
+  assert.equal((await web("POST", "/api/billing/web/confirm", token, { session_id: created.at(-1).id })).json().account.plan, "pro");
+  // Old "Get Launch" links now open Lifetime.
+  assert.equal((await web("POST", "/api/billing/web/checkout", token, { plan: "launch" })).status, 200);
+  const s = created.at(-1);
+  assert.equal(s.metadata.snapfront_plan, "lifetime");
+  Object.assign(s, { status: "complete", payment_status: "paid", payment_intent: "pi_9" });
+  intents.set("pi_9", { id: "pi_9", latest_charge: { refunded: false } });
+  await web("POST", "/api/billing/web/confirm", token, { session_id: s.id });
+  assert.deepEqual(updated.at(-1), ["sub_9", { cancel_at_period_end: true }]);
+  // Even when the monthly plan ends, Lifetime keeps Pro.
+  subs.get("sub_9").status = "canceled";
+  db.prepare("UPDATE stripe_plan_purchases SET checked_at = datetime('now', '-1 hour')").run();
+  assert.equal((await web("POST", "/api/billing/sync", token)).json().account.plan, "pro");
 });

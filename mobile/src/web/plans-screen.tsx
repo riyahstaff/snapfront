@@ -10,15 +10,8 @@ import { api, ApiError, type PlanId, type PlanLimits } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
 import { buy, checkoutCanceled, finishReturnFromCheckout, getAppInfo, getOffers, manageSubscription, restore, returningFromCheckout, type Offer } from "@/lib/billing.web";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
+import { PlanCards, type PlanChoice } from "@/components/plan-cards";
 
-const FALLBACK_PRICE = { launch: "$29", pro: "$14.99" };
-
-function features(plan: "launch" | "pro", l?: PlanLimits): string[] {
-  if (!l) return [];
-  return plan === "launch"
-    ? ["Publish your store and take payments", "Hosting included, for good", `${l.photo} AI product pages a month`, `${l.product} AI digital products a month`, `${l.research} price checks against Amazon, Walmart and more a month`]
-    : [`Up to ${l.liveStores} live stores`, `${l.photo} AI product pages a month`, `${l.product} AI digital products a month`, `${l.research} price checks a month`, `Store assistant: ${l.agent} requests a month`];
-}
 
 export default function PlansWebScreen() {
   const c = useColors();
@@ -46,18 +39,18 @@ export default function PlansWebScreen() {
   }, []);
 
   const current = me?.account.plan ?? "free";
-  // Coming from a pricing button on snapfront.app (…/plans?buy=launch): go straight to checkout.
+  // Coming from a pricing button on snapfront.app (…/plans?buy=lifetime): go straight to checkout.
   useEffect(() => {
-    const want = buyParam === "launch" || buyParam === "pro" ? buyParam : null;
+    const want: PlanChoice | null = buyParam === "lifetime" || buyParam === "launch" ? "lifetime" : buyParam === "pro" ? "pro" : null;
     if (!want || autoBuy.current || !offers.length || !me || returningFromCheckout()) return;
     autoBuy.current = true;
-    if (current === "pro" || current === want) return;
+    if (me.account.lifetime || (current === "pro" && want === "pro")) return;
     void purchase(want);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, when offers and the account are ready
   }, [buyParam, offers, me, current]);
-  const offerFor = (p: "launch" | "pro") => offers.find((o) => o.plan === p);
+  const offerFor = (p: PlanChoice) => offers.find((o) => o.plan === p);
 
-  async function purchase(p: "launch" | "pro") {
+  async function purchase(p: PlanChoice) {
     const offer = offerFor(p);
     if (!offer) { setMsg({ text: "Plans can't be bought right now. Try again in a few minutes.", tone: "error" }); return; }
     setBusy(p); setMsg(null);
@@ -94,64 +87,22 @@ export default function PlansWebScreen() {
         <Body muted>No fees on your sales. Buyers pay you directly through Stripe.</Body>
       </View>
       <Notice text={busy === "confirm" ? "Checking your payment…" : msg?.text ?? null} tone={busy === "confirm" ? "info" : msg?.tone} />
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.lg }}>
-        <PlanCard plan="launch" title="Launch" period="one time" blurb="Everything you need to sell from one store."
-          current={current} price={offerFor("launch")?.price ?? FALLBACK_PRICE.launch} limits={limits?.launch} busy={busy} onBuy={purchase} />
-        <PlanCard plan="pro" title="Pro" period="per month" blurb="For sellers running several shops, with the store assistant doing the busywork."
-          current={current} price={offerFor("pro")?.price ?? FALLBACK_PRICE.pro} limits={limits?.pro} busy={busy} onBuy={purchase} />
-      </View>
+      {current === "launch" ? <Notice text="You have Launch from before, with one live store. Get Lifetime or Monthly to unlock everything." /> : null}
+      <PlanCards account={me?.account ?? null} prices={{ lifetime: offerFor("lifetime")?.price, pro: offerFor("pro")?.price }} limits={limits?.pro} busy={busy} onBuy={purchase} wide />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Ionicons name="lock-closed" size={14} color={c.muted} />
         <Text style={[type.small, { color: c.muted, flex: 1 }]}>Secure checkout by Stripe. Your plan works on the website and in the Snapfront app.</Text>
       </View>
       <Button label="Check my purchases" variant="ghost" loading={busy === "restore"} disabled={Boolean(busy)} onPress={doRestore} />
-      {current === "pro" ? <Button label="Manage subscription" variant="ghost" loading={busy === "manage"} disabled={Boolean(busy)} onPress={manage} /> : null}
+      {current === "pro" && !me?.account.lifetime ? <Button label="Manage subscription" variant="ghost" loading={busy === "manage"} disabled={Boolean(busy)} onPress={manage} /> : null}
       <Text style={[type.small, { color: c.muted }]}>
-        Launch is a one-time purchase. Pro renews every month until you cancel. Cancel anytime from Manage subscription (or in Google Play, if you subscribed on your phone). If Pro ends, stores beyond your plan stop taking orders; with Launch, your first store keeps selling.
+        Lifetime is a one-time purchase. Monthly renews every month until you cancel from Manage subscription (or in Google Play, if you subscribed on your phone). If Monthly ends, your stores stop taking orders until you renew.
       </Text>
       <Button label="Not now" variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
     </Screen>
   );
 }
 
-type CardProps = {
-  plan: "launch" | "pro"; title: string; period: string; blurb: string;
-  current: PlanId; price: string; limits?: PlanLimits; busy: string | null; onBuy: (p: "launch" | "pro") => void;
-};
-function PlanCard({ plan, title, period, blurb, current, price, limits, busy, onBuy }: CardProps) {
-  const c = useColors();
-  const owned = current === plan || (plan === "launch" && current === "pro");
-  const featured = plan === "pro";
-  return (
-    <View style={{ flexGrow: 1, flexBasis: 300, backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: featured ? 2 : 1, borderColor: featured ? c.accent : c.line, padding: space.lg, gap: space.md }}>
-      <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.md }}>
-        <Text style={{ fontFamily: fonts.display, fontSize: 26, color: c.ink }}>{title}</Text>
-        {current === plan ? (
-          <View style={{ backgroundColor: c.sunk, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 }}>
-            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 12, color: c.good }}>Your plan</Text>
-          </View>
-        ) : null}
-      </View>
-      <Text style={{ color: c.ink }}>
-        <Text style={{ fontFamily: fonts.display, fontSize: 34 }}>{price}</Text>
-        <Text style={[type.body, { color: c.muted }]}>  {period}</Text>
-      </Text>
-      <Body muted>{blurb}</Body>
-      <View style={{ gap: 8 }}>
-        {features(plan, limits).map((f) => (
-          <View key={f} style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
-            <Ionicons name="checkmark-circle" size={18} color={c.accent} style={{ marginTop: 2 }} />
-            <Text style={[type.body, { color: c.ink, flex: 1 }]}>{f}</Text>
-          </View>
-        ))}
-      </View>
-      {owned ? null : (
-        <Button label={plan === "launch" ? `Get Launch for ${price}` : `Start Pro for ${price}/month`} variant={featured ? "primary" : "secondary"}
-          loading={busy === plan} disabled={Boolean(busy)} onPress={() => onBuy(plan)} />
-      )}
-    </View>
-  );
-}
 
 /** After paying on the website: save the purchase to an email, then get the phone app. */
 function Welcome({ planName, email, linkedEmail }: { planName: string; email: string | null; linkedEmail: string | null }) {

@@ -31,6 +31,7 @@ const TOOLS: { title: string; detail: string; icon: Icon; href: Href }[] = [
   { title: "Instagram AutoDM", detail: "Someone comments a keyword; your Instagram DMs them the link.", icon: "chatbubble-ellipses-outline", href: "/autodm" },
   { title: "Affiliates", detail: "Fans and creators share their own link and earn on each sale.", icon: "ribbon-outline", href: "/affiliates" },
   { title: "Ad pixels", detail: "Meta, TikTok, Google and Pinterest see your sales, so ads find buyers.", icon: "pulse-outline", href: "/pixels" },
+  { title: "Earn with Snapfront", detail: "Share your link and earn on every Lifetime plan it sells.", icon: "cash-outline", href: "/earn" },
 ];
 
 export default function WebHome() {
@@ -238,7 +239,7 @@ function StorePanel({ products, wide }: { products: Product[] | null; wide: bool
       <View style={{ width: wide ? 340 : "100%", gap: 10, justifyContent: "center" }}>
         {plan === "free" ? (
           <View style={{ backgroundColor: c.bg, borderWidth: 1, borderColor: c.line, borderRadius: 18, padding: 18, gap: 10 }}>
-            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: c.ink }}>Go live for $29</Text>
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: c.ink }}>Go live with Snapfront Pro</Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 21, color: c.muted }}>Publish your store and take payments, with no fees on your sales.</Text>
             <CTA label="See plans" href="/plans" primary small />
           </View>

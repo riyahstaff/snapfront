@@ -54,8 +54,8 @@ export default function ProductScreen() {
         <View style={{ gap: space.sm }}>
           {me?.account.plan === "free" ? (
             <>
-              <Body muted>This product isn’t in your store yet. Putting products in your store comes with Launch ($29, one time), with no fees on your sales.</Body>
-              <Button label="See plans" variant="flash" onPress={() => router.push({ pathname: "/plans", params: { highlight: "launch" } })} />
+              <Body muted>This product isn’t in your store yet. Putting products in your store comes with Snapfront Pro ($299 for life or $69 a month), with no fees on your sales.</Body>
+              <Button label="See plans" variant="flash" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
             </>
           ) : me && !me.stripe_ready ? (
             <>

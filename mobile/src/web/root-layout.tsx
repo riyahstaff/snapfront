@@ -17,7 +17,7 @@ import { PageHeader, WebNav } from "./web-nav";
 
 const TITLES: Record<string, string> = {
   snap: "Snap a product", draft: "Your product page", "product/[id]": "Product", settings: "Account and store settings", orders: "Orders", business: "Sales & profit",
-  email: "Email marketing", affiliates: "Affiliates", pixels: "Ad pixels", autodm: "Instagram AutoDM",
+  email: "Email marketing", affiliates: "Affiliates", pixels: "Ad pixels", autodm: "Instagram AutoDM", earn: "Earn with Snapfront",
   discounts: "Discount codes", looks: "Store look", "storefront-setup": "Storefront setup", studio: "Product photo cleanup",
   "digital-photo-studio": "Digital photo studio", sources: "Supplier directory", marketing: "Marketing posts", "ai-media": "AI photos & video",
   insights: "Insights", reviews: "Reviews", channels: "Get more buyers", plans: "Plans", "price-check": "Price check", "supplier/[pid]": "Product",

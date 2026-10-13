@@ -34,3 +34,16 @@ AutoDM is fully built but stays off until Meta approves it:
 4. Sellers reconnect Instagram in Marketing posts, then tap "Refresh the Instagram connection" on the AutoDM screen.
 
 Webhook deliveries are verified with `X-Hub-Signature-256` (app secret). Each person gets a rule's reply at most once a day.
+
+## Pricing
+
+- **Lifetime** $299 once and **Monthly** $69 a month. Both unlock the `pro` plan. Website: `webbilling.js` (`LIFETIME_PRICE_CENTS`, `PRO_PRICE_CENTS` to change). Google Play: `snapfront_lifetime` and the `pro-monthly-69` base plan on `snapfront_pro` (`PLAY_LIFETIME_PRICE`, `PLAY_PRO_PRICE`), created automatically at startup.
+- Launch ($29 once) and the $14.99 Pro base plan are no longer sold; people who bought them keep them. Once the new phone build is live, stop selling them in older app versions with `POST /api/admin/play/retire-old` (admin token).
+- Monthly web subscribers who buy Lifetime have their subscription stopped at the end of the paid month.
+
+## Snapfront Partners (affiliates who sell Snapfront)
+
+- Anyone with a Snapfront account and email joins in **Earn with Snapfront** and gets `snapfront.app/r/CODE`.
+- The link sets an `sf_via` cookie on `.snapfront.app`; the website sends it to `/api/partners/claim` (and with the checkout). The first partner wins, for `PARTNER_WINDOW_DAYS` (60).
+- A Lifetime purchase (website or Google Play) earns `PARTNER_RATE` % (50). Monthly plans earn `PARTNER_MONTHLY_RATE` % of the first payment (0 = off).
+- Commissions are held `PARTNER_HOLD_DAYS` (30), voided on refund, then paid automatically by Stripe transfer to the partner's connected store account (`PARTNER_AUTO_PAYOUTS=false` to stop that), or by hand to PayPal: see `https://snapfront.app/admin/partners` with the admin token.

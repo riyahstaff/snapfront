@@ -126,7 +126,7 @@ export default function SettingsScreen() {
         <H2>Payments</H2>
         {seller && seller.account.plan === "free" && !seller.stripe_connected ? (
           <>
-            <Body muted>Taking payments comes with Launch ($29, one time). Once you have it, you connect Stripe here and buyers pay straight into your account.</Body>
+            <Body muted>Taking payments comes with Snapfront Pro ($299 for life or $69 a month). Once you have it, you connect Stripe here and buyers pay straight into your account.</Body>
             <Button label="See plans" variant="secondary" onPress={() => router.push("/plans")} />
           </>
         ) : (
