@@ -65,4 +65,6 @@ The optional artwork optimizer needs the original master PNG files used during a
 
 ## Final validation
 
-The full server suite passed **122 tests** and the final mobile suite passed **81 tests**. The catalog/premium renderer suite passed **11 tests**, including all-50 visible-art raster checks and actual PDF crop verification; the revision API suite also passed. TypeScript, Expo lint and final Android/iOS JavaScript bundle exports passed. No signed 1.2.0 app-store artifact or production deployment was requested.
+The full server suite passed **127 tests** and the final mobile suite passed **81 tests**. The catalog/premium renderer suite passed **11 tests**, including all-50 visible-art raster checks and actual PDF crop verification; the revision API suite also passed. TypeScript, Expo lint and final Android/iOS JavaScript bundle exports passed. No signed 1.2.0 app-store artifact or production deployment was requested.
+
+Upstream main gained the separate web-app and web-billing work during this task. That commit was integrated without overwriting its routing, billing or built web assets. The existing built web client remains a revision-1 client until deliberately rebuilt; its original catalog remains available.
