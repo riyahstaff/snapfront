@@ -16,8 +16,8 @@ export type DigitalPreview = {
 };
 export type DigitalExport = { id: string; revision: number; document_hash: string; page_count: number; pdf_url: string; cover_url: string; created_at: string };
 export type DigitalDesignRecord = { product_id: string; source_available: boolean; document: DigitalDocument | null; revision: number; export: DigitalExport | null; legacy_message: string | null };
-export type DigitalDesignCatalog = { templates: DigitalTemplateSummary[]; formats: { id: DigitalFormat; name: string }[]; version: 1 };
-export type CreateDigitalDesignInput = { template_id: string; title?: string; subtitle?: string; brand?: string };
+export type DigitalDesignCatalog = { templates: DigitalTemplateSummary[]; formats: { id: DigitalFormat; name: string }[]; version: 1 | 2 };
+export type CreateDigitalDesignInput = { template_id: string; design_revision?: 1 | 2; title?: string; subtitle?: string; brand?: string };
 export type SaveDigitalDesignInput = { document: DigitalDocument; revision: number; rebuild_legacy?: true };
 export type AttachDigitalDesignInput = { export_id: string; revision: number; acknowledge_live: boolean };
 export type Draft = {
@@ -381,10 +381,10 @@ async function themeCatalog(): Promise<StoreTheme[]> {
 /** Public discovery lets the packaged 50-design library refresh when the backend is available. */
 async function digitalDesignCatalog(): Promise<DigitalDesignCatalog> {
   try {
-    const response = await fetch(`${API_URL}/api/digital-designs`);
+    const response = await fetch(`${API_URL}/api/digital-designs?revision=2`);
     if (!response.ok) throw new ApiError("Couldn't load digital designs. You can still browse the included library.", response.status);
     const data = await response.json() as Partial<DigitalDesignCatalog>;
-    if (!Array.isArray(data.templates) || !Array.isArray(data.formats) || data.version !== 1) {
+    if (!Array.isArray(data.templates) || !Array.isArray(data.formats) || (data.version !== 1 && data.version !== 2)) {
       throw new ApiError("The digital design catalog couldn't be read. You can still browse the included library.", 0);
     }
     return data as DigitalDesignCatalog;
@@ -494,7 +494,7 @@ export const api = {
   productFromPhoto: (input: { imageBase64: string; mediaType: string; kind: string; hint?: string; price?: string; tone?: string }) =>
     request<Draft>("POST", "/api/ai/product-from-photo", input),
   /** `template_id` preserves the generated full source under the selected editable digital template. */
-  generate: (input: { type: string; niche: string; color: string; price?: number; template_id?: string }) => request<Product>("POST", "/api/ai/generate", input),
+  generate: (input: { type: string; niche: string; color: string; price?: number; template_id?: string; design_revision?: 1 | 2 }) => request<Product>("POST", "/api/ai/generate", input),
   productTypes: () => request<ProductType[]>("GET", "/api/product-types"),
   trends: () => request<Trend[]>("GET", "/api/trends"),
   products: (storeId?: string) => request<Product[]>("GET", "/api/products", undefined, storeId),

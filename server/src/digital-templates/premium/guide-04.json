@@ -1,0 +1,166 @@
+{
+  "id": "guide-04",
+  "format": "guide",
+  "name": "The Emerald Index",
+  "description": "A considered field guide to building a memorable independent shop, with an emerald architectural art window and a precise, generous reading system.",
+  "tags": [
+    "independent retail",
+    "field guide",
+    "emerald",
+    "architecture",
+    "editorial"
+  ],
+  "palette": {
+    "paper": "#F6F7F4",
+    "ink": "#172521",
+    "accent": "#08745B",
+    "muted": "#4B5E57",
+    "soft": "#DCE9E2"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "design_revision": 2,
+  "cover": {
+    "background": "paper",
+    "gradient": {
+      "from": "paper",
+      "to": "soft",
+      "direction": "horizontal"
+    },
+    "textColor": "ink",
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.09,
+      "w": 0.42,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "title": {
+      "x": 0.09,
+      "y": 0.7,
+      "w": 0.82,
+      "h": 0.105,
+      "size": 47,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.815,
+      "w": 0.77,
+      "h": 0.07,
+      "size": 15,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.925,
+      "w": 0.45,
+      "h": 0.035,
+      "size": 10,
+      "align": "left"
+    },
+    "fieldColors": {
+      "eyebrow": "accent",
+      "title": "ink",
+      "subtitle": "muted",
+      "brand": "muted"
+    },
+    "image": {
+      "x": 0.09,
+      "y": 0.17,
+      "w": 0.82,
+      "h": 0.47
+    },
+    "artworks": [
+      {
+        "id": "emerald-architecture",
+        "x": 0.09,
+        "y": 0.17,
+        "w": 0.82,
+        "h": 0.47,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.09,
+        "y": 0.655,
+        "w": 0.82,
+        "h": 0.235,
+        "fill": "paper",
+        "opacity": 1,
+        "radius": 0.012
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.655,
+        "w": 0.82,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.5
+      },
+      {
+        "kind": "line",
+        "x": 0.94,
+        "y": 0.17,
+        "w": 0,
+        "h": 0.47,
+        "fill": "accent",
+        "stroke": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.87,
+        "y": 0.185,
+        "w": 0.025,
+        "h": 0.012,
+        "fill": "paper",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.905,
+        "w": 0.82,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 0.6
+      }
+    ]
+  },
+  "interior": {
+    "margin": 50,
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.52,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.945,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "The Emerald Index",
+    "subtitle": "A field guide to opening a shop with a point of view",
+    "brand": "YOUR BRAND",
+    "eyebrow": "INDEPENDENT RETAIL \u00b7 FIELD NOTES"
+  }
+}

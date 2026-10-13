@@ -1,0 +1,169 @@
+{
+  "id": "checklist-01",
+  "format": "checklist",
+  "name": "The Quietly Capable Day",
+  "description": "A considered daily checklist for choosing what matters, moving through the essentials, and closing the day with intention.",
+  "tags": [
+    "checklist",
+    "daily practice",
+    "editorial",
+    "intentional living",
+    "printable"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#F2F4F0",
+    "ink": "#172522",
+    "accent": "#176B55",
+    "muted": "#435850",
+    "soft": "#DCE5DE"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.105,
+      "y": 0.435,
+      "w": 0.325,
+      "h": 0.18,
+      "size": 39,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.105,
+      "y": 0.635,
+      "w": 0.325,
+      "h": 0.105,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.105,
+      "y": 0.335,
+      "w": 0.325,
+      "h": 0.045,
+      "size": 9,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.105,
+      "y": 0.785,
+      "w": 0.325,
+      "h": 0.035,
+      "size": 9,
+      "align": "left"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "soft",
+      "eyebrow": "paper",
+      "brand": "soft"
+    },
+    "artworks": [
+      {
+        "id": "emerald-architecture",
+        "x": 0.48,
+        "y": 0.115,
+        "w": 0.46,
+        "h": 0.74,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.065,
+        "y": 0.275,
+        "w": 0.405,
+        "h": 0.575,
+        "fill": "ink",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.105,
+        "y": 0.405,
+        "w": 0.325,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.4
+      },
+      {
+        "kind": "line",
+        "x": 0.065,
+        "y": 0.245,
+        "w": 0.25,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 2
+      },
+      {
+        "kind": "line",
+        "x": 0.48,
+        "y": 0.895,
+        "w": 0.46,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.945,
+        "y": 0.115,
+        "w": 0.012,
+        "h": 0.74,
+        "fill": "accent",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.48,
+      "y": 0.115,
+      "w": 0.46,
+      "h": 0.74
+    }
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "side",
+    "blockStyle": "steps",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.84,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.885,
+        "w": 0.22,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 2
+      }
+    ]
+  },
+  "sample": {
+    "title": "The Quietly Capable Day",
+    "subtitle": "A clear-eyed checklist for priorities, practical progress, and a softer landing at day\u2019s end.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A DAILY FIELD GUIDE \u00b7 CHECKLIST"
+  }
+}

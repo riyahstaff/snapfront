@@ -5,7 +5,7 @@ import { DigitalDesignPicker } from "@/components/digital-design-picker";
 import { Body, Button, H1, Notice, Pill, Screen } from "@/components/ui";
 import { account, useMe } from "@/lib/account-store";
 import { api, ApiError } from "@/lib/api";
-import type { DigitalTemplateSummary } from "@/lib/digital-design";
+import { digitalDesignRevision, type DigitalTemplateSummary } from "@/lib/digital-design";
 import { space, type, useColors } from "@/lib/theme";
 
 function firstParam(value: string | string[] | undefined): string | null {
@@ -32,7 +32,7 @@ export default function DigitalDesignsScreen() {
     api.digitalDesigns().then((catalog) => {
       if (active) setRemoteTemplates(catalog.templates);
     }).catch(() => {
-      if (active) setMessage({ text: "The latest catalog could not load. The included 50-design library is ready to browse offline.", tone: "info" });
+      if (active) setMessage({ text: "The latest collection could not load. All 50 signature designs are ready to browse offline.", tone: "info" });
     });
     return () => { active = false; };
   }, []);
@@ -40,7 +40,7 @@ export default function DigitalDesignsScreen() {
   function beginAi() {
     if (!selected) return;
     // /create is this project's generation screen; it forwards this exact template_id to the API.
-    router.push({ pathname: "/create", params: { template_id: selected.id, format: selected.format } });
+    router.push({ pathname: "/create", params: { template_id: selected.id, format: selected.format, design_revision: String(digitalDesignRevision(selected, 2)) } });
   }
 
   async function beginDraft() {
@@ -60,7 +60,7 @@ export default function DigitalDesignsScreen() {
         router.replace({ pathname: "/digital-editor", params: { id: editProductId, storeId: owner, template_id: selected.id, replace_template: "1" } });
         return;
       }
-      const result = await api.createDigitalDesign(owner, { template_id: selected.id });
+      const result = await api.createDigitalDesign(owner, { template_id: selected.id, design_revision: digitalDesignRevision(selected, 2) });
       if (api.storeRevision() !== storeRevision || account.get()?.id !== owner) return;
       // This is the only creation call; returning to the library never creates another draft automatically.
       router.replace({ pathname: "/digital-editor", params: { id: result.product.id, storeId: owner } });
@@ -81,7 +81,7 @@ export default function DigitalDesignsScreen() {
     ? "Your original PDF cannot be imported as editable source. Choose a template, replace its sample copy, then explicitly save a new source. Your current buyer file stays unchanged until you later attach an exported revision."
     : editingExisting
       ? "Choose a palette and font direction. The editor will keep your exact existing pages, blocks, text, and owned image references; it will never reset them to template sample copy."
-      : "Pick one of 50 bundled layouts. You will review every sample word, preview real rendered pages, and choose whether to attach an export.";
+      : "Choose from 50 signature designs. You will review every sample word, preview real rendered pages, and choose whether to attach an export.";
 
   return (
     <Screen>

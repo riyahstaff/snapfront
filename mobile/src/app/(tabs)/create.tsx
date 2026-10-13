@@ -27,8 +27,9 @@ function firstParam(value: string | string[] | undefined): string | null {
 export default function CreateScreen() {
   const c = useColors();
   const me = useMe();
-  const params = useLocalSearchParams<{ template_id?: string | string[]; format?: string | string[] }>();
+  const params = useLocalSearchParams<{ template_id?: string | string[]; format?: string | string[]; design_revision?: string | string[] }>();
   const templateId = firstParam(params.template_id);
+  const templateDesignRevision = firstParam(params.design_revision) === "2" ? 2 : null;
   const [types, setTypes] = useState(FALLBACK);
   const [type_, setType] = useState("guide");
   const [niche, setNiche] = useState("");
@@ -46,7 +47,7 @@ export default function CreateScreen() {
     setBusy(true);
     setError(null);
     try {
-      const p = await api.generate({ type: typeForGeneration, niche, color, ...(templateId ? { template_id: templateId } : {}) });
+      const p = await api.generate({ type: typeForGeneration, niche, color, ...(templateId ? { template_id: templateId, design_revision: templateDesignRevision ?? 2 } : {}) });
       if (templateId && owner) {
         if (api.storeRevision() !== storeRevision || account.get()?.id !== owner) return;
         // The server registers the generated full source first; no generated words are replaced here.

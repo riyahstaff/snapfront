@@ -1,0 +1,147 @@
+{
+  "id": "hooks-05",
+  "format": "hooks",
+  "design_revision": 2,
+  "name": "The First-Line Atelier",
+  "description": "A polished hook-writing workbook for turning a clear point of view into an opening line worth reading.",
+  "tags": [
+    "hooks",
+    "creator-writing",
+    "editorial-workbook",
+    "content-craft"
+  ],
+  "palette": {
+    "paper": "#F2F1EE",
+    "ink": "#17191C",
+    "accent": "#B9C8D2",
+    "muted": "#535A60",
+    "soft": "#DDE2E5"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "textColor": "paper",
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.075,
+      "w": 0.66,
+      "h": 0.04,
+      "size": 10,
+      "align": "left"
+    },
+    "title": {
+      "x": 0.09,
+      "y": 0.14,
+      "w": 0.78,
+      "h": 0.15,
+      "size": 48,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.31,
+      "w": 0.67,
+      "h": 0.075,
+      "size": 15,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.91,
+      "w": 0.48,
+      "h": 0.035,
+      "size": 10,
+      "align": "left"
+    },
+    "image": {
+      "x": 0.12,
+      "y": 0.43,
+      "w": 0.76,
+      "h": 0.44
+    },
+    "artworks": [
+      {
+        "id": "chrome-gateway",
+        "x": 0.12,
+        "y": 0.43,
+        "w": 0.76,
+        "h": 0.44,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.09,
+        "y": 0.405,
+        "w": 0.16,
+        "h": 0.004,
+        "fill": "accent",
+        "opacity": 0.9
+      },
+      {
+        "kind": "line",
+        "x": 0.12,
+        "y": 0.885,
+        "w": 0.79,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.7,
+        "opacity": 0.65
+      },
+      {
+        "kind": "rect",
+        "x": 0.87,
+        "y": 0.43,
+        "w": 0.018,
+        "h": 0.12,
+        "fill": "accent",
+        "opacity": 0.9
+      },
+      {
+        "kind": "line",
+        "x": 0.895,
+        "y": 0.58,
+        "w": 0,
+        "h": 0.25,
+        "fill": "soft",
+        "stroke": 0.6,
+        "opacity": 0.55
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "headerStyle": "rule",
+    "blockStyle": "cards",
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "editorial",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.7,
+        "opacity": 1
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make the first line matter",
+    "subtitle": "A practical studio for shaping sharp, specific openings from your real ideas",
+    "brand": "YOUR BRAND",
+    "eyebrow": "THE FIRST-LINE ATELIER"
+  }
+}

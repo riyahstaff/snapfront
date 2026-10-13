@@ -1,0 +1,169 @@
+{
+  "id": "planner-08",
+  "format": "planner",
+  "design_revision": 2,
+  "name": "The Clear Week",
+  "description": "A focused weekly planning edition for choosing what matters, protecting space for deep work, and ending each week with intention.",
+  "tags": [
+    "planner",
+    "weekly",
+    "focus",
+    "emerald",
+    "editorial"
+  ],
+  "palette": {
+    "paper": "#F4F7F3",
+    "ink": "#12221D",
+    "accent": "#16A77B",
+    "muted": "#486057",
+    "soft": "#DCE9E2"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "gradient": {
+      "from": "ink",
+      "to": "ink",
+      "direction": "horizontal"
+    },
+    "textColor": "paper",
+    "eyebrow": {
+      "x": 0.08,
+      "y": 0.13,
+      "w": 0.36,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "title": {
+      "x": 0.08,
+      "y": 0.24,
+      "w": 0.38,
+      "h": 0.25,
+      "size": 48,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.08,
+      "y": 0.53,
+      "w": 0.36,
+      "h": 0.13,
+      "size": 15,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.08,
+      "y": 0.88,
+      "w": 0.36,
+      "h": 0.04,
+      "size": 10,
+      "align": "left"
+    },
+    "artworks": [
+      {
+        "id": "emerald-architecture",
+        "x": 0.53,
+        "y": 0.08,
+        "w": 0.39,
+        "h": 0.69,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.53,
+      "y": 0.08,
+      "w": 0.39,
+      "h": 0.69
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.49,
+        "y": 0.08,
+        "w": 0.006,
+        "h": 0.69,
+        "fill": "accent",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.2,
+        "w": 0.27,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.4
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.72,
+        "w": 0.36,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.53,
+        "y": 0.8,
+        "w": 0.39,
+        "h": 0.012,
+        "fill": "accent",
+        "opacity": 0.85
+      },
+      {
+        "kind": "line",
+        "x": 0.53,
+        "y": 0.85,
+        "w": 0.12,
+        "h": 0,
+        "fill": "paper",
+        "opacity": 0.65,
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.89,
+        "y": 0.84,
+        "w": 0.03,
+        "h": 0.03,
+        "fill": "accent",
+        "opacity": 1
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "technical",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make room for what matters",
+    "subtitle": "Set your weekly direction, map each day, and leave space to think.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "WEEKLY PLANNING EDITION"
+  }
+}

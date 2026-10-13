@@ -1,0 +1,176 @@
+{
+  "id": "quotes-05",
+  "format": "quotes",
+  "name": "Emerald Edition \u2014 The Quiet Ascent",
+  "description": "A collectible quote folio: a framed emerald architectural vista above a precise graphite plaque, with generous editorial space for a single resonant line.",
+  "tags": [
+    "quote print",
+    "emerald",
+    "architecture",
+    "editorial",
+    "luxury",
+    "gallery"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#F3F5F1",
+    "ink": "#17201E",
+    "accent": "#176B53",
+    "muted": "#465650",
+    "soft": "#D6E1DA"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.13,
+      "y": 0.635,
+      "w": 0.74,
+      "h": 0.18,
+      "size": 46,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.13,
+      "y": 0.825,
+      "w": 0.69,
+      "h": 0.055,
+      "size": 13,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.13,
+      "y": 0.91,
+      "w": 0.5,
+      "h": 0.035,
+      "size": 9,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.7,
+      "y": 0.91,
+      "w": 0.17,
+      "h": 0.035,
+      "size": 9,
+      "align": "right"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "ink",
+      "brand": "ink"
+    },
+    "artworks": [
+      {
+        "id": "emerald-architecture",
+        "x": 0.13,
+        "y": 0.105,
+        "w": 0.74,
+        "h": 0.49,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.13,
+      "y": 0.105,
+      "w": 0.74,
+      "h": 0.49
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.13,
+        "y": 0.605,
+        "w": 0.74,
+        "h": 0.285,
+        "fill": "ink"
+      },
+      {
+        "kind": "rect",
+        "x": 0.13,
+        "y": 0.595,
+        "w": 0.74,
+        "h": 0.01,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.095,
+        "y": 0.105,
+        "w": 0,
+        "h": 0.49,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "line",
+        "x": 0.905,
+        "y": 0.105,
+        "w": 0,
+        "h": 0.49,
+        "fill": "soft",
+        "stroke": 1.2
+      },
+      {
+        "kind": "line",
+        "x": 0.13,
+        "y": 0.075,
+        "w": 0.74,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.13,
+        "y": 0.955,
+        "w": 0.74,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.13,
+        "y": 0.89,
+        "w": 0.74,
+        "h": 0.005,
+        "fill": "accent"
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "gallery",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.925,
+        "w": 0.8,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1
+      }
+    ]
+  },
+  "sample": {
+    "title": "The way forward is through.",
+    "subtitle": "Keep becoming. The horizon moves with you.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A STUDY IN FORWARD MOTION"
+  }
+}

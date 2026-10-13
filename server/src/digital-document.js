@@ -14,7 +14,7 @@ const BLOCK_KINDS = new Set(["heading", "paragraph", "list", "callout", "quote",
 const HEADING_FONTS = new Set(["sans", "serif", "display", "mono"]);
 const BODY_FONTS = new Set(["sans", "serif"]);
 const PALETTE_KEYS = ["paper", "ink", "accent", "muted", "soft"];
-const TOP_KEYS = ["schema_version", "format", "template_id", "title", "subtitle", "brand", "eyebrow", "palette", "fonts", "pages"];
+const TOP_KEYS = ["schema_version", "design_revision", "show_artwork", "format", "template_id", "title", "subtitle", "brand", "eyebrow", "palette", "fonts", "pages"];
 const PAGE_KEYS = ["id", "title", "kind", "blocks"];
 const BLOCK_KEYS = ["id", "kind", "text", "items", "image_file", "image_fit"];
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/;
@@ -138,15 +138,25 @@ function cleanBlock(value, pageNumber, usedBlockIds) {
 export function validateDocument(document) {
   exactKeys(document, TOP_KEYS, "document");
   if (document.schema_version !== 1) throw problem("This digital document uses an unsupported schema version.");
+  const hasRevision = Object.hasOwn(document, "design_revision");
+  const revision = hasRevision ? document.design_revision : 1;
+  if (revision !== 1 && revision !== 2) throw problem("design_revision must be 1 or 2.");
+  const hasArtworkSetting = Object.hasOwn(document, "show_artwork");
+  if (hasArtworkSetting && typeof document.show_artwork !== "boolean") throw problem("show_artwork must be true or false.");
+  if (hasArtworkSetting && revision !== 2) throw problem("show_artwork is available only for design revision 2.");
   if (!FORMAT_SET.has(document.format)) throw problem("Digital format must be guide, checklist, hooks, quotes, or planner.");
   const templateId = safeId(document.template_id, "template_id");
   let template;
-  try { template = templateById(templateId); } catch (error) { throw error?.status ? error : problem("That digital template does not exist."); }
+  // Missing revision is intentionally revision 1—not today's default catalog design.
+  // This preserves both legacy layout output and existing document hashes.
+  try { template = templateById(templateId, revision); } catch (error) { throw error?.status ? error : problem("That digital template does not exist."); }
   if (!template || template.id !== templateId) throw problem("That digital template does not exist.");
   if (template.format !== document.format) throw problem("The selected template does not match this document format.");
 
   const out = {
     schema_version: 1,
+    ...(hasRevision ? { design_revision: revision } : {}),
+    ...(hasArtworkSetting ? { show_artwork: document.show_artwork } : {}),
     format: document.format,
     template_id: templateId,
     title: requiredString(document.title, "title", 300),
@@ -200,11 +210,13 @@ function templateSample(template, overrides = {}) {
   };
 }
 
-function baseDocument(templateId, overrides) {
-  const template = templateById(templateId);
+function baseDocument(templateId, overrides = {}, designRevision = 2) {
+  if (designRevision !== 1 && designRevision !== 2) throw problem("design_revision must be 1 or 2.");
+  const template = templateById(templateId, designRevision);
   const copy = templateSample(template, overrides);
   return {
     schema_version: 1,
+    ...(designRevision === 2 ? { design_revision: 2, show_artwork: true } : {}),
     format: template.format,
     template_id: template.id,
     ...copy,
@@ -215,8 +227,9 @@ function baseDocument(templateId, overrides) {
 }
 
 /** Create original, editable illustrative content for a selected catalog template. */
-export function starterDocument(templateId, { title, subtitle, brand } = {}) {
-  const d = baseDocument(templateId, { title, subtitle, brand });
+export function starterDocument(templateId, { title, subtitle, brand, design_revision = 1, show_artwork } = {}) {
+  const d = baseDocument(templateId, { title, subtitle, brand }, design_revision);
+  if (design_revision === 2 && show_artwork !== undefined) d.show_artwork = show_artwork;
   const page = (id, pageTitle, kind, blocks) => d.pages.push({ id, title: pageTitle, kind, blocks });
   if (d.format === "guide") {
     page("page-01", "Start here", "content", [
@@ -256,9 +269,10 @@ function generatedString(value, fallback) {
  * Converts the five existing generated payload shapes into source blocks before any PDF is made.
  * It deliberately does not flatten paragraphs/lists into a single truncated string.
  */
-export function documentFromGenerated(result, type, templateId, storeName) {
+export function documentFromGenerated(result, type, templateId, storeName, designRevision = 1) {
   if (!FORMAT_SET.has(type)) throw problem("Unknown generated digital format.");
-  const template = templateById(templateId);
+  if (designRevision !== 1 && designRevision !== 2) throw problem("design_revision must be 1 or 2.");
+  const template = templateById(templateId, designRevision);
   if (template.format !== type) throw problem("The selected template does not match the generated format.");
   if (!plainObject(result)) throw problem("The generated digital product did not contain a source object.", 502);
   const r = result;
@@ -266,7 +280,7 @@ export function documentFromGenerated(result, type, templateId, storeName) {
     title: generatedString(r.title, template.sample?.title || "Untitled digital product"),
     subtitle: generatedString(r.tagline, template.sample?.subtitle || "Editable digital product"),
     brand: generatedString(storeName, template.sample?.brand || "Your brand"),
-  });
+  }, designRevision);
   if (!plainObject(r.content)) throw problem("The generated digital product did not contain its expected content.", 502);
   const content = r.content;
   const asText = (value, fallback = "") => typeof value === "string" ? value : fallback;

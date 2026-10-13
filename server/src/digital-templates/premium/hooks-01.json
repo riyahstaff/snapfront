@@ -1,0 +1,170 @@
+{
+  "id": "hooks-01",
+  "format": "hooks",
+  "name": "Nocturne Signal Archive",
+  "description": "An art-led hook-writing field guide pairing sculptural chrome imagery with a precise, practical system for opening lines that earn attention.",
+  "tags": [
+    "hooks",
+    "creator",
+    "writing",
+    "editorial",
+    "content craft"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#101216",
+    "ink": "#F4F2EE",
+    "accent": "#B9C4D0",
+    "muted": "#B3B7BE",
+    "soft": "#242A32"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "gradient": {
+      "from": "paper",
+      "to": "soft",
+      "direction": "diagonal"
+    },
+    "title": {
+      "x": 0.075,
+      "y": 0.69,
+      "w": 0.85,
+      "h": 0.13,
+      "size": 48,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.08,
+      "y": 0.835,
+      "w": 0.78,
+      "h": 0.055,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.08,
+      "y": 0.075,
+      "w": 0.78,
+      "h": 0.035,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.08,
+      "y": 0.925,
+      "w": 0.62,
+      "h": 0.03,
+      "size": 9,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "ink",
+      "eyebrow": "accent",
+      "brand": "muted"
+    },
+    "artworks": [
+      {
+        "id": "optical-silver",
+        "x": 0.12,
+        "y": 0.16,
+        "w": 0.76,
+        "h": 0.49,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.12,
+      "y": 0.16,
+      "w": 0.76,
+      "h": 0.49
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.125,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.8,
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.075,
+        "y": 0.675,
+        "w": 0.85,
+        "h": 0.225,
+        "fill": "paper",
+        "opacity": 1,
+        "stroke": 0
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.91,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.75,
+        "stroke": 0.7
+      },
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.145,
+        "w": 0.012,
+        "h": 0.035,
+        "fill": "accent",
+        "opacity": 1
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "plain",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.34,
+        "h": 0,
+        "fill": "soft",
+        "opacity": 1,
+        "stroke": 0.7
+      },
+      {
+        "kind": "line",
+        "x": 0.58,
+        "y": 0.925,
+        "w": 0.34,
+        "h": 0,
+        "fill": "soft",
+        "opacity": 1,
+        "stroke": 0.7
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make Them Lean In",
+    "subtitle": "A field guide to first lines with pull",
+    "brand": "YOUR BRAND",
+    "eyebrow": "NOCTURNE / THE HOOK ARCHIVE"
+  }
+}

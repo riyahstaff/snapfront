@@ -1,0 +1,180 @@
+{
+  "id": "hooks-06",
+  "format": "hooks",
+  "name": "The Chrome Opening",
+  "description": "A platinum editorial hook-writing collection pairing sculptural chrome portraiture with a precise, numbered studio rail for shaping irresistible opening lines.",
+  "tags": [
+    "hooks",
+    "copywriting",
+    "editorial",
+    "platinum",
+    "creator-tools"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#F4F5F6",
+    "ink": "#11151A",
+    "accent": "#AAB5C0",
+    "muted": "#555F69",
+    "soft": "#DCE1E6"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "textColor": "paper",
+    "title": {
+      "x": 0.105,
+      "y": 0.405,
+      "w": 0.305,
+      "h": 0.245,
+      "size": 54,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.105,
+      "y": 0.675,
+      "w": 0.3,
+      "h": 0.105,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.105,
+      "y": 0.245,
+      "w": 0.31,
+      "h": 0.055,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.105,
+      "y": 0.885,
+      "w": 0.31,
+      "h": 0.04,
+      "size": 9,
+      "align": "left"
+    },
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "accent",
+      "brand": "accent"
+    },
+    "artworks": [
+      {
+        "id": "ice-prism",
+        "x": 0.455,
+        "y": 0.105,
+        "w": 0.495,
+        "h": 0.79,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.455,
+      "y": 0.105,
+      "w": 0.495,
+      "h": 0.79
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.045,
+        "y": 0.105,
+        "w": 0.008,
+        "h": 0.79,
+        "fill": "accent",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.085,
+        "y": 0.105,
+        "w": 0.325,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8,
+        "opacity": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.085,
+        "y": 0.825,
+        "w": 0.325,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8,
+        "opacity": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.435,
+        "y": 0.105,
+        "w": 0.006,
+        "h": 0.79,
+        "fill": "paper",
+        "opacity": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.34,
+        "w": 0.025,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.8,
+        "w": 0.025,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      }
+    ]
+  },
+  "interior": {
+    "margin": 46,
+    "headerStyle": "side",
+    "blockStyle": "steps",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.085,
+        "y": 0.925,
+        "w": 0.83,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.7
+      },
+      {
+        "kind": "line",
+        "x": 0.085,
+        "y": 0.18,
+        "w": 0.018,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      }
+    ]
+  },
+  "sample": {
+    "title": "The First-Line Atelier",
+    "subtitle": "A considered hook, made to stop the scroll.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A PLATINUM EDITION \u00b7 OPENING LINES"
+  }
+}

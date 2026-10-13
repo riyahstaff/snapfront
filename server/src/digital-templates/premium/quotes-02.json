@@ -1,0 +1,176 @@
+{
+  "id": "quotes-02",
+  "format": "quotes",
+  "design_revision": 2,
+  "name": "Threshold of Light",
+  "description": "A monumental liquid-chrome gateway anchors this collectible quote print, with a poised editorial headline above and a quiet, deliberate reading space below.",
+  "tags": [
+    "quotes",
+    "liquid chrome",
+    "editorial print",
+    "inspiration"
+  ],
+  "palette": {
+    "paper": "#F4F6F8",
+    "ink": "#171B20",
+    "accent": "#B9C6D2",
+    "muted": "#59636D",
+    "soft": "#DCE2E8"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "gradient": {
+      "from": "ink",
+      "to": "ink",
+      "direction": "vertical"
+    },
+    "textColor": "paper",
+    "title": {
+      "x": 0.09,
+      "y": 0.2,
+      "w": 0.78,
+      "h": 0.17,
+      "size": 48,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.39,
+      "w": 0.64,
+      "h": 0.07,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.11,
+      "w": 0.6,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.91,
+      "w": 0.48,
+      "h": 0.035,
+      "size": 10,
+      "align": "left"
+    },
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "accent",
+      "eyebrow": "accent",
+      "brand": "paper"
+    },
+    "artworks": [
+      {
+        "id": "chrome-gateway",
+        "x": 0.31,
+        "y": 0.48,
+        "w": 0.6,
+        "h": 0.43,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.31,
+      "y": 0.48,
+      "w": 0.6,
+      "h": 0.43
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.075,
+        "y": 0.17,
+        "w": 0.015,
+        "h": 0.29,
+        "fill": "accent",
+        "opacity": 0.9
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.475,
+        "w": 0.79,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.72,
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.875,
+        "w": 0.2,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.8,
+        "stroke": 1
+      },
+      {
+        "kind": "polygon",
+        "x": 0.87,
+        "y": 0.115,
+        "w": 0.055,
+        "h": 0.06,
+        "fill": "accent",
+        "opacity": 0.9,
+        "points": [
+          [
+            0.5,
+            0
+          ],
+          [
+            1,
+            0.5
+          ],
+          [
+            0.5,
+            1
+          ],
+          [
+            0,
+            0.5
+          ]
+        ]
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "outline",
+    "headingSize": 30,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "gallery",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.94,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "opacity": 0.9,
+        "stroke": 1
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make room for the possible.",
+    "subtitle": "A small reminder to step toward what is next.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A NOTE FOR NEW BEGINNINGS"
+  }
+}

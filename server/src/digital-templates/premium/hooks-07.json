@@ -1,0 +1,169 @@
+{
+  "id": "hooks-07",
+  "format": "hooks",
+  "name": "Amethyst: The Opening Line",
+  "description": "A collectible hook-writing edition pairing a sculptural amethyst glass study with spacious, sharp editorial typography and practical prompts.",
+  "tags": [
+    "hooks",
+    "amethyst",
+    "copywriting",
+    "editorial",
+    "collector-edition"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#F7F5FA",
+    "ink": "#211C29",
+    "accent": "#A985D2",
+    "muted": "#62596D",
+    "soft": "#D8C9E8"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "title": {
+      "x": 0.09,
+      "y": 0.35,
+      "w": 0.45,
+      "h": 0.26,
+      "size": 60,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.65,
+      "w": 0.42,
+      "h": 0.1,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.13,
+      "w": 0.4,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.87,
+      "w": 0.4,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "soft",
+      "eyebrow": "accent",
+      "brand": "soft"
+    },
+    "artworks": [
+      {
+        "id": "amethyst-glass",
+        "x": 0.57,
+        "y": 0.18,
+        "w": 0.34,
+        "h": 0.59,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.57,
+      "y": 0.18,
+      "w": 0.34,
+      "h": 0.59
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.23,
+        "w": 0.27,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.5
+      },
+      {
+        "kind": "rect",
+        "x": 0.54,
+        "y": 0.14,
+        "w": 0.39,
+        "h": 0.67,
+        "fill": "soft",
+        "opacity": 0.13,
+        "behindArt": true
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.82,
+        "w": 0.8,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 0.8
+      },
+      {
+        "kind": "polygon",
+        "x": 0.89,
+        "y": 0.1,
+        "w": 0.035,
+        "h": 0.07,
+        "fill": "accent",
+        "points": [
+          [
+            0.5,
+            0
+          ],
+          [
+            1,
+            0.5
+          ],
+          [
+            0.5,
+            1
+          ],
+          [
+            0,
+            0.5
+          ]
+        ]
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "cards",
+    "headingSize": 30,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "The First Line",
+    "subtitle": "A field guide to hooks with a little voltage.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "AMETHYST EDITION \u00b7 HOOKS"
+  }
+}

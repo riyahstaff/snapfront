@@ -9,6 +9,7 @@ export const DIGITAL_BODY_FONTS = ["sans", "serif"] as const;
 
 export type DigitalPalette = { paper: string; ink: string; accent: string; muted: string; soft: string };
 export type DigitalFonts = { heading: typeof DIGITAL_HEADING_FONTS[number]; body: typeof DIGITAL_BODY_FONTS[number] };
+export type DigitalDesignRevision = 1 | 2;
 export type DigitalBlock = {
   id: string;
   kind: DigitalBlockKind;
@@ -22,6 +23,10 @@ export type DigitalDocument = {
   schema_version: 1;
   format: DigitalFormat;
   template_id: string;
+  /** Omitted documents are legacy revision 1 until a seller explicitly selects a design. */
+  design_revision?: DigitalDesignRevision;
+  /** Revision-2 artwork is visible unless the seller explicitly turns it off. */
+  show_artwork?: boolean;
   title: string;
   subtitle: string;
   brand: string;
@@ -36,6 +41,8 @@ export type DigitalTemplateSummary = {
   id: string;
   name: string;
   format: DigitalFormat;
+  /** Older public catalogs omit this and are treated as revision 1 for matching purposes. */
+  design_revision?: DigitalDesignRevision;
   description: string;
   tags: string[];
   palette: DigitalPalette;
@@ -43,6 +50,28 @@ export type DigitalTemplateSummary = {
   sample: { title: string; subtitle: string; brand: string; eyebrow: string };
   preview_url: string;
 };
+
+/** Missing saved-source metadata remains legacy; new source creation deliberately uses revision 2. */
+export function digitalDesignRevision(value: { design_revision?: DigitalDesignRevision } | null | undefined, fallback: DigitalDesignRevision = 1): DigitalDesignRevision {
+  const revision = value?.design_revision;
+  return revision === 1 || revision === 2 ? revision : fallback;
+}
+
+/**
+ * A remote catalog may refresh copy only when it belongs to the exact same art/thumbnails package.
+ * This keeps a v2 summary from being presented over a v1 native cover (and vice versa).
+ */
+export function mergeDigitalTemplateSummaries(
+  bundledTemplates: readonly DigitalTemplateSummary[],
+  remoteTemplates?: readonly DigitalTemplateSummary[] | null,
+): DigitalTemplateSummary[] {
+  if (!remoteTemplates?.length) return [...bundledTemplates];
+  const remoteById = new Map(remoteTemplates.map((template) => [template.id, template]));
+  return bundledTemplates.map((bundled) => {
+    const remote = remoteById.get(bundled.id);
+    return remote && digitalDesignRevision(remote) === digitalDesignRevision(bundled) ? remote : bundled;
+  });
+}
 
 export const DEFAULT_DIGITAL_PALETTE: DigitalPalette = {
   paper: "#FFFDF8", ink: "#1D2433", accent: "#7052E8", muted: "#64748B", soft: "#EEEAFB",
@@ -85,15 +114,18 @@ export function cloneDigitalDocument(document: DigitalDocument): DigitalDocument
  * A legacy rebuild deliberately starts with the selected template's illustrative, editable copy.
  * It does not pretend to recover an old PDF's source document.
  */
-export function newDigitalDocument(template: Pick<DigitalTemplateSummary, "id" | "format" | "palette" | "fonts" | "sample"> | string): DigitalDocument {
+export function newDigitalDocument(template: Pick<DigitalTemplateSummary, "id" | "format" | "palette" | "fonts" | "sample" | "design_revision"> | string): DigitalDocument {
   const summary = typeof template === "string" ? null : template;
   const templateId = typeof template === "string" ? template : template.id;
   const format = summary?.format ?? formatFromTemplateId(templateId);
   const sample = summary?.sample ?? { title: "Your digital design", subtitle: "Replace this starter copy with your own.", brand: "Your brand", eyebrow: "START HERE" };
+  const revision = digitalDesignRevision(summary, 2);
   return {
     schema_version: 1,
     format,
     template_id: templateId,
+    design_revision: revision,
+    ...(revision === 2 ? { show_artwork: true } : {}),
     title: sample.title,
     subtitle: sample.subtitle,
     brand: sample.brand,
@@ -151,6 +183,9 @@ export function validateDigitalDocument(document: DigitalDocument): string | nul
   if (document.schema_version !== 1) return "This design uses an unsupported document version.";
   if (!isDigitalFormat(document.format)) return "Choose one of the five supported digital formats.";
   if (!SAFE_ID.test(document.template_id)) return "The selected template id is invalid.";
+  if (document.design_revision !== undefined && document.design_revision !== 1 && document.design_revision !== 2) return "This design uses an unsupported visual revision.";
+  if (document.show_artwork !== undefined && typeof document.show_artwork !== "boolean") return "Artwork visibility must be on or off.";
+  if (document.show_artwork !== undefined && document.design_revision !== 2) return "Artwork visibility is available for premium designs only.";
   if (![document.title, document.subtitle, document.brand, document.eyebrow].every((value) => typeof value === "string")) return "Cover fields must be text.";
   if (document.title.length > MAX_TITLE) return `Title must be ${MAX_TITLE} characters or fewer.`;
   if (document.subtitle.length > MAX_SUBTITLE) return `Subtitle must be ${MAX_SUBTITLE} characters or fewer.`;

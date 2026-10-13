@@ -11,9 +11,12 @@ const serverAssets = path.resolve(mobile, "../server/assets/digital-designs");
 const mobileAssets = path.join(mobile, "assets/digital-designs");
 fs.mkdirSync(serverAssets, { recursive: true });
 fs.mkdirSync(mobileAssets, { recursive: true });
-const summaries = publicDigitalCatalog().templates;
+const catalog = publicDigitalCatalog();
+const summaries = catalog.templates;
 for (const template of digitalTemplates) {
-  const preview = await renderDigitalPreview(starterDocument(template.id));
+  const source = starterDocument(template.id, { design_revision: 2 });
+  const preview = await renderDigitalPreview(source);
+  if (source.design_revision !== 2 || !preview.pages[0].svg.includes('data:image/jpeg;base64,')) throw new Error(`Premium artwork missing from ${template.id}`);
   if (!preview.pages?.length || !preview.pages[0].svg) throw new Error(`No actual cover for ${template.id}`);
   const rendered = new Resvg(preview.pages[0].svg, { fitTo: { mode: "width", value: 420 }, font: { fontFiles: Object.values(fontPaths), loadSystemFonts: false } });
   const png = rendered.render().asPng();
@@ -27,7 +30,7 @@ fs.writeFileSync(path.join(mobile, "src/lib/digital-design-catalog.ts"), header 
   "import type { DigitalTemplateSummary } from './digital-design';\n" +
   `export const DIGITAL_DESIGNS: DigitalTemplateSummary[] = ${JSON.stringify(summaries, null, 2)};\n` +
   `export const DIGITAL_FORMATS = ${JSON.stringify(DIGITAL_FORMATS, null, 2)};\n` +
-  "export const DIGITAL_DESIGN_VERSION = 1;\n");
+  `export const DIGITAL_DESIGN_VERSION = ${catalog.version};\n`);
 fs.writeFileSync(path.join(mobile, "src/lib/digital-design-thumbnails.ts"), header +
   "export const DIGITAL_DESIGN_THUMBNAILS: Record<string, number> = {\n" + digitalTemplates.map(t => `  '${t.id}': require('../../assets/digital-designs/${t.id}.png'),`).join("\n") + "\n};\n");
 console.log("Complete: 50 actual cover thumbnails and offline catalog.");

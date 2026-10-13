@@ -1,0 +1,227 @@
+{
+  "id": "checklist-10",
+  "format": "checklist",
+  "name": "The Luminous Reset",
+  "description": "A collector-edition personal reset checklist: a considered sequence for clearing the noise, tending to yourself, and beginning again.",
+  "tags": [
+    "checklist",
+    "self-care",
+    "reset",
+    "ritual",
+    "amethyst",
+    "printable"
+  ],
+  "palette": {
+    "paper": "#F5F1FA",
+    "ink": "#21182C",
+    "accent": "#7954A8",
+    "muted": "#514760",
+    "soft": "#E6DDF0"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "gradient": {
+      "from": "ink",
+      "to": "accent",
+      "direction": "diagonal"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "soft",
+      "brand": "paper"
+    },
+    "title": {
+      "x": 0.08,
+      "y": 0.59,
+      "w": 0.82,
+      "h": 0.19,
+      "size": 58,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.8,
+      "w": 0.76,
+      "h": 0.075,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.53,
+      "w": 0.72,
+      "h": 0.04,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.92,
+      "w": 0.72,
+      "h": 0.035,
+      "size": 10,
+      "align": "left"
+    },
+    "image": {
+      "x": 0.39,
+      "y": 0.07,
+      "w": 0.54,
+      "h": 0.43
+    },
+    "artworks": [
+      {
+        "id": "amethyst-glass",
+        "x": 0.39,
+        "y": 0.07,
+        "w": 0.54,
+        "h": 0.43,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.055,
+        "y": 0.055,
+        "w": 0.89,
+        "h": 0.89,
+        "fill": "ink",
+        "stroke": 1,
+        "opacity": 1,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.515,
+        "w": 0.82,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8,
+        "opacity": 0.85
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.895,
+        "w": 0.82,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.65,
+        "opacity": 0.75
+      },
+      {
+        "kind": "polygon",
+        "x": 0.13,
+        "y": 0.16,
+        "w": 0.14,
+        "h": 0.22,
+        "fill": "soft",
+        "points": [
+          [
+            0.5,
+            0
+          ],
+          [
+            1,
+            0.28
+          ],
+          [
+            0.82,
+            1
+          ],
+          [
+            0.18,
+            0.84
+          ],
+          [
+            0,
+            0.3
+          ]
+        ],
+        "opacity": 0.28
+      },
+      {
+        "kind": "line",
+        "x": 0.12,
+        "y": 0.12,
+        "w": 0.17,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.7,
+        "opacity": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.12,
+        "y": 0.12,
+        "w": 0,
+        "h": 0.13,
+        "fill": "soft",
+        "stroke": 0.7,
+        "opacity": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.91,
+        "y": 0.4,
+        "w": 0,
+        "h": 0.11,
+        "fill": "soft",
+        "stroke": 0.7,
+        "opacity": 0.8
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 30,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "headerStyle": "stack",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "gradient": {
+      "from": "paper",
+      "to": "soft",
+      "direction": "vertical"
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.93,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.942,
+        "w": 0.23,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.65
+      }
+    ]
+  },
+  "sample": {
+    "title": "The Luminous Reset",
+    "subtitle": "A small ritual for making room to begin again",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A PERSONAL RESET CHECKLIST"
+  },
+  "design_revision": 2
+}

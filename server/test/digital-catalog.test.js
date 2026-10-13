@@ -21,7 +21,15 @@ test('exactly 50 original digital designs cover all five generated content forma
 test('every cover preserves separated editable fields, legible contrast and trusted finite geometry', () => {
   for (const t of digitalTemplates) {
     assert.equal(validateTemplate(t), t);
-    assert.ok(contrast(t.palette[t.cover.background], t.palette[t.cover.textColor]) >= 4.5, t.id);
+    for (const field of ['eyebrow', 'title', 'subtitle', 'brand']) {
+      const box = t.cover[field];
+      let background = t.cover.background;
+      for (const shape of t.cover.shapes) {
+        if (shape.kind === 'rect' && !shape.hollow && (shape.opacity ?? 1) >= 0.95 && shape.x <= box.x && shape.y <= box.y && shape.x + shape.w >= box.x + box.w && shape.y + shape.h >= box.y + box.h) background = shape.fill;
+      }
+      const foreground = t.cover.fieldColors?.[field] || t.cover.textColor;
+      assert.ok(contrast(t.palette[background], t.palette[foreground]) >= 4.5, `${t.id}: ${field} must be readable against its actual panel`);
+    }
     for (const a of ['eyebrow', 'title', 'subtitle', 'brand']) for (const b of ['eyebrow', 'title', 'subtitle', 'brand']) {
       if (a >= b) continue;
       const x = t.cover[a], y = t.cover[b];
@@ -33,9 +41,10 @@ test('every cover preserves separated editable fields, legible contrast and trus
 });
 test('public digital catalog contains only safe metadata and known actual-image paths', () => {
   const c = publicDigitalCatalog();
-  assert.equal(c.version, 1); assert.equal(c.templates.length, 50);
+  assert.equal(c.version, 2); assert.equal(c.templates.length, 50);
   for (const t of c.templates) {
-    assert.equal(t.preview_url, `/digital-design-assets/${t.id}.png`);
+    assert.equal(t.design_revision, 2);
+    assert.equal(t.preview_url, `/digital-design-assets/v2/${t.id}.png`);
     assert.equal(t.cover, undefined); assert.equal(templateById(t.id).name, t.name);
   }
   assert.throws(() => templateById('__proto__'), /50 Snapfront/);

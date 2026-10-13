@@ -9,6 +9,7 @@ import opentype from "opentype.js";
 import sharp from "sharp";
 import { fontPaths, templateById } from "./digital-catalog.js";
 import { documentHash, validateDocument } from "./digital-document.js";
+import { readTrustedArtwork, trustedArtworkIds } from "./premium-artwork.js";
 
 const LETTER = Object.freeze({ width: 612, height: 792 });
 const QUOTE = Object.freeze({ width: 576, height: 720 });
@@ -18,6 +19,8 @@ const MAX_DISTINCT_IMAGES = 32;
 const FONT_ORDER = ["sans", "sansBold", "serif", "mono", "display"];
 const ROLE_NAMES = new Set(["paper", "ink", "accent", "muted", "soft"]);
 const TEMPLATE_SHAPES = new Set(["rect", "ellipse", "line", "arc", "polygon"]);
+const GRADIENT_DIRECTIONS = new Set(["vertical", "horizontal", "diagonal"]);
+const TRUSTED_ARTWORK_IDS = new Set(trustedArtworkIds);
 const SVG_PAGE_LIMIT = 2 * 1024 * 1024;
 
 function fail(message, status = 400) {
@@ -46,6 +49,10 @@ function validBox(value, allowZero = false) {
     && value.x + value.w <= 1.00001 && value.y + value.h <= 1.00001;
 }
 
+function validGradient(value) {
+  return value && typeof value === "object" && ROLE_NAMES.has(value.from) && ROLE_NAMES.has(value.to) && GRADIENT_DIRECTIONS.has(value.direction);
+}
+
 /** Renderer-side guard in case a packaged template is replaced after catalog startup. */
 function assertTemplate(template) {
   if (!template || typeof template !== "object") throw fail("The selected digital template is unavailable.");
@@ -57,6 +64,17 @@ function assertTemplate(template) {
     if (!validBox(region) || !validNumber(region.size, 5, 90) || !["left", "center", "right"].includes(region.align)) {
       throw fail("The selected digital template has invalid cover text regions.");
     }
+  }
+  if (template.design_revision === 2) {
+    if (template.cover.gradient !== undefined && !validGradient(template.cover.gradient)) throw fail("The selected digital template has an invalid cover gradient.");
+    if (template.cover.fieldColors !== undefined && (!template.cover.fieldColors || typeof template.cover.fieldColors !== "object" || Object.entries(template.cover.fieldColors).some(([field, color]) => !["title", "subtitle", "eyebrow", "brand"].includes(field) || !ROLE_NAMES.has(color)))) throw fail("The selected digital template has invalid cover field colors.");
+    if (!Array.isArray(template.cover.artworks) || !template.cover.artworks.length || template.cover.artworks.length > 3) throw fail("The selected digital template has no trusted cover artwork.");
+    for (const artwork of template.cover.artworks) {
+      if (!artwork || !TRUSTED_ARTWORK_IDS.has(artwork.id) || !validBox(artwork) || !["cover", "contain"].includes(artwork.fit) || !validNumber(artwork.opacity, 0, 1)) throw fail("The selected digital template has invalid trusted cover artwork.");
+    }
+    if (template.interior.gradient !== undefined && !validGradient(template.interior.gradient)) throw fail("The selected digital template has an invalid interior gradient.");
+    if (template.interior.chapterStyle !== undefined && !["editorial", "technical", "gallery"].includes(template.interior.chapterStyle)) throw fail("The selected digital template has an invalid chapter style.");
+    if (template.interior.ornament !== undefined && !["chrome-rule", "split-rail", "micro-grid", "none"].includes(template.interior.ornament)) throw fail("The selected digital template has an invalid interior ornament.");
   }
   const allShapes = [template.cover.shapes, template.interior.shapes];
   for (const shapes of allShapes) {
@@ -211,7 +229,7 @@ function normalizedShape(shape, palette, width, height) {
   if (shape.kind === "rect" || shape.kind === "ellipse" || shape.kind === "polygon") {
     // Filled mats/rails use fill. A numeric template stroke is an outline in the
     // same palette color; circles with a paper fill therefore become true rings.
-    base.fill = color;
+    base.fill = shape.hollow === true ? null : color;
     if (shape.stroke) { base.stroke = color; base.strokeWidth = shape.stroke; }
   } else {
     base.color = color;
@@ -277,6 +295,9 @@ function svgFontCss(fontKeys) {
 
 function svgElement(element) {
   const opacity = element.opacity === undefined || element.opacity === 1 ? "" : ` opacity=\"${n(element.opacity)}\"`;
+  if (element.type === "gradient") {
+    return `<rect x=\"${n(element.x)}\" y=\"${n(element.y)}\" width=\"${n(element.w)}\" height=\"${n(element.h)}\" fill=\"url(#${attr(element.svgId)})\"${opacity}/>`;
+  }
   if (element.type === "rect") {
     const fill = element.fill ? ` fill=\"${attr(element.fill)}\"` : " fill=\"none\"";
     const stroke = element.stroke ? ` stroke=\"${attr(element.stroke)}\" stroke-width=\"${n(element.strokeWidth)}\"` : "";
@@ -301,25 +322,27 @@ function svgElement(element) {
   }
   if (element.type === "checkbox") return `<rect x=\"${n(element.x)}\" y=\"${n(element.y)}\" width=\"${n(element.size)}\" height=\"${n(element.size)}\" rx=\"${n(element.size * 0.14)}\" fill=\"none\" stroke=\"${attr(element.color)}\" stroke-width=\"${n(element.stroke || 0.9)}\"${opacity}/>`;
   if (element.type === "image") {
-    const preserve = element.fit === "cover" ? "xMidYMid slice" : "none";
-    return `<image href=\"data:${element.mime};base64,${element.buffer.toString("base64")}\" x=\"${n(element.x)}\" y=\"${n(element.y)}\" width=\"${n(element.w)}\" height=\"${n(element.h)}\" preserveAspectRatio=\"${preserve}\"/>`;
+    const preserve = element.fit === "cover" ? "xMidYMid slice" : "xMidYMid meet";
+    return `<image href=\"data:${element.mime};base64,${element.buffer.toString("base64")}\" x=\"${n(element.x)}\" y=\"${n(element.y)}\" width=\"${n(element.w)}\" height=\"${n(element.h)}\" preserveAspectRatio=\"${preserve}\"${opacity}/>`;
   }
   return "";
 }
 
 function sceneSvg(scene) {
-  const keys = [...new Set(scene.elements.filter((e) => e.type === "text").map((e) => e.font))];
+  const elements = scene.elements.map((element, index) => element.type === "gradient" ? { ...element, svgId: `digital-gradient-${index}` } : element);
+  const keys = [...new Set(elements.filter((e) => e.type === "text").map((e) => e.font))];
   // An all-geometric page still receives a bundled body face so native SVG consumers never
   // substitute a network/system font when text is added by an accessibility layer.
   if (!keys.length) keys.push("sans");
   const pageId = scene.sourcePageId || "cover";
-  const body = scene.elements.map((element) => {
+  const gradients = elements.filter((element) => element.type === "gradient").map((element) => `<linearGradient id=\"${element.svgId}\" gradientUnits=\"userSpaceOnUse\" x1=\"${n(element.x1)}\" y1=\"${n(element.y1)}\" x2=\"${n(element.x2)}\" y2=\"${n(element.y2)}\"><stop offset=\"0%\" stop-color=\"${attr(element.from)}\"/><stop offset=\"100%\" stop-color=\"${attr(element.to)}\"/></linearGradient>`).join("");
+  const body = elements.map((element) => {
     const marker = element.field ? ` data-digital-page=\"${attr(pageId)}\" data-digital-field=\"${attr(element.field)}\"` : element.blockId ? ` data-digital-page=\"${attr(pageId)}\" data-digital-block=\"${attr(element.blockId)}\"` : "";
     const payload = svgElement(element);
     return marker ? `<g${marker}>${payload}</g>` : payload;
   }).join("");
   const pageMarker = ` data-digital-page=\"${attr(pageId)}\"`;
-  const svg = `<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"${n(scene.width)}\" height=\"${n(scene.height)}\" viewBox=\"0 0 ${n(scene.width)} ${n(scene.height)}\" role=\"img\" aria-label=\"Digital design preview\"><defs><style><![CDATA[${svgFontCss(keys)}]]></style></defs><g${pageMarker}>${body}</g></svg>`;
+  const svg = `<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"${n(scene.width)}\" height=\"${n(scene.height)}\" viewBox=\"0 0 ${n(scene.width)} ${n(scene.height)}\" role=\"img\" aria-label=\"Digital design preview\"><defs>${gradients}<style><![CDATA[${svgFontCss(keys)}]]></style></defs><g${pageMarker}>${body}</g></svg>`;
   if (Buffer.byteLength(svg, "utf8") > SVG_PAGE_LIMIT) throw fail("A rendered preview page exceeds the 2 MiB native preview limit. Use a smaller image.", 413);
   return svg;
 }
@@ -327,7 +350,11 @@ function sceneSvg(scene) {
 function drawPdfElement(pdf, element) {
   pdf.save();
   if (element.opacity !== undefined) pdf.opacity(element.opacity);
-  if (element.type === "rect") {
+  if (element.type === "gradient") {
+    const gradient = pdf.linearGradient(element.x1, element.y1, element.x2, element.y2);
+    gradient.stop(0, element.from).stop(1, element.to);
+    pdf.rect(element.x, element.y, element.w, element.h).fill(gradient);
+  } else if (element.type === "rect") {
     const box = element.radius ? pdf.roundedRect(element.x, element.y, element.w, element.h, element.radius) : pdf.rect(element.x, element.y, element.w, element.h);
     if (element.fill) box.fillColor(element.fill);
     if (element.stroke) box.lineWidth(element.strokeWidth || 1).strokeColor(element.stroke);
@@ -367,6 +394,7 @@ function drawPdfElement(pdf, element) {
   } else if (element.type === "checkbox") {
     pdf.roundedRect(element.x, element.y, element.size, element.size, element.size * 0.14).lineWidth(element.stroke || 0.9).strokeColor(element.color).stroke();
   } else if (element.type === "image") {
+    if (element.clip === true && element.fit === "cover") pdf.rect(element.x, element.y, element.w, element.h).clip();
     pdf.image(element.buffer, element.x, element.y, element.fit === "cover"
       ? { cover: [element.w, element.h], align: "center", valign: "center" }
       : { width: element.w, height: element.h });
@@ -395,6 +423,15 @@ function pdfBuffer(scenes, document) {
 }
 
 function background(scene, color) { addRect(scene, { x: 0, y: 0, w: scene.width, h: scene.height, fill: color }); }
+
+function addGradient(scene, definition, palette, opacity = 1) {
+  if (!definition) return;
+  const x = 0, y = 0, w = scene.width, h = scene.height;
+  const vector = definition.direction === "horizontal" ? { x1: x, y1: y, x2: x + w, y2: y }
+    : definition.direction === "diagonal" ? { x1: x, y1: y, x2: x + w, y2: y + h }
+      : { x1: x, y1: y, x2: x, y2: y + h };
+  scene.elements.push({ type: "gradient", x, y, w, h, ...vector, from: role(palette, definition.from), to: role(palette, definition.to), opacity });
+}
 
 function coverText(scene, document, template, field, value, font, ratio, color) {
   if (!value) return;
@@ -442,27 +479,96 @@ async function imageStore(resolveImage) {
   };
 }
 
-async function buildCover(document, template, getImage) {
+function normalizedRegion(region, width, height) {
+  return { x: region.x * width, y: region.y * height, w: region.w * width, h: region.h * height };
+}
+
+function coverFieldColor(document, template, field) {
+  return role(document.palette, template.cover.fieldColors?.[field] || template.cover.textColor);
+}
+
+function firstOwnedImage(document) {
+  return document.pages.flatMap((page) => page.blocks).find((block) => block.kind === "image" && block.image_file) || null;
+}
+
+function addPlacedImage(scene, image, region, fit, extras = {}) {
+  const fitted = fitImageBox(region, image, fit);
+  scene.elements.push({ type: "image", ...fitted, ...image, fit, ...extras });
+}
+
+/** Add only fixed server-owned artwork. Seller bytes travel solely through getImage. */
+async function addCoverArtwork(scene, document, template, getImage, getArtwork, includeReplacement = true) {
+  const artworks = template.design_revision === 2 ? template.cover.artworks || [] : [];
+  const primaryRegion = template.cover.image;
+  const replacement = includeReplacement && primaryRegion ? firstOwnedImage(document) : null;
+  let replacementImage = null;
+  if (replacement) replacementImage = await getImage(replacement.image_file);
+
+  if (!artworks.length) {
+    if (replacementImage && primaryRegion) addPlacedImage(scene, replacementImage, normalizedRegion(primaryRegion, scene.width, scene.height), replacement.image_fit || "contain", { blockId: replacement.id });
+    return;
+  }
+
+  for (let index = 0; index < artworks.length; index++) {
+    const artwork = artworks[index];
+    if (index === 0 && replacementImage && primaryRegion) {
+      // The editable, known-owned image takes the exact primary slot, even when the
+      // decorative-art toggle is off. It remains marked for native editor selection.
+      addPlacedImage(scene, replacementImage, normalizedRegion(primaryRegion, scene.width, scene.height), replacement.image_fit || "contain", { blockId: replacement.id, clip: true });
+      continue;
+    }
+    if (document.show_artwork === false) continue;
+    const image = await getArtwork(artwork.id);
+    if (image) addPlacedImage(scene, image, normalizedRegion(artwork, scene.width, scene.height), artwork.fit, { opacity: artwork.opacity, clip: true });
+  }
+}
+
+async function buildCover(document, template, getImage, getArtwork) {
   const { width, height } = sizeFor(document.format);
   const scene = pageScene(width, height, null, "cover");
   background(scene, role(document.palette, template.cover.background));
-  for (const shape of template.cover.shapes) scene.elements.push(normalizedShape(shape, document.palette, width, height));
-  const coverRegion = template.cover.image;
-  const firstImage = document.pages.flatMap((page) => page.blocks).find((block) => block.kind === "image" && block.image_file);
-  if (coverRegion && firstImage) {
-    const image = await getImage(firstImage.image_file);
-    if (image) {
-      const box = { x: coverRegion.x * width, y: coverRegion.y * height, w: coverRegion.w * width, h: coverRegion.h * height };
-      const fitted = fitImageBox(box, image, firstImage.image_fit || "contain");
-      scene.elements.push({ type: "image", ...fitted, ...image, fit: firstImage.image_fit || "contain", blockId: firstImage.id });
+  if (template.design_revision === 2) addGradient(scene, template.cover.gradient, document.palette);
+  for (const shape of template.cover.shapes.filter(s => s.behindArt === true)) scene.elements.push(normalizedShape(shape, document.palette, width, height));
+  await addCoverArtwork(scene, document, template, getImage, getArtwork);
+  for (const shape of template.cover.shapes.filter(s => s.behindArt !== true)) scene.elements.push(normalizedShape(shape, document.palette, width, height));
+  coverText(scene, document, template, "eyebrow", document.eyebrow, bodyFont(document), 1, coverFieldColor(document, template, "eyebrow"));
+  coverText(scene, document, template, "title", document.title, headingFont(document), 1, coverFieldColor(document, template, "title"));
+  coverText(scene, document, template, "subtitle", document.subtitle, bodyFont(document), 1, coverFieldColor(document, template, "subtitle"));
+  coverText(scene, document, template, "brand", document.brand, bodyFont(document), 1, coverFieldColor(document, template, "brand"));
+  return scene;
+}
+
+function sourceNumber(source) {
+  const matched = String(source.id || "").match(/(\d+)(?!.*\d)/);
+  return String(matched ? Number(matched[1]) : 1).padStart(2, "0");
+}
+
+function addPremiumOrnament(scene, document, interior, margin) {
+  const { width, height } = scene;
+  if (interior.ornament === "chrome-rule") {
+    addLine(scene, { x1: margin, y1: margin * 0.55, x2: width - margin, y2: margin * 0.55, color: document.palette.accent, width: 0.65, opacity: 0.7 });
+    addRect(scene, { x: margin, y: margin * 0.43, w: 27, h: 2, fill: document.palette.accent, opacity: 0.95 });
+    addLine(scene, { x1: margin, y1: height - margin * 0.5, x2: width - margin, y2: height - margin * 0.5, color: document.palette.soft, width: 0.6, opacity: 0.85 });
+  } else if (interior.ornament === "split-rail") {
+    addRect(scene, { x: Math.max(10, margin * 0.38), y: margin * 0.72, w: 1.3, h: height - margin * 1.45, fill: document.palette.accent, opacity: 0.65 });
+    addRect(scene, { x: width - Math.max(12, margin * 0.38) - 1.3, y: margin * 0.72, w: 1.3, h: height - margin * 1.45, fill: document.palette.soft, opacity: 0.95 });
+  } else if (interior.ornament === "micro-grid") {
+    const originX = width - margin * 0.72, originY = margin * 0.32;
+    for (let step = 0; step < 4; step++) {
+      addLine(scene, { x1: originX + step * 4, y1: originY, x2: originX + step * 4, y2: originY + 12, color: document.palette.muted, width: 0.35, opacity: 0.55 });
+      addLine(scene, { x1: originX, y1: originY + step * 4, x2: originX + 12, y2: originY + step * 4, color: document.palette.muted, width: 0.35, opacity: 0.55 });
     }
   }
-  const textColor = role(document.palette, template.cover.textColor);
-  coverText(scene, document, template, "eyebrow", document.eyebrow, bodyFont(document), 1, textColor);
-  coverText(scene, document, template, "title", document.title, headingFont(document), 1, textColor);
-  coverText(scene, document, template, "subtitle", document.subtitle, bodyFont(document), 1, textColor);
-  coverText(scene, document, template, "brand", document.brand, bodyFont(document), 1, textColor);
-  return scene;
+}
+
+function addPremiumChapterLabel(scene, document, interior, source, headerX, headerY, headerW) {
+  if (!interior.chapterStyle) return;
+  const number = sourceNumber(source);
+  const label = interior.chapterStyle === "technical" ? `SECTION ${number}` : interior.chapterStyle === "gallery" ? `EDITION ${number}` : `CHAPTER ${number}`;
+  addText(scene, { x: headerX, y: headerY - 14, width: Math.min(headerW, 150), lines: [label], font: "sansBold", size: 7.4, lineHeight: 1, color: document.palette.accent, blockId: `${source.id}-chapter-label` });
+  if (interior.chapterStyle === "gallery") {
+    addText(scene, { x: headerX + headerW - 42, y: headerY - 20, width: 42, lines: [number], font: headingFont(document), size: 18, lineHeight: 1, color: document.palette.soft, align: "right", blockId: `${source.id}-chapter-number` });
+  }
 }
 
 function interiorStart(document, template, source, continuation, pages = []) {
@@ -471,10 +577,12 @@ function interiorStart(document, template, source, continuation, pages = []) {
   const interior = template.interior;
   const margin = clamp(interior.margin, 34, 60);
   background(scene, document.palette.paper);
+  if (template.design_revision === 2) addGradient(scene, interior.gradient, document.palette, 0.13);
   for (const shape of interior.shapes || []) scene.elements.push(normalizedShape(shape, document.palette, width, height));
+  if (template.design_revision === 2) addPremiumOrnament(scene, document, interior, margin);
   const title = source.title || document.title;
   const headFont = headingFont(document), body = bodyFont(document);
-  const headerY = margin;
+  const headerY = margin + (template.design_revision === 2 && interior.chapterStyle ? 9 : 0);
   const headerH = Math.max(44, interior.headingSize * 1.8);
   const headerX = margin + (interior.headerStyle === "side" ? 15 : 0);
   const headerW = width - 2 * margin - (interior.headerStyle === "side" ? 15 : 0);
@@ -489,6 +597,12 @@ function interiorStart(document, template, source, continuation, pages = []) {
     addRect(scene, { x: margin, y: headerY, w: 25, h: 6, fill: document.palette.accent });
     addRect(scene, { x: margin + 31, y: headerY, w: 46, h: 6, fill: document.palette.soft });
   }
+  if (interior.headerStyle === "technical") {
+    addRect(scene, { x: margin, y: headerY - 7, w: 9, h: 9, fill: document.palette.accent, opacity: 0.95 });
+    addLine(scene, { x1: margin + 15, y1: headerY - 2.5, x2: width - margin, y2: headerY - 2.5, color: document.palette.muted, width: 0.7, opacity: 0.7 });
+    addLine(scene, { x1: margin, y1: headerY + headerH, x2: width - margin, y2: headerY + headerH, color: document.palette.accent, width: 1.1, opacity: 0.8 });
+  }
+  if (template.design_revision === 2 && !continuation) addPremiumChapterLabel(scene, document, interior, source, headerX, headerY, headerW);
   addText(scene, { x: headerX, y: headerY + 7, width: headerW, lines: fittedHeader.lines, font: headFont, size: fittedHeader.size, lineHeight: 1.08, color: document.palette.ink });
   const fittedFooter = textFits(document.brand || document.title, { x: margin, y: height - margin, w: width - 2 * margin, h: Math.max(14, margin - 8) }, body, 7.5, 1.1);
   if (!fittedFooter) throw fail("The brand line is too long for the printable footer. Shorten it; no text was removed.");
@@ -602,7 +716,7 @@ async function addImageBlock(state, document, template, source, block, getImage,
   return state;
 }
 
-async function interiorScenes(document, template, getImage) {
+async function interiorScenes(document, template, getImage, getArtwork) {
   const scenes = [];
   for (const originalSource of document.pages) {
     let source = originalSource;
@@ -610,7 +724,7 @@ async function interiorScenes(document, template, getImage) {
     if (document.format === "quotes") {
       const quoteBlocks = source.blocks.filter((block) => block.kind === "quote");
       if (quoteBlocks.length) {
-        for (const block of quoteBlocks) scenes.push(...quoteScenes(document, template, source, block));
+        for (const block of quoteBlocks) scenes.push(...await quoteScenes(document, template, source, block, getImage, getArtwork));
         const rest = source.blocks.filter((block) => block.kind !== "quote");
         if (!rest.length) continue;
         source = { ...source, blocks: rest };
@@ -633,7 +747,7 @@ async function interiorScenes(document, template, getImage) {
   return scenes;
 }
 
-function quoteScenes(document, template, source, block) {
+async function quoteScenes(document, template, source, block, getImage, getArtwork) {
   const { width, height } = sizeFor(document.format);
   const region = template.cover.title;
   const margin = Math.max(42, template.interior.margin);
@@ -647,12 +761,15 @@ function quoteScenes(document, template, source, block) {
   for (let offset = 0; offset < lines.length; offset += lineCapacity) {
     const scene = pageScene(width, height, source.id, "quote");
     background(scene, role(document.palette, template.cover.background));
-    for (const shape of template.cover.shapes || []) scene.elements.push(normalizedShape(shape, document.palette, width, height));
+    if (template.design_revision === 2) addGradient(scene, template.cover.gradient, document.palette);
+    for (const shape of (template.cover.shapes || []).filter(s => s.behindArt === true)) scene.elements.push(normalizedShape(shape, document.palette, width, height));
+    await addCoverArtwork(scene, document, template, getImage, getArtwork, template.design_revision === 2);
+    for (const shape of (template.cover.shapes || []).filter(s => s.behindArt !== true)) scene.elements.push(normalizedShape(shape, document.palette, width, height));
     const part = lines.slice(offset, offset + lineCapacity);
     const used = part.length * size * 1.14;
-    addText(scene, { x: available.x, y: available.y + Math.max(0, (available.h - used) / 2), width: available.w, lines: part, font: heading, size, lineHeight: 1.14, color: role(document.palette, template.cover.textColor), align: region.align, blockId: block.id });
+    addText(scene, { x: available.x, y: available.y + Math.max(0, (available.h - used) / 2), width: available.w, lines: part, font: heading, size, lineHeight: 1.14, color: coverFieldColor(document, template, "title"), align: region.align, blockId: block.id });
     const brand = template.cover.brand;
-    addText(scene, { x: brand.x * width, y: brand.y * height, width: brand.w * width, lines: wrapText(document.brand || document.title, brand.w * width, bodyFont(document), Math.min(brand.size, 9)), font: bodyFont(document), size: Math.min(brand.size, 9), lineHeight: 1.1, color: role(document.palette, template.cover.textColor), align: brand.align, blockId: block.id });
+    addText(scene, { x: brand.x * width, y: brand.y * height, width: brand.w * width, lines: wrapText(document.brand || document.title, brand.w * width, bodyFont(document), Math.min(brand.size, 9)), font: bodyFont(document), size: Math.min(brand.size, 9), lineHeight: 1.1, color: coverFieldColor(document, template, "brand"), align: brand.align, blockId: block.id });
     if (offset) addText(scene, { x: margin, y: height * 0.9, width: width - 2 * margin, lines: ["continued"], font: bodyFont(document), size: 7.5, lineHeight: 1, color: document.palette.muted, align: "center", blockId: block.id });
     scenes.push(scene);
   }
@@ -661,10 +778,11 @@ function quoteScenes(document, template, source, block) {
 
 async function buildScenes(document, resolveImage) {
   const clean = validateDocument(document);
-  const template = assertTemplate(templateById(clean.template_id));
+  const template = assertTemplate(templateById(clean.template_id, clean.design_revision ?? 1));
   const getImage = await imageStore(resolveImage);
-  const cover = await buildCover(clean, template, getImage);
-  const interiors = await interiorScenes(clean, template, getImage);
+  const getArtwork = await imageStore(readTrustedArtwork);
+  const cover = await buildCover(clean, template, getImage, getArtwork);
+  const interiors = await interiorScenes(clean, template, getImage, getArtwork);
   const scenes = [cover, ...interiors];
   if (scenes.length > MAX_RENDERED_PAGES) throw fail(`This document renders to ${scenes.length} pages; the preview/export maximum is ${MAX_RENDERED_PAGES}. Shorten the content or split it into smaller products.`);
   return { clean, template, scenes };

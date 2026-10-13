@@ -1,0 +1,233 @@
+{
+  "id": "planner-06",
+  "format": "planner",
+  "name": "Violet Index \u2014 Precision Daybook",
+  "description": "A precision-minded daily planner in smoky violet and optical silver, with a quiet image inset and a generous, writable architecture for the day.",
+  "tags": [
+    "planner",
+    "precision",
+    "violet",
+    "daily planning",
+    "focus"
+  ],
+  "design_revision": 2,
+  "palette": {
+    "paper": "#211B2B",
+    "ink": "#F7F4FC",
+    "accent": "#B8A6D8",
+    "muted": "#B9B1C4",
+    "soft": "#393044"
+  },
+  "fonts": {
+    "heading": "sans",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "textColor": "ink",
+    "title": {
+      "x": 0.075,
+      "y": 0.31,
+      "w": 0.44,
+      "h": 0.26,
+      "size": 47,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.078,
+      "y": 0.6,
+      "w": 0.4,
+      "h": 0.13,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.078,
+      "y": 0.16,
+      "w": 0.4,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.078,
+      "y": 0.88,
+      "w": 0.38,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "muted",
+      "eyebrow": "accent",
+      "brand": "muted"
+    },
+    "image": {
+      "x": 0.59,
+      "y": 0.17,
+      "w": 0.34,
+      "h": 0.57
+    },
+    "artworks": [
+      {
+        "id": "amethyst-glass",
+        "x": 0.59,
+        "y": 0.17,
+        "w": 0.34,
+        "h": 0.57,
+        "fit": "contain",
+        "opacity": 1
+      },
+      {
+        "id": "optical-silver",
+        "x": 0.565,
+        "y": 0.14,
+        "w": 0.39,
+        "h": 0.63,
+        "fit": "contain",
+        "opacity": 0.58
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0,
+        "y": 0,
+        "w": 0.025,
+        "h": 1,
+        "fill": "accent",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.078,
+        "y": 0.245,
+        "w": 0.4,
+        "h": 0,
+        "fill": "muted",
+        "opacity": 0.7,
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.555,
+        "y": 0.13,
+        "w": 0.41,
+        "h": 0.65,
+        "fill": "soft",
+        "opacity": 0.75,
+        "stroke": 0.8,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.078,
+        "y": 0.81,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.85,
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.078,
+        "y": 0.835,
+        "w": 0.075,
+        "h": 0.008,
+        "fill": "accent",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.955,
+        "y": 0.13,
+        "w": 0,
+        "h": 0.65,
+        "fill": "accent",
+        "opacity": 0.8,
+        "stroke": 0.7
+      }
+    ]
+  },
+  "interior": {
+    "margin": 46,
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "technical",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.145,
+        "w": 0.84,
+        "h": 0.09,
+        "fill": "soft",
+        "opacity": 0.8,
+        "radius": 0.012
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.27,
+        "w": 0.84,
+        "h": 0,
+        "fill": "muted",
+        "opacity": 0.8,
+        "stroke": 0.7
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.91,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.75,
+        "stroke": 0.7
+      },
+      {
+        "kind": "rect",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.055,
+        "h": 0.009,
+        "fill": "accent",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.055,
+        "y": 0.14,
+        "w": 0,
+        "h": 0.73,
+        "fill": "soft",
+        "opacity": 0.8,
+        "stroke": 0.7
+      },
+      {
+        "kind": "line",
+        "x": 0.945,
+        "y": 0.14,
+        "w": 0,
+        "h": 0.73,
+        "fill": "soft",
+        "opacity": 0.8,
+        "stroke": 0.7
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make Room for What Matters",
+    "subtitle": "A measured plan for a day that moves with intention.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "VIOLET INDEX \u00b7 DAILY PRECISION PLANNER"
+  }
+}

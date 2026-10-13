@@ -1,0 +1,165 @@
+{
+  "id": "planner-04",
+  "format": "planner",
+  "name": "The Quiet Orbit Weekly Planner",
+  "description": "A sculptural weekly planning companion for turning a crowded week into a clear sequence of considered moves, with spacious daily pages and a precise chrome-edged editorial cover.",
+  "tags": [
+    "planner",
+    "weekly",
+    "editorial",
+    "pearl",
+    "minimal"
+  ],
+  "palette": {
+    "paper": "#F4F5F6",
+    "ink": "#17191D",
+    "accent": "#697783",
+    "muted": "#4F5962",
+    "soft": "#D7DDE1"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "textColor": "ink",
+    "title": {
+      "x": 0.085,
+      "y": 0.315,
+      "w": 0.45,
+      "h": 0.23,
+      "size": 48,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.575,
+      "w": 0.43,
+      "h": 0.11,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.205,
+      "w": 0.42,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.875,
+      "w": 0.43,
+      "h": 0.04,
+      "size": 9,
+      "align": "left"
+    },
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "ink",
+      "eyebrow": "muted",
+      "brand": "muted"
+    },
+    "artworks": [
+      {
+        "id": "silk-silver",
+        "x": 0.565,
+        "y": 0.115,
+        "w": 0.365,
+        "h": 0.755,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.565,
+      "y": 0.115,
+      "w": 0.365,
+      "h": 0.755
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.545,
+        "y": 0.09,
+        "w": 0.405,
+        "h": 0.805,
+        "fill": "paper",
+        "opacity": 1,
+        "stroke": 1.1,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.145,
+        "w": 0.45,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8,
+        "opacity": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.755,
+        "w": 0.31,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1.4
+      },
+      {
+        "kind": "rect",
+        "x": 0.075,
+        "y": 0.78,
+        "w": 0.018,
+        "h": 0.055,
+        "fill": "accent",
+        "opacity": 0.9
+      },
+      {
+        "kind": "line",
+        "x": 0.94,
+        "y": 0.115,
+        "w": 0,
+        "h": 0.755,
+        "fill": "accent",
+        "stroke": 0.65,
+        "opacity": 0.7
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "headerStyle": "side",
+    "blockStyle": "cards",
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.915,
+        "w": 0.32,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.7,
+        "opacity": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "The Quiet Orbit",
+    "subtitle": "A clear week, shaped one day at a time.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "WEEKLY PLANNER \u00b7 EDITION 01"
+  },
+  "design_revision": 2
+}

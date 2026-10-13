@@ -58,6 +58,9 @@ def verify(artifact, version_code):
         for text in ['Storefront Photo Agent', '/api/image-assistant/jobs', 'Digital Photo Studio', 'Recover the same request', 'Preview refreshed.']:
             if not text_present(bundle, text):
                 raise ValueError(f'New image tools missing from compiled UI: {text!r}')
+        for text in ['Show original artwork', 'Premium collection', 'design_revision']:
+            if not text_present(bundle, text):
+                raise ValueError(f'Premium design collection missing from compiled UI: {text!r}')
         image_hashes = {}
         for name in archive.namelist():
             if name.endswith(('.webp', '.jpg', '.png')):
@@ -86,6 +89,7 @@ def verify(artifact, version_code):
               'version_code': native_code, 'theme_previews_verified': len(previews),
               'digital_design_previews_verified': len(digital_previews), 'digital_editor_verified': True, 'separate_image_studios_verified': True,
               'android_png_lossless_pixel_verification': True,
+              'premium_digital_collection_verified': True,
               'chrome_home_verified': True, 'bytes': artifact.stat().st_size,
               'sha256': hashlib.sha256(artifact.read_bytes()).hexdigest()}
     return result

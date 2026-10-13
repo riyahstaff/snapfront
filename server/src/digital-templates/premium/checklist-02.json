@@ -1,0 +1,177 @@
+{
+  "id": "checklist-02",
+  "format": "checklist",
+  "name": "The Silverline Launch",
+  "description": "A precise, beautifully paced launch checklist for makers who want every detail to feel considered.",
+  "tags": [
+    "checklist",
+    "launch",
+    "small business",
+    "editorial",
+    "silver"
+  ],
+  "palette": {
+    "paper": "#F4F6F8",
+    "ink": "#171A20",
+    "accent": "#B9C3CE",
+    "muted": "#515B66",
+    "soft": "#E1E6EB"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "textColor": "paper",
+    "title": {
+      "x": 0.085,
+      "y": 0.32,
+      "w": 0.39,
+      "h": 0.29,
+      "size": 52,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.64,
+      "w": 0.35,
+      "h": 0.12,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.17,
+      "w": 0.35,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.87,
+      "w": 0.35,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "accent",
+      "brand": "accent"
+    },
+    "image": {
+      "x": 0.51,
+      "y": 0,
+      "w": 0.49,
+      "h": 1
+    },
+    "artworks": [
+      {
+        "id": "optical-silver",
+        "x": 0.51,
+        "y": 0,
+        "w": 0.49,
+        "h": 1,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0,
+        "y": 0,
+        "w": 0.51,
+        "h": 1,
+        "fill": "ink"
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.255,
+        "w": 0.32,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.7,
+        "opacity": 0.9
+      },
+      {
+        "kind": "rect",
+        "x": 0.51,
+        "y": 0,
+        "w": 0.018,
+        "h": 1,
+        "fill": "accent",
+        "opacity": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.82,
+        "w": 0.32,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 0.6
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "editorial",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.6
+      }
+    ]
+  },
+  "sample": {
+    "title": "The Silverline Launch",
+    "subtitle": "Every detail, in its place. A maker\u2019s launch checklist.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A FIELD GUIDE TO GOING LIVE",
+    "sections": [
+      {
+        "heading": "01 \u00b7 Shape the offer",
+        "items": [
+          "Name the one clear promise",
+          "Confirm price, margin, and inventory",
+          "Proof product details and variations"
+        ]
+      },
+      {
+        "heading": "02 \u00b7 Prepare the storefront",
+        "items": [
+          "Photograph the product in natural light",
+          "Write concise, specific listing copy",
+          "Test links, checkout, and confirmation email"
+        ]
+      },
+      {
+        "heading": "03 \u00b7 Make the moment",
+        "items": [
+          "Schedule the announcement",
+          "Tell your first customers personally",
+          "Review the first-day questions and orders"
+        ]
+      }
+    ]
+  },
+  "design_revision": 2
+}

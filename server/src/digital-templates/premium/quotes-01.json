@@ -1,0 +1,173 @@
+{
+  "id": "quotes-01",
+  "design_revision": 2,
+  "format": "quotes",
+  "name": "The Quiet Is Yours",
+  "description": "An emerald-lit statement print for words worth keeping: a sculptural architectural artwork, precise metallic framing and a generous, high-contrast quote field.",
+  "tags": [
+    "quote print",
+    "emerald",
+    "optical",
+    "statement",
+    "editorial"
+  ],
+  "palette": {
+    "paper": "#071A17",
+    "ink": "#F4F7F2",
+    "accent": "#27B98B",
+    "muted": "#A9BCB4",
+    "soft": "#12342D"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.09,
+      "y": 0.36,
+      "w": 0.56,
+      "h": 0.25,
+      "size": 47,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.64,
+      "w": 0.52,
+      "h": 0.1,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.14,
+      "w": 0.52,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.88,
+      "w": 0.52,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "paper",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "muted",
+      "eyebrow": "accent",
+      "brand": "muted"
+    },
+    "artworks": [
+      {
+        "id": "emerald-architecture",
+        "x": 0.66,
+        "y": 0.12,
+        "w": 0.28,
+        "h": 0.76,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.66,
+      "y": 0.12,
+      "w": 0.28,
+      "h": 0.76
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.055,
+        "y": 0.29,
+        "w": 0.57,
+        "h": 0.47,
+        "fill": "soft",
+        "opacity": 1,
+        "radius": 0.012
+      },
+      {
+        "kind": "line",
+        "x": 0.055,
+        "y": 0.29,
+        "w": 0.57,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.4
+      },
+      {
+        "kind": "line",
+        "x": 0.055,
+        "y": 0.76,
+        "w": 0.57,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.7
+      },
+      {
+        "kind": "rect",
+        "x": 0.935,
+        "y": 0.12,
+        "w": 0.009,
+        "h": 0.76,
+        "fill": "accent",
+        "opacity": 0.9
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.215,
+        "w": 0.19,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 0.6
+      },
+      {
+        "kind": "polygon",
+        "x": 0.6,
+        "y": 0.82,
+        "w": 0.025,
+        "h": 0.035,
+        "fill": "accent",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0.5,
+            1
+          ]
+        ]
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": []
+  },
+  "sample": {
+    "title": "The quiet is yours to keep.",
+    "subtitle": "A little room for the words that bring you back to yourself.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A STATEMENT FOR THE STILL MOMENT"
+  }
+}

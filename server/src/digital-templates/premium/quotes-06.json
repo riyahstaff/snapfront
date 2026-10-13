@@ -1,0 +1,148 @@
+{
+  "id": "quotes-06",
+  "format": "quotes",
+  "design_revision": 2,
+  "name": "Silver Stillness",
+  "description": "A collectible optical-silver quote print: one clear line of courage, framed by a close-cropped liquid-chrome surface.",
+  "tags": [
+    "quotes",
+    "optical silver",
+    "quiet confidence",
+    "print",
+    "editorial"
+  ],
+  "palette": {
+    "paper": "#F4F5F6",
+    "ink": "#171A1D",
+    "accent": "#5A6874",
+    "muted": "#50565C",
+    "soft": "#DDE1E4"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.105,
+      "y": 0.365,
+      "w": 0.79,
+      "h": 0.2,
+      "size": 53,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.11,
+      "y": 0.603,
+      "w": 0.72,
+      "h": 0.075,
+      "size": 13,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.11,
+      "y": 0.245,
+      "w": 0.7,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.11,
+      "y": 0.865,
+      "w": 0.78,
+      "h": 0.04,
+      "size": 9,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "ink",
+      "eyebrow": "accent",
+      "brand": "accent"
+    },
+    "artworks": [
+      {
+        "id": "optical-silver",
+        "x": 0.04,
+        "y": 0.035,
+        "w": 0.92,
+        "h": 0.17,
+        "fit": "cover",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.04,
+      "y": 0.035,
+      "w": 0.92,
+      "h": 0.17
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.04,
+        "y": 0.222,
+        "w": 0.92,
+        "h": 0.006,
+        "fill": "accent"
+      },
+      {
+        "kind": "rect",
+        "x": 0.11,
+        "y": 0.716,
+        "w": 0.13,
+        "h": 0.008,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.11,
+        "y": 0.797,
+        "w": 0.78,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      },
+      {
+        "kind": "rect",
+        "x": 0.04,
+        "y": 0.955,
+        "w": 0.92,
+        "h": 0.01,
+        "fill": "ink"
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "plain",
+    "chapterStyle": "gallery",
+    "ornament": "chrome-rule",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.925,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "The quiet is yours.",
+    "subtitle": "Keep a little room for what you know.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "A NOTE TO KEEP"
+  }
+}

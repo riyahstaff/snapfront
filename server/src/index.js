@@ -642,13 +642,29 @@ imageAssistant.routes(app, { auth, wrap });
 /* ---------- products ---------- */
 // The template catalogue is intentionally public so native can browse it before a seller starts a
 // draft. Thumbnail files are packaged assets only; the route accepts no filesystem path.
-const DIGITAL_DESIGN_ASSETS = path.resolve(new URL("../assets/digital-designs/", import.meta.url).pathname);
-const digitalTemplateIds = new Set(digitalDesigns.catalog().templates.map((template) => template.id));
-app.get("/api/digital-designs", (_req, res) => res.json(digitalDesigns.catalog()));
-app.get("/digital-design-assets/:id.png", (req, res) => {
-  if (!digitalTemplateIds.has(req.params.id)) return res.status(404).end();
+const DIGITAL_DESIGN_ASSETS_V1 = path.resolve(new URL("../assets/digital-designs-v1/", import.meta.url).pathname);
+const DIGITAL_DESIGN_ASSETS_V2 = path.resolve(new URL("../assets/digital-designs/", import.meta.url).pathname);
+const digitalTemplateIdsV1 = new Set(digitalDesigns.catalog(1).templates.map((template) => template.id));
+const digitalTemplateIdsV2 = new Set(digitalDesigns.catalog(2).templates.map((template) => template.id));
+app.get("/api/digital-designs", (req, res, next) => {
+  const requested = req.query.revision;
+  if (requested !== undefined && requested !== "1" && requested !== "2") return next(httpError(400, "revision must be 1 or 2."));
+  // Installed native builds did not revision-check their bundled picker thumbnails. Keep an
+  // unversioned request honest about those frozen v1 bytes; the revision-2 picker opts in with
+  // ?revision=2. digitalDesigns.catalog() itself remains premium-by-default for new callers.
+  res.json(digitalDesigns.catalog(requested === undefined ? 1 : Number(requested)));
+});
+app.get("/digital-design-assets/v2/:id.png", (req, res) => {
+  if (!digitalTemplateIdsV2.has(req.params.id)) return res.status(404).end();
   res.set("Cache-Control", "public, max-age=31536000, immutable");
-  res.sendFile(path.join(DIGITAL_DESIGN_ASSETS, `${req.params.id}.png`), (err) => err && !res.headersSent && res.status(404).end());
+  res.sendFile(path.join(DIGITAL_DESIGN_ASSETS_V2, `${req.params.id}.png`), (err) => err && !res.headersSent && res.status(404).end());
+});
+app.get("/digital-design-assets/:id.png", (req, res) => {
+  if (!digitalTemplateIdsV1.has(req.params.id)) return res.status(404).end();
+  // The bytes are frozen v1 copies, but this unversioned historical path is not a new immutable
+  // cache contract. Premium assets alone receive an immutable versioned URL.
+  res.set("Cache-Control", "public, max-age=86400");
+  res.sendFile(path.join(DIGITAL_DESIGN_ASSETS_V1, `${req.params.id}.png`), (err) => err && !res.headersSent && res.status(404).end());
 });
 // A signed expiring token is a narrow owner-private export capability. It is not listed by any
 // public storefront page and the underlying files never live below a static route.

@@ -1,14 +1,19 @@
 import type { DigitalDesignRecord, DigitalExport } from "./api";
-import { cloneDigitalDocument, type DigitalDocument, type DigitalTemplateSummary } from "./digital-design";
+import { cloneDigitalDocument, digitalDesignRevision, type DigitalDocument, type DigitalTemplateSummary } from "./digital-design";
 
 export const DIGITAL_UNDO_LIMIT = 25;
 
 /** Keeps original writing/pages intact when a seller chooses a different visual template. */
-export function applyDigitalTemplateStyle(document: DigitalDocument, template: Pick<DigitalTemplateSummary, "id" | "format" | "palette" | "fonts">): DigitalDocument {
+export function applyDigitalTemplateStyle(document: DigitalDocument, template: Pick<DigitalTemplateSummary, "id" | "format" | "palette" | "fonts" | "design_revision">): DigitalDocument {
+  const source = cloneDigitalDocument(document);
+  delete source.show_artwork;
+  const revision = digitalDesignRevision(template, 2);
   return {
-    ...cloneDigitalDocument(document),
+    ...source,
     format: template.format,
     template_id: template.id,
+    design_revision: revision,
+    ...(revision === 2 ? { show_artwork: true } : {}),
     palette: { ...template.palette },
     fonts: { ...template.fonts },
   };

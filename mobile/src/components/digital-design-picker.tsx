@@ -3,7 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { DIGITAL_DESIGNS, DIGITAL_FORMATS } from "@/lib/digital-design-catalog";
 import { DIGITAL_DESIGN_THUMBNAILS } from "@/lib/digital-design-thumbnails";
-import type { DigitalFormat, DigitalTemplateSummary } from "@/lib/digital-design";
+import { mergeDigitalTemplateSummaries, type DigitalFormat, type DigitalTemplateSummary } from "@/lib/digital-design";
 import { Field, Segmented } from "@/components/ui";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
 
@@ -17,18 +17,15 @@ export type DigitalDesignPickerProps = {
 };
 
 /**
- * The 50 native summaries and thumbnails make the library useful without a network response. A
- * successful public catalog only refreshes summary text; it never replaces local source documents.
+ * The 50 native covers remain the visual source of truth. Remote wording is used only when its
+ * revision exactly matches that native artwork package; it never replaces local source documents.
  */
 export function DigitalDesignPicker({ remoteTemplates, selectedId, onSelect }: DigitalDesignPickerProps) {
   const c = useColors();
   const [query, setQuery] = useState("");
   const [format, setFormat] = useState<FormatFilter>("all");
   const [shown, setShown] = useState(PAGE_SIZE);
-  const catalog = useMemo(() => {
-    const refreshed = new Map((remoteTemplates ?? []).map((template) => [template.id, template]));
-    return DIGITAL_DESIGNS.map((bundled) => refreshed.get(bundled.id) ?? bundled);
-  }, [remoteTemplates]);
+  const catalog = useMemo(() => mergeDigitalTemplateSummaries(DIGITAL_DESIGNS, remoteTemplates), [remoteTemplates]);
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
     return catalog.filter((template) => {
@@ -42,9 +39,10 @@ export function DigitalDesignPicker({ remoteTemplates, selectedId, onSelect }: D
 
   return (
     <View style={{ gap: space.md }}>
-      <View style={{ gap: 3 }}>
-        <Text style={[type.heading, { color: c.ink }]}>Choose a design</Text>
-        <Text style={[type.small, { color: c.muted }]}>{DIGITAL_DESIGNS.length} bundled designs · choose one, then edit every word before it is attached.</Text>
+      <View style={{ gap: 2 }}>
+        <Text style={[type.heading, { color: c.ink }]}>Premium collection</Text>
+        <Text style={[type.label, { color: c.accent }]}>50 signature designs</Text>
+        <Text style={[type.small, { color: c.muted }]}>Curated covers with every title and line ready for your own words.</Text>
       </View>
       <Field label="Search designs" value={query} onChangeText={(value) => { setQuery(value); setShown(PAGE_SIZE); }} placeholder="Try editorial, launch, calm, planner…" />
       <Segmented value={format} options={formats} onChange={(value) => { setFormat(value as FormatFilter); setShown(PAGE_SIZE); }} />
@@ -70,7 +68,7 @@ export function DigitalDesignPicker({ remoteTemplates, selectedId, onSelect }: D
           );
         })}
       </View>
-      {!visible.length ? <Text style={[type.small, { color: c.muted }]}>Try another word or format. Every included design is still available offline.</Text> : null}
+      {!visible.length ? <Text style={[type.small, { color: c.muted }]}>Try another word or format. Every design in this collection is ready when you are.</Text> : null}
       {shown < filtered.length ? <Pressable accessibilityRole="button" onPress={() => setShown((count) => Math.min(count + PAGE_SIZE, filtered.length))} style={{ minHeight: 48, borderRadius: radius.md, borderWidth: 1, borderColor: c.line, justifyContent: "center", alignItems: "center" }}><Text style={{ color: c.accent, fontFamily: fonts.bodyBold }}>Show 12 more</Text></Pressable> : null}
     </View>
   );

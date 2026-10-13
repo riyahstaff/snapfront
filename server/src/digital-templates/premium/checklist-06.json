@@ -1,0 +1,174 @@
+{
+  "id": "checklist-06",
+  "format": "checklist",
+  "design_revision": 2,
+  "name": "The Quiet Launch",
+  "description": "An architectural launch checklist in a stone-and-platinum editorial diptych, pairing a calm decision sequence with generous, practical room to act.",
+  "tags": [
+    "checklist",
+    "launch",
+    "editorial",
+    "stone",
+    "platinum"
+  ],
+  "palette": {
+    "paper": "#F3F2EF",
+    "ink": "#202329",
+    "accent": "#A9ADB2",
+    "muted": "#555B62",
+    "soft": "#D9DADD"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "gradient": {
+      "from": "paper",
+      "to": "soft",
+      "direction": "horizontal"
+    },
+    "title": {
+      "x": 0.085,
+      "y": 0.295,
+      "w": 0.385,
+      "h": 0.24,
+      "size": 52,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.56,
+      "w": 0.36,
+      "h": 0.15,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.13,
+      "w": 0.37,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.88,
+      "w": 0.36,
+      "h": 0.045,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "ink",
+      "eyebrow": "muted",
+      "brand": "muted"
+    },
+    "artworks": [
+      {
+        "id": "stone-silver",
+        "x": 0.52,
+        "y": 0.13,
+        "w": 0.41,
+        "h": 0.72,
+        "fit": "contain",
+        "opacity": 1
+      },
+      {
+        "id": "optical-silver",
+        "x": 0.69,
+        "y": 0.18,
+        "w": 0.24,
+        "h": 0.61,
+        "fit": "cover",
+        "opacity": 0.42
+      }
+    ],
+    "image": {
+      "x": 0.52,
+      "y": 0.13,
+      "w": 0.41,
+      "h": 0.72
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0,
+        "y": 0,
+        "w": 0.49,
+        "h": 1,
+        "fill": "paper",
+        "opacity": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.49,
+        "y": 0.08,
+        "w": 0,
+        "h": 0.84,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "rect",
+        "x": 0.09,
+        "y": 0.205,
+        "w": 0.12,
+        "h": 0.009,
+        "fill": "accent",
+        "radius": 0.004
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.81,
+        "w": 0.31,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.93,
+        "y": 0.13,
+        "w": 0.025,
+        "h": 0.72,
+        "fill": "ink",
+        "opacity": 0.92
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.91,
+        "w": 0.85,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "The Quiet Launch",
+    "subtitle": "A considered checklist for taking your next good idea to market.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "FIELD NOTES / PRODUCT RELEASE"
+  }
+}

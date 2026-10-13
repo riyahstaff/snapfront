@@ -1,0 +1,189 @@
+{
+  "id": "hooks-02",
+  "format": "hooks",
+  "design_revision": 2,
+  "name": "Violet Signal Lab",
+  "description": "A precision hook-writing field guide for shaping first lines with tension, clarity, and a reason to keep reading.",
+  "tags": [
+    "hooks",
+    "technical",
+    "violet",
+    "writing",
+    "editorial"
+  ],
+  "palette": {
+    "paper": "#F4F1F7",
+    "ink": "#21192A",
+    "accent": "#8054B8",
+    "muted": "#554963",
+    "soft": "#DDD1E9"
+  },
+  "fonts": {
+    "heading": "sans",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "textColor": "paper",
+    "title": {
+      "x": 0.085,
+      "y": 0.285,
+      "w": 0.405,
+      "h": 0.28,
+      "size": 52,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.595,
+      "w": 0.39,
+      "h": 0.16,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.115,
+      "w": 0.39,
+      "h": 0.055,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.865,
+      "w": 0.39,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "fieldColors": {
+      "title": "paper",
+      "subtitle": "paper",
+      "eyebrow": "soft",
+      "brand": "soft"
+    },
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.195,
+        "w": 0.33,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.4
+      },
+      {
+        "kind": "rect",
+        "x": 0.09,
+        "y": 0.225,
+        "w": 0.045,
+        "h": 0.009,
+        "fill": "soft",
+        "opacity": 1
+      },
+      {
+        "kind": "rect",
+        "x": 0.525,
+        "y": 0.075,
+        "w": 0.405,
+        "h": 0.85,
+        "fill": "ink",
+        "opacity": 1,
+        "stroke": 1.2,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.505,
+        "y": 0.075,
+        "w": 0,
+        "h": 0.85,
+        "fill": "soft",
+        "stroke": 0.7
+      },
+      {
+        "kind": "line",
+        "x": 0.525,
+        "y": 0.105,
+        "w": 0.405,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.1
+      },
+      {
+        "kind": "line",
+        "x": 0.525,
+        "y": 0.895,
+        "w": 0.405,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.1
+      },
+      {
+        "kind": "line",
+        "x": 0.535,
+        "y": 0.125,
+        "w": 0,
+        "h": 0.035,
+        "fill": "soft",
+        "stroke": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.92,
+        "y": 0.84,
+        "w": 0,
+        "h": 0.035,
+        "fill": "soft",
+        "stroke": 0.8
+      }
+    ],
+    "artworks": [
+      {
+        "id": "amethyst-glass",
+        "x": 0.545,
+        "y": 0.135,
+        "w": 0.365,
+        "h": 0.73,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.545,
+      "y": 0.135,
+      "w": 0.365,
+      "h": 0.73
+    }
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "technical",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "chapterStyle": "technical",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.945,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.7
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make Them Lean In",
+    "subtitle": "A field guide to sharper opening lines",
+    "brand": "YOUR BRAND",
+    "eyebrow": "HOOKS / FIELD NOTES 01"
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "id": "checklist-04",
+  "format": "checklist",
+  "design_revision": 2,
+  "name": "Nocturne: The Clear Run",
+  "description": "A sculptural chrome-edged launch checklist for bringing a product from final polish to confident release.",
+  "tags": [
+    "checklist",
+    "launch",
+    "editorial",
+    "product-release",
+    "premium"
+  ],
+  "palette": {
+    "paper": "#F4F3F0",
+    "ink": "#17191D",
+    "accent": "#59636D",
+    "muted": "#50545A",
+    "soft": "#D8D9D8"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "gradient": {
+      "from": "paper",
+      "to": "paper",
+      "direction": "vertical"
+    },
+    "title": {
+      "x": 0.09,
+      "y": 0.69,
+      "w": 0.78,
+      "h": 0.12,
+      "size": 47,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.83,
+      "w": 0.75,
+      "h": 0.07,
+      "size": 13,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.62,
+      "w": 0.74,
+      "h": 0.035,
+      "size": 9,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.93,
+      "w": 0.55,
+      "h": 0.025,
+      "size": 9,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "fieldColors": {
+      "title": "ink",
+      "subtitle": "muted",
+      "eyebrow": "accent",
+      "brand": "muted"
+    },
+    "artworks": [
+      {
+        "id": "optical-silver",
+        "x": 0.1,
+        "y": 0.1,
+        "w": 0.8,
+        "h": 0.47,
+        "fit": "contain",
+        "opacity": 1
+      }
+    ],
+    "image": {
+      "x": 0.1,
+      "y": 0.1,
+      "w": 0.8,
+      "h": 0.47
+    },
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.07,
+        "y": 0.075,
+        "w": 0.86,
+        "h": 0.52,
+        "fill": "paper",
+        "opacity": 0,
+        "stroke": 0.8,
+        "hollow": true
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.605,
+        "w": 0.8,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "rect",
+        "x": 0.84,
+        "y": 0.625,
+        "w": 0.06,
+        "h": 0.012,
+        "fill": "accent"
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.91,
+        "w": 0.8,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.7
+      }
+    ]
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.52,
+    "column": "single",
+    "numberStyle": "pill",
+    "chapterStyle": "editorial",
+    "ornament": "split-rail",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.915,
+        "w": 0.31,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.61,
+        "y": 0.915,
+        "w": 0.31,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 0.8
+      }
+    ]
+  },
+  "sample": {
+    "title": "The Clear Run",
+    "subtitle": "A considered final pass, from product polish to launch day.",
+    "brand": "YOUR BRAND",
+    "eyebrow": "NOCTURNE EDITION  /  PRODUCT RELEASE CHECKLIST"
+  }
+}
