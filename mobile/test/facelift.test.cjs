@@ -95,9 +95,11 @@ test("My Store and Marketing photo shortcuts point directly to the relocated com
   assert.ok(marketing.includes('label="Snap a product" onPress={() => router.navigate("/snap")}'));
 });
 
-test("cover/photo summary controls use solid chrome text plates instead of dark text on arbitrary imagery", () => {
+test("store setup uses the actual template preview and keeps native photo/text controls separate from arbitrary imagery", () => {
   const wizard = fs.readFileSync(path.join(root, "src/app/storefront-setup.tsx"), "utf8");
   assert.ok(!wizard.includes('coverUrl ? c.onAccent'));
-  assert.ok(wizard.includes('alignItems: "center", gap: 6, padding: space.lg, borderRadius: radius.md, backgroundColor: c.bg'));
-  assert.ok(wizard.includes('backgroundColor: c.bg, borderRadius: radius.md, padding: space.md, gap: 5'));
+  assert.ok(wizard.includes('<TemplatePreview preview={previewData}'));
+  assert.ok(wizard.includes('<PhotoSwapPanel slot={photoSlot}'));
+  assert.ok(wizard.includes('finalPreviewReady || missingPhotos.length || sampleWords.length'));
+  assert.ok(wizard.includes('Finish: save my store design'));
 });

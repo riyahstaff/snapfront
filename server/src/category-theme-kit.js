@@ -1,4 +1,5 @@
 import { config } from "./config.js";
+import { storefrontMediaSlots, storefrontPreviewMediaSlots } from "./storefront-media.js";
 
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 const SINGLE_WEIGHT = new Set(["Instrument Serif", "DM Serif Display", "Young Serif", "Marcellus", "Anton", "Bebas Neue", "Lilita One", "Archivo Black", "Abril Fatface", "Prata", "Yeseva One"]);
@@ -41,20 +42,27 @@ export function defineTheme(spec) {
 export function categoryContext(store, t, products, cats, productCard) {
   const root = store._base ?? `/s/${store.store_slug}`;
   const clean = (value) => typeof value === "string" ? value.trim() : "";
-  const pics = [
-    ...(store.banner_file ? [{ url: `${config.publicUrl}/img/${store.banner_file}`, alt: `${store.store_name} storefront` }] : []),
-    ...products.filter((p) => p.image_url).map((p) => ({ url: p.image_url, alt: p.alt_text || p.title })),
-  ];
+  const slotMedia = storefrontMediaSlots(store);
+  const previewMedia = Boolean(store._templatePreview);
+  const pics = previewMedia
+    ? storefrontPreviewMediaSlots(store, products).map((slot) => ({ ...slot, alt: slot.alt || `${store.store_name} storefront` }))
+    : [
+      ...slotMedia.map((slot) => ({ ...slot, alt: `${store.store_name} storefront` })),
+      ...products.filter((p) => p.image_url).map((p) => ({ url: p.image_url, alt: p.alt_text || p.title })),
+    ];
   // Only read-only demo fixtures can specify a generated demonstration hero.
   if (store._themeDemo && store._demoHero) pics.unshift({ url: store._demoHero, alt: `${t.category} — illustrative theme photography` });
+  // Supporting slots intentionally retain duplicate owned files. Without an explicit auxiliary
+  // slot, retain the original product-image dedupe behavior for existing storefronts.
+  const hasExtras = slotMedia.some((slot) => slot.index > 0);
   const seen = new Set();
-  const distinctPics = pics.filter((pic) => !seen.has(pic.url) && seen.add(pic.url));
+  const distinctPics = previewMedia ? pics : (hasExtras ? pics : pics.filter((pic) => !seen.has(pic.url) && seen.add(pic.url)));
   const head = clean(store.hero_title) || store.tagline || store.store_name;
   const oldSub = store.tagline && store.about ? store.about.split(/(?<=[.!?])\s/)[0].slice(0, 180) : "";
   const sub = clean(store.hero_subtitle) || oldSub;
-  const eyebrow = clean(store.hero_eyebrow) || t.copy?.eyebrow || "";
-  const ctaLabel = clean(store.hero_cta) || t.copy?.cta || "Shop now";
-  const motion = distinctPics.length && ["drift", "pan"].includes(store.hero_motion) ? store.hero_motion : "still";
+  const eyebrow = clean(store.hero_eyebrow) || (store._templateFinal ? "" : t.copy?.eyebrow) || "";
+  const ctaLabel = clean(store.hero_cta) || (store._templateFinal ? "Shop now" : t.copy?.cta) || "Shop now";
+  const motion = distinctPics.some((pic) => pic.url) && ["drift", "pan"].includes(store.hero_motion) ? store.hero_motion : "still";
   const hasMotion = motion !== "still";
   const ctas = `<div class="ctas"><a class="btn" href="#shop">${esc(ctaLabel)}</a>${store.about ? '<a class="btn ghost" href="#about">Our story</a>' : ""}</div>`;
   const ctx = {
@@ -68,9 +76,10 @@ export function categoryContext(store, t, products, cats, productCard) {
     productCard: (p) => productCard(store, p),
     media: (index, { priority = false, lazy = true, decorative = false } = {}) => {
       const pic = distinctPics[index];
+      const slot = previewMedia && Number.isInteger(index) && index >= 0 && index <= 2 ? ` data-sf-photo="${index}"` : "";
       return pic?.url
-        ? `<img class="hero-media" src="${esc(pic.url)}" alt="${decorative ? "" : esc(pic.alt)}"${priority ? ' fetchpriority="high"' : lazy ? ' loading="lazy"' : ""} decoding="async">`
-        : `<div class="theme-empty-media" aria-hidden="true"><span>${esc(store.store_name)}</span></div>`;
+        ? `<img class="hero-media" src="${esc(pic.url)}" alt="${decorative ? "" : esc(pic.alt)}"${slot}${priority ? ' fetchpriority="high"' : lazy ? ' loading="lazy"' : ""} decoding="async">`
+        : `<div class="theme-empty-media"${slot} aria-hidden="true"><span>${esc(store.store_name)}</span></div>`;
     },
     copy: (extraClass = "") => `<div class="txt${extraClass ? ` ${esc(extraClass)}` : ""}">${eyebrow ? `<p class="eyebrow">${esc(eyebrow)}</p>` : ""}<h1${head.length > 56 ? ' class="long"' : ""}>${esc(head)}</h1>${sub ? `<p class="sub">${esc(sub)}</p>` : ""}${ctas}</div>`,
   };

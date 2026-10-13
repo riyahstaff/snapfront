@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { type StoreTheme } from "@/lib/api";
+import { availableThemePreview, themePreviewSources } from "@/lib/theme-preview-source";
 import { fonts, radius } from "@/lib/theme";
 
 type ThemePreviewProps = {
@@ -13,28 +14,25 @@ type ThemePreviewProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** Only use the server's HTTPS-rendered thumbnail; never turn a demo URL into store content. */
-function previewUrl(theme: StoreTheme): string | null {
-  return typeof theme.preview_url === "string" && /^https:\/\//i.test(theme.preview_url) ? theme.preview_url : null;
-}
-
 /** A catalog preview is illustrative. Seller Preview still opens the seller's own storefront. */
 export function ThemePreview({ theme, storeName, photo = null, height = 190, style }: ThemePreviewProps) {
-  const url = previewUrl(theme);
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  if (url && failedUrl !== url) {
+  const [failedSources, setFailedSources] = useState<string[]>([]);
+  const candidates = themePreviewSources(theme);
+  const candidate = availableThemePreview(theme, failedSources);
+  if (candidate) {
     return (
       <View
         style={[styles.preview, { height, backgroundColor: theme.colors.bg, borderColor: theme.colors.line }, style]}
         accessibilityLabel={`${theme.name} demo imagery`}
       >
         <Image
-          source={{ uri: url }}
-          recyclingKey={theme.id}
+          key={candidate.key}
+          source={candidate.source}
+          recyclingKey={candidate.key}
           cachePolicy="memory-disk"
           contentFit="cover"
           transition={120}
-          onError={() => setFailedUrl(url)}
+          onError={() => setFailedSources((failed) => failed.includes(candidate.key) ? failed : [...failed, candidate.key])}
           style={StyleSheet.absoluteFill}
         />
         <View style={[styles.demoLabel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]} pointerEvents="none">
@@ -46,12 +44,17 @@ export function ThemePreview({ theme, storeName, photo = null, height = 190, sty
   }
 
   // Premium catalog looks must not silently reuse one generic split drawing as their preview.
-  if ((url !== null && failedUrl === url) || theme.collection === "premium" || theme.id.startsWith("p-")) {
+  if (candidates.length > 0 || theme.collection === "premium" || theme.id.startsWith("p-")) {
     return (
       <View style={[styles.missing, { height, backgroundColor: theme.colors.bg, borderColor: theme.colors.line }, style]} accessibilityLabel={`${theme.name} preview image unavailable`}>
         <Ionicons name="image-outline" size={22} color={theme.colors.muted} />
         <Text style={{ fontFamily: fonts.bodyBold, fontSize: 12, color: theme.colors.ink }}>Preview image unavailable</Text>
         <Text style={{ fontFamily: fonts.body, fontSize: 11, color: theme.colors.muted }}>This look can still be selected and previewed on your store.</Text>
+        {candidates.length > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={`Retry ${theme.name} preview image`}
+          onPress={(event) => { event.stopPropagation(); setFailedSources((failed) => failed.filter((key) => !candidates.some((source) => source.key === key))); }}
+          style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 12 }}>
+          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 12, color: theme.colors.ink }}>Retry image</Text>
+        </Pressable> : null}
       </View>
     );
   }

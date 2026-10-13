@@ -30,6 +30,7 @@ function LooksEditor({ initialQuery }: { initialQuery: string }) {
   const [photoState, setPhotoState] = useState<{ storeId: string; url: string | null } | null>(null);
   const [pickState, setPickState] = useState<{ storeId: string; id: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const [catalogAttempt, setCatalogAttempt] = useState(0);
   const [browse, setBrowse] = useState<ThemeBrowseState>({ ...EMPTY_THEME_BROWSE, query: initialQuery });
@@ -67,7 +68,7 @@ function LooksEditor({ initialQuery }: { initialQuery: string }) {
   }
   async function preview() {
     if (!chosen || !me) return;
-    try { await WebBrowser.openBrowserAsync(`${me.store_url}${chosen.id === current ? "" : `?theme=${encodeURIComponent(chosen.id)}`}`); }
+    try { if (chosen.demo_url) await WebBrowser.openBrowserAsync(chosen.demo_url); else router.push({ pathname: "/storefront-setup", params: { theme: chosen.id } }); }
     catch (error) { setMsg({ text: errText(error, "Couldn’t open your store preview."), tone: "error" }); }
   }
 
@@ -78,23 +79,31 @@ function LooksEditor({ initialQuery }: { initialQuery: string }) {
   const changed = picked != null && picked !== current;
   return <View style={{ flex: 1, backgroundColor: c.bg }}>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: 230 + insets.bottom }}>
-      <StorefrontDetails key={me?.id} />
+      <H2>Pick a finished design</H2>
+      <Text style={[type.small, { color: c.muted }]}>You don’t need to design an empty page. Choose a look, then swap its photos and words while you see the actual design.</Text>
       <View style={{ gap: space.sm, backgroundColor: c.surface, borderRadius: radius.lg, padding: space.lg }}>
         <Text style={[type.heading, { color: c.ink }]}>Build your storefront</Text>
-        <Text style={[type.small, { color: c.ink }]}>Choose from {themes.length} themes, upload a cover, write your story and review before deploying.</Text>
+        <Text style={[type.small, { color: c.ink }]}>Pick a design → swap photos → change words → add products → check and finish. Your live store stays unchanged while you work.</Text>
         <Button label="Open guided setup" variant="secondary" onPress={() => router.push("/storefront-setup")} />
       </View>
       <H2>Browse store looks</H2>
-      <Text style={[type.small, { color: c.muted }]}>Search a theme name, product category or mood. Demo imagery is illustrative; Preview opens your own store. Selecting a thumbnail does not apply it.</Text>
+      <Text style={[type.small, { color: c.muted }]}>Search a theme name, product category or mood. Pictures and words in the examples show what the design can look like. Customize this design opens that layout with samples you can replace. Nothing is applied by browsing.</Text>
       <ThemePicker themes={themes} selected={picked ?? current} current={current} storeName={me?.store_name || "Your store"} photo={me?.banner_url ?? photo}
         browse={browse} onBrowse={setBrowse} onSelect={(id) => { if (me) setPickState({ storeId: me.id, id }); setMsg(null); }} disabled={saving} onRetry={retryCatalog} />
+      <Button label={advanced ? "Hide quick edits" : "Already have a store? Optional quick edits"} variant="ghost" onPress={() => setAdvanced(!advanced)} disabled={saving} />
+      {advanced ? <View style={{ gap: space.md }}>
+        <Notice text="Quick edits change your live store immediately. For a new store, use Customize this design below instead." />
+        <StorefrontDetails key={me?.id} />
+        {changed && (me?.banner_url || photo) ? <Button label="Only change my existing store’s style" variant="secondary" disabled={!chosen || saving} loading={saving} onPress={apply} /> : null}
+      </View> : null}
     </ScrollView>
     <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: space.lg, paddingBottom: space.lg + insets.bottom, gap: space.sm, backgroundColor: c.surface, borderTopWidth: 1, borderColor: c.line }}>
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
       <Text numberOfLines={2} style={[type.label, { color: c.ink }]}>{chosen ? `${changed ? "Selected" : "Current"}: ${chosen.name}` : "Choose an available theme"}</Text>
       <View style={{ flexDirection: "row", gap: space.sm }}>
-        <Button label="Preview" variant="secondary" icon={<Ionicons name="eye-outline" size={18} color={c.ink} />} style={{ flex: 1, paddingHorizontal: space.sm }} disabled={!chosen || !me || saving} onPress={preview} />
-        <Button label={changed ? "Apply theme" : "In use"} style={{ flex: 1.4, paddingHorizontal: space.sm }} disabled={!changed || !chosen} loading={saving} onPress={apply} />
+        <Button label="See example" variant="secondary" icon={<Ionicons name="eye-outline" size={18} color={c.ink} />} style={{ flex: 1, paddingHorizontal: space.sm }} disabled={!chosen || !me || saving} onPress={preview} />
+        <Button label="Customize this design" style={{ flex: 1.5, paddingHorizontal: space.sm }} disabled={!chosen || !me || saving}
+          onPress={() => { if (chosen) router.push({ pathname: "/storefront-setup", params: { theme: chosen.id } }); }} />
       </View>
     </View>
   </View>;

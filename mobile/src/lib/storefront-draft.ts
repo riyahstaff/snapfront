@@ -4,6 +4,14 @@ import { THEME_GROUPS, type ThemeBrowseState } from "./theme-catalog";
 /** A resumable local setup draft. It deliberately stores server photo references, never image base64. */
 export type HeroMotion = "still" | "drift" | "pan";
 export type StorefrontTone = "considered" | "warm" | "bold";
+export type TemplatePhotoSlot = 0 | 1 | 2;
+/** Text fields that can be supplied as clearly labelled template sample copy. */
+export const TEMPLATE_EDITABLE_FIELDS = [
+  "hero_title", "hero_subtitle", "hero_eyebrow", "hero_cta", "tagline", "about", "announcement",
+] as const;
+export type TemplateEditableField = typeof TEMPLATE_EDITABLE_FIELDS[number];
+export type TemplatePhoto = { image_file: string; image_url: string };
+
 export type StorefrontDraft = {
   version: 1;
   step: number;
@@ -11,8 +19,16 @@ export type StorefrontDraft = {
   max_step: number;
   browse: ThemeBrowseState;
   theme: string;
+  /** Main template photo (slot 0). */
   banner_file: string | null;
   banner_url: string | null;
+  /** Detail template photos (slots 1 and 2). Exactly two server references, never image bytes. */
+  photo_files?: (string | null)[];
+  photo_urls?: (string | null)[];
+  /** Fields whose current local values are illustrative theme samples, not seller claims. */
+  sample_fields: TemplateEditableField[];
+  /** Theme that most recently supplied the tracked template samples. */
+  template_theme: string;
   hero_motion: HeroMotion;
   store_name: string;
   hero_title: string;
@@ -38,6 +54,20 @@ const validFile = (value: unknown) => /^[\w-]+\.(?:jpg|jpeg|png|webp|gif)$/i.tes
 const imageUrl = (value: unknown) => {
   const url = text(value, 1200);
   return /^https?:\/\//i.test(url) ? url : null;
+};
+const isTemplateField = (value: unknown): value is TemplateEditableField =>
+  typeof value === "string" && (TEMPLATE_EDITABLE_FIELDS as readonly string[]).includes(value);
+const twoFiles = (value: unknown): (string | null)[] => {
+  const input = Array.isArray(value) ? value : [];
+  return [0, 1].map((index) => validFile(input[index]) ? String(input[index]) : null);
+};
+const twoUrls = (value: unknown): (string | null)[] => {
+  const input = Array.isArray(value) ? value : [];
+  return [0, 1].map((index) => imageUrl(input[index]));
+};
+const sampleFields = (value: unknown): TemplateEditableField[] => {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.filter(isTemplateField))).slice(0, TEMPLATE_EDITABLE_FIELDS.length);
 };
 
 function key(storeId: string) {
@@ -83,6 +113,10 @@ export function newStorefrontDraft(values: Partial<StorefrontDraft> = {}): Store
     theme: text(values.theme, 100),
     banner_file: validFile(values.banner_file) ? String(values.banner_file) : null,
     banner_url: imageUrl(values.banner_url),
+    photo_files: twoFiles(values.photo_files),
+    photo_urls: twoUrls(values.photo_urls),
+    sample_fields: sampleFields(values.sample_fields),
+    template_theme: text(values.template_theme, 100),
     hero_motion: motion(values.hero_motion),
     store_name: text(values.store_name, 80),
     hero_title: text(values.hero_title, 100),
@@ -111,7 +145,7 @@ export async function loadStorefrontDraft(storeId: string): Promise<StorefrontDr
   }
 }
 
-/** Persist only short text and an owned staged-photo reference; image bytes are never kept locally here. */
+/** Persist only short text and seller-owned staged-photo references; image bytes are never kept locally here. */
 export function saveStorefrontDraft(storeId: string, draft: StorefrontDraft): Promise<void> {
   const encoded = JSON.stringify(newStorefrontDraft(draft));
   if (utf8Bytes(encoded) > MAX_DRAFT_BYTES) return Promise.reject(new Error("Storefront draft is too large to save on this device."));
@@ -132,6 +166,33 @@ export function mergeStorefrontDraft(storeId: string, values: Partial<Storefront
     let previous = fallback;
     try { if (raw) previous = newStorefrontDraft(JSON.parse(raw)); } catch { /* Use the captured draft. */ }
     const encoded = JSON.stringify(newStorefrontDraft({ ...previous, ...values }));
+    if (utf8Bytes(encoded) > MAX_DRAFT_BYTES) throw new Error("Storefront draft is too large to save on this device.");
+    await SecureStore.setItemAsync(storageKey, encoded);
+  });
+}
+
+/**
+ * Atomically apply one completed template upload to its original store. Slot 0 is the main banner;
+ * slots 1 and 2 are fixed auxiliary references. Reading the newest draft inside the write queue
+ * preserves newer words and every other slot when an upload resolves late.
+ */
+export function mergeStorefrontPhoto(storeId: string, slot: TemplatePhotoSlot, photo: TemplatePhoto, fallback: StorefrontDraft): Promise<void> {
+  if (!validFile(photo.image_file) || !imageUrl(photo.image_url)) {
+    return Promise.reject(new Error("That staged storefront photo reference is invalid."));
+  }
+  const storageKey = key(storeId);
+  return queueWrite(storageKey, async () => {
+    const raw = await SecureStore.getItemAsync(storageKey);
+    let previous = fallback;
+    try { if (raw) previous = newStorefrontDraft(JSON.parse(raw)); } catch { /* Use the captured draft. */ }
+    const next = newStorefrontDraft(slot === 0
+      ? { ...previous, banner_file: photo.image_file, banner_url: photo.image_url }
+      : {
+          ...previous,
+          photo_files: previous.photo_files?.map((value, index) => index === slot - 1 ? photo.image_file : value),
+          photo_urls: previous.photo_urls?.map((value, index) => index === slot - 1 ? photo.image_url : value),
+        });
+    const encoded = JSON.stringify(next);
     if (utf8Bytes(encoded) > MAX_DRAFT_BYTES) throw new Error("Storefront draft is too large to save on this device.");
     await SecureStore.setItemAsync(storageKey, encoded);
   });

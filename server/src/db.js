@@ -60,6 +60,7 @@ addCol("products", "label", "TEXT NOT NULL DEFAULT ''");          // short text 
 addCol("sellers", "about", "TEXT NOT NULL DEFAULT ''");           // "About us" on the storefront
 addCol("sellers", "announcement", "TEXT NOT NULL DEFAULT ''");    // strip above the storefront header
 addCol("sellers", "banner_file", "TEXT");                         // storefront cover photo
+addCol("sellers", "design_photos", "TEXT NOT NULL DEFAULT '[]'"); // up to two ordered optional storefront photos
 addCol("sellers", "hero_title", "TEXT NOT NULL DEFAULT ''");
 addCol("sellers", "hero_subtitle", "TEXT NOT NULL DEFAULT ''");
 addCol("sellers", "hero_eyebrow", "TEXT NOT NULL DEFAULT ''");

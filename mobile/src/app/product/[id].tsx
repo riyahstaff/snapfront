@@ -73,6 +73,9 @@ export default function ProductScreen() {
         </View>
       )}
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
+      <Button label="Continue customizing my storefront" variant="secondary" disabled={busy !== null}
+        onPress={() => router.navigate("/storefront-setup")} />
+      <Body muted>Your saved design opens again. See this item in the layout while you finish your photos and words. Draft items stay private until published.</Body>
       {p.image_file ? (
         <Button label="Change the background" variant="secondary" icon={<Ionicons name="color-wand-outline" size={18} color={c.ink} />}
           onPress={() => router.push({ pathname: "/studio", params: { target: p.id, image_file: p.image_file!, image_url: p.image_url ?? "" } })} />

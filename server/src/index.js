@@ -3,7 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
-import { ownsSellerImage as sellerOwnsImage } from "./media-ownership.js";
+import { ownsSellerImage as sellerOwnsImage, sellerImageIsInUse, sellerImageIsStored } from "./media-ownership.js";
+import { designPhotoFiles } from "./storefront-media.js";
 import { db, newId, hashToken, slugify, uniqueSlug, rowToProduct } from "./db.js";
 import { productFromPhoto, httpError, PRODUCT_TYPES, sniffImage } from "./claude.js";
 import { writeFileSafe } from "./artwork.js";
@@ -31,6 +32,7 @@ import * as social from "./social.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, esc } from "./render.js";
 import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
+import { materializeTemplatePreview } from "./template-preview.js";
 
 export const app = express();
 app.disable("x-powered-by");
@@ -228,6 +230,15 @@ app.get("/storefront-preview/:token", (req, res) => {
   const snapshot = { ...seller, ...entry.patch, _draftPreview: true, _theme: entry.patch.theme || seller.theme, _base: `/s/${seller.store_slug}` };
   res.send(storePage(snapshot, store.listProducts(seller).filter((p) => p.status === "live"), config.publicUrl));
 });
+app.post("/api/storefront/template-preview", auth, (req, res) => {
+  const body = req.body && typeof req.body === "object" ? req.body : {};
+  const mode = body.mode;
+  if (mode !== "template" && mode !== "final") throw httpError(400, "mode must be template or final.");
+  // storefrontPatch is an allow-list. Request-only/internal flags never reach the renderer.
+  const patch = store.storefrontPatch(req.seller, body);
+  const preview = materializeTemplatePreview({ seller: req.seller, patch, products: store.listProducts(req.seller), mode });
+  res.set({ "Cache-Control": "no-store, max-age=0", Pragma: "no-cache", "X-Content-Type-Options": "nosniff" }).json(preview);
+});
 // Upload without applying. Each staged cover belongs to exactly one seller.
 app.post("/api/storefront/photo", auth, (req, res) => {
   const count = db.prepare("SELECT COUNT(*) AS n FROM storefront_photos WHERE seller_id = ?").get(req.seller.id).n;
@@ -240,11 +251,11 @@ app.post("/api/storefront/photo", auth, (req, res) => {
 app.delete("/api/storefront/photo/:file", auth, (req, res) => {
   const file = req.params.file;
   if (!/^[\w-]+\.(jpg|png|webp|gif)$/.test(file)) throw httpError(400, "Invalid cover reference.");
-  if (req.seller.banner_file === file) throw httpError(409, "Your applied cover cannot be discarded as a staged photo.");
   const row = db.prepare("SELECT 1 FROM storefront_photos WHERE seller_id = ? AND image_file = ?").get(req.seller.id, file);
   if (!row) throw httpError(404, "This staged cover does not belong to your store.");
+  if (sellerImageIsInUse(req.seller.id, file)) throw httpError(409, "This photo is still used by a product or storefront slot.");
   db.prepare("DELETE FROM storefront_photos WHERE seller_id = ? AND image_file = ?").run(req.seller.id, file);
-  fs.rmSync(path.join(dirs.images, file), { force: true });
+  if (!sellerImageIsInUse(req.seller.id, file)) fs.rmSync(path.join(dirs.images, file), { force: true });
   for (const [token, entry] of storefrontPreviews) if (entry.sellerId === req.seller.id && entry.patch.banner_file === file) storefrontPreviews.delete(token);
   res.status(204).end();
 });
@@ -257,12 +268,13 @@ app.put("/api/me/banner", auth, (req, res) => {
   const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg", req.seller.id);
   const old = req.seller.banner_file;
   db.prepare("UPDATE sellers SET banner_file = ? WHERE id = ?").run(file, req.seller.id);
-  if (old) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
+  if (old && !sellerImageIsStored(req.seller.id, old)) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
   res.json(me(req));
 });
 app.delete("/api/me/banner", auth, (req, res) => {
-  if (req.seller.banner_file) fs.rm(path.join(dirs.images, req.seller.banner_file), { force: true }, () => {});
+  const old = req.seller.banner_file;
   db.prepare("UPDATE sellers SET banner_file = NULL WHERE id = ?").run(req.seller.id);
+  if (old && !sellerImageIsStored(req.seller.id, old)) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
   res.json(me(req));
 });
 // Free directory of places to source products (everyone, no sign-in).
@@ -274,10 +286,11 @@ app.patch("/api/me", auth, wrap(async (req, res) => { await store.updateStoreChe
 /** Things kept per store outside the cascading tables: visit counts and AI photos/clips. */
 function purgeStores(sellerIds) {
   for (const id of sellerIds) {
-    const seller = db.prepare("SELECT banner_file FROM sellers WHERE id = ?").get(id);
+    const seller = db.prepare("SELECT banner_file, design_photos FROM sellers WHERE id = ?").get(id);
     const covers = db.prepare("SELECT image_file FROM storefront_photos WHERE seller_id = ?").all(id).map((p) => p.image_file);
     covers.push(...db.prepare("SELECT image_file FROM seller_media WHERE seller_id=?").all(id).map((row) => row.image_file));
     if (seller?.banner_file) covers.push(seller.banner_file);
+    covers.push(...designPhotoFiles(seller?.design_photos).filter(Boolean));
     for (const file of new Set(covers)) {
       if (/^[\w-]+\.(jpg|png|webp|gif)$/.test(file)) fs.rm(path.join(dirs.images, file), { force: true }, () => {});
     }

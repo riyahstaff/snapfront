@@ -238,7 +238,8 @@ test("concurrent cold-start home and root requests create exactly one seller tok
   await Promise.all([m.api.me(), m.api.themes(), m.account.refresh()]);
   assert.equal(calls.filter(({ url }) => url.endsWith("/api/sellers")).length, 1);
   assert.equal(m.memory.get("snapfront.token"), "single-device-token");
-  assert.ok(calls.filter(({ url }) => !url.endsWith("/api/sellers")).every(({ init }) => init.headers.Authorization === "Bearer single-device-token"));
+  assert.ok(calls.filter(({ url }) => url.endsWith("/api/me")).every(({ init }) => init.headers.Authorization === "Bearer single-device-token"));
+  assert.equal(calls.find(({ url }) => url.endsWith("/api/themes")).init, undefined);
 });
 
 test("a failed cold-start token bootstrap can retry without a stuck initialization promise", async () => {
@@ -255,4 +256,24 @@ test("a failed cold-start token bootstrap can retry without a stuck initializati
   assert.ok(failed.every((result) => result.status === "rejected")); assert.equal(creates, 1);
   await Promise.all([m.api.me(), m.account.refresh()]); assert.equal(creates, 2);
   assert.equal(m.memory.get("snapfront.token"), "retry-device-token");
+});
+
+test("public catalog is available without touching native storage or creating a seller", async () => {
+  const calls = [];
+  const m = loadNativeModules({ getItemAsync: async () => { throw new Error("Storage unavailable"); } }, async (url, init) => {
+    calls.push({ url, init });
+    assert.ok(url.endsWith("/api/themes"));
+    return response({ themes: [{ id: "p-jewelry" }] });
+  });
+  assert.deepEqual(await m.api.themes(), [{ id: "p-jewelry" }]);
+  assert.equal(calls.length, 1); assert.equal(calls[0].init, undefined);
+  assert.equal(m.memory.size, 0);
+});
+
+test("public catalog failures and malformed responses produce retryable readable errors", async () => {
+  for (const transport of [async () => { throw new Error("Offline"); }, async () => ({ ok: false, status: 503 }), async () => response({ notThemes: [] })]) {
+    const m = loadNativeModules({}, transport);
+    await assert.rejects(m.api.themes(), /themes|catalog/i);
+    assert.equal(m.memory.size, 0);
+  }
 });

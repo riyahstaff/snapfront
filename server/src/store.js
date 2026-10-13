@@ -3,8 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
-import { ownsSellerImage as ownsImageFile } from "./media-ownership.js";
+import { ownsSellerImage as ownsImageFile, sellerImageIsStored } from "./media-ownership.js";
 import { db, newId, slugify, uniqueSlug, rowToProduct } from "./db.js";
+import { designPhotoFiles, IMAGE_FILE } from "./storefront-media.js";
 import { generateDigitalProduct, httpError, PRODUCT_TYPES } from "./claude.js";
 import { renderCover, renderProductPdf, COVER_COLORS, writeFileSafe } from "./artwork.js";
 import * as pay from "./payments.js";
@@ -30,7 +31,9 @@ export const publicSeller = (s) => ({
   tax_enabled: Boolean(s.tax_enabled),
   theme: THEME_IDS.has(s.theme) ? s.theme : "classic",
   about: s.about || "", announcement: s.announcement || "",
+  banner_file: s.banner_file || null,
   banner_url: s.banner_file ? `${config.publicUrl}/img/${s.banner_file}` : null,
+  design_photos: designPhotoFiles(s.design_photos).map((image_file) => image_file ? ({ image_file, image_url: `${config.publicUrl}/img/${image_file}` }) : null),
   hero_title: s.hero_title || "", hero_subtitle: s.hero_subtitle || "",
   hero_eyebrow: s.hero_eyebrow || "", hero_cta: s.hero_cta || "",
   hero_motion: ["still", "drift", "pan"].includes(s.hero_motion) ? s.hero_motion : "still",
@@ -72,12 +75,21 @@ export function storefrontPatch(seller, b) {
   }
   if (b.banner_file !== undefined) {
     const file = b.banner_file;
-    if (file !== null && (typeof file !== "string" || !/^[\w-]+\.(jpg|png|webp|gif)$/.test(file) ||
-        (file !== seller.banner_file && !db.prepare("SELECT 1 FROM storefront_photos WHERE seller_id = ? AND image_file = ?").get(seller.id, file)) ||
-        !fs.existsSync(path.join(dirs.images, file)))) {
+    if (file !== null && (typeof file !== "string" || !IMAGE_FILE.test(file) || !ownsImageFile(seller.id, file) || !fs.existsSync(path.join(dirs.images, file)))) {
       throw httpError(400, "Upload a cover photo to this store before using it.");
     }
     out.banner_file = file;
+  }
+  if (b.design_photos !== undefined) {
+    if (!Array.isArray(b.design_photos) || b.design_photos.length > 2) throw httpError(400, "Use up to two optional supporting photos.");
+    const files = b.design_photos.map((file) => {
+      if (file === null) return null;
+      if (typeof file !== "string" || !IMAGE_FILE.test(file) || !ownsImageFile(seller.id, file) || !fs.existsSync(path.join(dirs.images, file))) {
+        throw httpError(400, "Each supporting photo must be an image owned by this store.");
+      }
+      return file;
+    });
+    out.design_photos = JSON.stringify(files);
   }
   for (const [key, limit] of Object.entries({ store_name: 80, tagline: 160, about: 600, announcement: 90 })) {
     if (b[key] != null) out[key] = clampStr(b[key], limit).trim();
@@ -115,7 +127,7 @@ export function updateStore(seller, b) {
   if (b.theme != null) {
     db.prepare("UPDATE sellers SET theme = ? WHERE id = ?").run(b.theme, seller.id);
   }
-  for (const key of [...Object.keys(HERO_LIMITS), "hero_motion", "banner_file"]) {
+  for (const key of [...Object.keys(HERO_LIMITS), "hero_motion", "banner_file", "design_photos"]) {
     if (Object.hasOwn(hero, key)) db.prepare(`UPDATE sellers SET ${key} = ? WHERE id = ?`).run(hero[key], seller.id);
   }
   return publicSeller(fresh(seller.id));
@@ -222,7 +234,8 @@ export function setVariants(productId, list) {
 export function deleteProduct(seller, id) {
   const row = productRow(seller, id);
   db.prepare("DELETE FROM products WHERE id = ?").run(row.id);
-  for (const [dir, f] of [[dirs.images, row.image_file], [dirs.files, row.delivery_file]]) if (f) fs.rm(path.join(dir, f), { force: true }, () => {});
+  if (row.image_file && !sellerImageIsStored(seller.id, row.image_file)) fs.rm(path.join(dirs.images, row.image_file), { force: true }, () => {});
+  if (row.delivery_file) fs.rm(path.join(dirs.files, row.delivery_file), { force: true }, () => {});
 }
 
 export async function publishProduct(sellerIn, id) {
