@@ -1,0 +1,55 @@
+{
+  "id": "quotes-08",
+  "name": "Night Poetry",
+  "format": "quotes",
+  "description": "A cinematic night-sky quotation keepsake with an editorial serif voice and orbiting geometric marks.",
+  "tags": ["poetry", "cinematic", "editorial", "night"],
+  "palette": {
+    "paper": "#F4EFE4",
+    "ink": "#17243A",
+    "accent": "#D68A62",
+    "muted": "#59677A",
+    "soft": "#D9DFE5"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "title": {"x": 0.12, "y": 0.30, "w": 0.72, "h": 0.34, "size": 48, "align": "left"},
+    "subtitle": {"x": 0.12, "y": 0.68, "w": 0.70, "h": 0.11, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.12, "y": 0.13, "w": 0.70, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.12, "y": 0.88, "w": 0.70, "h": 0.05, "size": 10, "align": "left"},
+    "textColor": "paper",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.70, "y": 0.08, "w": 0.23, "h": 0.23, "fill": "accent", "opacity": 0.95},
+      {"kind": "ellipse", "x": 0.75, "y": 0.045, "w": 0.23, "h": 0.23, "fill": "ink"},
+      {"kind": "arc", "x": 0.56, "y": 0.05, "w": 0.40, "h": 0.39, "fill": "soft", "opacity": 0.75, "stroke": 1.2, "start": 205, "end": 330},
+      {"kind": "polygon", "x": 0.84, "y": 0.36, "w": 0.09, "h": 0.11, "fill": "paper", "points": [[0.5,0],[0.62,0.38],[1,0.5],[0.62,0.62],[0.5,1],[0.38,0.62],[0,0.5],[0.38,0.38]]},
+      {"kind": "line", "x": 0.12, "y": 0.81, "w": 0.70, "h": 0, "fill": "accent", "opacity": 0.9, "stroke": 1.5},
+      {"kind": "polygon", "x": 0.12, "y": 0.205, "w": 0.025, "h": 0.025, "fill": "accent", "points": [[0.5,0],[1,1],[0,1]]}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "plain",
+    "headingSize": 28,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.07, "w": 0.84, "h": 0, "fill": "accent", "opacity": 0.75, "stroke": 1},
+      {"kind": "ellipse", "x": 0.86, "y": 0.035, "w": 0.045, "h": 0.045, "fill": "soft", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "Let the dark make room for stars.",
+    "subtitle": "A small reminder to trust the light you carry",
+    "brand": "NIGHT NOTES · STUDIO EDITION",
+    "eyebrow": "WORDS FOR THE IN-BETWEEN"
+  }
+}

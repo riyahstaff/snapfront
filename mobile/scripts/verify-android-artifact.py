@@ -50,6 +50,9 @@ def verify(artifact, version_code):
         for text in ['Snap a photo.', 'Get a storefront.']:
             if text_present(bundle, text):
                 raise ValueError(f'Historical Home string found in compiled UI: {text!r}')
+        for text in ['Digital Design Studio', '/api/digital-designs/create', '/digital-design/preview', '/digital-design/attach']:
+            if not text_present(bundle, text):
+                raise ValueError(f'Digital editor missing from compiled UI: {text!r}')
         image_hashes = {}
         for name in archive.namelist():
             if name.endswith(('.webp', '.jpg', '.png')):
@@ -60,8 +63,14 @@ def verify(artifact, version_code):
             digest = hashlib.sha256(source.read_bytes()).hexdigest()
             if digest not in image_hashes:
                 raise ValueError(f'Image bytes not embedded in artifact: {source.name}')
+        digital_previews = list((root / 'assets/digital-designs').glob('*.png'))
+        assert len(digital_previews) == 50, len(digital_previews)
+        for source in digital_previews:
+            if hashlib.sha256(source.read_bytes()).hexdigest() not in image_hashes:
+                raise ValueError(f'Digital design image not embedded in artifact: {source.name}')
     result = {'artifact': str(artifact.resolve()), 'package': package, 'version': native_version,
               'version_code': native_code, 'theme_previews_verified': len(previews),
+              'digital_design_previews_verified': len(digital_previews), 'digital_editor_verified': True,
               'chrome_home_verified': True, 'bytes': artifact.stat().st_size,
               'sha256': hashlib.sha256(artifact.read_bytes()).hexdigest()}
     return result

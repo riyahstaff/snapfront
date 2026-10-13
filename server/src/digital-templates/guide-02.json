@@ -1,0 +1,162 @@
+{
+  "id": "guide-02",
+  "name": "Chromatic Fieldnotes",
+  "format": "guide",
+  "description": "A bold field-guide cover with blue-and-citrus modular blocks, expressive display type and airy reading pages.",
+  "tags": [
+    "fieldnotes",
+    "editorial",
+    "color",
+    "beginner-sellers"
+  ],
+  "palette": {
+    "paper": "#F4F0E7",
+    "ink": "#172C35",
+    "accent": "#1F55CA",
+    "muted": "#50646A",
+    "soft": "#FFD761"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.085,
+      "y": 0.27,
+      "w": 0.72,
+      "h": 0.4,
+      "size": 62,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.72,
+      "w": 0.72,
+      "h": 0.1,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.16,
+      "w": 0.66,
+      "h": 0.055,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.88,
+      "w": 0.78,
+      "h": 0.05,
+      "size": 11,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.8,
+        "y": 0,
+        "w": 0.2,
+        "h": 0.2,
+        "fill": "accent"
+      },
+      {
+        "kind": "rect",
+        "x": 0.87,
+        "y": 0.23,
+        "w": 0.13,
+        "h": 0.48,
+        "fill": "soft"
+      },
+      {
+        "kind": "polygon",
+        "x": 0.8,
+        "y": 0.78,
+        "w": 0.2,
+        "h": 0.2,
+        "fill": "accent",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "x": 0.09,
+        "y": 0.2,
+        "w": 0.61,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 2
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.69,
+        "y": 0.09,
+        "w": 0.055,
+        "h": 0.055,
+        "fill": "accent"
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.48,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.075,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.84,
+        "y": 0.89,
+        "w": 0.055,
+        "h": 0.055,
+        "fill": "soft",
+        "opacity": 0.8
+      },
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.92,
+        "w": 0.14,
+        "h": 0,
+        "fill": "muted",
+        "stroke": 1
+      }
+    ]
+  },
+  "sample": {
+    "title": "Find Your First Product Story",
+    "subtitle": "A field guide to noticing what makes a small shop memorable",
+    "brand": "FIELDNOTE STUDIO",
+    "eyebrow": "A SELLER\u2019S FIELD GUIDE"
+  }
+}

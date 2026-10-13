@@ -1,0 +1,55 @@
+{
+  "id": "checklist-06",
+  "name": "Momentum Steps",
+  "format": "checklist",
+  "description": "A bright editorial launch checklist built around an ascending sequence of bold geometric steps, with generous room to mark progress.",
+  "tags": ["checklist", "momentum", "launch", "editorial"],
+  "palette": {
+    "paper": "#F7F3E9",
+    "ink": "#192B36",
+    "accent": "#D9573B",
+    "muted": "#536A70",
+    "soft": "#DCE8D5"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.23, "w": 0.64, "h": 0.30, "size": 56, "align": "left"},
+    "subtitle": {"x": 0.09, "y": 0.59, "w": 0.66, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.09, "y": 0.12, "w": 0.66, "h": 0.05, "size": 10, "align": "left"},
+    "brand": {"x": 0.09, "y": 0.89, "w": 0.66, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "polygon", "x": 0.73, "y": 0.18, "w": 0.23, "h": 0.25, "fill": "soft", "points": [[0, 0.72], [0.48, 0.72], [0.48, 0.35], [1, 0.35], [1, 1], [0, 1]]},
+      {"kind": "polygon", "x": 0.77, "y": 0.39, "w": 0.22, "h": 0.29, "fill": "accent", "points": [[0, 0.78], [0.38, 0.78], [0.38, 0.44], [0.72, 0.44], [0.72, 0.12], [1, 0.12], [1, 1], [0, 1]]},
+      {"kind": "ellipse", "x": 0.84, "y": 0.10, "w": 0.09, "h": 0.09, "fill": "ink", "opacity": 0.95},
+      {"kind": "line", "x": 0.77, "y": 0.73, "w": 0.20, "h": 0.12, "fill": "ink", "stroke": 2.5},
+      {"kind": "arc", "x": 0.77, "y": 0.75, "w": 0.16, "h": 0.16, "fill": "muted", "stroke": 2, "start": 205, "end": 330},
+      {"kind": "rect", "x": 0.09, "y": 0.79, "w": 0.18, "h": 0.012, "fill": "accent", "radius": 0.006}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "steps",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.065, "w": 0.84, "h": 0, "fill": "accent", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.88, "y": 0.86, "w": 0.035, "h": 0.035, "fill": "soft"}
+    ]
+  },
+  "sample": {
+    "title": "Momentum Steps",
+    "subtitle": "A clear checklist for preparing your first product launch",
+    "brand": "STUDIO NORTH",
+    "eyebrow": "THE SMALL-SELLER LAUNCH LIST"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "id": "planner-06",
+  "name": "The Daily Edit",
+  "format": "planner",
+  "description": "A writable daily planner with a crisp editorial grid and orbiting chrome-inspired geometry.",
+  "tags": ["planner", "editorial", "daily focus", "creative workflow"],
+  "palette": {
+    "paper": "#F7F5F0",
+    "ink": "#172A32",
+    "accent": "#B34D35",
+    "muted": "#53666B",
+    "soft": "#DCE5E2"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.10, "y": 0.30, "w": 0.67, "h": 0.30, "size": 54, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.64, "w": 0.70, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.15, "w": 0.68, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.70, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.72, "y": 0.035, "w": 0.27, "h": 0.27, "fill": "soft", "opacity": 0.9, "stroke": 1.2},
+      {"kind": "arc", "x": 0.74, "y": 0.055, "w": 0.23, "h": 0.23, "fill": "accent", "opacity": 1, "stroke": 3, "start": 205, "end": 325},
+      {"kind": "polygon", "x": 0.78, "y": 0.39, "w": 0.20, "h": 0.27, "fill": "accent", "opacity": 0.92, "points": [[0.5, 0], [1, 0.28], [0.78, 1], [0.22, 1], [0, 0.28]]},
+      {"kind": "line", "x": 0.09, "y": 0.82, "w": 0.82, "h": 0, "fill": "muted", "opacity": 0.65, "stroke": 1},
+      {"kind": "rect", "x": 0.84, "y": 0.72, "w": 0.055, "h": 0.055, "fill": "ink", "opacity": 1, "radius": 0.02}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.105, "w": 0.84, "h": 0, "fill": "accent", "opacity": 0.85, "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.865, "y": 0.045, "w": 0.045, "h": 0.045, "fill": "soft", "opacity": 1}
+    ]
+  },
+  "sample": {
+    "title": "A Clear Day",
+    "subtitle": "A little space to choose what matters and make it happen.",
+    "brand": "STUDIO NORTH",
+    "eyebrow": "THE DAILY EDIT · FOCUS PLANNER"
+  }
+}

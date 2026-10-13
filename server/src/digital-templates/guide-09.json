@@ -1,0 +1,54 @@
+{
+  "id": "guide-09",
+  "name": "Soft Systems",
+  "format": "guide",
+  "description": "A tactile editorial field guide for building a gentle, repeatable content rhythm, with a sculptural orbit motif and calm reading pages.",
+  "tags": ["editorial", "systems", "beginner", "content"],
+  "palette": {
+    "paper": "#F4F0E7",
+    "ink": "#182A31",
+    "accent": "#B6533B",
+    "muted": "#52666B",
+    "soft": "#D8DED3"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.29, "w": 0.68, "h": 0.31, "size": 56, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.65, "w": 0.70, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.14, "w": 0.68, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.89, "w": 0.70, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.70, "y": 0.12, "w": 0.25, "h": 0.25, "fill": "soft", "stroke": 1.5},
+      {"kind": "arc", "x": 0.65, "y": 0.08, "w": 0.32, "h": 0.32, "fill": "accent", "stroke": 2, "start": 25, "end": 295},
+      {"kind": "polygon", "x": 0.78, "y": 0.41, "w": 0.15, "h": 0.28, "fill": "accent", "opacity": 0.92, "points": [[0.5, 0], [1, 0.42], [0.72, 1], [0.18, 0.78], [0, 0.27]]},
+      {"kind": "line", "x": 0.80, "y": 0.76, "w": 0.15, "h": 0.08, "fill": "muted", "stroke": 2},
+      {"kind": "ellipse", "x": 0.87, "y": 0.80, "w": 0.05, "h": 0.05, "fill": "ink"}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 50,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.085, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.88, "y": 0.045, "w": 0.035, "h": 0.035, "fill": "accent", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "A Softer Content System",
+    "subtitle": "A simple weekly rhythm for your first small shop",
+    "brand": "STUDIO STILL",
+    "eyebrow": "A BEGINNER FIELD GUIDE"
+  }
+}

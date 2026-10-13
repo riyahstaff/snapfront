@@ -1,0 +1,54 @@
+{
+  "id": "guide-01",
+  "name": "Quiet Authority",
+  "format": "guide",
+  "description": "A tactile editorial field guide for building a steady, confident content practice.",
+  "tags": ["editorial", "content", "confidence"],
+  "palette": {
+    "paper": "#F5F0E7",
+    "ink": "#202A31",
+    "accent": "#B45D43",
+    "muted": "#59656A",
+    "soft": "#D9DED5"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.11, "y": 0.31, "w": 0.69, "h": 0.31, "size": 56, "align": "left"},
+    "subtitle": {"x": 0.11, "y": 0.67, "w": 0.67, "h": 0.12, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.11, "y": 0.16, "w": 0.68, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.11, "y": 0.88, "w": 0.65, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "rect", "x": 0.84, "y": 0.08, "w": 0.035, "h": 0.84, "fill": "accent", "opacity": 1},
+      {"kind": "ellipse", "x": 0.73, "y": 0.13, "w": 0.19, "h": 0.19, "fill": "soft", "opacity": 1},
+      {"kind": "arc", "x": 0.70, "y": 0.08, "w": 0.27, "h": 0.29, "fill": "accent", "opacity": 0.9, "stroke": 2.2, "start": 205, "end": 335},
+      {"kind": "polygon", "x": 0.78, "y": 0.64, "w": 0.14, "h": 0.15, "fill": "soft", "opacity": 1, "points": [[0.5,0],[1,0.5],[0.5,1],[0,0.5]]},
+      {"kind": "line", "x": 0.11, "y": 0.83, "w": 0.65, "h": 0, "fill": "accent", "opacity": 0.8, "stroke": 1}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 50,
+    "headerStyle": "rule",
+    "blockStyle": "plain",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.075, "y": 0.06, "w": 0.85, "h": 0, "fill": "accent", "stroke": 1.1, "opacity": 0.72},
+      {"kind": "ellipse", "x": 0.89, "y": 0.075, "w": 0.035, "h": 0.035, "fill": "soft", "opacity": 0.9}
+    ]
+  },
+  "sample": {
+    "title": "Build a quieter content rhythm",
+    "subtitle": "A practical field guide to showing up with clarity, consistency, and room to breathe.",
+    "brand": "STUDIO NOTES",
+    "eyebrow": "A FIELD GUIDE · CONTENT PRACTICE"
+  }
+}

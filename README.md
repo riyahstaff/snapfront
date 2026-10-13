@@ -103,6 +103,10 @@ The app ID is `com.sidebanc.snapfront` (iOS and Android) and the support contact
 - In-app account deletion (Store settings → Delete my store) and the `/privacy` page cover the stores' account and privacy requirements.
 - Camera and photo permission strings are set in `app.json`.
 
+## Digital Design Studio
+
+Create includes **50 original editable digital-product designs**: mini e-books, checklists/worksheets, content prompt packs, quote prints and planners. Select a real pictured design, edit text/colors/fonts/pages/photos while viewing the actual layout, save privately, and review the finished PDF/cover before explicitly attaching it. Source stays editable; earlier paid buyers retain their download. Browse works with bundled images. See [the simple studio guide](docs/digital-design-studio.md) for current capabilities and coordinated backend/native release requirements.
+
 ## API reference
 
 | Method | Path | What it does |

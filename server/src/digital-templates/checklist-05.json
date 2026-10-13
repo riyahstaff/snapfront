@@ -1,0 +1,157 @@
+{
+  "id": "checklist-05",
+  "name": "Lilac Ledger",
+  "format": "checklist",
+  "description": "A soft lilac checklist with crisp sans-serif hierarchy, rounded status tiles and generous writable space.",
+  "tags": [
+    "seller",
+    "launch",
+    "editorial",
+    "checklist"
+  ],
+  "palette": {
+    "paper": "#F0EAF9",
+    "ink": "#292135",
+    "accent": "#6B4BA9",
+    "muted": "#655775",
+    "soft": "#DACEED"
+  },
+  "fonts": {
+    "heading": "sans",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.105,
+      "y": 0.275,
+      "w": 0.73,
+      "h": 0.32,
+      "size": 54,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.11,
+      "y": 0.635,
+      "w": 0.68,
+      "h": 0.12,
+      "size": 16,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.11,
+      "y": 0.17,
+      "w": 0.7,
+      "h": 0.055,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.11,
+      "y": 0.88,
+      "w": 0.7,
+      "h": 0.05,
+      "size": 11,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.82,
+        "y": 0,
+        "w": 0.18,
+        "h": 1,
+        "fill": "soft"
+      },
+      {
+        "kind": "rect",
+        "x": 0.83,
+        "y": 0.12,
+        "w": 0.12,
+        "h": 0.12,
+        "fill": "accent",
+        "radius": 0.025
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.85,
+        "y": 0.36,
+        "w": 0.08,
+        "h": 0.08,
+        "fill": "ink"
+      },
+      {
+        "kind": "rect",
+        "x": 0.84,
+        "y": 0.6,
+        "w": 0.1,
+        "h": 0.14,
+        "fill": "paper",
+        "radius": 0.018
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.245,
+        "w": 0.64,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 2
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.1,
+        "y": 0.84,
+        "w": 0.025,
+        "h": 0.025,
+        "fill": "accent"
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "steps",
+    "headingSize": 28,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.072,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1.4
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.86,
+        "y": 0.035,
+        "w": 0.055,
+        "h": 0.055,
+        "fill": "soft"
+      },
+      {
+        "kind": "line",
+        "x": 0.875,
+        "y": 0.062,
+        "w": 0.026,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      }
+    ]
+  },
+  "sample": {
+    "title": "Open-Shop Launch Checklist",
+    "subtitle": "A calm, practical pass through the details before your first listing goes live.",
+    "brand": "Lilac Ledger Studio",
+    "eyebrow": "THE BEGINNER SELLER SERIES"
+  }
+}

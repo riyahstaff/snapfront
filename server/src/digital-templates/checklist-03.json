@@ -1,0 +1,54 @@
+{
+  "id": "checklist-03",
+  "name": "Paper Trail",
+  "format": "checklist",
+  "description": "A tactile editorial launch-readiness checklist with a receipt-inspired geometric trail and generous writable space.",
+  "tags": ["checklist", "editorial", "launch", "paper goods"],
+  "palette": {
+    "paper": "#F5F0E6",
+    "ink": "#202B36",
+    "accent": "#B24D36",
+    "muted": "#566674",
+    "soft": "#E5D8C5"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.27, "w": 0.76, "h": 0.30, "size": 56, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.62, "w": 0.75, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.13, "w": 0.72, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.89, "w": 0.72, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "rect", "x": 0.865, "y": 0.08, "w": 0.055, "h": 0.82, "fill": "accent", "radius": 0.025},
+      {"kind": "ellipse", "x": 0.81, "y": 0.075, "w": 0.16, "h": 0.16, "fill": "soft"},
+      {"kind": "ellipse", "x": 0.85, "y": 0.115, "w": 0.08, "h": 0.08, "fill": "accent"},
+      {"kind": "polygon", "x": 0.77, "y": 0.77, "w": 0.18, "h": 0.14, "fill": "soft", "points": [[0, 0], [1, 0.28], [0.72, 1], [0.15, 0.8]]},
+      {"kind": "line", "x": 0.10, "y": 0.81, "w": 0.55, "h": 0, "fill": "accent", "stroke": 1.5}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.055, "w": 0.84, "h": 0, "fill": "accent", "stroke": 1.25},
+      {"kind": "ellipse", "x": 0.88, "y": 0.075, "w": 0.035, "h": 0.035, "fill": "soft"}
+    ]
+  },
+  "sample": {
+    "title": "Ready, Set, Open",
+    "subtitle": "A small-shop launch checklist, from first listing to opening day",
+    "brand": "FIELD NOTES / YOUR SHOP",
+    "eyebrow": "THE PAPER TRAIL SERIES · SELLER CHECKLIST"
+  }
+}

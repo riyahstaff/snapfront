@@ -1,0 +1,156 @@
+{
+  "id": "planner-09",
+  "name": "Studio Schedule",
+  "format": "planner",
+  "description": "A crisp studio schedule in cool jade and slate, with monospace indexing and a structured timetable-strip composition.",
+  "tags": [
+    "planner",
+    "studio",
+    "weekly",
+    "editorial"
+  ],
+  "palette": {
+    "paper": "#EEF3F2",
+    "ink": "#233A3B",
+    "accent": "#2C6570",
+    "muted": "#5A6C6B",
+    "soft": "#D2E1DE"
+  },
+  "fonts": {
+    "heading": "mono",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.1,
+      "y": 0.29,
+      "w": 0.68,
+      "h": 0.35,
+      "size": 40,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.69,
+      "w": 0.68,
+      "h": 0.11,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.14,
+      "w": 0.68,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.89,
+      "w": 0.72,
+      "h": 0.05,
+      "size": 11,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.82,
+        "y": 0.12,
+        "w": 0.12,
+        "h": 0.1,
+        "fill": "accent"
+      },
+      {
+        "kind": "rect",
+        "x": 0.82,
+        "y": 0.25,
+        "w": 0.12,
+        "h": 0.1,
+        "fill": "soft"
+      },
+      {
+        "kind": "rect",
+        "x": 0.82,
+        "y": 0.38,
+        "w": 0.12,
+        "h": 0.1,
+        "fill": "accent"
+      },
+      {
+        "kind": "rect",
+        "x": 0.82,
+        "y": 0.51,
+        "w": 0.12,
+        "h": 0.1,
+        "fill": "soft"
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.23,
+        "w": 0.64,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.84,
+        "w": 0.83,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 2
+      },
+      {
+        "kind": "rect",
+        "x": 0.1,
+        "y": 0.075,
+        "w": 0.06,
+        "h": 0.04,
+        "fill": "accent"
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 46,
+    "headerStyle": "side",
+    "blockStyle": "outline",
+    "headingSize": 27,
+    "bodySize": 11,
+    "lineHeight": 1.45,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.06,
+        "w": 0.85,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1.2
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.86,
+        "y": 0.075,
+        "w": 0.035,
+        "h": 0.035,
+        "fill": "accent",
+        "opacity": 0.72
+      }
+    ]
+  },
+  "sample": {
+    "title": "Studio Schedule",
+    "subtitle": "A weekly plan for making, sharing, and resetting",
+    "brand": "FIELDNOTE STUDIO",
+    "eyebrow": "WEEKLY WORKROOM \u00b7 01"
+  }
+}

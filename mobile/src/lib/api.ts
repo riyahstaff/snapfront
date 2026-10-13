@@ -1,11 +1,25 @@
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+import type { DigitalDocument, DigitalFormat, DigitalTemplateSummary } from "./digital-design";
+export type { DigitalBlock, DigitalBlockKind, DigitalDocument, DigitalFormat, DigitalFonts, DigitalPage, DigitalPageKind, DigitalPalette, DigitalTemplateSummary } from "./digital-design";
 
 const API_URL: string = (Constants.expoConfig?.extra?.apiUrl as string) || "http://localhost:8080";
 const TOKEN_KEY = "snapfront.token";
 const STORE_KEY = "snapfront.store";
 
 export type Faq = { q: string; a: string };
+/** Server-rendered SVGs remain private, owner-bound preview content. They are never a product attachment. */
+export type DigitalPreview = {
+  pages: { index: number; source_page_id: string | null; svg: string; width: number; height: number }[];
+  page_count: number;
+  document_hash: string;
+};
+export type DigitalExport = { id: string; revision: number; document_hash: string; page_count: number; pdf_url: string; cover_url: string; created_at: string };
+export type DigitalDesignRecord = { product_id: string; source_available: boolean; document: DigitalDocument | null; revision: number; export: DigitalExport | null; legacy_message: string | null };
+export type DigitalDesignCatalog = { templates: DigitalTemplateSummary[]; formats: { id: DigitalFormat; name: string }[]; version: 1 };
+export type CreateDigitalDesignInput = { template_id: string; title?: string; subtitle?: string; brand?: string };
+export type SaveDigitalDesignInput = { document: DigitalDocument; revision: number; rebuild_legacy?: true };
+export type AttachDigitalDesignInput = { export_id: string; revision: number; acknowledge_live: boolean };
 export type Draft = {
   image_file?: string | null;
   image_url?: string | null;
@@ -346,6 +360,22 @@ async function themeCatalog(): Promise<StoreTheme[]> {
   }
 }
 
+/** Public discovery lets the packaged 50-design library refresh when the backend is available. */
+async function digitalDesignCatalog(): Promise<DigitalDesignCatalog> {
+  try {
+    const response = await fetch(`${API_URL}/api/digital-designs`);
+    if (!response.ok) throw new ApiError("Couldn't load digital designs. You can still browse the included library.", response.status);
+    const data = await response.json() as Partial<DigitalDesignCatalog>;
+    if (!Array.isArray(data.templates) || !Array.isArray(data.formats) || data.version !== 1) {
+      throw new ApiError("The digital design catalog couldn't be read. You can still browse the included library.", 0);
+    }
+    return data as DigitalDesignCatalog;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError("Couldn't load digital designs. You can still browse the included library.", 0);
+  }
+}
+
 async function setStore(id: string | null) {
   selectionRevision++;
   storeCache = id;
@@ -396,6 +426,20 @@ export const api = {
   setReview: (id: string, status: "published" | "hidden") => request<Review[]>("PATCH", `/api/reviews/${id}`, { status }),
   qrUrl: (url: string) => `${API_URL}/qr.png?url=${encodeURIComponent(url)}`,
   themes: themeCatalog,
+  /** This public list has no seller data; all document/product operations below require an explicit owner. */
+  digitalDesigns: digitalDesignCatalog,
+  createDigitalDesign: (storeId: string, input: CreateDigitalDesignInput) =>
+    request<{ product: Product; design: DigitalDesignRecord }>("POST", "/api/digital-designs/create", input, storeId),
+  digitalDesign: (storeId: string, productId: string) =>
+    request<DigitalDesignRecord>("GET", `/api/products/${encodeURIComponent(productId)}/digital-design`, undefined, storeId),
+  saveDigitalDesign: (storeId: string, productId: string, input: SaveDigitalDesignInput) =>
+    request<DigitalDesignRecord>("PUT", `/api/products/${encodeURIComponent(productId)}/digital-design`, input, storeId),
+  previewDigitalDesign: (storeId: string, productId: string, document: DigitalDocument) =>
+    request<DigitalPreview>("POST", `/api/products/${encodeURIComponent(productId)}/digital-design/preview`, { document }, storeId),
+  exportDigitalDesign: (storeId: string, productId: string, revision: number) =>
+    request<DigitalExport>("POST", `/api/products/${encodeURIComponent(productId)}/digital-design/export`, { revision }, storeId),
+  attachDigitalDesign: (storeId: string, productId: string, input: AttachDigitalDesignInput) =>
+    request<{ product: Product; design: DigitalDesignRecord }>("POST", `/api/products/${encodeURIComponent(productId)}/digital-design/attach`, input, storeId),
   async deleteAccount() {
     await request<void>("DELETE", "/api/me");
     await SecureStore.deleteItemAsync(TOKEN_KEY);
@@ -430,7 +474,8 @@ export const api = {
   legalUrl: (page: "privacy" | "terms") => `${API_URL}/${page}`,
   productFromPhoto: (input: { imageBase64: string; mediaType: string; kind: string; hint?: string; price?: string; tone?: string }) =>
     request<Draft>("POST", "/api/ai/product-from-photo", input),
-  generate: (input: { type: string; niche: string; color: string; price?: number }) => request<Product>("POST", "/api/ai/generate", input),
+  /** `template_id` preserves the generated full source under the selected editable digital template. */
+  generate: (input: { type: string; niche: string; color: string; price?: number; template_id?: string }) => request<Product>("POST", "/api/ai/generate", input),
   productTypes: () => request<ProductType[]>("GET", "/api/product-types"),
   trends: () => request<Trend[]>("GET", "/api/trends"),
   products: (storeId?: string) => request<Product[]>("GET", "/api/products", undefined, storeId),

@@ -1,0 +1,55 @@
+{
+  "id": "guide-06",
+  "name": "Terracotta Stories",
+  "format": "guide",
+  "description": "A tactile editorial field guide built around a sun-warmed arch, orbiting geometry, and generous story-first reading space.",
+  "tags": ["editorial", "storytelling", "terracotta"],
+  "palette": {
+    "paper": "#F6EBDD",
+    "ink": "#2D2521",
+    "accent": "#B6533B",
+    "muted": "#675B52",
+    "soft": "#DCC6A9"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.29, "w": 0.78, "h": 0.34, "size": 54, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.67, "w": 0.70, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.16, "w": 0.70, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.72, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.66, "y": 0.08, "w": 0.26, "h": 0.26, "fill": "soft", "opacity": 0.82},
+      {"kind": "arc", "x": 0.58, "y": 0.03, "w": 0.37, "h": 0.42, "fill": "accent", "stroke": 2.2, "start": 205, "end": 345},
+      {"kind": "rect", "x": 0.77, "y": 0.20, "w": 0.12, "h": 0.50, "fill": "accent", "opacity": 0.92, "radius": 0.06},
+      {"kind": "polygon", "x": 0.82, "y": 0.35, "w": 0.12, "h": 0.18, "fill": "ink", "opacity": 0.88, "points": [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]]},
+      {"kind": "line", "x": 0.08, "y": 0.82, "w": 0.82, "h": 0, "fill": "accent", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.88, "y": 0.77, "w": 0.035, "h": 0.035, "fill": "accent"}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.075, "y": 0.10, "w": 0.85, "h": 0, "fill": "soft", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.88, "y": 0.055, "w": 0.045, "h": 0.045, "fill": "accent", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "Tell Your Shop Story",
+    "subtitle": "A simple guide to turning your point of view into product-page copy",
+    "brand": "STUDIO FIELDNOTES",
+    "eyebrow": "A STORYTELLING FIELD GUIDE"
+  }
+}

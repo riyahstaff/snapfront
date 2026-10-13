@@ -1,6 +1,6 @@
 import * as Application from "expo-application";
 
-export const RELEASE_NAME = "Liquid Chrome · offline previews";
+export const RELEASE_NAME = "Digital Design Studio · 50 designs · offline previews";
 
 /** Native values identify the binary actually installed, not a Play Console track or JS config. */
 export function installedRelease() {

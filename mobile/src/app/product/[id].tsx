@@ -73,6 +73,13 @@ export default function ProductScreen() {
         </View>
       )}
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
+      {p.kind === "digital" && me ? (
+        <View style={{ gap: space.sm }}>
+          <H2>Digital design</H2>
+          <Body muted>Edit the original source pages when available. Previewing and exporting stay private until you explicitly attach a reviewed revision.</Body>
+          <Button label="Design my digital product" variant="secondary" disabled={busy !== null} onPress={() => router.push({ pathname: "/digital-editor", params: { id: p.id, storeId: me.id } })} />
+        </View>
+      ) : null}
       <Button label="Continue customizing my storefront" variant="secondary" disabled={busy !== null}
         onPress={() => router.navigate("/storefront-setup")} />
       <Body muted>Your saved design opens again. See this item in the layout while you finish your photos and words. Draft items stay private until published.</Body>

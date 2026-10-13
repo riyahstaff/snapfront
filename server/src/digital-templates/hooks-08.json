@@ -1,0 +1,55 @@
+{
+  "id": "hooks-08",
+  "name": "Midnight Dispatch",
+  "format": "hooks",
+  "description": "A cinematic, late-night hook-writing kit framed by orbital dispatch marks and crisp editorial type.",
+  "tags": ["hooks", "editorial", "commerce", "cinematic"],
+  "palette": {
+    "paper": "#F5F1E8",
+    "ink": "#111C2C",
+    "accent": "#E7A94B",
+    "muted": "#536477",
+    "soft": "#DCE7E5"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "title": {"x": 0.10, "y": 0.28, "w": 0.68, "h": 0.30, "size": 56, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.62, "w": 0.67, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.14, "w": 0.68, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.89, "w": 0.68, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "paper",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.69, "y": 0.18, "w": 0.27, "h": 0.27, "fill": "accent", "opacity": 0.96},
+      {"kind": "ellipse", "x": 0.75, "y": 0.24, "w": 0.15, "h": 0.15, "fill": "ink", "opacity": 1},
+      {"kind": "arc", "x": 0.63, "y": 0.12, "w": 0.37, "h": 0.37, "fill": "soft", "stroke": 2, "start": 205, "end": 335},
+      {"kind": "polygon", "x": 0.78, "y": 0.55, "w": 0.16, "h": 0.21, "fill": "accent", "opacity": 0.9, "points": [[0.5, 0], [1, 0.36], [0.68, 1], [0.32, 1], [0, 0.36]]},
+      {"kind": "line", "x": 0.82, "y": 0.54, "w": 0.18, "h": 0.25, "fill": "soft", "stroke": 1.5, "opacity": 0.8},
+      {"kind": "rect", "x": 0.10, "y": 0.80, "w": 0.12, "h": 0.012, "fill": "accent", "radius": 0.006}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "band",
+    "blockStyle": "cards",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.075, "w": 0.84, "h": 0, "fill": "accent", "stroke": 1.5, "opacity": 0.8},
+      {"kind": "ellipse", "x": 0.87, "y": 0.035, "w": 0.045, "h": 0.045, "fill": "soft", "opacity": 0.9}
+    ]
+  },
+  "sample": {
+    "title": "Hooks for the After-Hours Scroll",
+    "subtitle": "A practical prompt deck for product posts that earn the pause",
+    "brand": "NIGHT SHIFT STUDIO",
+    "eyebrow": "THE MIDNIGHT DISPATCH · HOOK KIT"
+  }
+}

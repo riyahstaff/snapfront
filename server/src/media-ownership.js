@@ -25,6 +25,14 @@ export function sellerImageIsInUse(sellerId, file) {
   if (db.prepare("SELECT 1 FROM products WHERE seller_id=? AND image_file=? LIMIT 1").get(sellerId, file)) return true;
   const seller = db.prepare("SELECT banner_file, design_photos FROM sellers WHERE id=?").get(sellerId);
   if (seller?.banner_file === file || designPhotoFiles(seller?.design_photos).includes(file)) return true;
+  const designs = db.prepare("SELECT document_json FROM digital_designs WHERE seller_id=? AND source_available=1").all(sellerId);
+  if (designs.some((row) => {
+    try {
+      const source = JSON.parse(row.document_json);
+      return Array.isArray(source.pages) && source.pages.some((page) => Array.isArray(page.blocks)
+        && page.blocks.some((block) => block?.kind === "image" && block.image_file === file));
+    } catch { return false; }
+  })) return true;
   return db.prepare("SELECT result FROM media_jobs WHERE seller_id=? AND result IS NOT NULL").all(sellerId)
     .some((row) => { try { return JSON.parse(row.result)?.image_file === file; } catch { return false; } });
 }

@@ -1,0 +1,54 @@
+{
+  "id": "hooks-03",
+  "name": "The Content Edit",
+  "format": "hooks",
+  "description": "A tactile editorial hook-writing template pairing a calm paper field with a sculptural cut-paper orbit and a clear, spacious reading system.",
+  "tags": ["editorial", "content", "writing", "hooks"],
+  "palette": {
+    "paper": "#F4F0E7",
+    "ink": "#18272B",
+    "accent": "#B84E35",
+    "muted": "#53676A",
+    "soft": "#D9E1DC"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.31, "w": 0.65, "h": 0.30, "size": 48, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.65, "w": 0.62, "h": 0.12, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.17, "w": 0.65, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.70, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.77, "y": 0.17, "w": 0.21, "h": 0.49, "fill": "soft", "opacity": 1},
+      {"kind": "arc", "x": 0.75, "y": 0.13, "w": 0.24, "h": 0.59, "fill": "accent", "stroke": 3, "start": 205, "end": 35},
+      {"kind": "polygon", "x": 0.81, "y": 0.30, "w": 0.17, "h": 0.28, "fill": "accent", "points": [[0.5, 0], [0.93, 0.35], [0.72, 1], [0.12, 0.78], [0, 0.28]]},
+      {"kind": "line", "x": 0.78, "y": 0.65, "w": 0.17, "h": 0.12, "fill": "ink", "stroke": 2},
+      {"kind": "ellipse", "x": 0.94, "y": 0.75, "w": 0.045, "h": 0.045, "fill": "ink", "opacity": 1}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "cards",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.065, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.89, "y": 0.075, "w": 0.035, "h": 0.035, "fill": "accent", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "Hooks for a handmade launch",
+    "subtitle": "A simple edit for turning one good idea into a week of opening lines.",
+    "brand": "STUDIO FIELDNOTES",
+    "eyebrow": "THE CONTENT EDIT · HOOKS"
+  }
+}

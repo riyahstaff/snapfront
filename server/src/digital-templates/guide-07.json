@@ -1,0 +1,54 @@
+{
+  "id": "guide-07",
+  "name": "Blue Hour Journal",
+  "format": "guide",
+  "description": "A cinematic, reflective guide for shaping a quiet end-of-day journaling ritual.",
+  "tags": ["journaling", "reflection", "editorial"],
+  "palette": {
+    "paper": "#F3F0E8",
+    "ink": "#14243B",
+    "accent": "#D06F55",
+    "muted": "#52647A",
+    "soft": "#D8E1E8"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "title": {"x": 0.10, "y": 0.31, "w": 0.72, "h": 0.32, "size": 56, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.66, "w": 0.68, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.15, "w": 0.72, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.72, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "paper",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.45, "y": 0.08, "w": 0.50, "h": 0.42, "fill": "soft", "opacity": 0.28},
+      {"kind": "arc", "x": 0.47, "y": 0.10, "w": 0.47, "h": 0.54, "fill": "accent", "stroke": 2.2, "start": 205, "end": 342},
+      {"kind": "polygon", "x": 0.72, "y": 0.46, "w": 0.20, "h": 0.18, "fill": "accent", "opacity": 0.92, "points": [[0.5,0],[1,0.5],[0.5,1],[0,0.5]]},
+      {"kind": "line", "x": 0.10, "y": 0.83, "w": 0.78, "h": 0, "fill": "accent", "stroke": 1.4},
+      {"kind": "ellipse", "x": 0.87, "y": 0.75, "w": 0.055, "h": 0.055, "fill": "soft", "opacity": 0.8}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 50,
+    "headerStyle": "rule",
+    "blockStyle": "cards",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.055, "w": 0.84, "h": 0, "fill": "accent", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.87, "y": 0.90, "w": 0.035, "h": 0.035, "fill": "soft", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "A softer landing at day’s end",
+    "subtitle": "Three prompts to notice, release, and carry forward",
+    "brand": "Blue Hour Notes",
+    "eyebrow": "AN EVENING JOURNAL GUIDE"
+  }
+}

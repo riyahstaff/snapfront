@@ -1,0 +1,54 @@
+{
+  "id": "quotes-01",
+  "name": "Quiet Confidence",
+  "format": "quotes",
+  "description": "A quiet editorial quote template framed by an original orbit-and-sun geometry, with generous space for a brief affirmation.",
+  "tags": ["quotes", "editorial", "calm", "affirmation"],
+  "palette": {
+    "paper": "#F5F0E7",
+    "ink": "#202936",
+    "accent": "#B64F39",
+    "muted": "#535F68",
+    "soft": "#E5D7C4"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.15, "y": 0.31, "w": 0.70, "h": 0.30, "size": 50, "align": "center"},
+    "subtitle": {"x": 0.18, "y": 0.65, "w": 0.64, "h": 0.10, "size": 15, "align": "center"},
+    "eyebrow": {"x": 0.18, "y": 0.12, "w": 0.64, "h": 0.06, "size": 10, "align": "center"},
+    "brand": {"x": 0.18, "y": 0.88, "w": 0.64, "h": 0.05, "size": 10, "align": "center"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.37, "y": 0.205, "w": 0.26, "h": 0.26, "fill": "soft", "opacity": 0.9},
+      {"kind": "arc", "x": 0.30, "y": 0.16, "w": 0.40, "h": 0.40, "fill": "accent", "stroke": 1.5, "start": 205, "end": 335},
+      {"kind": "line", "x": 0.12, "y": 0.79, "w": 0.76, "h": 0, "fill": "accent", "stroke": 1.2},
+      {"kind": "polygon", "x": 0.82, "y": 0.21, "w": 0.055, "h": 0.07, "fill": "accent", "points": [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]]},
+      {"kind": "ellipse", "x": 0.11, "y": 0.715, "w": 0.018, "h": 0.018, "fill": "accent"}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 52,
+    "headerStyle": "stack",
+    "blockStyle": "plain",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.12, "y": 0.09, "w": 0.76, "h": 0, "fill": "soft", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.84, "y": 0.105, "w": 0.025, "h": 0.025, "fill": "accent", "opacity": 0.75}
+    ]
+  },
+  "sample": {
+    "title": "I can move gently and still move forward.",
+    "subtitle": "A small reminder for the days that ask for patience.",
+    "brand": "STILL / STUDIO",
+    "eyebrow": "A NOTE ON YOUR OWN PACE"
+  }
+}

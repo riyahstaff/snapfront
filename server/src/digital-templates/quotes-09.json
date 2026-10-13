@@ -1,0 +1,55 @@
+{
+  "id": "quotes-09",
+  "name": "Apricot Affirmations",
+  "format": "quotes",
+  "description": "A sun-warmed editorial affirmation page pairing generous serif storytelling with orbiting fruit-slice geometry.",
+  "tags": ["affirmations", "apricot", "editorial", "warm"],
+  "palette": {
+    "paper": "#FFF4E7",
+    "ink": "#39242C",
+    "accent": "#C9533F",
+    "muted": "#76564C",
+    "soft": "#F2D4B5"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.12, "y": 0.30, "w": 0.70, "h": 0.32, "size": 48, "align": "left"},
+    "subtitle": {"x": 0.12, "y": 0.65, "w": 0.70, "h": 0.12, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.12, "y": 0.14, "w": 0.72, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.12, "y": 0.88, "w": 0.72, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.73, "y": 0.045, "w": 0.22, "h": 0.22, "fill": "soft", "opacity": 1},
+      {"kind": "arc", "x": 0.68, "y": 0.005, "w": 0.32, "h": 0.32, "fill": "accent", "stroke": 2, "start": 205, "end": 335},
+      {"kind": "polygon", "x": 0.77, "y": 0.10, "w": 0.12, "h": 0.16, "fill": "accent", "points": [[0.5, 0], [0.92, 0.24], [1, 0.68], [0.5, 1], [0, 0.68], [0.08, 0.24]]},
+      {"kind": "line", "x": 0.12, "y": 0.82, "w": 0.40, "h": 0, "fill": "accent", "stroke": 1.5},
+      {"kind": "ellipse", "x": 0.79, "y": 0.79, "w": 0.07, "h": 0.07, "fill": "soft", "opacity": 1},
+      {"kind": "polygon", "x": 0.89, "y": 0.77, "w": 0.055, "h": 0.09, "fill": "accent", "points": [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]]}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.065, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.87, "y": 0.035, "w": 0.045, "h": 0.045, "fill": "accent", "opacity": 0.75}
+    ]
+  },
+  "sample": {
+    "title": "I can begin again, gently.",
+    "subtitle": "A small collection of steady words for brighter mornings",
+    "brand": "Apricot Hour Studio",
+    "eyebrow": "WORDS TO KEEP CLOSE"
+  }
+}

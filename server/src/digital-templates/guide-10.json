@@ -1,0 +1,55 @@
+{
+  "id": "guide-10",
+  "name": "Editorial Bloom",
+  "format": "guide",
+  "description": "A tactile editorial field guide with a sculptural bloom motif, generous reading space, and a restrained botanical palette.",
+  "tags": ["editorial", "bloom", "small-business", "content"],
+  "palette": {
+    "paper": "#F7F2E8",
+    "ink": "#252C2A",
+    "accent": "#B94F3B",
+    "muted": "#59645F",
+    "soft": "#D9E2D7"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.31, "w": 0.66, "h": 0.30, "size": 54, "align": "left"},
+    "subtitle": {"x": 0.09, "y": 0.66, "w": 0.66, "h": 0.12, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.09, "y": 0.14, "w": 0.67, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.09, "y": 0.89, "w": 0.72, "h": 0.05, "size": 10, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.77, "y": 0.17, "w": 0.16, "h": 0.26, "fill": "soft", "opacity": 1},
+      {"kind": "ellipse", "x": 0.84, "y": 0.30, "w": 0.14, "h": 0.25, "fill": "accent", "opacity": 0.88},
+      {"kind": "polygon", "x": 0.76, "y": 0.48, "w": 0.20, "h": 0.22, "fill": "accent", "opacity": 0.74, "points": [[0.5,0],[0.72,0.31],[1,0.5],[0.72,0.68],[0.5,1],[0.28,0.68],[0,0.5],[0.28,0.31]]},
+      {"kind": "line", "x": 0.86, "y": 0.59, "w": 0.02, "h": 0.23, "fill": "ink", "stroke": 1.5},
+      {"kind": "arc", "x": 0.79, "y": 0.12, "w": 0.18, "h": 0.70, "fill": "muted", "stroke": 1.2, "start": 205, "end": 340},
+      {"kind": "rect", "x": 0.79, "y": 0.80, "w": 0.15, "h": 0.012, "fill": "accent", "opacity": 0.9}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 50,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "headingSize": 29,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.055, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.1},
+      {"kind": "ellipse", "x": 0.89, "y": 0.075, "w": 0.025, "h": 0.025, "fill": "accent", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "A Small-Shop Content Garden",
+    "subtitle": "A practical guide to growing a clear, steady presence",
+    "brand": "FIELDNOTE STUDIO",
+    "eyebrow": "THE EDITORIAL BLOOM · A SELLER FIELD GUIDE"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "id": "quotes-05",
+  "name": "Sunday Serif",
+  "format": "quotes",
+  "description": "A sunlit editorial quote design pairing a quiet serif voice with a sculptural horizon medallion.",
+  "tags": ["editorial", "uplifting", "serif", "calm"],
+  "palette": {
+    "paper": "#F6F0E5",
+    "ink": "#183B3A",
+    "accent": "#C56C4B",
+    "muted": "#536B66",
+    "soft": "#E5D4B9"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.14, "y": 0.31, "w": 0.72, "h": 0.31, "size": 43, "align": "center"},
+    "subtitle": {"x": 0.19, "y": 0.68, "w": 0.62, "h": 0.11, "size": 14, "align": "center"},
+    "eyebrow": {"x": 0.16, "y": 0.13, "w": 0.68, "h": 0.05, "size": 10, "align": "center"},
+    "brand": {"x": 0.25, "y": 0.89, "w": 0.50, "h": 0.05, "size": 10, "align": "center"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.35, "y": 0.035, "w": 0.30, "h": 0.19, "fill": "soft", "opacity": 0.9},
+      {"kind": "arc", "x": 0.29, "y": 0.055, "w": 0.42, "h": 0.25, "fill": "accent", "opacity": 0.9, "stroke": 2, "start": 200, "end": 340},
+      {"kind": "polygon", "x": 0.10, "y": 0.205, "w": 0.18, "h": 0.12, "fill": "accent", "opacity": 0.9, "points": [[0, 1], [0.42, 0.12], [0.72, 0.62], [1, 0]]},
+      {"kind": "polygon", "x": 0.72, "y": 0.205, "w": 0.18, "h": 0.12, "fill": "soft", "points": [[0, 0.05], [0.28, 0.62], [0.62, 0.12], [1, 1]]},
+      {"kind": "line", "x": 0.18, "y": 0.27, "w": 0.64, "h": 0, "fill": "muted", "opacity": 0.8, "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.475, "y": 0.825, "w": 0.05, "h": 0.025, "fill": "accent"},
+      {"kind": "line", "x": 0.34, "y": 0.837, "w": 0.12, "h": 0, "fill": "soft", "stroke": 1.4},
+      {"kind": "line", "x": 0.54, "y": 0.837, "w": 0.12, "h": 0, "fill": "soft", "stroke": 1.4}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 50,
+    "headerStyle": "stack",
+    "blockStyle": "plain",
+    "headingSize": 29,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "none",
+    "shapes": [
+      {"kind": "line", "x": 0.12, "y": 0.08, "w": 0.76, "h": 0, "fill": "soft", "stroke": 1}
+    ]
+  },
+  "sample": {
+    "title": "Make room for what makes you feel alive.",
+    "subtitle": "A gentle reminder to choose the things that bring you back to yourself.",
+    "brand": "Sunday Notes",
+    "eyebrow": "A NOTE FOR SLOWER DAYS"
+  }
+}

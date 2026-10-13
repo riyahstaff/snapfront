@@ -1,0 +1,54 @@
+{
+  "id": "planner-02",
+  "name": "Focus Framework",
+  "format": "planner",
+  "description": "A tactile editorial planning sheet that turns one priority into a focused, writable day.",
+  "tags": ["focus", "daily-planning", "editorial"],
+  "palette": {
+    "paper": "#F5F0E6",
+    "ink": "#202A3A",
+    "accent": "#C9573F",
+    "muted": "#526276",
+    "soft": "#DCE4DF"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.30, "w": 0.72, "h": 0.34, "size": 52, "align": "left"},
+    "subtitle": {"x": 0.09, "y": 0.68, "w": 0.73, "h": 0.11, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.09, "y": 0.15, "w": 0.72, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.09, "y": 0.88, "w": 0.72, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.61, "y": 0.08, "w": 0.34, "h": 0.34, "fill": "soft", "opacity": 1},
+      {"kind": "arc", "x": 0.67, "y": 0.13, "w": 0.27, "h": 0.27, "fill": "accent", "stroke": 2.5, "start": 25, "end": 300},
+      {"kind": "polygon", "x": 0.78, "y": 0.50, "w": 0.16, "h": 0.20, "fill": "accent", "opacity": 0.92, "points": [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]]},
+      {"kind": "line", "x": 0.86, "y": 0.73, "w": 0.08, "h": 0.12, "fill": "ink", "stroke": 2},
+      {"kind": "rect", "x": 0.09, "y": 0.25, "w": 0.12, "h": 0.015, "fill": "accent", "radius": 0.01}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 46,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 27,
+    "bodySize": 11,
+    "lineHeight": 1.45,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.075, "y": 0.06, "w": 0.85, "h": 0, "fill": "accent", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.84, "y": 0.075, "w": 0.045, "h": 0.045, "fill": "soft", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "One Clear Priority",
+    "subtitle": "A calm daily page for choosing what matters, then making room to do it.",
+    "brand": "FIELD NOTES STUDIO",
+    "eyebrow": "THE FOCUS FRAMEWORK · DAILY PLANNER"
+  }
+}

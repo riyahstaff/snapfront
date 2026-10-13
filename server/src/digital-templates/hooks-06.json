@@ -1,0 +1,58 @@
+{
+  "id": "hooks-06",
+  "name": "Coral Conversation",
+  "format": "hooks",
+  "description": "A bright editorial hook-writing kit built around the rhythm of a conversation and an abstract coral dialogue motif.",
+  "tags": ["conversation", "content-writing", "editorial"],
+  "palette": {
+    "paper": "#F7F3EA",
+    "ink": "#183A3B",
+    "accent": "#E66F5D",
+    "muted": "#496563",
+    "soft": "#DCE9E2"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.28, "w": 0.63, "h": 0.31, "size": 50, "align": "left"},
+    "subtitle": {"x": 0.09, "y": 0.63, "w": 0.63, "h": 0.12, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.09, "y": 0.15, "w": 0.72, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.09, "y": 0.88, "w": 0.72, "h": 0.05, "size": 10, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.72, "y": 0.21, "w": 0.22, "h": 0.19, "fill": "accent", "opacity": 1},
+      {"kind": "polygon", "x": 0.85, "y": 0.35, "w": 0.09, "h": 0.10, "fill": "accent", "points": [[0.05, 0], [1, 0], [0.08, 1]]},
+      {"kind": "ellipse", "x": 0.79, "y": 0.46, "w": 0.16, "h": 0.14, "fill": "soft", "stroke": 2, "opacity": 1},
+      {"kind": "polygon", "x": 0.79, "y": 0.56, "w": 0.07, "h": 0.08, "fill": "soft", "points": [[0.85, 0], [1, 0.05], [0.1, 1]]},
+      {"kind": "line", "x": 0.76, "y": 0.29, "w": 0.12, "h": 0, "fill": "paper", "stroke": 2.5},
+      {"kind": "line", "x": 0.76, "y": 0.34, "w": 0.08, "h": 0, "fill": "paper", "stroke": 2.5},
+      {"kind": "arc", "x": 0.75, "y": 0.60, "w": 0.20, "h": 0.14, "fill": "accent", "stroke": 2, "start": 205, "end": 335},
+      {"kind": "ellipse", "x": 0.69, "y": 0.70, "w": 0.035, "h": 0.035, "fill": "accent"},
+      {"kind": "ellipse", "x": 0.75, "y": 0.70, "w": 0.035, "h": 0.035, "fill": "soft"}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.075, "w": 0.84, "h": 0, "fill": "accent", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.87, "y": 0.87, "w": 0.045, "h": 0.045, "fill": "soft"}
+    ]
+  },
+  "sample": {
+    "title": "Open with a question",
+    "subtitle": "Conversation starters for product posts that invite a reply",
+    "brand": "Studio Sunday",
+    "eyebrow": "THE CORAL CONVERSATION · HOOKS"
+  }
+}

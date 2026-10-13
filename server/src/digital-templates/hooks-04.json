@@ -1,0 +1,55 @@
+{
+  "id": "hooks-04",
+  "name": "Studio Punch",
+  "format": "hooks",
+  "description": "A kinetic editorial hook-writing studio with chrome-inspired geometry, warm paper, and clear space for shaping opening lines.",
+  "tags": ["hooks", "editorial", "bold", "creator-studio"],
+  "palette": {
+    "paper": "#F5F0E6",
+    "ink": "#171A20",
+    "accent": "#E34D2F",
+    "muted": "#555B66",
+    "soft": "#D9E0E2"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.29, "w": 0.68, "h": 0.31, "size": 56, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.66, "w": 0.67, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.15, "w": 0.68, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.70, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.72, "y": 0.07, "w": 0.23, "h": 0.23, "fill": "soft", "stroke": 2.2},
+      {"kind": "arc", "x": 0.68, "y": 0.03, "w": 0.29, "h": 0.29, "fill": "accent", "stroke": 5, "start": 205, "end": 325},
+      {"kind": "polygon", "x": 0.79, "y": 0.36, "w": 0.15, "h": 0.19, "fill": "accent", "points": [[0.5, 0], [1, 0.38], [0.72, 1], [0.28, 1], [0, 0.38]]},
+      {"kind": "line", "x": 0.81, "y": 0.61, "w": 0.13, "h": 0.13, "fill": "ink", "stroke": 2.4},
+      {"kind": "rect", "x": 0.87, "y": 0.76, "w": 0.08, "h": 0.08, "fill": "soft", "radius": 0.025},
+      {"kind": "line", "x": 0.10, "y": 0.24, "w": 0.29, "h": 0, "fill": "accent", "stroke": 2}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "pill",
+    "blockStyle": "cards",
+    "headingSize": 28,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.91, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.89, "y": 0.035, "w": 0.035, "h": 0.035, "fill": "accent"}
+    ]
+  },
+  "sample": {
+    "title": "Hooks That Stop the Scroll",
+    "subtitle": "A quick-start studio for writing sharper openings",
+    "brand": "STUDIO PUNCH · YOUR CONTENT DESK",
+    "eyebrow": "THE CREATOR HOOK WORKBOOK"
+  }
+}

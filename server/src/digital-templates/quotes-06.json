@@ -1,0 +1,152 @@
+{
+  "id": "quotes-06",
+  "name": "Bold Becoming",
+  "format": "quotes",
+  "description": "An unapologetic large-type affirmation in plum and warm peach, balanced by crisp blocks and editorial rules.",
+  "tags": [
+    "quotes",
+    "becoming",
+    "editorial",
+    "bold"
+  ],
+  "palette": {
+    "paper": "#FBE6D6",
+    "ink": "#52223F",
+    "accent": "#9A315F",
+    "muted": "#725467",
+    "soft": "#E7B3C2"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.1,
+      "y": 0.26,
+      "w": 0.8,
+      "h": 0.4,
+      "size": 61,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.7,
+      "w": 0.72,
+      "h": 0.1,
+      "size": 14,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.11,
+      "w": 0.72,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.88,
+      "w": 0.8,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.0,
+        "y": 0.0,
+        "w": 1,
+        "h": 0.035,
+        "fill": "accent"
+      },
+      {
+        "kind": "rect",
+        "x": 0.88,
+        "y": 0.075,
+        "w": 0.12,
+        "h": 0.16,
+        "fill": "soft"
+      },
+      {
+        "kind": "polygon",
+        "x": 0.8,
+        "y": 0.8,
+        "w": 0.12,
+        "h": 0.08,
+        "fill": "accent",
+        "points": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.21,
+        "w": 0.74,
+        "h": 0,
+        "fill": "ink",
+        "stroke": 3
+      },
+      {
+        "kind": "rect",
+        "x": 0.1,
+        "y": 0.82,
+        "w": 0.22,
+        "h": 0.012,
+        "fill": "accent"
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "plain",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.08,
+        "w": 0.84,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1.2
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.87,
+        "y": 0.045,
+        "w": 0.045,
+        "h": 0.045,
+        "fill": "soft"
+      }
+    ]
+  },
+  "sample": {
+    "title": "You are allowed to begin again.",
+    "subtitle": "A small brave step is still a becoming.",
+    "brand": "STUDIO STILL / WORDS FOR THE WAY",
+    "eyebrow": "NOTES ON BECOMING"
+  }
+}

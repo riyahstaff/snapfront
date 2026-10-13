@@ -1,0 +1,55 @@
+{
+  "id": "guide-08",
+  "name": "Vellum Studio",
+  "format": "guide",
+  "description": "A tactile editorial field guide for building a first commerce storefront, framed by an abstract orbital seal.",
+  "tags": ["editorial", "commerce", "beginner", "studio"],
+  "palette": {
+    "paper": "#F5F0E7",
+    "ink": "#202B32",
+    "accent": "#287D79",
+    "muted": "#53656A",
+    "soft": "#E2D8C8"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.105, "y": 0.285, "w": 0.72, "h": 0.30, "size": 54, "align": "left"},
+    "subtitle": {"x": 0.11, "y": 0.635, "w": 0.65, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.11, "y": 0.145, "w": 0.65, "h": 0.055, "size": 10, "align": "left"},
+    "brand": {"x": 0.11, "y": 0.88, "w": 0.72, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.68, "y": 0.10, "w": 0.30, "h": 0.27, "fill": "soft", "opacity": 0.82, "stroke": 0.8},
+      {"kind": "ellipse", "x": 0.75, "y": 0.145, "w": 0.22, "h": 0.19, "fill": "paper", "opacity": 1, "stroke": 2.2},
+      {"kind": "arc", "x": 0.70, "y": 0.12, "w": 0.29, "h": 0.28, "fill": "accent", "opacity": 1, "stroke": 3.2, "start": 205, "end": 333},
+      {"kind": "polygon", "x": 0.80, "y": 0.20, "w": 0.12, "h": 0.14, "fill": "accent", "opacity": 0.9, "points": [[0.5,0],[1,0.42],[0.68,1],[0.18,0.72],[0,0.28]]},
+      {"kind": "line", "x": 0.11, "y": 0.235, "w": 0.40, "h": 0, "fill": "accent", "stroke": 1.4},
+      {"kind": "rect", "x": 0.82, "y": 0.765, "w": 0.09, "h": 0.006, "fill": "soft", "opacity": 1}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "cards",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.075, "y": 0.065, "w": 0.85, "h": 0, "fill": "soft", "stroke": 1.1},
+      {"kind": "ellipse", "x": 0.89, "y": 0.89, "w": 0.035, "h": 0.035, "fill": "accent", "opacity": 0.75}
+    ]
+  },
+  "sample": {
+    "title": "Open Your First Shop",
+    "subtitle": "A clear, creative path from product idea to polished storefront",
+    "brand": "VELLUM STUDIO  /  FIELD NOTES",
+    "eyebrow": "THE BEGINNER'S COMMERCE GUIDE"
+  }
+}

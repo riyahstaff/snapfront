@@ -1,0 +1,54 @@
+{
+  "id": "checklist-07",
+  "name": "Coastal Notes",
+  "format": "checklist",
+  "description": "A tactile coastal field-note checklist with a quiet editorial cover and generous printable writing space.",
+  "tags": ["coastal", "field-notes", "checklist", "editorial"],
+  "palette": {
+    "paper": "#F5F1E8",
+    "ink": "#173B42",
+    "accent": "#C16B4B",
+    "muted": "#4F7070",
+    "soft": "#D9E5DF"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.10, "y": 0.29, "w": 0.72, "h": 0.30, "size": 54, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.64, "w": 0.72, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.15, "w": 0.72, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.72, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.70, "y": 0.08, "w": 0.20, "h": 0.20, "fill": "accent", "opacity": 0.92},
+      {"kind": "arc", "x": 0.61, "y": 0.02, "w": 0.34, "h": 0.34, "fill": "muted", "stroke": 2.2, "start": 205, "end": 335},
+      {"kind": "polygon", "x": 0.00, "y": 0.77, "w": 1.00, "h": 0.23, "fill": "soft", "points": [[0,0.34],[0.18,0.18],[0.36,0.39],[0.55,0.12],[0.76,0.36],[1,0.08],[1,1],[0,1]]},
+      {"kind": "polygon", "x": 0.00, "y": 0.83, "w": 1.00, "h": 0.17, "fill": "muted", "opacity": 0.30, "points": [[0,0.28],[0.22,0.10],[0.43,0.34],[0.67,0.12],[0.86,0.31],[1,0.18],[1,1],[0,1]]},
+      {"kind": "line", "x": 0.10, "y": 0.24, "w": 0.30, "h": 0, "fill": "accent", "stroke": 1.5}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.065, "w": 0.84, "h": 0, "fill": "muted", "opacity": 0.75, "stroke": 1},
+      {"kind": "ellipse", "x": 0.86, "y": 0.035, "w": 0.045, "h": 0.045, "fill": "accent", "opacity": 0.8}
+    ]
+  },
+  "sample": {
+    "title": "A Day by the Water",
+    "subtitle": "A simple field checklist for noticing, gathering, and remembering",
+    "brand": "TIDELINE STUDIO",
+    "eyebrow": "COASTAL FIELD NOTES"
+  }
+}

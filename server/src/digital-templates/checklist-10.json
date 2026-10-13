@@ -1,0 +1,54 @@
+{
+  "id": "checklist-10",
+  "name": "Precision Pack",
+  "format": "checklist",
+  "description": "A crisp, editorial launch-readiness checklist with a calibrated geometric cover and generous printable check-off space.",
+  "tags": ["checklist", "launch", "editorial", "precision"],
+  "palette": {
+    "paper": "#F7F4EC",
+    "ink": "#182A2C",
+    "accent": "#D15C3B",
+    "muted": "#536664",
+    "soft": "#E4E8DE"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.32, "w": 0.75, "h": 0.28, "size": 54, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.64, "w": 0.70, "h": 0.10, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.17, "w": 0.70, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.70, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.70, "y": 0.08, "w": 0.26, "h": 0.26, "fill": "soft", "opacity": 1},
+      {"kind": "ellipse", "x": 0.74, "y": 0.12, "w": 0.18, "h": 0.18, "fill": "paper", "stroke": 2.2, "opacity": 1},
+      {"kind": "polygon", "x": 0.75, "y": 0.13, "w": 0.14, "h": 0.13, "fill": "accent", "points": [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]], "opacity": 1},
+      {"kind": "line", "x": 0.78, "y": 0.30, "w": 0.10, "h": 0.08, "fill": "ink", "stroke": 1.5, "opacity": 1},
+      {"kind": "rect", "x": 0.09, "y": 0.79, "w": 0.17, "h": 0.008, "fill": "accent", "opacity": 1},
+      {"kind": "arc", "x": 0.76, "y": 0.72, "w": 0.18, "h": 0.18, "fill": "accent", "stroke": 2, "start": 205, "end": 330, "opacity": 1}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 50,
+    "headerStyle": "rule",
+    "blockStyle": "steps",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.075, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.4}
+    ]
+  },
+  "sample": {
+    "title": "Launch-Ready Shop Checklist",
+    "subtitle": "A clear final pass for your first product launch",
+    "brand": "Northline Studio",
+    "eyebrow": "THE SELLER'S FIELD NOTES"
+  }
+}

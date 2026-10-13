@@ -13,7 +13,8 @@ import * as plans from "./plans.js";
 import * as urls from "./urls.js";
 import { THEME_IDS } from "./themes.js";
 import * as growth from "./growth.js";
-
+import { snapshotProductDownloads } from "./commerce.js";
+import * as digitalDesigns from "./digital-designs.js";
 export const clampStr = (v, n) => String(v ?? "").slice(0, n);
 export const strList = (v, n, len = 200) => (Array.isArray(v) ? v : []).map((x) => clampStr(x, len)).filter(Boolean).slice(0, n);
 export const faqList = (v) => (Array.isArray(v) ? v : []).filter((f) => f && f.q).slice(0, 6).map((f) => ({ q: clampStr(f.q, 200), a: clampStr(f.a, 800) }));
@@ -175,8 +176,11 @@ export function updateProduct(seller, id, b) {
     faq: Array.isArray(b.faq) ? JSON.stringify(faqList(b.faq)) : row.faq,
   };
   if (next.price_cents < 50 && row.status === "live") throw httpError(400, "Live products need a price of at least $0.50.");
-  db.prepare("UPDATE products SET title=?, tagline=?, description=?, category=?, price_cents=?, delivery_url=?, bullets=?, tags=?, faq=? WHERE id=?")
-    .run(next.title, next.tagline, next.description, next.category, next.price_cents, next.delivery_url, next.bullets, next.tags, next.faq, row.id);
+  db.transaction(() => {
+    if (row.delivery_url !== next.delivery_url) snapshotProductDownloads(row);
+    db.prepare("UPDATE products SET title=?, tagline=?, description=?, category=?, price_cents=?, delivery_url=?, bullets=?, tags=?, faq=? WHERE id=?")
+      .run(next.title, next.tagline, next.description, next.category, next.price_cents, next.delivery_url, next.bullets, next.tags, next.faq, row.id);
+  })();
   if (b.image_file !== undefined && b.image_file !== null) {
     // A new photo from the photo studio (or swapping back to the original). Old files are kept so the seller can switch back.
     if (!ownsImageFile(seller.id, b.image_file) || !fs.existsSync(path.join(dirs.images, b.image_file))) throw httpError(400, "Invalid image reference.");
@@ -233,9 +237,13 @@ export function setVariants(productId, list) {
 
 export function deleteProduct(seller, id) {
   const row = productRow(seller, id);
+  // Export/source tables cascade with the product, but their private files do not. Keep any
+  // buyer-pinned delivery bytes and image sources used by another surviving editable design.
+  const designCovers = digitalDesigns.cleanupProductDesign(row.id);
   db.prepare("DELETE FROM products WHERE id = ?").run(row.id);
-  if (row.image_file && !sellerImageIsStored(seller.id, row.image_file)) fs.rm(path.join(dirs.images, row.image_file), { force: true }, () => {});
-  if (row.delivery_file) fs.rm(path.join(dirs.files, row.delivery_file), { force: true }, () => {});
+  for (const cover of designCovers) if (!sellerImageIsStored(seller.id, cover)) fs.rmSync(path.join(dirs.images, cover), { force: true });
+  if (row.image_file && !digitalDesigns.imageReferencedByAnyDesign(seller.id, row.image_file) && !sellerImageIsStored(seller.id, row.image_file)) fs.rm(path.join(dirs.images, row.image_file), { force: true }, () => {});
+  if (row.delivery_file && !db.prepare("SELECT 1 FROM digital_order_downloads WHERE delivery_file = ? LIMIT 1").get(row.delivery_file)) fs.rm(path.join(dirs.files, row.delivery_file), { force: true }, () => {});
 }
 
 export async function publishProduct(sellerIn, id) {
@@ -257,21 +265,39 @@ export async function publishProduct(sellerIn, id) {
 }
 
 /** Write a whole digital product, render its cover and PDF, and save it as a draft listing. */
-export async function generateProduct(seller, { type = "guide", niche, color = "cobalt", price }) {
+export async function generateProduct(seller, { type = "guide", niche, color = "cobalt", price, template_id = null }) {
   if (!PRODUCT_TYPES[type]) throw httpError(400, `Unknown product type. Use one of: ${Object.keys(PRODUCT_TYPES).join(", ")}.`);
   if (!niche || String(niche).trim().length < 4) throw httpError(400, "Describe who the product is for, in a few words.");
+  // Fail an unknown template before consuming an AI allowance. No template deliberately retains
+  // the established legacy PDF output and response shape.
+  if (template_id != null) digitalDesigns.catalog(); // loads the catalog before its canonical check below
+  if (template_id != null) (await import("./digital-catalog.js")).templateById(String(template_id));
   const r = await generateDigitalProduct({ type, niche: clampStr(niche, 200) });
+  // Convert and validate the entire original AI object before creating any cover, PDF or listing.
+  // A malformed response therefore cannot leave an orphan legacy product without editable source.
+  const sourceDocument = await digitalDesigns.generatedSourceDocument(seller, r, type, template_id == null ? null : String(template_id));
+  const listing = {
+    title: r.title, tagline: r.tagline, description: r.description, bullets: r.bullets, faq: r.faq, tags: r.tags,
+    category: r.category || PRODUCT_TYPES[type].name, kind: "digital", price: price || r.suggested_price || PRODUCT_TYPES[type].price,
+    alt_text: `Cover of ${r.title}`, seo_description: r.tagline,
+  };
+  if (template_id != null) {
+    // Template-selected generation has no legacy intermediary. Save the original full structured
+    // reply first, then render/attach that saved revision to this still-private draft.
+    const product = createProduct(seller, listing);
+    await digitalDesigns.registerGeneratedSource(seller, product.id, r, type, String(template_id), sourceDocument);
+    return (await digitalDesigns.renderGeneratedTemplate(seller, product.id)).product;
+  }
   const hex = COVER_COLORS[color] || COVER_COLORS.cobalt;
   const cover = renderCover({ title: r.title, tagline: r.tagline, type, color: hex });
   const image_file = writeFileSafe(dirs.images, `${crypto.randomUUID()}.png`, cover);
   db.prepare("INSERT OR IGNORE INTO seller_media (image_file,seller_id) VALUES (?,?)").run(image_file, seller.id);
   const pdf = await renderProductPdf({ ...r, type, storeName: seller.store_name }, cover, hex);
   const delivery_file = writeFileSafe(dirs.files, `${crypto.randomUUID()}.pdf`, pdf);
-  return createProduct(seller, {
-    title: r.title, tagline: r.tagline, description: r.description, bullets: r.bullets, faq: r.faq, tags: r.tags,
-    category: r.category || PRODUCT_TYPES[type].name, kind: "digital", price: price || r.suggested_price || PRODUCT_TYPES[type].price,
-    image_file, alt_text: `Cover of ${r.title}`, seo_description: r.tagline,
-  }, delivery_file);
+  const product = createProduct(seller, { ...listing, image_file }, delivery_file);
+  // Keep all original structured AI content, including long paragraphs and list items, in source.
+  await digitalDesigns.registerGeneratedSource(seller, product.id, r, type, null, sourceDocument);
+  return product;
 }
 
 export { listOrders } from "./commerce.js";

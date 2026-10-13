@@ -29,6 +29,7 @@ import * as aimedia from "./aimedia.js";
 import * as growth from "./growth.js";
 import * as playbilling from "./playbilling.js";
 import * as social from "./social.js";
+import * as digitalDesigns from "./digital-designs.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, esc } from "./render.js";
 import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
@@ -39,7 +40,7 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 /* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
-const SHARED_PATHS = /^\/(api|img|media|d|thanks|stripe|suppliers|social|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview)(\/|$)/;
+const SHARED_PATHS = /^\/(api|img|media|d|thanks|stripe|suppliers|social|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview|digital-design-assets|digital-design-exports)(\/|$)/;
 const sameSecret = (a, b) => { const x = Buffer.from(String(a || "")), y = Buffer.from(String(b || "")); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 app.use((req, res, next) => {
   if (!config.storeDomain) return next();
@@ -125,7 +126,8 @@ function auth(req, _res, next) {
   const stores = plans.storesOf(account.id);
   // The app says which of the person's stores it is working on; default to their first store.
   const wanted = req.get("x-store");
-  const seller = (wanted && stores.find((s) => s.id === wanted)) || stores[0];
+  const seller = wanted !== undefined ? stores.find((s) => s.id === wanted) : stores[0];
+  if (wanted !== undefined && !seller) return next(httpError(404, "That store is no longer available in this account. Select your store again."));
   if (!seller) return next(httpError(404, "This account has no store yet."));
   req.account = account;
   req.seller = seller;
@@ -253,9 +255,11 @@ app.delete("/api/storefront/photo/:file", auth, (req, res) => {
   if (!/^[\w-]+\.(jpg|png|webp|gif)$/.test(file)) throw httpError(400, "Invalid cover reference.");
   const row = db.prepare("SELECT 1 FROM storefront_photos WHERE seller_id = ? AND image_file = ?").get(req.seller.id, file);
   if (!row) throw httpError(404, "This staged cover does not belong to your store.");
-  if (sellerImageIsInUse(req.seller.id, file)) throw httpError(409, "This photo is still used by a product or storefront slot.");
+  if (sellerImageIsInUse(req.seller.id, file) || digitalDesigns.imageReferencedByAnyDesign(req.seller.id, file)) {
+    throw httpError(409, "This photo is still used by a product, storefront slot, or editable digital design.");
+  }
   db.prepare("DELETE FROM storefront_photos WHERE seller_id = ? AND image_file = ?").run(req.seller.id, file);
-  if (!sellerImageIsInUse(req.seller.id, file)) fs.rmSync(path.join(dirs.images, file), { force: true });
+  if (!sellerImageIsInUse(req.seller.id, file) && !digitalDesigns.imageReferencedByAnyDesign(req.seller.id, file)) fs.rmSync(path.join(dirs.images, file), { force: true });
   for (const [token, entry] of storefrontPreviews) if (entry.sellerId === req.seller.id && entry.patch.banner_file === file) storefrontPreviews.delete(token);
   res.status(204).end();
 });
@@ -268,13 +272,13 @@ app.put("/api/me/banner", auth, (req, res) => {
   const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg", req.seller.id);
   const old = req.seller.banner_file;
   db.prepare("UPDATE sellers SET banner_file = ? WHERE id = ?").run(file, req.seller.id);
-  if (old && !sellerImageIsStored(req.seller.id, old)) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
+  if (old && !sellerImageIsStored(req.seller.id, old) && !digitalDesigns.imageReferencedByAnyDesign(req.seller.id, old)) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
   res.json(me(req));
 });
 app.delete("/api/me/banner", auth, (req, res) => {
   const old = req.seller.banner_file;
   db.prepare("UPDATE sellers SET banner_file = NULL WHERE id = ?").run(req.seller.id);
-  if (old && !sellerImageIsStored(req.seller.id, old)) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
+  if (old && !sellerImageIsStored(req.seller.id, old) && !digitalDesigns.imageReferencedByAnyDesign(req.seller.id, old)) fs.rm(path.join(dirs.images, old), { force: true }, () => {});
   res.json(me(req));
 });
 // Free directory of places to source products (everyone, no sign-in).
@@ -288,6 +292,14 @@ function purgeStores(sellerIds) {
   for (const id of sellerIds) {
     const seller = db.prepare("SELECT banner_file, design_photos FROM sellers WHERE id = ?").get(id);
     const covers = db.prepare("SELECT image_file FROM storefront_photos WHERE seller_id = ?").all(id).map((p) => p.image_file);
+    const designExports = db.prepare("SELECT pdf_file, cover_file, attached_cover_file FROM digital_design_exports WHERE seller_id=?").all(id);
+    covers.push(...designExports.map((row) => row.attached_cover_file).filter(Boolean));
+    const privateFiles = designExports.flatMap((row) => [row.pdf_file, row.cover_file]).filter(Boolean);
+    privateFiles.push(...db.prepare(`SELECT d.delivery_file FROM digital_order_downloads d
+      JOIN orders o ON o.id=d.order_id WHERE o.seller_id=?`).all(id).map((row) => row.delivery_file).filter(Boolean));
+    for (const file of new Set(privateFiles)) {
+      if (/^[\w-]+\.(pdf|png)$/.test(file)) fs.rmSync(path.join(dirs.files, file), { force: true });
+    }
     covers.push(...db.prepare("SELECT image_file FROM seller_media WHERE seller_id=?").all(id).map((row) => row.image_file));
     if (seller?.banner_file) covers.push(seller.banner_file);
     covers.push(...designPhotoFiles(seller?.design_photos).filter(Boolean));
@@ -612,6 +624,32 @@ app.post("/api/agent/runs", auth, aiLimit, (req, res) => {
 app.get("/api/agent/runs/:id", auth, (req, res) => res.json(agent.getRun(req.seller, req.params.id, Number(req.query.after) || 0)));
 
 /* ---------- products ---------- */
+// The template catalogue is intentionally public so native can browse it before a seller starts a
+// draft. Thumbnail files are packaged assets only; the route accepts no filesystem path.
+const DIGITAL_DESIGN_ASSETS = path.resolve(new URL("../assets/digital-designs/", import.meta.url).pathname);
+const digitalTemplateIds = new Set(digitalDesigns.catalog().templates.map((template) => template.id));
+app.get("/api/digital-designs", (_req, res) => res.json(digitalDesigns.catalog()));
+app.get("/digital-design-assets/:id.png", (req, res) => {
+  if (!digitalTemplateIds.has(req.params.id)) return res.status(404).end();
+  res.set("Cache-Control", "public, max-age=31536000, immutable");
+  res.sendFile(path.join(DIGITAL_DESIGN_ASSETS, `${req.params.id}.png`), (err) => err && !res.headersSent && res.status(404).end());
+});
+// A signed expiring token is a narrow owner-private export capability. It is not listed by any
+// public storefront page and the underlying files never live below a static route.
+app.get("/digital-design-exports/:token", (req, res, next) => {
+  try {
+    const file = digitalDesigns.privateExportFile(req.params.token);
+    res.set({ "Cache-Control": "private, no-store", Pragma: "no-cache", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow", "X-Content-Type-Options": "nosniff" });
+    if (file.kind === "pdf") return res.download(file.path, file.name);
+    return res.type("png").sendFile(file.path);
+  } catch (error) { next(error); }
+});
+app.post("/api/digital-designs/create", auth, wrap(async (req, res) => res.status(201).json(await digitalDesigns.createDraft(req.seller, req.body || {}))));
+app.get("/api/products/:id/digital-design", auth, (req, res) => res.json(digitalDesigns.getDesign(req.seller, req.params.id)));
+app.put("/api/products/:id/digital-design", auth, wrap(async (req, res) => res.json(await digitalDesigns.saveDesign(req.seller, req.params.id, req.body || {}))));
+app.post("/api/products/:id/digital-design/preview", auth, wrap(async (req, res) => res.json(await digitalDesigns.previewDesign(req.seller, req.params.id, req.body || {}))));
+app.post("/api/products/:id/digital-design/export", auth, wrap(async (req, res) => res.json(await digitalDesigns.exportDesign(req.seller, req.params.id, req.body || {}))));
+app.post("/api/products/:id/digital-design/attach", auth, wrap(async (req, res) => res.json(await digitalDesigns.attachExport(req.seller, req.params.id, req.body || {}))));
 app.get("/api/products", auth, (req, res) => res.json(store.listProducts(req.seller)));
 app.get("/api/products/:id", auth, (req, res) => res.json(store.withPage(req.seller, store.productRow(req.seller, req.params.id))));
 app.post("/api/products", auth, (req, res) => res.status(201).json(store.createProduct(req.seller, req.body || {})));
@@ -823,11 +861,11 @@ app.get("/thanks", wrap(async (req, res) => {
 app.get("/d/:token", (req, res) => {
   const t = pay.readDownloadToken(req.params.token);
   if (!t?.p) return res.status(410).send("This download link has expired. Open your order confirmation page for a fresh one.");
-  const row = db.prepare("SELECT * FROM products WHERE id = ?").get(t.p);
-  if (!row) return res.status(404).send("Product not found");
-  if (row.delivery_url) return res.redirect(row.delivery_url);
-  if (!row.delivery_file) return res.status(404).send("The seller hasn't attached a file yet.");
-  res.download(path.join(dirs.files, row.delivery_file), `${row.slug}.pdf`);
+  const delivery = commerce.downloadFor(t.s, t.p);
+  if (!delivery) return res.status(410).send("This download is no longer available. Open your order confirmation page for a fresh link.");
+  if (delivery.delivery_url) return res.redirect(delivery.delivery_url);
+  if (!delivery.delivery_file || !/^[\w-]+\.pdf$/.test(delivery.delivery_file)) return res.status(404).send("The seller hasn't attached a file yet.");
+  res.download(path.join(dirs.files, delivery.delivery_file), /^[\w.-]+$/.test(delivery.filename) ? delivery.filename : "download.pdf");
 });
 
 /* ---------- legal pages the app stores require (edit before launch) ---------- */

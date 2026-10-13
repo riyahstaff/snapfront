@@ -1,0 +1,55 @@
+{
+  "id": "checklist-09",
+  "name": "Peach Workshop",
+  "format": "checklist",
+  "description": "A lively but spacious seller-prep checklist framed by cut-paper peach forms, a measured orbit, and a tiny registration mark; light interior pages leave room to write.",
+  "tags": ["checklist", "beginner", "shop-launch", "workshop"],
+  "palette": {
+    "paper": "#FFF7EF",
+    "ink": "#26343A",
+    "accent": "#D85F46",
+    "muted": "#56666A",
+    "soft": "#F2C7A7"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {"x": 0.09, "y": 0.31, "w": 0.67, "h": 0.30, "size": 58, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.65, "w": 0.66, "h": 0.12, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.15, "w": 0.68, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.89, "w": 0.68, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "ink",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.70, "y": 0.12, "w": 0.24, "h": 0.31, "fill": "soft", "stroke": 1.2},
+      {"kind": "arc", "x": 0.65, "y": 0.08, "w": 0.34, "h": 0.39, "fill": "accent", "stroke": 2, "start": 205, "end": 515},
+      {"kind": "polygon", "x": 0.78, "y": 0.40, "w": 0.16, "h": 0.25, "fill": "accent", "opacity": 0.94, "points": [[0.5, 0], [1, 0.25], [0.86, 0.79], [0.5, 1], [0.12, 0.78], [0, 0.28]]},
+      {"kind": "line", "x": 0.85, "y": 0.65, "w": 0.06, "h": 0.14, "fill": "ink", "stroke": 2},
+      {"kind": "rect", "x": 0.90, "y": 0.72, "w": 0.035, "h": 0.035, "fill": "ink", "radius": 0.01},
+      {"kind": "line", "x": 0.10, "y": 0.81, "w": 0.50, "h": 0, "fill": "soft", "stroke": 1.5}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 50,
+    "headerStyle": "band",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.09, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.88, "y": 0.045, "w": 0.035, "h": 0.035, "fill": "accent", "opacity": 0.75}
+    ]
+  },
+  "sample": {
+    "title": "Open Your Shop",
+    "subtitle": "A first-launch checklist for getting the small things ready",
+    "brand": "PEACH WORKSHOP",
+    "eyebrow": "THE BEGINNER SELLER CHECKLIST"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "id": "hooks-05",
+  "name": "Neon Notes",
+  "format": "hooks",
+  "description": "A kinetic editorial hook-writing kit pairing sharp neon geometry with calm, writable copy space.",
+  "tags": ["hooks", "creator", "neon-editorial", "social-content"],
+  "palette": {
+    "paper": "#F4F0E5",
+    "ink": "#172127",
+    "accent": "#D2FF3F",
+    "muted": "#52636A",
+    "soft": "#DCE6E0"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "title": {"x": 0.10, "y": 0.30, "w": 0.78, "h": 0.34, "size": 62, "align": "left"},
+    "subtitle": {"x": 0.10, "y": 0.68, "w": 0.76, "h": 0.12, "size": 16, "align": "left"},
+    "eyebrow": {"x": 0.10, "y": 0.14, "w": 0.72, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.10, "y": 0.88, "w": 0.78, "h": 0.05, "size": 11, "align": "left"},
+    "textColor": "paper",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.66, "y": 0.07, "w": 0.25, "h": 0.25, "fill": "accent", "opacity": 1},
+      {"kind": "line", "x": 0.72, "y": 0.12, "w": 0.20, "h": 0.20, "fill": "paper", "stroke": 2.2, "opacity": 1},
+      {"kind": "polygon", "x": 0.78, "y": 0.45, "w": 0.16, "h": 0.19, "fill": "accent", "opacity": 1, "points": [[0.5, 0], [1, 0.42], [0.78, 1], [0.18, 0.82], [0, 0.25]]},
+      {"kind": "rect", "x": 0.05, "y": 0.79, "w": 0.025, "h": 0.11, "fill": "accent", "radius": 0.01, "opacity": 1},
+      {"kind": "arc", "x": 0.80, "y": 0.77, "w": 0.14, "h": 0.13, "fill": "soft", "stroke": 2, "start": 205, "end": 335, "opacity": 1}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "outline",
+    "headingSize": 28,
+    "bodySize": 11.5,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.07, "w": 0.84, "h": 0, "fill": "accent", "stroke": 1.5, "opacity": 0.8},
+      {"kind": "ellipse", "x": 0.085, "y": 0.085, "w": 0.018, "h": 0.018, "fill": "accent", "opacity": 1}
+    ]
+  },
+  "sample": {
+    "title": "Hooks that stop the scroll",
+    "subtitle": "A 30-prompt starter set for clearer, more human social posts",
+    "brand": "NEON NOTES STUDIO",
+    "eyebrow": "THE CREATOR'S HOOKBOOK"
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "id": "planner-03",
+  "name": "Colorblock Week",
+  "format": "planner",
+  "description": "An expressive weekly planner with stacked coral, marigold and slate blocks, bold friendly type and spacious planning pages.",
+  "tags": [
+    "weekly",
+    "colorblock",
+    "planning",
+    "editorial"
+  ],
+  "palette": {
+    "paper": "#FFF6E7",
+    "ink": "#283146",
+    "accent": "#AF4440",
+    "muted": "#60657A",
+    "soft": "#F0C460"
+  },
+  "fonts": {
+    "heading": "display",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.1,
+      "y": 0.28,
+      "w": 0.63,
+      "h": 0.34,
+      "size": 58,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.1,
+      "y": 0.66,
+      "w": 0.67,
+      "h": 0.12,
+      "size": 16,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.1,
+      "y": 0.16,
+      "w": 0.63,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.1,
+      "y": 0.88,
+      "w": 0.66,
+      "h": 0.05,
+      "size": 11,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.82,
+        "y": 0,
+        "w": 0.18,
+        "h": 0.25,
+        "fill": "accent"
+      },
+      {
+        "kind": "rect",
+        "x": 0.82,
+        "y": 0.25,
+        "w": 0.18,
+        "h": 0.25,
+        "fill": "soft"
+      },
+      {
+        "kind": "rect",
+        "x": 0.82,
+        "y": 0.5,
+        "w": 0.18,
+        "h": 0.25,
+        "fill": "muted"
+      },
+      {
+        "kind": "rect",
+        "x": 0.82,
+        "y": 0.75,
+        "w": 0.18,
+        "h": 0.25,
+        "fill": "ink"
+      },
+      {
+        "kind": "line",
+        "x": 0.1,
+        "y": 0.23,
+        "w": 0.64,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 2
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.86,
+        "y": 0.09,
+        "w": 0.09,
+        "h": 0.07,
+        "fill": "paper"
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 46,
+    "headerStyle": "band",
+    "blockStyle": "outline",
+    "headingSize": 27,
+    "bodySize": 11,
+    "lineHeight": 1.45,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.075,
+        "y": 0.055,
+        "w": 0.85,
+        "h": 0.075,
+        "fill": "soft",
+        "opacity": 0.48,
+        "radius": 0.018
+      },
+      {
+        "kind": "line",
+        "x": 0.075,
+        "y": 0.145,
+        "w": 0.2,
+        "h": 0,
+        "fill": "accent",
+        "opacity": 0.9,
+        "stroke": 2
+      }
+    ]
+  },
+  "sample": {
+    "title": "A Week in Color",
+    "subtitle": "Seven days, clear priorities, and room to reset",
+    "brand": "Fieldnote Studio",
+    "eyebrow": "WEEKLY PLANNING \u00b7 VOL. 01"
+  }
+}

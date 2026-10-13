@@ -1,0 +1,140 @@
+{
+  "id": "quotes-10",
+  "name": "Gallery Words",
+  "format": "quotes",
+  "description": "A gallery-ready framed quote print with sophisticated sans-serif lettering, sage matboard geometry and quiet negative space.",
+  "tags": [
+    "quotes",
+    "editorial",
+    "gallery",
+    "inspiration"
+  ],
+  "palette": {
+    "paper": "#F5F4EF",
+    "ink": "#242B2A",
+    "accent": "#4D6054",
+    "muted": "#5F6962",
+    "soft": "#DCE1D5"
+  },
+  "fonts": {
+    "heading": "sans",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "paper",
+    "title": {
+      "x": 0.09,
+      "y": 0.31,
+      "w": 0.66,
+      "h": 0.29,
+      "size": 46,
+      "align": "left"
+    },
+    "subtitle": {
+      "x": 0.09,
+      "y": 0.65,
+      "w": 0.66,
+      "h": 0.11,
+      "size": 15,
+      "align": "left"
+    },
+    "eyebrow": {
+      "x": 0.09,
+      "y": 0.13,
+      "w": 0.66,
+      "h": 0.06,
+      "size": 10,
+      "align": "left"
+    },
+    "brand": {
+      "x": 0.09,
+      "y": 0.89,
+      "w": 0.66,
+      "h": 0.05,
+      "size": 10,
+      "align": "left"
+    },
+    "textColor": "ink",
+    "shapes": [
+      {
+        "kind": "rect",
+        "x": 0.06,
+        "y": 0.07,
+        "w": 0.88,
+        "h": 0.865,
+        "fill": "soft"
+      },
+      {
+        "kind": "rect",
+        "x": 0.075,
+        "y": 0.085,
+        "w": 0.85,
+        "h": 0.835,
+        "fill": "paper"
+      },
+      {
+        "kind": "line",
+        "x": 0.12,
+        "y": 0.24,
+        "w": 0.76,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1
+      },
+      {
+        "kind": "line",
+        "x": 0.12,
+        "y": 0.82,
+        "w": 0.76,
+        "h": 0,
+        "fill": "accent",
+        "stroke": 1
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.47,
+        "y": 0.13,
+        "w": 0.055,
+        "h": 0.045,
+        "fill": "accent"
+      }
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "stack",
+    "blockStyle": "cards",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "large",
+    "shapes": [
+      {
+        "kind": "line",
+        "x": 0.08,
+        "y": 0.07,
+        "w": 0.84,
+        "h": 0,
+        "fill": "soft",
+        "stroke": 1
+      },
+      {
+        "kind": "ellipse",
+        "x": 0.89,
+        "y": 0.84,
+        "w": 0.045,
+        "h": 0.045,
+        "fill": "accent",
+        "opacity": 0.55
+      }
+    ]
+  },
+  "sample": {
+    "title": "Make room for wonder.",
+    "subtitle": "Small reminders for a more open-hearted day",
+    "brand": "STUDIO STILL",
+    "eyebrow": "A GALLERY OF GOOD WORDS"
+  }
+}

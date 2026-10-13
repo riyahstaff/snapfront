@@ -1,0 +1,55 @@
+{
+  "id": "planner-05",
+  "name": "Lunar Routine",
+  "format": "planner",
+  "description": "A lunar-cycle-inspired routine planner with a quiet editorial cover and generous printable planning space.",
+  "tags": ["planner", "lunar", "routine", "editorial"],
+  "palette": {
+    "paper": "#F5F0E7",
+    "ink": "#18262B",
+    "accent": "#B65F45",
+    "muted": "#52666A",
+    "soft": "#DCE5DF"
+  },
+  "fonts": {
+    "heading": "serif",
+    "body": "sans"
+  },
+  "cover": {
+    "background": "ink",
+    "title": {"x": 0.09, "y": 0.29, "w": 0.55, "h": 0.31, "size": 48, "align": "left"},
+    "subtitle": {"x": 0.09, "y": 0.65, "w": 0.56, "h": 0.12, "size": 15, "align": "left"},
+    "eyebrow": {"x": 0.09, "y": 0.16, "w": 0.56, "h": 0.06, "size": 10, "align": "left"},
+    "brand": {"x": 0.09, "y": 0.88, "w": 0.56, "h": 0.05, "size": 10, "align": "left"},
+    "textColor": "paper",
+    "shapes": [
+      {"kind": "ellipse", "x": 0.68, "y": 0.17, "w": 0.25, "h": 0.25, "fill": "accent", "opacity": 1},
+      {"kind": "ellipse", "x": 0.75, "y": 0.17, "w": 0.25, "h": 0.25, "fill": "ink", "opacity": 1, "stroke": 1.4},
+      {"kind": "arc", "x": 0.63, "y": 0.30, "w": 0.34, "h": 0.40, "fill": "soft", "opacity": 0.9, "stroke": 1.2, "start": 205, "end": 335},
+      {"kind": "polygon", "x": 0.70, "y": 0.57, "w": 0.22, "h": 0.22, "fill": "soft", "opacity": 1, "points": [[0.5, 0], [0.62, 0.36], [1, 0.5], [0.62, 0.64], [0.5, 1], [0.38, 0.64], [0, 0.5], [0.38, 0.36]]},
+      {"kind": "ellipse", "x": 0.87, "y": 0.48, "w": 0.055, "h": 0.055, "fill": "accent", "opacity": 1},
+      {"kind": "line", "x": 0.67, "y": 0.73, "w": 0.25, "h": 0.11, "fill": "soft", "opacity": 0.8, "stroke": 1}
+    ],
+    "image": null
+  },
+  "interior": {
+    "margin": 48,
+    "headerStyle": "rule",
+    "blockStyle": "cards",
+    "headingSize": 28,
+    "bodySize": 11,
+    "lineHeight": 1.5,
+    "column": "single",
+    "numberStyle": "pill",
+    "shapes": [
+      {"kind": "line", "x": 0.08, "y": 0.075, "w": 0.84, "h": 0, "fill": "soft", "stroke": 1.2},
+      {"kind": "ellipse", "x": 0.88, "y": 0.045, "w": 0.035, "h": 0.035, "fill": "accent", "opacity": 0.75}
+    ]
+  },
+  "sample": {
+    "title": "A Week in Rhythm",
+    "subtitle": "A gentle plan for routines, priorities, and room to reset",
+    "brand": "FIELDNOTES STUDIO",
+    "eyebrow": "MOONPHASE ROUTINE PLANNER"
+  }
+}
