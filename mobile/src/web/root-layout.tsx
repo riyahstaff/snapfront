@@ -3,15 +3,15 @@
 // (fonts, plan checks, upgrade prompts), minus the phone's "name your store" pop-up: the website's
 // home page asks for the store name in place. Web-only: metro.config.js uses it instead of
 // src/app/_layout.tsx when building the website. Keep the screen list in step with that file.
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View } from "react-native";
-import { DarkTheme, router, Stack, ThemeProvider } from "expo-router";
+import { DarkTheme, router, Stack, ThemeProvider, usePathname } from "expo-router";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold } from "@expo-google-fonts/bricolage-grotesque";
 import { Figtree_400Regular, Figtree_500Medium, Figtree_700Bold } from "@expo-google-fonts/figtree";
 import type { NativeStackHeaderProps } from "expo-router";
 import { useColors } from "@/lib/theme";
 import { onUpgradeNeeded } from "@/lib/api";
-import { account } from "@/lib/account-store";
+import { account, useMe } from "@/lib/account-store";
 import { startBilling } from "@/lib/billing";
 import { PageHeader, WebNav } from "./web-nav";
 
@@ -32,14 +32,24 @@ function Header({ options, route, back, navigation }: NativeStackHeaderProps) {
 
 export default function WebRootLayout() {
   const c = useColors();
+  const me = useMe();
+  const pathname = usePathname() || "/";
+  const [checked, setChecked] = useState(false);
   const [loaded, error] = useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold, Figtree_400Regular, Figtree_500Medium, Figtree_700Bold });
 
   useEffect(() => {
     onUpgradeNeeded((plan, reason) => router.push({ pathname: "/plans", params: { highlight: plan, reason } }));
-    account.refresh().then((m) => startBilling(m.account.id)).catch(() => {});
+    account.refresh().then((m) => startBilling(m.account.id)).catch(() => {}).finally(() => setChecked(true));
     return () => onUpgradeNeeded(null);
   }, []);
-  if (!loaded && !error) return <View style={{ flex: 1, backgroundColor: c.bg }} />;
+  // The first anonymous device session is not a verified user account.
+  // Checkout and email verification remain accessible to visitors.
+  const guestRoute = pathname === "/sign-in" || pathname === "/plans";
+  useEffect(() => {
+    if (checked && !me?.account.email && !guestRoute) router.replace("/sign-in");
+  }, [checked, me?.account.email, guestRoute, pathname]);
+  if ((!loaded && !error) || (!guestRoute && (!checked || !me?.account.email)))
+    return <View style={{ flex: 1, backgroundColor: c.bg }} />;
 
   const page = { width: "100%" as const, maxWidth: 960, alignSelf: "center" as const, backgroundColor: c.bg };
   return (
