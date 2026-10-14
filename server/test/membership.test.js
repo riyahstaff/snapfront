@@ -92,3 +92,23 @@ test("Google Play sales can be switched off: both memberships stop selling and s
   assert.equal(await playbilling.ensureProducts(), false);
   assert.equal(calls.length, 0);
 });
+
+test("owner emails always have full access, even on a brand-new account", async () => {
+  const { config } = await import("../src/config.js");
+  const auth = await import("../src/auth.js");
+  config.ownerEmails = ["owner@example.com"];
+  let code = null;
+  auth.setEmailSender(async (_to, c) => { code = c; });
+  const { token } = await (await call("POST", "/api/sellers", { body: {} })).json();
+  assert.equal((await (await call("GET", "/api/me", { token })).json()).account.plan, "free");
+  assert.equal((await call("POST", "/api/auth/email/start", { token, body: { email: "Owner@Example.com" } })).status, 200);
+  assert.equal((await call("POST", "/api/auth/email/verify", { token, body: { email: "owner@example.com", code } })).status, 200);
+  const me = await (await call("GET", "/api/me", { token })).json();
+  assert.equal(me.account.plan, "pro");
+  // Someone else stays on the free plan.
+  const other = (await (await call("POST", "/api/sellers", { body: {} })).json()).token;
+  await call("POST", "/api/auth/email/start", { token: other, body: { email: "someone@example.com" } });
+  await call("POST", "/api/auth/email/verify", { token: other, body: { email: "someone@example.com", code } });
+  assert.equal((await (await call("GET", "/api/me", { token: other })).json()).account.plan, "free");
+  config.ownerEmails = [];
+});

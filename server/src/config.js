@@ -39,6 +39,8 @@ export const config = {
   // Stores get https://<slug>.<STORE_DOMAIN> (e.g. snapfront.app) once its wildcard DNS is in place.
   cloudflareToken: env.CLOUDFLARE_API_TOKEN || "",
   adminToken: env.ADMIN_TOKEN || "",
+  // The owner's own accounts: always full access, for running and testing Snapfront (comma-separated).
+  ownerEmails: (env.OWNER_EMAILS || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean),
   storeDomain: String(env.STORE_DOMAIN || "").trim().toLowerCase().replace(/^\.+|\/+$/g, ""),
   downloadSecret: env.DOWNLOAD_SIGNING_SECRET || "dev-only-secret-change-me",
   resendKey: env.RESEND_API_KEY || "",

@@ -66,6 +66,16 @@ export function createStore(account, name) {
   return insertStore(account.id, String(name || "").trim().slice(0, 80) || `Store ${count + 1}`);
 }
 
+/* ---------- owner access ---------- */
+/** Accounts with an OWNER_EMAILS address always have Pro (stored as a complimentary plan, so every check agrees). */
+export function ensureOwnerAccess() {
+  const emails = config.ownerEmails || [];
+  if (!emails.length) return 0;
+  return db.prepare(`UPDATE accounts SET comp_plan = 'pro' WHERE lower(email) IN (${emails.map(() => "?").join(",")}) AND (comp_plan IS NULL OR comp_plan != 'pro')`).run(...emails).changes;
+}
+
+ensureOwnerAccess();
+
 /* ---------- plan and limits ---------- */
 export function effectivePlan(account) {
   const a = account?.plan || "free", c = account?.comp_plan || "free";

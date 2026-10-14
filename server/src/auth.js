@@ -61,10 +61,12 @@ export function verifyEmailLogin(account, rawEmail, rawCode) {
   const owner = db.prepare("SELECT * FROM accounts WHERE email = ?").get(email);
   if (!owner || owner.id === account.id) {
     db.prepare("UPDATE accounts SET email = ? WHERE id = ?").run(email, account.id);
+    plans.ensureOwnerAccess();
     return { status: "linked", email };
   }
   // The email belongs to another account: sign this phone in to it. The phone's own account is
   // dropped if it never got past the starter store (no products), so it doesn't linger.
+  plans.ensureOwnerAccess();
   const token = plans.newSession(owner.id);
   // A plan this browser or phone bought on the website goes with the person to their account.
   webbilling.transferPurchases(account.id, owner.id);
