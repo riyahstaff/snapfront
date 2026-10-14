@@ -72,5 +72,5 @@ test('Home and Settings display build identity; correction keeps the actual chro
   assert.ok(home.includes('<ReleaseInfo />')); assert.ok(settings.includes('<ReleaseInfo detailed />'));
   assert.ok(home.includes('Beautifully built.')); assert.ok(home.includes('<ThemeCarousel'));
   assert.ok(preview.includes('availableThemePreview')); assert.ok(preview.includes('Retry image')); assert.ok(preview.includes('event.stopPropagation()'));
-  assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'app.json'))).expo.version, '1.2.0');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'app.json'))).expo.version, '1.3.0');
 });
