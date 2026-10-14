@@ -100,7 +100,7 @@ export default function AiMediaScreen() {
           placeholder={mode === "video" ? "steam rises slowly from the mug" : "a woman at a vanity applying this eyeliner"} /> : null}
       </View>
       {videoLocked ? (
-        <Button label="Get Pro for AI video" variant="flash" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
+        <Button label="See membership" variant="flash" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
       ) : (
         <Button label={mode === "video" ? "Make the clip" : "Make the photo"} icon={<Ionicons name="sparkles" size={18} color={c.onAccent} />} loading={busy}
           disabled={!product || (!preset && prompt.trim().length < 3)} onPress={start} />

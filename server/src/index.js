@@ -604,6 +604,8 @@ $("#f").onsubmit=(e)=>{e.preventDefault();tok=$("#t").value.trim();sessionStorag
 </script></body></html>`);
 });
 app.post("/api/admin/play/retire-old", adminOnly, wrap(async (_req, res) => res.json({ log: await playbilling.retireOldProducts() })));
+// After the phone app without buying is live: stop selling memberships through Google Play.
+app.post("/api/admin/play/stop-sales", adminOnly, wrap(async (_req, res) => res.json({ log: await playbilling.stopSales() })));
 app.post("/api/billing/web/confirm", auth, wrap(async (req, res) => {
   const { email } = await webbilling.confirm(req.account, req.body?.session_id);
   req.account = plans.getAccount(req.account.id);
@@ -1231,7 +1233,7 @@ app.get("/privacy", legal("Privacy policy", `
 <h2>Contact</h2><p><a href="mailto:support@snapfront.app">support@snapfront.app</a></p>`));
 app.get("/terms", legal("Terms of use", `
 <p>By using Snapfront you agree to sell only products you have the right to sell, to describe them honestly, and to follow Stripe's terms and restricted-business list. You're responsible for fulfilling orders, taxes and refunds. Snapfront may remove listings that break these rules. Snapfront doesn't take a fee on your sales; Stripe's own processing fees apply.</p>
-<h2>Plans and payments</h2><p>Snapfront Lifetime is a one-time payment; Snapfront Monthly renews every month until you cancel, and you keep it until the end of the month you've paid for. Plans are bought on snapfront.app (through Stripe) or in the Android app (through Google Play). <strong>All sales are final: Snapfront plans are non-refundable</strong>, except where the law requires otherwise or where Google Play's own refund policy applies to a Google Play purchase.</p>
+<h2>Plans and payments</h2><p>Snapfront Lifetime is a one-time payment; Snapfront Monthly renews every month until you cancel, and you keep it until the end of the month you've paid for. Memberships are bought on snapfront.app (through Stripe); the Snapfront Android app is included free for members, who sign in with the same email. Plans bought earlier through Google Play keep working and are managed in Google Play. <strong>All sales are final: Snapfront plans are non-refundable</strong>, except where the law requires otherwise or where Google Play's own refund policy applies to a Google Play purchase.</p>
 <h2>Snapfront Partners</h2><p>Partners earn 40% of each Snapfront Lifetime sale and $19 for each paid month of Snapfront Monthly from customers they refer, under the rules shown in Earn with Snapfront. Commissions are paid after Snapfront receives the payment. Partners must disclose that they earn a commission, may not make income claims, and may not earn on their own purchases. Snapfront may withhold commissions earned against these rules, on fraudulent or charged-back sales, and may change the program with notice.</p>
 <h2>Contact</h2><p><a href="mailto:support@snapfront.app">support@snapfront.app</a></p>`));
 
@@ -1239,10 +1241,13 @@ app.get("/terms", legal("Terms of use", `
 app.get("/api/trends", (_req, res) => res.json(store.TRENDS));
 
 /* ---------- errors ---------- */
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
   const status = err.status || err.statusCode || (err.type === "StripeInvalidRequestError" ? 400 : 500);
   if (status >= 500) console.error(err);
-  res.status(status).json({ error: status >= 500 && !err.status ? "Something went wrong on our side. Try again." : err.message, ...(err.extra || {}) });
+  let message = status >= 500 && !err.status ? "Something went wrong on our side. Try again." : err.message;
+  // Memberships are sold on the website only: the phone app's "needs Pro" messages name no prices.
+  if (status === 402 && req.get("x-snapfront-app")) message = plans.appWording(message);
+  res.status(status).json({ error: message, ...(err.extra || {}) });
 });
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {

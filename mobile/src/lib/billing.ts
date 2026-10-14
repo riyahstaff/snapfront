@@ -1,4 +1,6 @@
-// Snapfront's plans, bought through Google Play Billing (expo-iap). The server never trusts the
+// Google Play Billing (expo-iap). Memberships are sold on the website now, so the app no longer
+// sells anything: this keeps working for people who bought in earlier versions (finishing
+// half-done purchases, Restore). The server never trusts the
 // phone: each purchase token goes to /api/billing/google, the server checks it with Google,
 // acknowledges it and sets the plan. The purchase is tagged with the Snapfront account id, so it
 // can't be used to unlock someone else's account.

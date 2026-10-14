@@ -28,7 +28,7 @@ export default function InsightsScreen() {
     <View style={{ flex: 1, backgroundColor: c.bg, padding: space.lg, gap: space.md }}>
       <H2>See what’s working</H2>
       <Body muted>With Pro you see how many people visit, whether they came from Instagram, TikTok or Google, which products they look at most, and how many buy.</Body>
-      <Button label="See Pro" variant="flash" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
+      <Button label="See membership" variant="flash" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
     </View>
   );
   const max = Math.max(1, ...(data?.daily.map((d) => d.visitors) ?? [1]));

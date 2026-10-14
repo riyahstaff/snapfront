@@ -1,5 +1,5 @@
-// The two ways to buy Snapfront, shown on the phone (Google Play) and the website (Stripe):
-// Lifetime (one payment, everything for good) and Monthly (everything, billed monthly).
+// The two memberships, sold on the website (Stripe): Lifetime (one payment, everything for good)
+// and Monthly (everything, billed monthly). The phone app shows only what's included (everything()).
 import React from "react";
 import { Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";

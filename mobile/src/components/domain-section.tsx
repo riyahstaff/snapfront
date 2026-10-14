@@ -41,7 +41,7 @@ export function DomainSection() {
       {!pro && !d.domain ? (
         <>
           <Body muted>Put your store on a domain you own, like shop.yourstore.com. It comes with Pro.</Body>
-          <Button label="See Pro" variant="secondary" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
+          <Button label="See membership" variant="secondary" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
         </>
       ) : !d.domain ? (
         <>

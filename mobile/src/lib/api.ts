@@ -325,6 +325,11 @@ async function initializeToken(): Promise<string> {
   return data.token;
 }
 
+// The phone app says so: memberships are sold on the website only, so the server words
+// "needs a membership" messages for the app without prices or buying.
+const APP_OS = Constants.platform?.android ? "android" : Constants.platform?.ios ? "ios" : null;
+const APP_HEADER: Record<string, string> = APP_OS ? { "X-Snapfront-App": APP_OS } : {};
+
 async function request<T>(method: string, path: string, body?: unknown, storeId?: string, timeoutMs?: number): Promise<T> {
   const controller = timeoutMs ? new AbortController() : null;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -333,7 +338,7 @@ async function request<T>(method: string, path: string, body?: unknown, storeId?
     const auth = await token();
     const res = await fetch(`${API_URL}${path}`, {
       method,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth}`, ...(store ? { "X-Store": store } : {}) },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth}`, ...(store ? { "X-Store": store } : {}), ...APP_HEADER },
       body: body === undefined ? undefined : JSON.stringify(body),
       ...(controller ? { signal: controller.signal } : {}),
     });

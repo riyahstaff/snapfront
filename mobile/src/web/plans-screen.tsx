@@ -1,12 +1,14 @@
-// Plans on the website: same cards as the phone app (plans.tsx), paid through Stripe Checkout.
+// Becoming a member on the website: pick Lifetime or Monthly, confirm an email (so the membership
+// belongs to that email from the start), pay through Stripe Checkout, then get the free phone app.
 // Web-only: metro.config.js uses this in place of src/app/plans.tsx when building the website;
-// the phone app keeps plans.tsx with Google Play Billing.
+// the phone app's plans.tsx sells nothing (members sign in there).
 import React, { useEffect, useRef, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Notice, Screen } from "@/components/ui";
 import { api, ApiError, type PlanId, type PlanLimits } from "@/lib/api";
+import { EmailSignIn } from "@/components/email-sign-in";
 import { account, useMe } from "@/lib/account-store";
 import { buy, checkoutCanceled, finishReturnFromCheckout, getAppInfo, getOffers, manageSubscription, restore, returningFromCheckout, type Offer } from "@/lib/billing.web";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
@@ -19,6 +21,7 @@ export default function PlansWebScreen() {
   const { reason, buy: buyParam } = useLocalSearchParams<{ reason?: string; highlight?: PlanId; buy?: string }>();
   const [welcome, setWelcome] = useState<{ email: string | null } | null>(null);
   const autoBuy = useRef(false);
+  const [gate, setGate] = useState<PlanChoice | null>(null);   // the plan waiting for an email
   const [limits, setLimits] = useState<Record<PlanId, PlanLimits> | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [busy, setBusy] = useState<string | null>(() => (returningFromCheckout() ? "confirm" : null));
@@ -50,7 +53,10 @@ export default function PlansWebScreen() {
   }, [buyParam, offers, me, current]);
   const offerFor = (p: PlanChoice) => offers.find((o) => o.plan === p);
 
-  async function purchase(p: PlanChoice) {
+  async function purchase(p: PlanChoice, emailReady = false) {
+    // The membership belongs to an email from the start: confirm it before paying.
+    if (!emailReady && !(account.get() ?? me)?.account.email) { setGate(p); setMsg(null); return; }
+    setGate(null);
     const offer = offerFor(p);
     if (!offer) { setMsg({ text: "Plans can't be bought right now. Try again in a few minutes.", tone: "error" }); return; }
     setBusy(p); setMsg(null);
@@ -79,97 +85,106 @@ export default function PlansWebScreen() {
   }
 
   if (welcome && me && me.account.plan !== "free") return <Welcome planName={me.account.plan_name} email={welcome.email} linkedEmail={me.account.email ?? null} />;
+  if (gate) {
+    const name = gate === "lifetime" ? "Lifetime" : "Monthly";
+    const price = offerFor(gate)?.price ?? (gate === "lifetime" ? "$299" : "$69");
+    return (
+      <Screen>
+        <View style={{ gap: space.sm }}>
+          <Text style={[type.label, { color: c.muted }]}>Step 1 of 2</Text>
+          <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Your email</Text>
+          <Body muted>Your {name} membership ({price}{gate === "pro" ? " a month" : " once"}) is saved to this email. You’ll use it to sign in here and in the free Snapfront app. Next, you pay securely with Stripe.</Body>
+        </View>
+        <View style={{ maxWidth: 520, gap: space.md }}>
+          <EmailSignIn confirmLabel="Continue to payment" onDone={({ me: next }) => {
+            if (next.account.plan !== "free") {   // this email is already a member
+              setGate(null);
+              setMsg({ text: `Welcome back. ${next.account.email} is already a member (${next.account.plan_name}).`, tone: "ok" });
+              return;
+            }
+            void purchase(gate, true);
+          }} />
+        </View>
+        <Notice text={msg?.text ?? null} tone={msg?.tone} />
+        <Button label="Back to plans" variant="ghost" onPress={() => setGate(null)} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
       <View style={{ gap: space.sm }}>
-        <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Go live with Snapfront</Text>
-        <Body muted>No fees on your sales. Buyers pay you directly through Stripe.</Body>
+        <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>{current === "free" ? "Become a member" : "Your membership"}</Text>
+        <Body muted>Everything in Snapfront, no fees on your sales, and the Snapfront Android app free.</Body>
       </View>
       <Notice text={busy === "confirm" ? "Checking your payment…" : msg?.text ?? null} tone={busy === "confirm" ? "info" : msg?.tone} />
       {current === "launch" ? <Notice text="You have Launch from before, with one live store. Get Lifetime or Monthly to unlock everything." /> : null}
       <PlanCards account={me?.account ?? null} prices={{ lifetime: offerFor("lifetime")?.price, pro: offerFor("pro")?.price }} limits={limits?.pro} busy={busy} onBuy={purchase} wide />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Ionicons name="lock-closed" size={14} color={c.muted} />
-        <Text style={[type.small, { color: c.muted, flex: 1 }]}>Secure checkout by Stripe. Your plan works on the website and in the Snapfront app.</Text>
+        <Text style={[type.small, { color: c.muted, flex: 1 }]}>Secure checkout by Stripe. Your membership works here and in the free Snapfront app: sign in with the same email.</Text>
       </View>
       <Button label="Check my purchases" variant="ghost" loading={busy === "restore"} disabled={Boolean(busy)} onPress={doRestore} />
       {current === "pro" && !me?.account.lifetime ? <Button label="Manage subscription" variant="ghost" loading={busy === "manage"} disabled={Boolean(busy)} onPress={manage} /> : null}
       <Text style={[type.small, { color: c.muted }]}>
         All sales are final. Lifetime is a one-time purchase. Monthly renews every month until you cancel from Manage subscription (or in Google Play, if you subscribed on your phone). If Monthly ends, your stores stop taking orders until you renew.
       </Text>
-      <Button label="Not now" variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
+      {current === "free" && !me?.account.email ? <Button label="Already a member? Sign in" variant="ghost" onPress={() => router.push("/sign-in")} /> : null}
+      <Button label={current === "free" ? "Not yet: keep trying it free" : "Back"} variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
     </Screen>
   );
 }
 
 
-/** After paying on the website: save the purchase to an email, then get the phone app. */
+/** After paying: the membership is active. Get the free phone app (and save the email first, for
+ * anyone who paid before the email step existed). */
 function Welcome({ planName, email, linkedEmail }: { planName: string; email: string | null; linkedEmail: string | null }) {
   const c = useColors();
-  const [addr, setAddr] = useState(linkedEmail ?? email ?? "");
-  const [code, setCode] = useState("");
-  const [stage, setStage] = useState<"email" | "code" | "done">(linkedEmail ? "done" : "email");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(linkedEmail);
   const [android, setAndroid] = useState<string | null>(null);
   useEffect(() => { getAppInfo().then((a) => setAndroid(a.android_url)).catch(() => {}); }, []);
 
-  async function send() {
-    setBusy(true); setErr(null);
-    try { await api.emailStart(addr.trim()); setStage("code"); }
-    catch (e) { setErr(e instanceof ApiError ? e.message : "Couldn't send the code. Try again."); }
-    finally { setBusy(false); }
-  }
-  async function verify() {
-    setBusy(true); setErr(null);
-    try { await api.emailVerify(addr.trim(), code.trim()); account.set(await api.me()); setStage("done"); }
-    catch (e) { setErr(e instanceof ApiError ? e.message : "That code didn't work. Try again."); }
-    finally { setBusy(false); }
-  }
-  const input = { height: 50, borderRadius: 14, borderWidth: 1, borderColor: c.line, backgroundColor: c.bg, color: c.ink, paddingHorizontal: 16, fontFamily: fonts.body, fontSize: 16, flexGrow: 1, minWidth: 220 };
-  const step = (n: number, title: string, done: boolean, body: React.ReactNode) => (
-    <View style={{ flexDirection: "row", gap: 16, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.lg }}>
+  const step = (n: number, title: string, done: boolean, body: React.ReactNode, highlight = false) => (
+    <View style={{ flexDirection: "row", gap: 16, backgroundColor: c.surface, borderWidth: highlight ? 2 : 1, borderColor: highlight ? c.accent : c.line, borderRadius: radius.lg, padding: space.lg }}>
       <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: done ? c.good : c.accent }}>
         {done ? <Ionicons name="checkmark" size={20} color={c.onAccent} /> : <Text style={{ fontFamily: fonts.bodyBold, color: c.onAccent }}>{n}</Text>}
       </View>
       <View style={{ flex: 1, gap: 10 }}><Text style={{ fontFamily: fonts.bodyBold, fontSize: 18, color: c.ink }}>{title}</Text>{body}</View>
     </View>
   );
+  const appStep = saved ? 1 : 2;
   return (
     <Screen>
       <View style={{ gap: space.sm }}>
-        <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, letterSpacing: 2.4, color: c.brand }}>PAYMENT RECEIVED</Text>
+        <Text style={[type.label, { color: c.good }]}>Payment received</Text>
         <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Welcome to {planName}</Text>
-        <Body muted>Your plan is active on the website now. Two quick steps and it’s on your phone too.</Body>
+        <Body muted>{saved ? `Your membership is active and saved to ${saved}.` : "Your membership is active on this browser. Save it to your email so it follows you everywhere."}</Body>
       </View>
-      {step(1, "Save your plan to your email", stage === "done", stage === "done" ? (
-        <Body muted>Saved to {linkedEmail ?? addr}. Use this email to sign in anywhere.</Body>
-      ) : (
+      {!saved ? step(1, "Save your membership to your email", false, (
+        <View style={{ gap: 10, maxWidth: 520 }}>
+          <Body muted>We’ll email you a 6-digit code. This is how you sign in here and in the app.</Body>
+          <EmailSignIn initialEmail={email ?? ""} confirmLabel="Save" onDone={({ me: next }) => setSaved(next.account.email ?? null)} />
+        </View>
+      )) : null}
+      {step(appStep, "Get the Snapfront app, free", false, (
         <View style={{ gap: 10 }}>
-          <Body muted>{stage === "email" ? "We'll email you a 6-digit code. This is how the app finds your plan." : `Enter the code we sent to ${addr}.`}</Body>
+          <Body muted>Snap products with your camera, post from your phone and check orders on the go. Install Snapfront on Android, then sign in with {saved ?? "the same email"}. Your stores and membership are already there.</Body>
+          {android ? <View style={{ alignSelf: "flex-start" }}><Button label="Get it on Google Play" icon={<Ionicons name="logo-google-playstore" size={18} color={c.onAccent} />} onPress={() => window.open(android, "_blank", "noopener")} /></View> : null}
+        </View>
+      ), Boolean(saved))}
+      {step(appStep + 1, "Start building here", false, (
+        <View style={{ gap: 10 }}>
+          <Body muted>Everything also works right here in your browser.</Body>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {stage === "email"
-              ? <TextInput value={addr} onChangeText={setAddr} placeholder="you@example.com" placeholderTextColor={c.muted} keyboardType="email-address" autoCapitalize="none" accessibilityLabel="Email" style={input} onSubmitEditing={send} />
-              : <TextInput value={code} onChangeText={setCode} placeholder="123456" placeholderTextColor={c.muted} keyboardType="number-pad" maxLength={6} accessibilityLabel="Code" style={input} onSubmitEditing={verify} />}
-            <Button label={stage === "email" ? "Email me a code" : "Confirm"} loading={busy} disabled={stage === "email" ? !/^\S+@\S+\.\S+$/.test(addr.trim()) : code.trim().length < 6} onPress={stage === "email" ? send : verify} />
+            <Button label="Snap your first product" variant="secondary" onPress={() => router.replace("/snap")} />
+            <Button label="Start with the Academy" variant="ghost" onPress={() => router.replace("/academy")} />
           </View>
-          {stage === "code" ? <Pressable onPress={() => setStage("email")}><Text style={[type.small, { color: c.muted, textDecorationLine: "underline" }]}>Use a different email</Text></Pressable> : null}
-          <Notice text={err} tone="error" />
         </View>
       ))}
-      {step(2, "Get the Snapfront app", false, (
-        <View style={{ gap: 10 }}>
-          <Body muted>Install Snapfront on your Android phone, open Settings, choose Sign in and enter {stage === "done" ? (linkedEmail ?? addr) : "the same email"}. Your plan and stores appear right away.</Body>
-          {android ? <Button label="Get it on Google Play" icon={<Ionicons name="logo-google-playstore" size={18} color={c.onAccent} />} onPress={() => window.open(android, "_blank", "noopener")} /> : null}
-        </View>
-      ))}
-      {step(3, "Or keep building here", false, (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          <Button label="Snap your first product" variant="secondary" onPress={() => router.replace("/snap")} />
-          <Button label="Go to my store" variant="ghost" onPress={() => router.replace("/store")} />
-        </View>
-      ))}
+      <View style={{ gap: 8 }}>
+        <Text style={[type.label, { color: c.ink }]}>Your membership includes</Text>
+        <Text style={[type.small, { color: c.muted }]}>Up to 10 live stores with 0% Snapfront fees, AI product pages, photos and video, marketing posts, email marketing, affiliates, Instagram AutoDM, Snapfront Academy, daily post ideas and the members’ community.</Text>
+      </View>
     </Screen>
   );
 }

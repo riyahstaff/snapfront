@@ -121,6 +121,23 @@ export function assertCanPublish(store) {
     { upgrade: "pro" });
 }
 
+/**
+ * The phone app sells nothing (memberships are bought on the website), so its "this needs Pro"
+ * messages say what's included without prices or telling people to buy.
+ */
+export function appWording(message) {
+  const m = String(message || "").replace(` (${webbilling.priceLine()})`, "");
+  const swaps = [
+    [/Get Snapfront Pro to keep creating( and go live)?\./, "Snapfront members get much more every month."],
+    [/Get Snapfront Pro to publish your store and start selling\./, "Publishing your store and selling comes with Snapfront Pro."],
+    [/Get Snapfront Pro to take payments, then connect Stripe\./, "Taking payments comes with Snapfront Pro."],
+    [/Upgrade to Pro to run up to (\d+) stores\./, "Running up to $1 stores comes with Snapfront Pro."],
+    [/Upgrade to Pro to sell from up to (\d+) stores\./, "Selling from up to $1 stores comes with Snapfront Pro."],
+    [/Pro gives you far more\./, "Snapfront Pro includes far more."],
+  ];
+  return swaps.reduce((t, [re, to]) => t.replace(re, to), m).replace(/\$\d[\d,.]*/g, "").replace(/\s{2,}/g, " ").trim();
+}
+
 export function publicAccount(account, currentStoreId) {
   const planId = effectivePlan(account);
   const p = period(planId);

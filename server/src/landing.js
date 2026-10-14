@@ -5,16 +5,12 @@ import { PLANS as PRICES } from "./webbilling.js";
 import { THEMES } from "./themes.js";
 import { config } from "./config.js";
 
-const PLAY_URL = process.env.PLAY_STORE_URL || "";   // set once the Google Play listing is public
 const webAppUrl = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
 
 const usd = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 export function landingPage() {
   const year = new Date().getFullYear();
   const web = webAppUrl();
-  const play = PLAY_URL
-    ? `<a class="btn ghost" href="${PLAY_URL}">Get it on Google Play</a>`
-    : `<span class="btn ghost soon">Android app coming soon</span>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Snapfront: snap a photo, open a store</title>
 <meta name="description" content="Snap a product photo and Snapfront writes the page, sets a price that beats Amazon and Walmart, and takes payments with Stripe. On your phone or in your browser.">
@@ -58,7 +54,7 @@ h2{font-weight:800;font-size:clamp(30px,4.2vw,46px);line-height:1.04;letter-spac
 .devices{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
 .device{border:1px solid var(--line);border-radius:20px;padding:24px;display:grid;gap:10px;align-content:start;background:linear-gradient(180deg,var(--surface),var(--bg))}
 .device h3{margin:0;font-size:20px;letter-spacing:-.01em}.device p{margin:0;color:var(--muted)}.device .btn{justify-self:start;margin-top:8px}
-.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;max-width:820px}
 .plan{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px;display:grid;gap:10px;align-content:start;grid-template-rows:auto auto 1fr auto}
 .plan.pro{border:2px solid var(--platinum)}.plan h3{margin:0;font-size:22px}
 .price{font-weight:800;font-size:40px;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.price small{font-weight:400;font-size:15px;color:var(--muted);letter-spacing:0}
@@ -67,18 +63,19 @@ h2{font-weight:800;font-size:clamp(30px,4.2vw,46px);line-height:1.04;letter-spac
 footer{padding-block:36px 48px;color:var(--muted);font-size:15px;border-top:1px solid var(--sunk)}footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;align-items:center}
 footer nav{display:flex;flex-wrap:wrap;gap:18px}
 @media(max-width:640px){header nav a:not(.btn){display:none}}
+.note a{color:var(--ink)}
 @media(prefers-reduced-motion:reduce){.btn{transition:none}.btn:hover{transform:none}}
 </style></head><body>
 <header><div class="wrap"><a class="brand" href="/"><img src="/site/mark.png" alt="" width="32" height="32">snapfront</a>
-<nav><a href="/themes">Themes</a><a href="#pricing">Pricing</a><a class="btn small" href="${web}">Open Snapfront</a></nav></div></header>
+<nav><a href="/themes">Themes</a><a href="#pricing">Pricing</a><a href="${web}/sign-in">Sign in</a><a class="btn small" href="#pricing">Become a member</a></nav></div></header>
 <main>
 <div class="wrap hero">
   <div>
     <p class="eyebrow">Creative commerce studio</p>
     <h1><span>Snap a photo.</span><br>Open a store.</h1>
     <p class="lede">Point your phone at a product, or upload a photo from your computer. Snapfront writes the page, finds what Amazon and Walmart charge, sets a price that beats them, and takes payments straight into your Stripe account.</p>
-    <div class="ctas"><a class="btn" href="${web}">Start in your browser</a>${play}</div>
-    <p class="note">Free to try. No fees on your sales.</p>
+    <div class="ctas"><a class="btn" href="#pricing">Become a member</a><a class="btn ghost" href="${web}">Try it free</a></div>
+    <p class="note">No fees on your sales. Members get the Snapfront Android app free.</p>
   </div>
   <figure class="art" style="margin:0"><img src="/site/chrome-hero.webp" alt="A brushed-chrome doorway with a ring and an armchair shown as storefront examples" width="1200" height="900" fetchpriority="high"><figcaption>Concept artwork</figcaption></figure>
 </div>
@@ -92,13 +89,15 @@ footer nav{display:flex;flex-wrap:wrap;gap:18px}
   </ol>
   <div class="chips" aria-label="Suppliers you can connect"><span>CJdropshipping</span><span>Printful</span><span>AliExpress</span><span>Your own stock</span></div>
 </div></section>
-<section><div class="wrap">
-  <h2>On your phone or your computer</h2>
-  <p class="sub">One account everywhere. Sign in with your email and your stores, products and plan follow you.</p>
-  <div class="devices">
-    <div class="device"><h3>In your browser</h3><p>Use Snapfront on a laptop, desktop or tablet. Upload product photos, edit pages on a big screen and manage orders.</p><a class="btn ghost small" href="${web}">Open Snapfront</a></div>
-    <div class="device"><h3>On Android</h3><p>Snap products with your camera, save marketing posts to your gallery and run your store from anywhere.</p>${PLAY_URL ? `<a class="btn ghost small" href="${PLAY_URL}">Get it on Google Play</a>` : `<span class="btn ghost small soon">Coming soon to Google Play</span>`}</div>
-  </div>
+<section id="membership"><div class="wrap">
+  <h2>Join here. Take it everywhere.</h2>
+  <p class="sub">Your membership starts on this website. The Snapfront app comes with it, free, so you can snap products and check orders on the go.</p>
+  <ol class="steps">
+    <li><b>Become a member</b><span>Pick Lifetime or Monthly, enter your email and pay securely with Stripe.</span></li>
+    <li><b>Build your store</b><span>Use Snapfront right here in your browser on a laptop, desktop or tablet.</span></li>
+    <li><b>Get the free app</b><span>Download Snapfront on Android and sign in with the same email. Your stores, products and membership are already there.</span></li>
+  </ol>
+  <div class="ctas"><a class="btn" href="#pricing">Become a member</a><a class="btn ghost" href="${web}/sign-in">Already a member? Sign in</a></div>
 </div></section>
 <section><div class="wrap">
   <h2>${THEMES.length} themes. Your own storefront.</h2>
@@ -106,16 +105,16 @@ footer nav{display:flex;flex-wrap:wrap;gap:18px}
   <a class="btn ghost" href="/themes">Explore all ${THEMES.length} themes</a>
 </div></section>
 <section id="pricing"><div class="wrap">
-  <h2>Simple pricing. <span class="zero">0% fees</span> on your sales.</h2>
+  <h2>Become a member. <span class="zero">0% fees</span> on your sales.</h2>
   <p class="sub">Buyers pay you directly through Stripe. Stripe’s standard processing fees apply.</p>
   <div class="plans">
-    <div class="plan"><h3>Free</h3><div class="price">$0</div><ul><li>Build your store and try the AI</li><li>${PLANS.free.photo} AI product pages</li><li>${PLANS.free.research} price checks</li></ul><a class="btn ghost small" href="${web}">Start free</a></div>
-    <div class="plan pro"><h3>Lifetime</h3><div class="price">${usd(PRICES.lifetime.cents)} <small>once, for life</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>Every new feature we add</li></ul><a class="btn small" href="${web}/plans?buy=lifetime">Get Lifetime</a></div>
-    <div class="plan"><h3>Monthly</h3><div class="price">${usd(PRICES.pro.cents)} <small>a month</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>Cancel any time</li></ul><a class="btn small" href="${web}/plans?buy=pro">Start monthly</a></div>
+    <div class="plan pro"><h3>Lifetime</h3><div class="price">${usd(PRICES.lifetime.cents)} <small>once, for life</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>The Snapfront Android app, free</li><li>Academy lessons, daily post ideas and the members’ community</li><li>Every new feature we add</li></ul><a class="btn small" href="${web}/plans?buy=lifetime">Join for ${usd(PRICES.lifetime.cents)}</a></div>
+    <div class="plan"><h3>Monthly</h3><div class="price">${usd(PRICES.pro.cents)} <small>a month</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>The Snapfront Android app, free</li><li>Academy lessons, daily post ideas and the members’ community</li><li>Cancel any time</li></ul><a class="btn ghost small" href="${web}/plans?buy=pro">Join for ${usd(PRICES.pro.cents)} a month</a></div>
   </div>
-  <p class="note">Pay here with Stripe, then sign in to the Android app with the same email. Your plan works in both. All sales are final.</p>
+  <p class="note">Pay here with Stripe, then get the Snapfront app free on Android and sign in with the same email. All sales are final.</p>
+  <p class="note">Not ready yet? <a href="${web}">Try Snapfront free</a> first: build a store and try the AI before you join.</p>
 </div></section>
 </main>
-<footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="${web}">Web app</a><a href="${web}/earn">Earn with Snapfront</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a><span>support@snapfront.app</span></nav></div></footer>
+<footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="${web}/sign-in">Sign in</a><a href="${web}">Web app</a><a href="${web}/earn">Earn with Snapfront</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a><span>support@snapfront.app</span></nav></div></footer>
 </body></html>`;
 }

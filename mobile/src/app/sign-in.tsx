@@ -1,0 +1,47 @@
+// Sign in with the email you joined with: stores and membership follow you to this browser or phone.
+import React, { useState } from "react";
+import { Platform, Text, View } from "react-native";
+import { router } from "expo-router";
+import { Body, Button, Notice, Screen } from "@/components/ui";
+import { EmailSignIn } from "@/components/email-sign-in";
+import { startBilling } from "@/lib/billing";
+import { useMe } from "@/lib/account-store";
+import { space, type, useColors } from "@/lib/theme";
+
+export default function SignInScreen() {
+  const c = useColors();
+  const me = useMe();
+  const [done, setDone] = useState<string | null>(null);
+  const signedIn = me?.account.email;
+
+  return (
+    <Screen>
+      <View style={{ gap: space.sm }}>
+        <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Sign in to Snapfront</Text>
+        <Body muted>{signedIn && !done
+          ? `You’re signed in as ${signedIn} (${me.account.plan_name}). To use a different account, enter its email below.`
+          : "Use the email you joined with. Your stores and membership come with you."}</Body>
+      </View>
+      {done ? (
+        <>
+          <Notice text={done} tone="ok" />
+          <Button label="Go to my store" onPress={() => router.replace("/")} />
+        </>
+      ) : (
+        <EmailSignIn onDone={async ({ me: next, switched }) => {
+          await startBilling(next.account.id);
+          setDone(switched || next.account.plan !== "free"
+            ? `Welcome back. You’re on ${next.account.plan_name}.`
+            : `Signed in as ${next.account.email}. We didn’t find a membership on this email yet.`);
+        }} />
+      )}
+      {Platform.OS === "web" && !done && me?.account.plan === "free" ? (
+        <View style={{ gap: 8, marginTop: space.md }}>
+          <Text style={[type.label, { color: c.ink }]}>Not a member yet?</Text>
+          <Button label="Become a member" variant="secondary" onPress={() => router.push("/plans")} />
+        </View>
+      ) : null}
+      {!done ? <Button label="Not now" variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} /> : null}
+    </Screen>
+  );
+}

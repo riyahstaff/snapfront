@@ -29,12 +29,14 @@ export function WebNav() {
   const me = useMe();
   const path = usePathname() || "/";
   const { width } = useWindowDimensions();
-  const wide = width >= WIDE;
+  // The full row of links needs about 1300px next to the membership button; narrower gets the menu.
+  const wide = width >= Math.max(WIDE, 1300);
   const [open, setOpen] = useState(false);
   const plan = me?.account.plan ?? "free";
   const menu: { label: string; href: Href; match: (p: string) => boolean }[] = [
     { label: "Home", href: "/", match: (p) => p === "/" }, ...NAV,
-    { label: "Plans", href: "/plans", match: (p) => p.startsWith("/plans") },
+    { label: "Membership", href: "/plans", match: (p) => p.startsWith("/plans") },
+    ...(me?.account.email ? [] : [{ label: "Sign in", href: "/sign-in" as Href, match: (p: string) => p.startsWith("/sign-in") }]),
     { label: "Earn with Snapfront", href: "/earn", match: (p) => p.startsWith("/earn") },
     { label: "Community", href: "/community", match: (p) => p.startsWith("/community") },
     { label: "Settings", href: "/settings", match: (p) => p.startsWith("/settings") },
@@ -55,7 +57,7 @@ export function WebNav() {
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           {plan === "free" ? (
             <Pressable accessibilityRole="link" onPress={() => go("/plans")} style={(s: Hover): ViewStyle => ({ backgroundColor: s.hovered ? "#FFFFFF" : c.accent, borderRadius: 999, paddingHorizontal: 18, height: 38, justifyContent: "center" })}>
-              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.onAccent }}>Go live</Text>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.onAccent }}>Become a member</Text>
             </Pressable>
           ) : (
             <Pressable accessibilityRole="link" onPress={() => go("/plans")} style={{ borderWidth: 1, borderColor: c.line, borderRadius: 999, paddingHorizontal: 12, height: 32, justifyContent: "center" }}>

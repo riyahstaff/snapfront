@@ -202,20 +202,19 @@ function PlanCard({ me }: { me: Me }) {
   const free = a.plan === "free";
   const meter = (used: number, max: number, label: string) => `${Math.min(used, max)} of ${max} ${label}`;
   return (
-    <Pressable onPress={() => router.push("/plans")} accessibilityRole="button" accessibilityLabel={free ? "See plans and go live" : `${a.plan_name} plan, see plans`}
+    <Pressable onPress={() => router.push("/plans")} accessibilityRole="button" accessibilityLabel={free ? "Snapfront membership: sign in or see what it includes" : `${a.plan_name}, see your membership`}
       style={({ pressed }) => ({ backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.lg, padding: space.lg, gap: 6, opacity: pressed ? 0.9 : 1 })}>
       {free ? (
         <>
-          <Text style={[type.heading, { color: c.ink }]}>Go live with Snapfront Pro</Text>
+          <Text style={[type.heading, { color: c.ink }]}>Go live with Snapfront membership</Text>
           <Text style={[type.small, { color: c.ink }]}>Publish your store and take payments, with no fees on your sales. After that, you connect Stripe to get paid. {meter(a.usage.photo, a.limits.photo, "free AI pages")} used.</Text>
-          <Text style={[type.label, { color: c.ink, marginTop: 4, textDecorationLine: "underline" }]}>See plans</Text>
+          <Text style={[type.label, { color: c.ink, marginTop: 4, textDecorationLine: "underline" }]}>Members: sign in</Text>
         </>
       ) : (
         <>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <Text style={[type.heading, { color: c.ink }]}>{a.plan_name} plan</Text>
-            {a.plan === "launch" ? <Text style={[type.label, { color: c.accent }]}>Upgrade</Text> : null}
-          </View>
+                      </View>
           <Text style={[type.small, { color: c.muted }]}>
             This month: {meter(a.usage.photo, a.limits.photo, "AI pages")} · {meter(a.usage.product, a.limits.product, "AI products")} · {meter(a.usage.research, a.limits.research, "price checks")}{a.limits.agent ? ` · ${meter(a.usage.agent, a.limits.agent, "assistant requests")}` : ""}
           </Text>

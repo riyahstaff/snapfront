@@ -21,7 +21,7 @@ export default function CommunityScreen() {
       {data.has_discord ? (
         <Card title="Members' Discord" sub="Channels for wins, store reviews, content feedback and going live.">
           {data.discord ? <Button label="Join the Discord" onPress={() => Linking.openURL(data.discord!)} />
-            : <><Text style={[type.body, { color: c.muted }]}>The members&apos; Discord comes with Snapfront Pro.</Text><Button label="See Pro" variant="secondary" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} /></>}
+            : <><Text style={[type.body, { color: c.muted }]}>The members&apos; Discord comes with Snapfront Pro.</Text><Button label="See membership" variant="secondary" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} /></>}
         </Card>
       ) : null}
       {data.whop ? (

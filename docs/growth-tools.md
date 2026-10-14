@@ -37,9 +37,16 @@ Webhook deliveries are verified with `X-Hub-Signature-256` (app secret). Each pe
 
 ## Pricing
 
-- **Lifetime** $299 once and **Monthly** $69 a month. Both unlock the `pro` plan. Website: `webbilling.js` (`LIFETIME_PRICE_CENTS`, `PRO_PRICE_CENTS` to change). Google Play: `snapfront_lifetime` and the `pro-monthly-69` base plan on `snapfront_pro` (`PLAY_LIFETIME_PRICE`, `PLAY_PRO_PRICE`), created automatically at startup.
+- **Lifetime** $299 once and **Monthly** $69 a month. Both unlock the `pro` plan. Website: `webbilling.js` (`LIFETIME_PRICE_CENTS`, `PRO_PRICE_CENTS` to change). Google Play (older app versions only, until sales are stopped): `snapfront_lifetime` and the `pro-monthly-69` base plan on `snapfront_pro` (`PLAY_LIFETIME_PRICE`, `PLAY_PRO_PRICE`).
 - Launch ($29 once) and the $14.99 Pro base plan are no longer sold; people who bought them keep them. Once the new phone build is live, stop selling them in older app versions with `POST /api/admin/play/retire-old` (admin token).
 - Monthly web subscribers who buy Lifetime have their subscription stopped at the end of the paid month.
+
+## Membership starts on the website
+
+- snapfront.app leads to **Become a member** (Lifetime or Monthly). The free plan is still there as a quiet "Try it free" link.
+- Joining on app.snapfront.app/plans: confirm an email with a 6-digit code first (so the membership belongs to that email), then Stripe Checkout, then a welcome page whose first step is getting the free Android app and signing in with the same email. Returning members sign in at app.snapfront.app/sign-in.
+- The Android app sells nothing and names no prices (Google Play takes nothing on website sales; US link-outs to web payment would cost 10–20%). Its membership screen shows what's included and lets members sign in. Phone requests carry `X-Snapfront-App`, and the server rewords "needs Pro" (402) messages for them without prices (`plans.appWording`).
+- Once the new phone build is live: `POST /api/admin/play/stop-sales` (admin token) deactivates Lifetime and every monthly base plan in Google Play and keeps them off at startup. Existing Google Play buyers keep their plan; their subscriptions renew until they cancel.
 
 ## Snapfront Partners (affiliates who sell Snapfront)
 

@@ -179,7 +179,7 @@ function Broadcasts({ overview, onChanged }: { overview: EmailOverview; onChange
     return (
       <Card title="Email your list" sub="Send news, new products and offers to your subscribers.">
         <Text style={[type.body, { color: c.muted }]}>Snapfront Pro includes 5,000 emails a month, with open and click stats for every email.</Text>
-        <Button label="See plans" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
+        <Button label="See membership" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
       </Card>
     );
   }
@@ -330,7 +330,7 @@ function Automations({ overview }: { overview: EmailOverview }) {
     <View style={{ gap: space.lg }}>
       {!overview.can_automate ? (
         <Card title="Emails that send themselves" sub="Pro sends these for you, so every new subscriber and buyer hears from you at the right time.">
-          <Button label="See Pro" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
+          <Button label="See membership" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
         </Card>
       ) : null}
       {flows.map((fl) => <FlowCard key={fl.kind} flow={fl} locked={!overview.can_automate} onSaved={(x) => setFlows((all) => all?.map((y) => (y.kind === x.kind ? x : y)) ?? null)} />)}

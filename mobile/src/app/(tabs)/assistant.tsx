@@ -46,7 +46,7 @@ export default function AssistantScreen() {
             </View>
             <Pressable onPress={() => router.push("/plans")} accessibilityRole="button"
               style={({ pressed }) => ({ backgroundColor: c.accent, borderRadius: radius.pill, minHeight: 52, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.85 : 1 })}>
-              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: c.onAccent }}>Get Pro to use the assistant</Text>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: c.onAccent }}>The assistant comes with membership</Text>
             </Pressable>
           </View>
         ) : turns.length === 0 ? (

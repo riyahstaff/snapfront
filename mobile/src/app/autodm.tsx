@@ -13,7 +13,7 @@ const BLOCKERS: Record<NonNullable<AutoDmStatus["blocker"]>, { title: string; te
   pending_meta: { title: "Almost ready", text: "AutoDM is waiting on Instagram's approval for Snapfront. Set up your replies now and they'll start working as soon as it's switched on." },
   connect_instagram: { title: "Connect Instagram", text: "AutoDM replies from your Instagram professional account. Connect it in Marketing posts first.", action: { label: "Connect Instagram", go: () => router.push("/marketing") } },
   reconnect_instagram: { title: "Reconnect Instagram", text: "Your Instagram connection needs to be renewed before AutoDM can reply.", action: { label: "Reconnect", go: () => router.push("/marketing") } },
-  upgrade: { title: "AutoDM comes with Pro", text: "Turn comments into sales: reply with your link the moment someone asks.", action: { label: "See Pro", go: () => router.push({ pathname: "/plans", params: { highlight: "pro" } }) } },
+  upgrade: { title: "AutoDM comes with Pro", text: "Turn comments into sales: reply with your link the moment someone asks.", action: { label: "See membership", go: () => router.push({ pathname: "/plans", params: { highlight: "pro" } }) } },
 };
 
 export default function AutoDmScreen() {

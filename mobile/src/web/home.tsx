@@ -124,9 +124,9 @@ export default function WebHome() {
         <View style={{ borderWidth: 1, borderColor: c.line, borderRadius: 24, padding: wide ? 40 : 24, flexDirection: wide ? "row" : "column", gap: 24, alignItems: wide ? "center" : "flex-start", backgroundImage: "linear-gradient(135deg, #14171C 0%, #090B0E 100%)" } as object}>
           <Image source={require("../../assets/brand-mark.png")} contentFit="contain" style={{ width: 64, height: 72 }} />
           <View style={{ flex: wide ? 1 : undefined, gap: 6 }}>
-            <Text style={{ fontFamily: fonts.display, fontSize: 28, letterSpacing: -0.8, color: c.ink }}>Take your store everywhere</Text>
+            <Text style={{ fontFamily: fonts.display, fontSize: 28, letterSpacing: -0.8, color: c.ink }}>{(me?.account.plan ?? "free") === "free" ? "Members get the app free" : "Your free Snapfront app"}</Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 16, lineHeight: 24, color: c.muted, maxWidth: 620 }}>
-              Snap products with your phone’s camera and save posts to your gallery. Sign in to the Android app with the same email and everything here is there too.
+              Snap products with your phone’s camera, post from your phone and check orders on the go. Sign in to the Android app with the same email and everything here is there too.
             </Text>
           </View>
           {android ? <CTA label="Get it on Google Play" icon="logo-google-playstore" url={android} /> : null}
@@ -245,9 +245,9 @@ function StorePanel({ products, wide }: { products: Product[] | null; wide: bool
       <View style={{ width: wide ? 340 : "100%", gap: 10, justifyContent: "center" }}>
         {plan === "free" ? (
           <View style={{ backgroundColor: c.bg, borderWidth: 1, borderColor: c.line, borderRadius: 18, padding: 18, gap: 10 }}>
-            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: c.ink }}>Go live with Snapfront Pro</Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 21, color: c.muted }}>Publish your store and take payments, with no fees on your sales.</Text>
-            <CTA label="See plans" href="/plans" primary small />
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: c.ink }}>Become a Snapfront member</Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 21, color: c.muted }}>Publish your store and take payments with no fees on your sales. The Android app comes free.</Text>
+            <CTA label="Become a member" href="/plans" primary small />
           </View>
         ) : null}
         <CTA label="Add a product" icon="add-circle-outline" href="/snap" small />

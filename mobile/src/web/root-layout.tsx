@@ -20,7 +20,7 @@ const TITLES: Record<string, string> = {
   email: "Email marketing", affiliates: "Affiliates", pixels: "Ad pixels", autodm: "Instagram AutoDM", earn: "Earn with Snapfront", academy: "Snapfront Academy", "lesson/[id]": "Lesson", community: "Community", faceless: "Faceless videos", ugc: "UGC creator kit",
   discounts: "Discount codes", looks: "Store look", "storefront-setup": "Storefront setup", studio: "Product photo cleanup",
   "digital-photo-studio": "Digital photo studio", sources: "Supplier directory", marketing: "Marketing posts", "ai-media": "AI photos & video",
-  insights: "Insights", reviews: "Reviews", channels: "Get more buyers", plans: "Plans", "price-check": "Price check", "supplier/[pid]": "Product",
+  insights: "Insights", reviews: "Reviews", channels: "Get more buyers", plans: "Membership", "sign-in": "Sign in", "price-check": "Price check", "supplier/[pid]": "Product",
   welcome: "Name your store", "digital-designs": "Digital designs", "digital-editor": "Design editor",
 };
 

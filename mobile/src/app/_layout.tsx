@@ -22,7 +22,7 @@ export default function RootLayout() {
   }, [loaded, error]);
 
   useEffect(() => {
-    // Anything that needs a paid plan opens the plans screen with the server's reason.
+    // Anything that needs a membership opens the membership screen with the server's reason.
     onUpgradeNeeded((plan, reason) => router.push({ pathname: "/plans", params: { highlight: plan, reason } }));
     account.refresh().then(async (m) => {
       startBilling(m.account.id);
@@ -73,7 +73,8 @@ export default function RootLayout() {
         <Stack.Screen name="insights" options={{ title: "Insights" }} />
         <Stack.Screen name="reviews" options={{ title: "Reviews" }} />
         <Stack.Screen name="channels" options={{ title: "Get more buyers" }} />
-        <Stack.Screen name="plans" options={{ title: "Plans", presentation: "modal" }} />
+        <Stack.Screen name="plans" options={{ title: "Membership", presentation: "modal" }} />
+        <Stack.Screen name="sign-in" options={{ title: "Sign in", presentation: "modal" }} />
         <Stack.Screen name="price-check" options={{ title: "Price check" }} />
         <Stack.Screen name="supplier/[pid]" options={{ title: "Product" }} />
         <Stack.Screen name="welcome" options={{ title: "", presentation: "modal" }} />

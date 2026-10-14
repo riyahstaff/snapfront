@@ -40,12 +40,12 @@ export function AccountSection() {
   if (!a) return null;
   return (
     <View style={{ gap: space.md }}>
-      <H2>Your plan</H2>
+      <H2>Your membership</H2>
       <Body>
         <Text style={{ fontWeight: "700" }}>{a.plan_name}</Text>
-        {a.plan === "free" ? " · try Snapfront, then go live with Pro" : a.plan === "launch" ? " · one live store" : ` · up to ${a.limits.liveStores} live stores`}
+        {a.plan === "free" ? ", trying Snapfront" : a.plan === "launch" ? " · one live store" : ` · up to ${a.limits.liveStores} live stores`}
       </Body>
-      <Button label={a.plan === "pro" ? "See plan details" : "See plans"} variant="secondary" onPress={() => router.push("/plans")} />
+      <Button label="Membership" variant="secondary" onPress={() => router.push("/plans")} />
 
       <H2>Sign in</H2>
       {a.email ? (

@@ -33,7 +33,7 @@ export default function AffiliatesScreen() {
       <ScrollPage>
         {!data.pro ? (
           <Card title="Let fans sell for you" sub="Give creators and happy customers their own link. They earn a share of each sale; you only pay when they bring you an order.">
-            <Button label="Get Pro to start" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
+            <Button label="See membership" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
           </Card>
         ) : null}
         <SettingsCard data={data} onSaved={setData} />

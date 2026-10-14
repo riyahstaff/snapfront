@@ -287,13 +287,35 @@ export async function retireOldProducts() {
   return log;
 }
 
+/*
+ * Memberships are sold on the website. Once the phone app without buying is live, the owner turns
+ * Google Play sales off (POST /api/admin/play/stop-sales): Lifetime and the monthly base plans stop
+ * selling in older app versions too. People who already bought through Google Play keep their plan,
+ * and existing subscriptions keep renewing until they cancel.
+ */
+db.exec("CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT (datetime('now')))");
+export const salesStopped = () => db.prepare("SELECT value FROM app_settings WHERE key = 'play_sales'").get()?.value === "off";
+export async function stopSales() {
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('play_sales', 'off') ON CONFLICT(key) DO UPDATE SET value = 'off', updated_at = datetime('now')").run();
+  const log = [];
+  for (const base of [PRO_BASE_PLAN, OLD_PRO_BASE_PLAN]) {
+    const r = await play("POST", `/subscriptions/${PRO}/basePlans/${base}:deactivate`, {});
+    log.push([`pro base plan ${base}`, r.status, r.status >= 300 ? r.body : "ok"]);
+  }
+  for (const productId of [LIFETIME, LAUNCH]) {
+    const r = await play("POST", `/oneTimeProducts/${productId}/purchaseOptions:batchUpdateStates`, { requests: [{ deactivatePurchaseOptionRequest: { packageName: config.playPackage, productId, purchaseOptionId: "buy" } }] });
+    log.push([productId, r.status, r.status >= 300 ? r.body : "ok"]);
+  }
+  return log;
+}
+
 /**
  * Make sure both plans exist and are on sale. Runs in the background until it succeeds, because a new
  * service account can take a day or so before Google lets it create products.
  */
 let productsReady = false;
 export async function ensureProducts() {
-  if (productsReady || !enabled()) return productsReady;
+  if (productsReady || !enabled() || salesStopped()) return productsReady;
   const sub = await play("GET", `/subscriptions/${PRO}`);
   const once = await play("GET", `/oneTimeProducts/${LIFETIME}`);
   const subActive = sub.status === 200 && (sub.body.basePlans || []).some((b) => b.basePlanId === PRO_BASE_PLAN && b.state === "ACTIVE");
