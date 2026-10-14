@@ -103,3 +103,15 @@ test("store setup uses the actual template preview and keeps native photo/text c
   assert.ok(wizard.includes('finalPreviewReady || missingPhotos.length || sampleWords.length'));
   assert.ok(wizard.includes('Finish: save my store design'));
 });
+
+test("web membership checkout has no seller navigation, including for signed-in users", () => {
+  const nav = fs.readFileSync(path.join(root, "src/web/web-nav.tsx"), "utf8");
+  const isolated = nav.match(/if \(path === "\/plans"\) \{[\s\S]*?\n  \}\n\n  return \(/)?.[0] || "";
+  assert.ok(isolated, "Plans must have a dedicated navigation-free header before the normal menu");
+  assert.ok(isolated.includes('require("../../assets/brand-mark.png")'), "Keep the actual Snapfront logo");
+  assert.ok(isolated.includes("Secure membership"), "Show only a noninteractive checkout status");
+  for (const link of ["<NavLink", "menu.map", "onPress=", "Open menu", "My store", "Digital products"]) {
+    assert.ok(!isolated.includes(link), `Membership header must not render: ${link}`);
+  }
+  assert.ok(nav.indexOf('if (path === "/plans")') < nav.indexOf('  return (\n    <View style={{ zIndex: 50'), "Plans header must return before the regular navigation renders");
+});

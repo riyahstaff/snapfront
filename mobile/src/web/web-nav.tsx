@@ -8,15 +8,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMe } from "@/lib/account-store";
 import { fonts, useColors } from "@/lib/theme";
 
+// Keep the marketing funnel separate from the signed-in merchant workspace.
 export const NAV: { label: string; href: Href; match: (p: string) => boolean }[] = [
+  { label: "My store", href: "/store", match: (p) => p.startsWith("/store") || p.startsWith("/looks") },
   { label: "Create", href: "/snap", match: (p) => p.startsWith("/snap") || p.startsWith("/draft") },
   { label: "Digital products", href: "/create", match: (p) => p.startsWith("/create") || p.startsWith("/digital") },
-  { label: "My store", href: "/store", match: (p) => ["/store", "/discounts", "/looks", "/storefront-setup", "/insights", "/reviews", "/product"].some((x) => p.startsWith(x)) },
-  { label: "Sales & profit", href: "/business", match: (p) => p.startsWith("/business") || p.startsWith("/orders") },
-  { label: "Marketing", href: "/marketing", match: (p) => ["/marketing", "/ai-media", "/channels", "/studio", "/faceless", "/ugc", "/email", "/autodm", "/affiliates", "/pixels"].some((x) => p.startsWith(x)) },
-  { label: "Find products", href: "/find", match: (p) => ["/find", "/sources", "/supplier", "/price-check", "/trends"].some((x) => p.startsWith(x)) },
-  { label: "Academy", href: "/academy", match: (p) => p.startsWith("/academy") || p.startsWith("/lesson") || p.startsWith("/community") },
-  { label: "Assistant", href: "/assistant", match: (p) => p.startsWith("/assistant") },
+  { label: "Marketing", href: "/marketing", match: (p) => p.startsWith("/marketing") },
+  { label: "Academy", href: "/academy", match: (p) => p.startsWith("/academy") },
 ];
 export const WIDE = 980;
 export const CONTENT = 1180;
@@ -30,17 +28,41 @@ export function WebNav() {
   const path = usePathname() || "/";
   const { width } = useWindowDimensions();
   // The full row of links needs about 1300px next to the membership button; narrower gets the menu.
-  const wide = width >= Math.max(WIDE, 1300);
+  const wide = width >= Math.max(WIDE, 1110);
   const [open, setOpen] = useState(false);
   const plan = me?.account.plan ?? "free";
-  const menu: { label: string; href: Href; match: (p: string) => boolean }[] = [
+  const signedIn = Boolean(me?.account.email);
+  const menu: { label: string; href: Href; match: (p: string) => boolean }[] = signedIn ? [
     { label: "Home", href: "/", match: (p) => p === "/" }, ...NAV,
+    { label: "Find products", href: "/find", match: (p) => p.startsWith("/find") },
+    { label: "Affiliates & UGC", href: "/ugc", match: (p) => p.startsWith("/ugc") || p.startsWith("/affiliates") },
+    { label: "Sales & profit", href: "/business", match: (p) => p.startsWith("/business") },
     { label: "Membership", href: "/plans", match: (p) => p.startsWith("/plans") },
-    ...(me?.account.email ? [] : [{ label: "Sign in", href: "/sign-in" as Href, match: (p: string) => p.startsWith("/sign-in") }]),
-    { label: "Earn with Snapfront", href: "/earn", match: (p) => p.startsWith("/earn") },
-    { label: "Community", href: "/community", match: (p) => p.startsWith("/community") },
     { label: "Settings", href: "/settings", match: (p) => p.startsWith("/settings") },
+  ] : [
+    { label: "Explore Snapfront", href: "/" as Href, match: (p) => p === "/" },
+    { label: "Membership", href: "/plans", match: (p) => p.startsWith("/plans") },
+    { label: "Sign in / Register", href: "/sign-in", match: (p) => p.startsWith("/sign-in") },
   ];
+
+  // Checkout stays focused even when a visitor already has a verified account.
+  // Never expose any store, marketing, training or profile navigation on /plans.
+  if (path === "/plans") {
+    return (
+      <View style={{ backgroundColor: "rgba(9,11,14,0.94)", borderBottomWidth: 1, borderColor: c.sunk }}>
+        <View style={{ height: 68, width: "100%", maxWidth: CONTENT + 48, alignSelf: "center", paddingHorizontal: 24, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Image source={require("../../assets/brand-mark.png")} contentFit="contain" style={{ width: 30, height: 33 }} />
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, letterSpacing: -0.3, color: c.ink }}>snapfront</Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons name="lock-closed-outline" size={15} color={c.muted} />
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.muted }}>Secure membership</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ zIndex: 50, backgroundColor: "rgba(9,11,14,0.94)", borderBottomWidth: 1, borderColor: c.sunk }}>
@@ -51,23 +73,23 @@ export function WebNav() {
         </Pressable>
         {wide ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1 }}>
-            {NAV.map((n) => <NavLink key={n.label} label={n.label} href={n.href} active={n.match(path)} />)}
+            {(signedIn ? NAV : [{ label: "Explore features", href: "/" as Href, match: (p: string) => p === "/" }, { label: "Pricing", href: "/plans" as Href, match: (p: string) => p.startsWith("/plans") }]).map((n) => <NavLink key={n.label} label={n.label} href={n.href} active={n.match(path)} />)}
           </View>
         ) : <View style={{ flex: 1 }} />}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           {plan === "free" ? (
-            <Pressable accessibilityRole="link" onPress={() => go("/plans")} style={(s: Hover): ViewStyle => ({ backgroundColor: s.hovered ? "#FFFFFF" : c.accent, borderRadius: 999, paddingHorizontal: 18, height: 38, justifyContent: "center" })}>
-              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.onAccent }}>Become a member</Text>
+            <Pressable accessibilityRole="link" onPress={() => go(signedIn ? "/plans" : "/sign-in")} style={(s: Hover): ViewStyle => ({ backgroundColor: s.hovered ? "#FFFFFF" : c.accent, borderRadius: 999, paddingHorizontal: 18, height: 38, justifyContent: "center" })}>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.onAccent }}>{signedIn ? "Unlock full access" : "Get started free"}</Text>
             </Pressable>
           ) : (
             <Pressable accessibilityRole="link" onPress={() => go("/plans")} style={{ borderWidth: 1, borderColor: c.line, borderRadius: 999, paddingHorizontal: 12, height: 32, justifyContent: "center" }}>
               <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.good }}>{plan === "pro" ? (me?.account.lifetime ? "Lifetime" : "Pro") : "Launch"}</Text>
             </Pressable>
           )}
-          <Pressable accessibilityRole="link" accessibilityLabel="Account and store settings" onPress={() => go("/settings")}
+          {signedIn ? <Pressable accessibilityRole="link" accessibilityLabel="Account and store settings" onPress={() => go("/settings")}
             style={(s: Hover): ViewStyle => ({ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: s.hovered || path.startsWith("/settings") ? c.sunk : "transparent" })}>
             <Ionicons name="person-circle-outline" size={26} color={c.muted} />
-          </Pressable>
+          </Pressable> : null}
           {!wide ? (
             <Pressable accessibilityRole="button" accessibilityLabel={open ? "Close menu" : "Open menu"} accessibilityState={{ expanded: open }} onPress={() => setOpen((o) => !o)}
               style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
