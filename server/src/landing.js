@@ -135,7 +135,6 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
   </ol>
   <div class="ctas"><a class="btn" href="#pricing">Become a member</a><a class="btn ghost" href="${web}/sign-in">Already have an account? Sign in</a></div>
 </div></section>
->
 
 <section id="features" class="features-section"><div class="wrap">
   <p class="eyebrow">More than a store builder</p>
