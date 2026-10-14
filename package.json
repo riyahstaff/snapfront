@@ -1,0 +1,13 @@
+{
+  "name": "snapfront-website-deploy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Railway build orchestration: Expo web only; native mobile releases are separate.",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "npm ci --prefix mobile --no-audit --no-fund && npm run build:web --prefix mobile && npm ci --prefix server --omit=dev --no-audit --no-fund",
+    "start": "npm start --prefix server"
+  }
+}
