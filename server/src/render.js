@@ -446,6 +446,27 @@ ${a.payouts.length ? `<h2 style="font-size:22px;margin:12px 0 0">Payments</h2><d
 <script>document.getElementById("cp").addEventListener("click",function(){var t=document.getElementById("lnk").textContent,b=this;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent="Copied"},function(){var r=document.createRange();r.selectNodeContents(document.getElementById("lnk"));getSelection().removeAllRanges();getSelection().addRange(r)})})</script>` });
 }
 
+/** A creator's UGC portfolio page: videos, niches, rates and how to book. */
+export function ugcPage(store, p) {
+  const vid = p.items.filter((i) => i.kind === "video"), links = p.items.filter((i) => i.kind === "link");
+  const css = `<style>.ugc{max-width:1100px;margin:0 auto;padding-block:clamp(32px,5vw,64px);display:grid;gap:28px}.ugc h1{margin:0;font-family:var(--display);font-size:clamp(34px,5vw,56px);line-height:1.05;text-wrap:balance}
+.ugc .lead{margin:8px 0 0;color:var(--muted);font-size:18px;max-width:60ch}.ugc .chips{display:flex;flex-wrap:wrap;gap:8px}.ugc .chip{border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14px}
+.ugc .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}.ugc video{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:var(--r-card);background:#000;display:block}
+.ugc figure{margin:0;display:grid;gap:6px}.ugc figcaption{font-size:14px;color:var(--muted)}.ugc table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.ugc td{padding:12px 4px;border-bottom:1px solid var(--line)}.ugc td:last-child{text-align:right;font-weight:700}
+.ugc .book{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:20px;border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface)}.ugc .book a.btn{background:var(--accent);color:var(--on-accent);padding:14px 24px;border-radius:var(--r-btn);text-decoration:none;font-weight:700}
+.ugc h2{margin:0 0 10px;font-size:24px}.ugc .links a{display:block;padding:12px 0;border-bottom:1px solid var(--line);color:inherit}</style>`;
+  const body = `${css}<div class="wrap"><div class="ugc"><header><h1>${esc(p.name)}</h1><p class="lead">${esc(p.headline)}</p></header>
+${p.niches.length ? `<div class="chips">${p.niches.map((n) => `<span class="chip">${esc(n)}</span>`).join("")}</div>` : ""}
+${p.bio ? `<p style="margin:0;max-width:65ch;line-height:1.6">${esc(p.bio).replace(/\n/g, "<br>")}</p>` : ""}
+${vid.length ? `<section><h2>My work</h2><div class="grid">${vid.map((v) => `<figure><video src="${esc(v.src)}"${v.poster_src ? ` poster="${esc(v.poster_src)}"` : ""} controls playsinline preload="none"></video>${v.title ? `<figcaption>${esc(v.title)}</figcaption>` : ""}</figure>`).join("")}</div></section>` : ""}
+${links.length ? `<section class="links"><h2>More of my content</h2>${links.map((l) => `<a href="${esc(l.url)}" rel="noopener" target="_blank">${esc(l.title || l.url)}</a>`).join("")}</section>` : ""}
+${p.rates.length ? `<section><h2>Rates</h2><table>${p.rates.map((r) => `<tr><td>${esc(r.label)}</td><td>${money(Math.round(r.price * 100)).replace(/\.00$/, "")}</td></tr>`).join("")}</table></section>` : ""}
+<section class="book"><div style="flex:1;min-width:220px"><h2 style="margin:0">Work with me</h2><p style="margin:6px 0 0;color:var(--muted)">${p.email ? `Email <strong>${esc(p.email)}</strong> with your product and timeline.` : "Send me a message with your product and timeline."}</p></div>
+${p.email ? `<a class="btn" href="mailto:${esc(p.email)}?subject=${encodeURIComponent("UGC for my brand")}">Book a video</a>` : ""}
+${["tiktok", "instagram", "youtube"].filter((k) => p.socials[k]).map((k) => `<a href="${esc(p.socials[k])}" rel="noopener" target="_blank">${k === "tiktok" ? "TikTok" : k === "instagram" ? "Instagram" : "YouTube"}</a>`).join("")}</section></div></div>`;
+  return shell({ title: `${p.name} · UGC creator`, description: p.headline, store, canonical: storeUrl(store.store_slug, "/ugc"), body });
+}
+
 export function notePage(store, title, html) {
   return shell({ title, description: title, store, body: `<div class="wrap"><div class="note">${html}</div></div>` });
 }

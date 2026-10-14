@@ -651,7 +651,7 @@ export const autodm = {
 export const money = (n: number) => `$${(Number(n) || 0).toFixed(2)}`;
 
 /* ---------- Snapfront Partners (earn by sharing Snapfront) ---------- */
-export type PartnerProgram = { rate: number; monthly_rate: number; hold_days: number; window_days: number; lifetime_price: number; per_sale: number; terms: string[] };
+export type PartnerProgram = { rate: number; monthly_per_month: number; monthly_price: number; hold_days: number; play_hold_days: number; window_days: number; lifetime_price: number; per_sale: number; terms: string[] };
 export type PartnerCommission = { id: string; created_at: string; plan: string; sale: number; commission: number; status: "pending" | "approved" | "paid" | "void"; available_at: string; paid_at: string | null; note: string };
 export type PartnerView = {
   joined: boolean; has_email?: boolean; program: PartnerProgram;
@@ -664,4 +664,61 @@ export const partners = {
   me: () => request<PartnerView>("GET", "/api/partners/me"),
   join: (b: { agree: boolean; paypal_email?: string; code?: string }) => request<PartnerView>("POST", "/api/partners/join", b),
   update: (b: { paypal_email?: string | null; code?: string }) => request<PartnerView>("PATCH", "/api/partners/me", b),
+};
+
+/** Send a file's bytes as the request body (videos and other large uploads). */
+export async function uploadRaw<T>(path: string, body: Blob, contentType: string): Promise<T> {
+  const store = await currentStore();
+  const res = await fetch(`${API_URL}${path}`, {
+    method: "POST", headers: { "Content-Type": contentType, Authorization: `Bearer ${await token()}`, ...(store ? { "X-Store": store } : {}) }, body,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError((data as { error?: string }).error || "The upload didn't go through. Try again.", res.status);
+  return data as T;
+}
+
+/* ---------- Snapfront Academy, today's post, community ---------- */
+export type AcademyLessonRow = { id: string; title: string; summary: string; done: boolean; locked: boolean; minutes: number };
+export type AcademyCatalog = { member: boolean; done: number; total: number; modules: { id: string; title: string; free: boolean; lessons: AcademyLessonRow[] }[] };
+export type AcademyLesson = { id: string; title: string; summary: string; module: string; action: { label: string; route: string } | null; video: string | null; video_status: "ready" | "making";
+  guide: { heading: string; points: string[] }[]; transcript: string; done: boolean; next: { id: string; title: string } | null };
+export type DailyPrompt = { day: string; kind: string; kind_name: string; hook: string; film: string[]; on_screen: string; caption: string; hashtags: string[]; cta: string;
+  product: { id: string; title: string; image_url: string | null; url: string } | null; more_left: number };
+export type Community = { member: boolean; discord: string | null; has_discord: boolean; whop: string | null; live_schedule: string | null };
+export const academy = {
+  catalog: () => request<AcademyCatalog>("GET", "/api/academy"),
+  lesson: (id: string) => request<AcademyLesson>("GET", `/api/academy/${encodeURIComponent(id)}`),
+  setDone: (id: string, done: boolean) => request<AcademyCatalog>("POST", `/api/academy/${encodeURIComponent(id)}/done`, { done }),
+  daily: (fresh = false) => request<DailyPrompt>("GET", `/api/daily-prompt${fresh ? "?fresh=1" : ""}`),
+  community: () => request<Community>("GET", "/api/community"),
+};
+
+/* ---------- UGC creator kit ---------- */
+export type UgcItem = { id: string; kind: "video" | "link"; file?: string; poster?: string | null; url?: string; title: string };
+export type UgcProfile = { enabled: boolean; name: string; headline: string; bio: string; niches: string[]; email: string; rates: { label: string; price: number }[];
+  socials: { tiktok: string; instagram: string; youtube: string }; items: UgcItem[]; page_url: string };
+export type UgcPlatform = { name: string; url: string; pay?: string; fee?: string; what: string };
+export type UgcDeal = { id: string; brand: string; contact: string; status: "pitched" | "talking" | "booked" | "delivered" | "paid" | "lost"; amount: number; due: string | null; note: string; created_at: string; updated_at: string };
+export type UgcScript = { style: string; seconds: number; hooks: string[]; scenes: { shot: string; line: string; text: string }[]; cta: string; tips: string[] };
+export type UgcKit = { profile: UgcProfile; platforms: { creators: UgcPlatform[]; stores: UgcPlatform[]; note: string }; deals: UgcDeal[]; totals: { paid: number; owed: number; booked: number; pipeline: number } };
+export const ugcApi = {
+  kit: () => request<UgcKit>("GET", "/api/ugc"),
+  saveProfile: (p: Partial<Omit<UgcProfile, "items" | "page_url">> & { items?: { id?: string; url?: string; title?: string }[] }) => request<UgcProfile>("PUT", "/api/ugc/profile", p),
+  uploadVideo: (blob: Blob, contentType: string, title: string) => uploadRaw<UgcProfile>(`/api/ugc/videos?title=${encodeURIComponent(title)}`, blob, contentType),
+  script: (b: { brand: string; product: string; style: string; seconds: number; points?: string }) => request<UgcScript>("POST", "/api/ugc/script", b),
+  addDeal: (d: Partial<Omit<UgcDeal, "id">>) => request<UgcDeal>("POST", "/api/ugc/deals", d),
+  updateDeal: (id: string, d: Partial<Omit<UgcDeal, "id">>) => request<UgcDeal>("PATCH", `/api/ugc/deals/${encodeURIComponent(id)}`, d),
+  deleteDeal: (id: string) => request<void>("DELETE", `/api/ugc/deals/${encodeURIComponent(id)}`),
+};
+
+/* ---------- faceless videos ---------- */
+export type FacelessScene = { text: string; say: string };
+export type FacelessScript = { product_id: string; style: string; hook: string; scenes: FacelessScene[]; cta: string; caption: string; hashtags: string[] };
+export type FacelessJob = { id: string; status: "queued" | "working" | "done" | "failed"; product_id: string | null; seconds: number | null; error: string | null; created_at: string; url: string | null; download_url: string | null; script: Omit<FacelessScript, "product_id" | "style"> };
+export const facelessApi = {
+  list: () => request<{ voices: { id: string; name: string; accent: string }[]; styles: { id: string; name: string }[]; jobs: FacelessJob[] }>("GET", "/api/faceless"),
+  script: (product_id: string, style: string) => request<FacelessScript>("POST", "/api/faceless/script", { product_id, style }),
+  make: (b: { product_id: string; voice: string; script: Omit<FacelessScript, "product_id" | "style"> }) => request<FacelessJob>("POST", "/api/faceless/videos", b),
+  job: (id: string) => request<FacelessJob>("GET", `/api/faceless/videos/${encodeURIComponent(id)}`),
+  remove: (id: string) => request<void>("DELETE", `/api/faceless/videos/${encodeURIComponent(id)}`),
 };

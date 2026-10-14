@@ -70,7 +70,7 @@ export default function PlansScreen() {
         <Button label="Manage subscription in Google Play" variant="ghost" onPress={() => Linking.openURL("https://play.google.com/store/account/subscriptions")} />
       ) : null}
       <Text style={[type.small, { color: c.muted }]}>
-        Lifetime is a one-time purchase. Monthly renews every month until you cancel in your {Platform.OS === "ios" ? "App Store" : "Google Play"} subscriptions. If Monthly ends, your stores stop taking orders until you renew.
+        All sales are final. Lifetime is a one-time purchase. Monthly renews every month until you cancel in your {Platform.OS === "ios" ? "App Store" : "Google Play"} subscriptions. If Monthly ends, your stores stop taking orders until you renew.
       </Text>
       <Button label="Not now" variant="ghost" onPress={() => router.back()} />
     </Screen>

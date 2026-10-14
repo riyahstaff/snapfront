@@ -12,6 +12,7 @@ import { featuredThemes } from "@/lib/home-discovery";
 import { DEFAULT_STORE_NAME } from "@/lib/store-address";
 import { getAppInfo } from "@/lib/billing.web";
 import { ThemePreview } from "@/components/theme-preview";
+import { DailyPromptCard } from "@/components/daily-prompt";
 import { fonts, radius, useColors } from "@/lib/theme";
 import { CONTENT, WebFooter } from "./web-nav";
 
@@ -31,7 +32,11 @@ const TOOLS: { title: string; detail: string; icon: Icon; href: Href }[] = [
   { title: "Instagram AutoDM", detail: "Someone comments a keyword; your Instagram DMs them the link.", icon: "chatbubble-ellipses-outline", href: "/autodm" },
   { title: "Affiliates", detail: "Fans and creators share their own link and earn on each sale.", icon: "ribbon-outline", href: "/affiliates" },
   { title: "Ad pixels", detail: "Meta, TikTok, Google and Pinterest see your sales, so ads find buyers.", icon: "pulse-outline", href: "/pixels" },
-  { title: "Earn with Snapfront", detail: "Share your link and earn on every Lifetime plan it sells.", icon: "cash-outline", href: "/earn" },
+  { title: "Earn with Snapfront", detail: "Share your link: 40% of every Lifetime sale and $19 a month for every Monthly member.", icon: "cash-outline", href: "/earn" },
+  { title: "Snapfront Academy", detail: "Short video lessons: your store, content, going LIVE on TikTok and the top 10 ways to market.", icon: "school-outline", href: "/academy" },
+  { title: "Faceless videos", detail: "Your product photos, big captions and a natural voiceover, ready for TikTok and Reels.", icon: "videocam-outline", href: "/faceless" },
+  { title: "UGC creator kit", detail: "A portfolio page, rates, scripts and pitches to get paid by brands for short videos.", icon: "aperture-outline", href: "/ugc" },
+  { title: "Community", detail: "The members' Discord, Whop and live coaching.", icon: "chatbubbles-outline", href: "/community" },
 ];
 
 export default function WebHome() {
@@ -86,6 +91,7 @@ export default function WebHome() {
       {/* Your store */}
       <Section title="Your store" pad={pad}>
         <StorePanel products={products} wide={wide} />
+        <View style={{ marginTop: 16 }}><DailyPromptCard /></View>
       </Section>
 
       {/* Tools */}

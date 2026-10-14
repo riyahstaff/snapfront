@@ -113,7 +113,7 @@ footer nav{display:flex;flex-wrap:wrap;gap:18px}
     <div class="plan pro"><h3>Lifetime</h3><div class="price">${usd(PRICES.lifetime.cents)} <small>once, for life</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>Every new feature we add</li></ul><a class="btn small" href="${web}/plans?buy=lifetime">Get Lifetime</a></div>
     <div class="plan"><h3>Monthly</h3><div class="price">${usd(PRICES.pro.cents)} <small>a month</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>Cancel any time</li></ul><a class="btn small" href="${web}/plans?buy=pro">Start monthly</a></div>
   </div>
-  <p class="note">Pay here with Stripe, then sign in to the Android app with the same email. Your plan works in both.</p>
+  <p class="note">Pay here with Stripe, then sign in to the Android app with the same email. Your plan works in both. All sales are final.</p>
 </div></section>
 </main>
 <footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="${web}">Web app</a><a href="${web}/earn">Earn with Snapfront</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a><span>support@snapfront.app</span></nav></div></footer>

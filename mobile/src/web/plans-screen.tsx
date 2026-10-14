@@ -96,7 +96,7 @@ export default function PlansWebScreen() {
       <Button label="Check my purchases" variant="ghost" loading={busy === "restore"} disabled={Boolean(busy)} onPress={doRestore} />
       {current === "pro" && !me?.account.lifetime ? <Button label="Manage subscription" variant="ghost" loading={busy === "manage"} disabled={Boolean(busy)} onPress={manage} /> : null}
       <Text style={[type.small, { color: c.muted }]}>
-        Lifetime is a one-time purchase. Monthly renews every month until you cancel from Manage subscription (or in Google Play, if you subscribed on your phone). If Monthly ends, your stores stop taking orders until you renew.
+        All sales are final. Lifetime is a one-time purchase. Monthly renews every month until you cancel from Manage subscription (or in Google Play, if you subscribed on your phone). If Monthly ends, your stores stop taking orders until you renew.
       </Text>
       <Button label="Not now" variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
     </Screen>

@@ -13,8 +13,9 @@ export const NAV: { label: string; href: Href; match: (p: string) => boolean }[]
   { label: "Digital products", href: "/create", match: (p) => p.startsWith("/create") || p.startsWith("/digital") },
   { label: "My store", href: "/store", match: (p) => ["/store", "/discounts", "/looks", "/storefront-setup", "/insights", "/reviews", "/product"].some((x) => p.startsWith(x)) },
   { label: "Sales & profit", href: "/business", match: (p) => p.startsWith("/business") || p.startsWith("/orders") },
-  { label: "Marketing", href: "/marketing", match: (p) => ["/marketing", "/ai-media", "/channels", "/studio"].some((x) => p.startsWith(x)) },
+  { label: "Marketing", href: "/marketing", match: (p) => ["/marketing", "/ai-media", "/channels", "/studio", "/faceless", "/ugc", "/email", "/autodm", "/affiliates", "/pixels"].some((x) => p.startsWith(x)) },
   { label: "Find products", href: "/find", match: (p) => ["/find", "/sources", "/supplier", "/price-check", "/trends"].some((x) => p.startsWith(x)) },
+  { label: "Academy", href: "/academy", match: (p) => p.startsWith("/academy") || p.startsWith("/lesson") || p.startsWith("/community") },
   { label: "Assistant", href: "/assistant", match: (p) => p.startsWith("/assistant") },
 ];
 export const WIDE = 980;
@@ -35,6 +36,7 @@ export function WebNav() {
     { label: "Home", href: "/", match: (p) => p === "/" }, ...NAV,
     { label: "Plans", href: "/plans", match: (p) => p.startsWith("/plans") },
     { label: "Earn with Snapfront", href: "/earn", match: (p) => p.startsWith("/earn") },
+    { label: "Community", href: "/community", match: (p) => p.startsWith("/community") },
     { label: "Settings", href: "/settings", match: (p) => p.startsWith("/settings") },
   ];
 

@@ -21,11 +21,21 @@ const ONCE = new Set([LAUNCH, LIFETIME]);
 // Partner commissions hear when a Play purchase starts or stops counting.
 const listeners = [];
 export const onPurchaseChange = (fn) => listeners.push(fn);
+const invoiceListeners = [];
+export const onInvoicePaid = (fn) => invoiceListeners.push(fn);
+/** A paid month of the subscription: Google gives each renewal its own order id (GPA.…..0, ..1, …). */
+function notifyMonth(token) {
+  const r = db.prepare("SELECT * FROM play_purchases WHERE token = ?").get(token);
+  if (!r || r.kind !== "sub" || r.status !== "active" || !r.order_id || r.test) return;
+  for (const fn of invoiceListeners) {
+    try { fn({ source: "play_order", ref: r.order_id, account_id: r.account_id, plan: "pro", amount_cents: Math.round(Number(PLAY_PRICES.pro) * 100) }); } catch (e) { console.warn("[play] month listener", e.message); }
+  }
+}
 function notify(token, before) {
   const r = db.prepare("SELECT * FROM play_purchases WHERE token = ?").get(token);
   if (!r || r.status === before) return;
   for (const fn of listeners) {
-    try { fn({ source: "play", ref: token, account_id: r.account_id, plan: r.product_id === LIFETIME ? "lifetime" : r.product_id === PRO ? "pro" : "launch", status: r.status,
+    try { fn({ source: "play", ref: token, account_id: r.account_id, test: Boolean(r.test), plan: r.product_id === LIFETIME ? "lifetime" : r.product_id === PRO ? "pro" : "launch", status: r.status,
       amount_cents: r.product_id === LIFETIME ? Math.round(Number(PLAY_PRICES.lifetime) * 100) : null }); } catch (e) { console.warn("[play] listener", e.message); }
   }
 }
@@ -164,6 +174,7 @@ export async function recordPurchase(account, { productId, purchaseToken }) {
     ON CONFLICT(token) DO UPDATE SET status = excluded.status, expires_at = excluded.expires_at, order_id = COALESCE(excluded.order_id, order_id), checked_at = datetime('now')`)
     .run(tok, account.id, row.product_id, row.kind, row.status, row.expires_at, row.order_id, row.test);
   notify(tok, before);
+  notifyMonth(tok);
   return { plan: applyPlan(account.id), status: row.status };
 }
 
@@ -172,12 +183,13 @@ export async function refreshAccount(accountId, { olderThanMinutes = 0 } = {}) {
   for (const r of db.prepare("SELECT * FROM play_purchases WHERE account_id = ? AND checked_at <= datetime('now', ?)").all(accountId, `-${olderThanMinutes} minutes`)) {
     try {
       const row = await inspect(r.product_id, r.token);
-      db.prepare("UPDATE play_purchases SET status = ?, expires_at = ?, checked_at = datetime('now') WHERE token = ?").run(row.status, row.expires_at, r.token);
+      db.prepare("UPDATE play_purchases SET status = ?, expires_at = ?, order_id = COALESCE(?, order_id), checked_at = datetime('now') WHERE token = ?").run(row.status, row.expires_at, row.order_id, r.token);
     } catch (e) {
       if (e.status === 400) db.prepare("UPDATE play_purchases SET status = 'ended', checked_at = datetime('now') WHERE token = ?").run(r.token);
       else throw e;
     }
     notify(r.token, r.status);
+    notifyMonth(r.token);
   }
   return applyPlan(accountId);
 }

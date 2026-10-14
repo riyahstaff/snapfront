@@ -42,13 +42,13 @@ function Join({ data, onJoined }: { data: PartnerView; onJoined: (v: PartnerView
     <>
       <View style={{ gap: space.sm }}>
         <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Earn {money(p.per_sale)} for every Lifetime sale</Text>
-        <Text style={[type.body, { color: c.muted }]}>Share Snapfront with your followers. When someone you send buys Lifetime ({money(p.lifetime_price)}), you earn {p.rate}%.</Text>
+        <Text style={[type.body, { color: c.muted }]}>Share Snapfront with your followers. When someone you send buys Lifetime ({money(p.lifetime_price)}), you earn {p.rate}%. When they choose Monthly ({money(p.monthly_price)}), you earn {money(p.monthly_per_month)} every month they pay.</Text>
       </View>
       <Card title="How it works">
         {[
           ["Get your link", "One tap. It's yours to put in your bio, videos and Lives."],
           ["Share what Snapfront does", "Show building a store or a digital product. The kit below has hooks and captions."],
-          ["Get paid", `Each sale is held ${p.hold_days} days for refunds, then paid to your Stripe or PayPal.`],
+          ["Get paid", `You're paid when Snapfront is paid: about ${p.hold_days} days after a website sale, about ${p.play_hold_days} days after a Google Play sale. Straight to your Stripe, or by PayPal.`],
         ].map(([t, d], i) => (
           <View key={t} style={{ flexDirection: "row", gap: space.md, alignItems: "flex-start" }}>
             <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: c.accent, alignItems: "center", justifyContent: "center" }}>
@@ -100,7 +100,7 @@ function Dashboard({ data, onChange }: { data: PartnerView; onChange: (v: Partne
   };
   return (
     <>
-      <Card title="Your link" sub={`You earn ${data.program.rate}% (${money(data.program.per_sale)}) on every Lifetime sale it brings in.`}>
+      <Card title="Your link" sub={`You earn ${money(data.program.per_sale)} on every Lifetime sale and ${money(data.program.monthly_per_month)} every month a Monthly member you sent pays.`}>
         <CopyLink url={data.link!} />
         <View style={{ flexDirection: "row", gap: space.md, flexWrap: "wrap" }}>
           <Button label="Share" icon={<Ionicons name="share-outline" size={18} color={c.onAccent} />} onPress={() => Share.share({ message: `I build my online store with Snapfront: ${data.link}` }).catch(() => {})} style={{ flexGrow: 1 }} />
@@ -109,8 +109,8 @@ function Dashboard({ data, onChange }: { data: PartnerView; onChange: (v: Partne
       </Card>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.md }}>
         <Tile label="Clicks" value={count(s.clicks)} sub={`${count(s.signups)} signed up`} wide={wide} />
-        <Tile label="Sales" value={count(s.sales)} sub="Lifetime plans" wide={wide} />
-        <Tile label="Held" value={money(s.pending)} sub={`for ${data.program.hold_days} days, for refunds`} wide={wide} />
+        <Tile label="Sales" value={count(s.sales)} sub="Lifetime sales and paid months" wide={wide} />
+        <Tile label="On the way" value={money(s.pending)} sub="paid once Snapfront is paid" wide={wide} />
         <Tile label="Paid to you" value={money(s.paid)} sub={s.ready ? `${money(s.ready)} on the way` : "so far"} wide={wide} />
       </View>
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
@@ -127,10 +127,10 @@ function Dashboard({ data, onChange }: { data: PartnerView; onChange: (v: Partne
         {data.commissions?.length ? data.commissions.map((x, i) => (
           <View key={x.id} style={{ flexDirection: "row", alignItems: "center", gap: space.md, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.sunk }}>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={[type.heading, { color: c.ink }]}>{money(x.commission)} <Text style={[type.small, { color: c.muted }]}>on a {money(x.sale)} {x.plan === "lifetime" ? "Lifetime" : "Monthly"} sale</Text></Text>
+              <Text style={[type.heading, { color: c.ink }]}>{money(x.commission)} <Text style={[type.small, { color: c.muted }]}>{x.plan === "lifetime" ? `on a ${money(x.sale)} Lifetime sale` : "for a paid month of Monthly"}</Text></Text>
               <Text style={[type.small, { color: c.muted }]}>{when(x.created_at)}{x.status === "pending" ? `  ·  Paid after ${when(x.available_at)}` : x.paid_at ? `  ·  Paid ${when(x.paid_at)}` : ""}</Text>
             </View>
-            <Pill text={{ pending: "Held", approved: "Ready", paid: "Paid", void: "Refunded" }[x.status]} tone={x.status === "paid" ? "good" : "neutral"} />
+            <Pill text={{ pending: "On the way", approved: "Ready", paid: "Paid", void: "Charged back" }[x.status]} tone={x.status === "paid" ? "good" : "neutral"} />
           </View>
         )) : <Text style={[type.body, { color: c.muted }]}>Your sales show up here the moment someone buys through your link.</Text>}
       </Card>

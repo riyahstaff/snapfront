@@ -1,3 +1,4 @@
+import { DailyPromptCard } from "@/components/daily-prompt";
 import React, { useCallback, useRef, useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, ScrollView, Share, Text, View } from "react-native";
 import { Link, router, useFocusEffect } from "expo-router";
@@ -112,6 +113,7 @@ export default function StoreScreen() {
         <Shortcut icon="color-palette-outline" label="Store look" onPress={() => router.push("/looks")} />
         <Shortcut icon="cube-outline" label="Shipping" onPress={() => router.push("/settings")} />
       </View>
+      <DailyPromptCard />
       <Text style={[type.heading, { color: c.ink, marginTop: space.sm }]}>Grow your store</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
         <GrowTile icon="cash-outline" label="Sales & profit" sub="Profit, customers, payouts" onPress={() => router.push("/business")} />
@@ -120,7 +122,11 @@ export default function StoreScreen() {
         <GrowTile icon="chatbubble-ellipses-outline" label="Instagram AutoDM" sub="Reply to keywords with your link" onPress={() => router.push("/autodm")} />
         <GrowTile icon="ribbon-outline" label="Affiliates" sub="Fans earn for each sale" onPress={() => router.push("/affiliates")} />
         <GrowTile icon="pulse-outline" label="Ad pixels" sub="Meta, TikTok, Google, Pinterest" onPress={() => router.push("/pixels")} />
-        <GrowTile icon="cash-outline" label="Earn with Snapfront" sub="Share your link, earn per sale" onPress={() => router.push("/earn")} />
+        <GrowTile icon="school-outline" label="Academy" sub="Video lessons, TikTok LIVE" onPress={() => router.push("/academy")} />
+        <GrowTile icon="videocam-outline" label="Faceless videos" sub="Voiceover + your photos" onPress={() => router.push("/faceless")} />
+        <GrowTile icon="aperture-outline" label="UGC creator kit" sub="Get paid by brands" onPress={() => router.push("/ugc")} />
+        <GrowTile icon="chatbubbles-outline" label="Community" sub="Discord, Whop, live coaching" onPress={() => router.push("/community")} />
+        <GrowTile icon="cash-outline" label="Earn with Snapfront" sub="40% per Lifetime sale" onPress={() => router.push("/earn")} />
         <GrowTile icon="sparkles-outline" label="AI photos & video" sub="Lifestyle shots and clips" onPress={() => router.push("/ai-media")} />
         <GrowTile icon="people-outline" label="Get more buyers" sub="Link in bio, QR, Google" onPress={() => router.push("/channels")} />
         <GrowTile icon="bar-chart-outline" label="Insights" sub="Visitors and sales" onPress={() => router.push("/insights")} />

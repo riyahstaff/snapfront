@@ -36,10 +36,16 @@ db.exec("CREATE TABLE IF NOT EXISTS stripe_plan_customers (account_id TEXT PRIMA
 // The account that opened the checkout (Stripe's metadata names it), kept when a purchase moves to another account.
 if (!db.prepare("PRAGMA table_info(stripe_plan_purchases)").all().some((c) => c.name === "buyer_account")) db.exec("ALTER TABLE stripe_plan_purchases ADD COLUMN buyer_account TEXT");
 if (!db.prepare("PRAGMA table_info(stripe_plan_purchases)").all().some((c) => c.name === "amount_cents")) db.exec("ALTER TABLE stripe_plan_purchases ADD COLUMN amount_cents INTEGER");
+if (!db.prepare("PRAGMA table_info(stripe_plan_purchases)").all().some((c) => c.name === "email")) db.exec("ALTER TABLE stripe_plan_purchases ADD COLUMN email TEXT");
 
 // Other parts of Snapfront (partner commissions) hear when a purchase starts or stops counting.
 const listeners = [];
 export const onPurchaseChange = (fn) => listeners.push(fn);
+// ...and about every paid month of a subscription (partners earn on each).
+const invoiceListeners = [];
+export const onInvoicePaid = (fn) => invoiceListeners.push(fn);
+/** All sales are final: shown on Stripe's checkout page above the Pay button. */
+export const NO_REFUNDS = "All sales are final. Snapfront plans are non-refundable.";
 
 /** Where the website sends people to get the Android app (set PLAY_STORE_URL to override). */
 export const androidUrl = () => process.env.PLAY_STORE_URL || `https://play.google.com/store/apps/details?id=${config.playPackage || "com.sidebanc.snapfront"}`;
@@ -89,6 +95,7 @@ export async function startCheckout(account, plan, { ref = null } = {}) {
     success_url: `${webAppUrl()}/plans?checkout=done&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${webAppUrl()}/plans?checkout=canceled`,
     allow_promotion_codes: true,
+    custom_text: { submit: { message: NO_REFUNDS } },
   });
   db.prepare("INSERT INTO stripe_plan_purchases (session_id, account_id, plan, kind, buyer_account, amount_cents) VALUES (?,?,?,?,?,?)")
     .run(session.id, account.id, plan, p.mode === "subscription" ? "sub" : "once", account.id, p.cents);
@@ -113,24 +120,34 @@ async function inspect(row) {
     const subId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
     if (!subId) return { ...row, status: "pending" };
     const sub = await s.subscriptions.retrieve(subId);
-    return { ...row, subscription_id: subId, status: subStatus(sub), expires_at: periodEnd(sub) };
+    // Each paid month (partners earn a fixed amount per month the subscriber pays).
+    const invoices = s.invoices?.list ? ((await s.invoices.list({ subscription: subId, status: "paid", limit: 24 }).catch(() => ({ data: [] }))).data || []) : [];
+    return { ...row, subscription_id: subId, status: subStatus(sub), expires_at: periodEnd(sub),
+      invoices: invoices.filter((i) => i.id && i.status === "paid" && i.amount_paid > 0).map((i) => ({ id: i.id, amount_paid: i.amount_paid })) };
   }
   if (session.payment_status !== "paid") return { ...row, status: "pending" };
   const piId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
   let status = "active";
   if (piId) {
     const pi = await s.paymentIntents.retrieve(piId, { expand: ["latest_charge"] });
-    if (pi.latest_charge && typeof pi.latest_charge === "object" && pi.latest_charge.refunded) status = "ended";
+    // Refunded or disputed (chargeback): the purchase no longer counts.
+    if (pi.latest_charge && typeof pi.latest_charge === "object" && (pi.latest_charge.refunded || pi.latest_charge.disputed)) status = "ended";
   }
   return { ...row, payment_intent: piId || null, status, amount_cents: session.amount_total ?? row.amount_cents };
 }
 function save(r) {
   const before = db.prepare("SELECT status FROM stripe_plan_purchases WHERE session_id = ?").get(r.session_id)?.status;
-  db.prepare("UPDATE stripe_plan_purchases SET status = ?, subscription_id = ?, payment_intent = ?, expires_at = ?, amount_cents = COALESCE(?, amount_cents), checked_at = datetime('now') WHERE session_id = ?")
-    .run(r.status, r.subscription_id ?? null, r.payment_intent ?? null, r.expires_at ?? null, r.amount_cents ?? null, r.session_id);
+  db.prepare("UPDATE stripe_plan_purchases SET status = ?, subscription_id = ?, payment_intent = ?, expires_at = ?, amount_cents = COALESCE(?, amount_cents), email = COALESCE(?, email), checked_at = datetime('now') WHERE session_id = ?")
+    .run(r.status, r.subscription_id ?? null, r.payment_intent ?? null, r.expires_at ?? null, r.amount_cents ?? null, r.email ?? null, r.session_id);
   if (before !== r.status) {
     const row = db.prepare("SELECT * FROM stripe_plan_purchases WHERE session_id = ?").get(r.session_id);
-    for (const fn of listeners) { try { fn({ source: "stripe", ref: row.session_id, account_id: row.account_id, plan: row.plan, status: row.status, amount_cents: row.amount_cents }); } catch (e) { console.warn("[webbilling] listener", e.message); } }
+    for (const fn of listeners) { try { fn({ source: "stripe", ref: row.session_id, account_id: row.account_id, plan: row.plan, status: row.status, amount_cents: row.amount_cents, email: row.email }); } catch (e) { console.warn("[webbilling] listener", e.message); } }
+  }
+  if (r.status === "active" && Array.isArray(r.invoices)) {
+    const row = db.prepare("SELECT account_id, email FROM stripe_plan_purchases WHERE session_id = ?").get(r.session_id);
+    for (const inv of r.invoices) for (const fn of invoiceListeners) {
+      try { fn({ source: "stripe_invoice", ref: inv.id, account_id: row.account_id, plan: "pro", amount_cents: inv.amount_paid, email: row.email }); } catch (e) { console.warn("[webbilling] invoice listener", e.message); }
+    }
   }
 }
 /** After Lifetime is bought, stop any monthly web subscription at the end of the paid month. */

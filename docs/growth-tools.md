@@ -45,5 +45,17 @@ Webhook deliveries are verified with `X-Hub-Signature-256` (app secret). Each pe
 
 - Anyone with a Snapfront account and email joins in **Earn with Snapfront** and gets `snapfront.app/r/CODE`.
 - The link sets an `sf_via` cookie on `.snapfront.app`; the website sends it to `/api/partners/claim` (and with the checkout). The first partner wins, for `PARTNER_WINDOW_DAYS` (60).
-- A Lifetime purchase (website or Google Play) earns `PARTNER_RATE` % (50). Monthly plans earn `PARTNER_MONTHLY_RATE` % of the first payment (0 = off).
-- Commissions are held `PARTNER_HOLD_DAYS` (30), voided on refund, then paid automatically by Stripe transfer to the partner's connected store account (`PARTNER_AUTO_PAYOUTS=false` to stop that), or by hand to PayPal: see `https://snapfront.app/admin/partners` with the admin token.
+- **40%** of each Lifetime sale (`PARTNER_RATE`) and **$19 for every paid month** of Monthly (`PARTNER_MONTHLY_CENTS`, never more than the month's payment), from the website (each Stripe invoice) or Google Play (each renewal order).
+- All sales are final (shown on Stripe Checkout and in the terms). Commissions are paid when Snapfront is paid: held `PARTNER_HOLD_DAYS_STRIPE` (4) days for website sales and `PARTNER_HOLD_DAYS_PLAY` (45) for Google Play, re-checked for refunds/chargebacks when they come due, then paid by one Stripe transfer per commission (looked up by transfer group first, so a crash can never pay twice) to the partner's connected store account, or by hand to PayPal from `https://snapfront.app/admin/partners`. `PARTNER_AUTO_PAYOUTS=false` turns automatic transfers off.
+- No earning on your own purchase (same email on the account or at checkout), from a suspended partner, or after the referral window.
+
+## Academy, daily post, community
+
+- **Academy** (`academy-content.js`): 17 lessons in 6 modules, including the top 10 ways to market and going LIVE on TikTok. The first module is free. Videos are narrated by Kokoro-82M (open source, Apache-2.0), drawn as slides and joined with ffmpeg on the server (`narrated.js`, voice in its own process `voice-worker.js`). They build in the background after each deploy (only missing or changed lessons); `ACADEMY_AUTOBUILD=false` turns that off, `POST /api/admin/academy/build` starts it by hand. Links to the videos are signed and expire after 6 hours.
+- **Today's post** (`daily.js`): one idea per store per day (rotating kinds: in use, a question, behind the scenes, a result, faceless, a deal, a LIVE), up to 3 a day.
+- **Community**: set the links with the admin token: `PUT /api/admin/settings` with `discord_url`, `whop_url`, `live_schedule` (and `insense_url`, `joinbrands_url` for UGC affiliate links). The Discord invite is shown to paid members only.
+
+## UGC creator kit and faceless videos
+
+- **UGC** (`ugc.js`): a public portfolio page at `<store>/ugc` (uploaded videos are re-encoded; only real video containers are accepted), rates, AI scripts from a brand brief, pitch emails, a deal tracker, and where the paid work is.
+- **Faceless videos** (`faceless.js`): AI script for a product (editable), then a 1080x1920 video with the product photos, caption boxes and the open-source voiceover. Made in the background, one at a time.

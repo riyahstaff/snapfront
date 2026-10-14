@@ -57,6 +57,11 @@ export default function RootLayout() {
         <Stack.Screen name="pixels" options={{ title: "Ad pixels" }} />
         <Stack.Screen name="autodm" options={{ title: "Instagram AutoDM" }} />
         <Stack.Screen name="earn" options={{ title: "Earn with Snapfront" }} />
+        <Stack.Screen name="academy" options={{ title: "Snapfront Academy" }} />
+        <Stack.Screen name="lesson/[id]" options={{ title: "Lesson" }} />
+        <Stack.Screen name="community" options={{ title: "Community" }} />
+        <Stack.Screen name="faceless" options={{ title: "Faceless videos" }} />
+        <Stack.Screen name="ugc" options={{ title: "UGC creator kit" }} />
         <Stack.Screen name="discounts" options={{ title: "Discount codes" }} />
         <Stack.Screen name="looks" options={{ title: "Store look" }} />
         <Stack.Screen name="storefront-setup" options={{ title: "Storefront setup" }} />

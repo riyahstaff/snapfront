@@ -35,11 +35,16 @@ import * as affiliates from "./affiliates.js";
 import * as pixels from "./pixels.js";
 import * as autodm from "./autodm.js";
 import * as partners from "./partners.js";
+import * as academy from "./academy.js";
+import * as daily from "./daily.js";
+import * as community from "./community.js";
+import * as ugc from "./ugc.js";
+import * as faceless from "./faceless.js";
 import * as social from "./social.js";
 import * as digitalDesigns from "./digital-designs.js";
 import * as imageAssistant from "./image-assistant.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
-import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, affiliateJoinPage, affiliatePortalPage, esc } from "./render.js";
+import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, affiliateJoinPage, affiliatePortalPage, ugcPage, esc } from "./render.js";
 import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
 import { materializeTemplatePreview } from "./template-preview.js";
 
@@ -751,6 +756,41 @@ app.patch("/api/autodm/rules/:id", auth, (req, res) => res.json(autodm.updateRul
 app.delete("/api/autodm/rules/:id", auth, (req, res) => { autodm.deleteRule(req.seller, req.params.id); res.status(204).end(); });
 app.post("/api/autodm/connect", auth, wrap(async (req, res) => res.json({ pages: await autodm.subscribePages(req.seller) })));
 
+/* ---------- Snapfront Academy, today's post idea and the community ---------- */
+app.get("/api/academy", auth, (req, res) => res.json(academy.catalog(req.account)));
+app.get("/api/academy/:id", auth, (req, res) => res.json(academy.lesson(req.account, req.params.id)));
+app.post("/api/academy/:id/done", auth, (req, res) => res.json(academy.setDone(req.account, req.params.id, req.body?.done !== false)));
+app.get("/academy-media/:file", (req, res) => {
+  const file = academy.videoFile(req.params.file, req.query.e, req.query.s);
+  if (!file) return res.status(403).send("This video link has expired. Open the lesson again.");
+  res.set("Cache-Control", "private, max-age=3600").type("video/mp4").sendFile(file);
+});
+app.get("/api/admin/academy", adminOnly, (_req, res) => res.json(academy.buildStatus()));
+app.post("/api/admin/academy/build", adminOnly, (req, res) => { academy.buildMissing({ voice: req.body?.voice }).catch((e) => console.error("[academy]", e.message)); res.json(academy.buildStatus()); });
+app.get("/api/daily-prompt", auth, wrap(async (req, res) => res.json(await daily.today(req.seller, { fresh: req.query.fresh === "1" }))));
+app.get("/api/community", auth, (req, res) => res.json(community.view(req.account)));
+app.get("/api/admin/settings", adminOnly, (_req, res) => res.json({ settings: community.all(), help: community.SETTINGS }));
+app.put("/api/admin/settings", adminOnly, (req, res) => res.json(community.update(req.body || {})));
+
+/* ---------- UGC creator kit ---------- */
+app.get("/api/ugc", auth, (req, res) => res.json({ profile: ugc.profile(req.seller), platforms: ugc.platforms(), ...ugc.deals(req.seller) }));
+app.put("/api/ugc/profile", auth, (req, res) => res.json(ugc.updateProfile(req.seller, req.body || {})));
+app.post("/api/ugc/videos", auth, express.raw({ type: ["video/*", "application/octet-stream"], limit: "150mb" }), wrap(async (req, res) => {
+  if (!Buffer.isBuffer(req.body)) throw httpError(400, "Upload the video file itself.");
+  res.status(201).json(await ugc.addVideo(req.seller, req.body, String(req.query.title || "")));
+}));
+app.post("/api/ugc/script", auth, aiLimit, wrap(async (req, res) => res.json(await ugc.script(req.account, req.body || {}))));
+app.post("/api/ugc/deals", auth, (req, res) => res.status(201).json(ugc.addDeal(req.seller, req.body || {})));
+app.patch("/api/ugc/deals/:id", auth, (req, res) => res.json(ugc.updateDeal(req.seller, req.params.id, req.body || {})));
+app.delete("/api/ugc/deals/:id", auth, (req, res) => { ugc.deleteDeal(req.seller, req.params.id); res.status(204).end(); });
+
+/* ---------- faceless videos ---------- */
+app.get("/api/faceless", auth, (req, res) => res.json(faceless.jobs(req.seller)));
+app.post("/api/faceless/script", auth, aiLimit, wrap(async (req, res) => res.json(await faceless.writeScript(req.account, req.seller, req.body || {}))));
+app.post("/api/faceless/videos", auth, (req, res) => res.status(201).json(faceless.start(req.seller, req.body || {})));
+app.get("/api/faceless/videos/:id", auth, (req, res) => res.json(faceless.job(req.seller, req.params.id)));
+app.delete("/api/faceless/videos/:id", auth, (req, res) => { faceless.remove(req.seller, req.params.id); res.status(204).end(); });
+
 /* ---------- email opens, clicks and unsubscribes (links in sent emails) ---------- */
 app.get("/e/o/:file", (req, res) => {
   audience.recordOpen(String(req.params.file).replace(/\.gif$/, ""));
@@ -1093,6 +1133,13 @@ app.post("/s/:store/subscribe", buyerLimit, (req, res) => {
   if (subscribeHits.size > 20000) subscribeHits.clear();
   res.json(audience.signupFromStore(store, req.body || {}));
 });
+// A creator's UGC portfolio page.
+app.get("/s/:store/ugc", (req, res) => {
+  const store = storeBySlug(req.params.store);
+  const page = ugc.publicPage(store);
+  if (!page) return res.status(404).send(notePage(view(req, store), "UGC", `<h1>This page isn't published yet</h1><p><a href="${esc(view(req, store)._base || "/")}">Shop ${esc(store.store_name)}</a></p>`));
+  res.send(ugcPage(view(req, store), page));
+});
 // Affiliate program: the public join page and each affiliate's own stats page.
 app.get("/s/:store/affiliates", (req, res) => {
   const store = storeBySlug(req.params.store);
@@ -1183,7 +1230,9 @@ app.get("/privacy", legal("Privacy policy", `
 <h2>Children</h2><p>Snapfront is for adults running a business and isn't meant for children under 13.</p>
 <h2>Contact</h2><p><a href="mailto:support@snapfront.app">support@snapfront.app</a></p>`));
 app.get("/terms", legal("Terms of use", `
-<p>By using Snapfront you agree to sell only products you have the right to sell, to describe them honestly, and to follow Stripe's terms and restricted-business list. You're responsible for fulfilling orders, taxes and refunds. Snapfront may remove listings that break these rules. Snapfront doesn't take a fee on your sales; Stripe's own processing fees apply, and paid plans are billed through Google Play or the App Store.</p>
+<p>By using Snapfront you agree to sell only products you have the right to sell, to describe them honestly, and to follow Stripe's terms and restricted-business list. You're responsible for fulfilling orders, taxes and refunds. Snapfront may remove listings that break these rules. Snapfront doesn't take a fee on your sales; Stripe's own processing fees apply.</p>
+<h2>Plans and payments</h2><p>Snapfront Lifetime is a one-time payment; Snapfront Monthly renews every month until you cancel, and you keep it until the end of the month you've paid for. Plans are bought on snapfront.app (through Stripe) or in the Android app (through Google Play). <strong>All sales are final: Snapfront plans are non-refundable</strong>, except where the law requires otherwise or where Google Play's own refund policy applies to a Google Play purchase.</p>
+<h2>Snapfront Partners</h2><p>Partners earn 40% of each Snapfront Lifetime sale and $19 for each paid month of Snapfront Monthly from customers they refer, under the rules shown in Earn with Snapfront. Commissions are paid after Snapfront receives the payment. Partners must disclose that they earn a commission, may not make income claims, and may not earn on their own purchases. Snapfront may withhold commissions earned against these rules, on fraudulent or charged-back sales, and may change the program with notice.</p>
 <h2>Contact</h2><p><a href="mailto:support@snapfront.app">support@snapfront.app</a></p>`));
 
 /* ---------- research list shown in the app's "What's selling" tab ---------- */
@@ -1209,6 +1258,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   }
   // Email broadcasts and automatic emails go out from a queue.
   audience.startWorker();
+  // Faceless videos are made one at a time in the background.
+  faceless.startWorker();
+  // Academy lesson videos: make any that are missing (open-source voice; a few minutes each).
+  if (String(process.env.ACADEMY_AUTOBUILD || "true") !== "false") setTimeout(() => academy.buildMissing().catch((e) => console.error("[academy]", e.message)), 90e3).unref();
   // Ask buyers for reviews a few days after they buy.
   setInterval(() => growth.sendReviewRequests().catch((e) => console.error("[reviews] email", e.message)), 60 * 60e3).unref();
   // Photo studio: fetch the cut-out model in the background so the first seller doesn't wait for it.

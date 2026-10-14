@@ -1,12 +1,14 @@
 // Snapfront Partners: anyone with a Snapfront account can share their own link
-// (snapfront.app/r/CODE) and earn a commission when someone they sent buys Snapfront Lifetime.
+// (snapfront.app/r/CODE) and earn when someone they sent buys Snapfront: 40% of Lifetime, and
+// $19 for every month a Monthly subscriber they sent pays.
 //
 // How a sale is credited: the link sets a cookie on .snapfront.app; the website (app.snapfront.app)
 // reads it and tells the server, which remembers the referring partner on the new account (first
-// partner wins, for PARTNER_WINDOW_DAYS). When that account's Lifetime purchase is confirmed
-// (website or Google Play), a commission is recorded. It's held PARTNER_HOLD_DAYS (the refund
-// window), voided if the purchase is refunded, then paid: automatically by Stripe transfer when
-// the partner has connected Stripe for their store, or by hand (PayPal) from the admin page.
+// partner wins, for PARTNER_WINDOW_DAYS). Amounts come only from what Stripe or Google Play report.
+// All sales are final, so a commission is paid when Snapfront is paid: held until the money
+// settles (a few days for Stripe, ~45 days for Google Play's monthly payout), re-checked for a
+// refund or chargeback, then paid: automatically by Stripe transfer to the partner's connected
+// account (one transfer per commission, never twice), or by hand (PayPal) from the admin page.
 import crypto from "node:crypto";
 import { config } from "./config.js";
 import { db, newId } from "./db.js";
@@ -19,9 +21,13 @@ import { sendEmail } from "./growth.js";
 import { cleanEmail } from "./audience.js";
 
 const num = (env, fallback, min, max) => { const v = Number(process.env[env]); return Number.isFinite(v) && v >= min && v <= max ? v : fallback; };
-export const RATE = () => num("PARTNER_RATE", 50, 1, 90);                    // % of a Lifetime sale
-export const MONTHLY_RATE = () => num("PARTNER_MONTHLY_RATE", 0, 0, 90);     // % of a monthly plan's first payment (off by default)
-export const HOLD_DAYS = () => num("PARTNER_HOLD_DAYS", 30, 0, 120);
+export const RATE = () => num("PARTNER_RATE", 40, 1, 90);                          // % of a Lifetime sale
+export const MONTHLY_CENTS = () => num("PARTNER_MONTHLY_CENTS", 1900, 0, 100000);  // per paid month of Monthly
+// Held until Snapfront has the money: Stripe pays out in about 2 business days; Google Play pays
+// developers monthly, about 15 days after the month ends.
+const HOLD = { stripe: () => num("PARTNER_HOLD_DAYS_STRIPE", 4, 0, 120), play: () => num("PARTNER_HOLD_DAYS_PLAY", 45, 0, 120) };
+const holdFor = (source) => (String(source).startsWith("play") ? HOLD.play() : HOLD.stripe());
+export const HOLD_DAYS = () => HOLD.stripe();
 export const WINDOW_DAYS = () => num("PARTNER_WINDOW_DAYS", 60, 1, 365);
 const autoPayouts = () => String(process.env.PARTNER_AUTO_PAYOUTS || "true").toLowerCase() !== "false";
 
@@ -76,7 +82,7 @@ export const TERMS = [
   "Don't promise income. Talk about what Snapfront does, not what someone will earn.",
   "No spam, fake reviews, paid ads on the word “Snapfront”, or posing as Snapfront.",
   "You can't earn on your own purchase or a purchase by someone in your household.",
-  `Commissions are held ${HOLD_DAYS()} days for refunds, then paid. Refunded sales don't earn.`,
+  "You're paid once Snapfront is paid: a few days after a website sale, or about 45 days after a Google Play sale. Chargebacks and fraudulent sales don't earn.",
   "Snapfront can change the rate or end the program with notice, and can withhold commissions earned against these rules.",
 ];
 function uniqueCode(base) {
@@ -124,7 +130,7 @@ function payoutMethod(accountId, paypal) {
 }
 export function view(account) {
   const p = db.prepare("SELECT * FROM partners WHERE account_id = ?").get(account.id);
-  const program = { rate: RATE(), monthly_rate: MONTHLY_RATE(), hold_days: HOLD_DAYS(), window_days: WINDOW_DAYS(), lifetime_price: dollars(webbilling.PLANS.lifetime.cents),
+  const program = { rate: RATE(), monthly_per_month: dollars(MONTHLY_CENTS()), monthly_price: dollars(webbilling.PLANS.pro.cents), hold_days: HOLD_DAYS(), play_hold_days: HOLD.play(), window_days: WINDOW_DAYS(), lifetime_price: dollars(webbilling.PLANS.lifetime.cents),
     per_sale: dollars(Math.round(webbilling.PLANS.lifetime.cents * RATE() / 100)), terms: TERMS };
   if (!p) return { joined: false, program, has_email: Boolean(account.email) };
   const sum = (status) => db.prepare("SELECT COALESCE(SUM(commission_cents),0) AS c FROM partner_commissions WHERE partner_id = ? AND status = ?").get(account.id, status).c;
@@ -180,62 +186,120 @@ export function claim(account, raw) {
 }
 
 /* ---------- commissions ---------- */
+const sameEmail = (a, b) => Boolean(a && b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase());
+/** The partner who gets credit for this buyer's purchase, or null. */
+function partnerFor(buyer, { recurring = false } = {}) {
+  if (!buyer?.referred_by) return null;
+  const partner = db.prepare("SELECT * FROM partners WHERE account_id = ? AND status = 'active'").get(buyer.referred_by);
+  if (!partner || partner.account_id === buyer.id) return null;
+  // A later month of a subscription the partner already earned on keeps earning; anything new
+  // must start within the referral window.
+  const earnedBefore = recurring && db.prepare("SELECT 1 FROM partner_commissions WHERE partner_id = ? AND buyer_account = ? AND status != 'void' LIMIT 1").get(partner.account_id, buyer.id);
+  if (!earnedBefore && buyer.referred_at && Date.parse(`${String(buyer.referred_at).replace(" ", "T")}Z`) < Date.now() - WINDOW_DAYS() * 864e5) return null;
+  return partner;
+}
+function record(partner, buyer, e, sale, commission) {
+  if (!(commission > 0) || !(sale > 0) || commission > sale) return;
+  const available = db.prepare("SELECT datetime('now', ?) AS t").get(`+${holdFor(e.source)} days`).t;
+  const inserted = db.prepare("INSERT OR IGNORE INTO partner_commissions (id, partner_id, buyer_account, source, ref, plan, sale_cents, commission_cents, available_at) VALUES (?,?,?,?,?,?,?,?,?)")
+    .run(newId("pcm"), partner.account_id, buyer.id, e.source, String(e.ref), e.plan, sale, commission, available).changes;
+  if (!inserted) return;
+  const to = plans.getAccount(partner.account_id)?.email;
+  const what = e.plan === "lifetime" ? "Snapfront Lifetime" : "a month of Snapfront";
+  if (to) sendEmail({ to, subject: `You earned ${money(commission)} with Snapfront`,
+    html: `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#16152E"><p style="font-size:20px;font-weight:700">Nice work!</p><p>Someone you sent paid for ${what}. You earned <b>${money(commission)}</b>.</p><p>It's paid on ${available.slice(0, 10)}, once Snapfront has the money. See it in Earn with Snapfront.</p></div>`,
+    text: `Someone you sent paid for ${what}. You earned ${money(commission)}, paid on ${available.slice(0, 10)}.` }).catch(() => {});
+}
+/** Lifetime bought (or refunded/charged back). */
 function onPurchase(e) {
-  const rate = e.plan === "lifetime" ? RATE() : e.plan === "pro" ? MONTHLY_RATE() : 0;
-  const existing = db.prepare("SELECT * FROM partner_commissions WHERE source = ? AND ref = ?").get(e.source, e.ref);
-  if (e.status === "ended" && existing) {
-    if (existing.status === "paid") db.prepare("UPDATE partner_commissions SET note = 'Refunded after it was paid' WHERE id = ?").run(existing.id);
-    else db.prepare("UPDATE partner_commissions SET status = 'void', note = 'Refunded' WHERE id = ?").run(existing.id);
+  const existing = db.prepare("SELECT * FROM partner_commissions WHERE source = ? AND ref = ?").get(e.source, String(e.ref));
+  if (e.status === "ended") {
+    if (!existing) return;
+    if (existing.status === "paid") db.prepare("UPDATE partner_commissions SET note = 'Refunded or charged back after it was paid' WHERE id = ?").run(existing.id);
+    else db.prepare("UPDATE partner_commissions SET status = 'void', note = 'Refunded or charged back' WHERE id = ?").run(existing.id);
     return;
   }
-  if (e.status !== "active" || existing || !rate) return;
+  if (e.status !== "active" || existing || e.plan !== "lifetime" || e.test) return;
   const buyer = plans.getAccount(e.account_id);
-  if (!buyer?.referred_by) return;
-  if (buyer.referred_at && Date.parse(`${String(buyer.referred_at).replace(" ", "T")}Z`) < Date.now() - WINDOW_DAYS() * 864e5) return;
-  const partner = db.prepare("SELECT * FROM partners WHERE account_id = ? AND status = 'active'").get(buyer.referred_by);
-  if (!partner || partner.account_id === buyer.id) return;
-  const sale = Number(e.amount_cents) || webbilling.PLANS[e.plan === "lifetime" ? "lifetime" : "pro"].cents;
-  const commission = Math.round(sale * rate / 100);
-  if (commission <= 0) return;
-  const available = db.prepare("SELECT datetime('now', ?) AS t").get(`+${HOLD_DAYS()} days`).t;
-  db.prepare("INSERT OR IGNORE INTO partner_commissions (id, partner_id, buyer_account, source, ref, plan, sale_cents, commission_cents, available_at) VALUES (?,?,?,?,?,?,?,?,?)")
-    .run(newId("pcm"), partner.account_id, buyer.id, e.source, e.ref, e.plan, sale, commission, available);
-  const to = plans.getAccount(partner.account_id)?.email;
-  if (to) sendEmail({ to, subject: `You earned ${money(commission)} with Snapfront`,
-    html: `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#16152E"><p style="font-size:20px;font-weight:700">Nice work!</p><p>Someone you sent just bought Snapfront ${e.plan === "lifetime" ? "Lifetime" : "Pro"}. You earned <b>${money(commission)}</b>.</p><p>It's paid after the ${HOLD_DAYS()}-day refund window. See it in Earn with Snapfront in the app.</p></div>`,
-    text: `Someone you sent bought Snapfront. You earned ${money(commission)}, paid after the ${HOLD_DAYS()}-day refund window.` }).catch(() => {});
+  const partner = partnerFor(buyer);
+  if (!partner) return;
+  // No earning on your own purchase, even from a second account.
+  const partnerEmail = plans.getAccount(partner.account_id)?.email;
+  if (sameEmail(partnerEmail, e.email) || sameEmail(partnerEmail, buyer.email)) return;
+  const sale = Math.round(Number(e.amount_cents)) || webbilling.PLANS.lifetime.cents;
+  record(partner, buyer, e, sale, Math.round(sale * RATE() / 100));
+}
+/** A paid month of Monthly: a fixed amount per month (never more than what was paid). */
+function onMonth(e) {
+  if (!MONTHLY_CENTS() || e.test) return;
+  const buyer = plans.getAccount(e.account_id);
+  const partner = partnerFor(buyer, { recurring: true });
+  if (!partner) return;
+  const partnerEmail = plans.getAccount(partner.account_id)?.email;
+  if (sameEmail(partnerEmail, e.email) || sameEmail(partnerEmail, buyer.email)) return;
+  const sale = Math.round(Number(e.amount_cents)) || 0;
+  record(partner, buyer, e, sale, Math.min(MONTHLY_CENTS(), sale));
 }
 webbilling.onPurchaseChange(onPurchase);
 playbilling.onPurchaseChange(onPurchase);
+webbilling.onInvoicePaid(onMonth);
+playbilling.onInvoicePaid(onMonth);
 
-let transfer = (params) => stripeClient().transfers.create(params);
-export function setTransfer(fn) { transfer = fn; }   // tests
-/** Daily: release held commissions whose purchase still counts, then pay what's ready. */
+let transfers = {
+  create: (params, opts) => stripeClient().transfers.create(params, opts),
+  list: (params) => stripeClient().transfers.list(params),
+};
+/** Tests swap in a stand-in for Stripe transfers. */
+export function setTransfers(t) { transfers = t; }
+
+/** Is the purchase behind this commission still paid for (no refund or chargeback)? Asks Stripe/Google again. */
+async function stillPaid(c) {
+  if (c.source === "stripe") {
+    const row = db.prepare("SELECT * FROM stripe_plan_purchases WHERE session_id = ?").get(c.ref);
+    if (!row) return false;
+    await webbilling.refreshAccount(row.account_id).catch(() => {});
+    return db.prepare("SELECT status FROM stripe_plan_purchases WHERE session_id = ?").get(c.ref)?.status === "active";
+  }
+  if (c.source === "play") {
+    const row = db.prepare("SELECT * FROM play_purchases WHERE token = ?").get(c.ref);
+    if (!row) return false;
+    await playbilling.refreshAccount(row.account_id).catch(() => {});
+    return db.prepare("SELECT status FROM play_purchases WHERE token = ?").get(c.ref)?.status === "active";
+  }
+  return true;   // a month already paid (stripe_invoice / play_order): all sales final
+}
+
+let sweeping = false;
+/** Release commissions once Snapfront has been paid, then pay what's ready. Safe to run any time. */
 export async function sweep() {
-  const due = db.prepare("SELECT * FROM partner_commissions WHERE status = 'pending' AND available_at <= datetime('now')").all();
-  for (const c of due) {
-    const still = c.source === "stripe"
-      ? db.prepare("SELECT status FROM stripe_plan_purchases WHERE session_id = ?").get(c.ref)?.status
-      : db.prepare("SELECT status FROM play_purchases WHERE token = ?").get(c.ref)?.status;
-    db.prepare("UPDATE partner_commissions SET status = ?, note = ? WHERE id = ?").run(still === "active" ? "approved" : "void", still === "active" ? "" : "Refunded", c.id);
-  }
-  let paid = 0;
-  if (!autoPayouts()) return paid;
-  const ready = db.prepare(`SELECT c.partner_id, SUM(c.commission_cents) AS cents, GROUP_CONCAT(c.id) AS ids FROM partner_commissions c JOIN partners p ON p.account_id = c.partner_id
-    WHERE c.status = 'approved' AND p.status = 'active' GROUP BY c.partner_id`).all();
-  for (const r of ready) {
-    const dest = db.prepare("SELECT stripe_account_id FROM sellers WHERE account_id = ? AND stripe_account_id IS NOT NULL AND stripe_ready = 1 ORDER BY created_at LIMIT 1").get(r.partner_id)?.stripe_account_id;
-    if (!dest || r.cents < 100) continue;
-    const ids = r.ids.split(",");
-    try {
-      const t = await transfer({ amount: r.cents, currency: "usd", destination: dest, description: "Snapfront partner commissions",
-        metadata: { snapfront_partner: r.partner_id, commissions: ids.join(",").slice(0, 480) } }, { idempotencyKey: `partner-${crypto.createHash("sha256").update(ids.sort().join(",")).digest("hex").slice(0, 40)}` });
-      const mark = db.prepare("UPDATE partner_commissions SET status = 'paid', paid_at = datetime('now'), payout_ref = ? WHERE id = ? AND status = 'approved'");
-      db.transaction(() => ids.forEach((id) => mark.run(t.id, id)))();
-      paid++;
-    } catch (e) { console.warn("[partners] transfer", r.partner_id, e.message); }
-  }
-  return paid;
+  if (sweeping) return 0;
+  sweeping = true;
+  try {
+    const due = db.prepare("SELECT * FROM partner_commissions WHERE status = 'pending' AND available_at <= datetime('now') LIMIT 500").all();
+    for (const c of due) {
+      let ok;
+      try { ok = await stillPaid(c); } catch { continue; }   // couldn't check: try again next time
+      db.prepare("UPDATE partner_commissions SET status = ?, note = ? WHERE id = ? AND status = 'pending'").run(ok ? "approved" : "void", ok ? "" : "Refunded or charged back", c.id);
+    }
+    if (!autoPayouts()) return 0;
+    let paid = 0;
+    const ready = db.prepare(`SELECT c.* FROM partner_commissions c JOIN partners p ON p.account_id = c.partner_id
+      WHERE c.status = 'approved' AND p.status = 'active' ORDER BY c.created_at LIMIT 500`).all();
+    for (const c of ready) {
+      const dest = db.prepare("SELECT stripe_account_id FROM sellers WHERE account_id = ? AND stripe_account_id IS NOT NULL AND stripe_ready = 1 ORDER BY created_at LIMIT 1").get(c.partner_id)?.stripe_account_id;
+      if (!dest) continue;
+      try {
+        // One transfer per commission, grouped under the commission id: if a previous run sent it
+        // but crashed before saving, Stripe already has it and we record that instead of paying again.
+        const found = (await transfers.list({ transfer_group: c.id, limit: 1 }))?.data?.[0];
+        const t = found || await transfers.create({ amount: c.commission_cents, currency: "usd", destination: dest, transfer_group: c.id,
+          description: `Snapfront partner commission ${c.id}`, metadata: { snapfront_partner: c.partner_id, snapfront_commission: c.id } }, { idempotencyKey: `partner-commission-${c.id}` });
+        db.prepare("UPDATE partner_commissions SET status = 'paid', paid_at = datetime('now'), payout_ref = ? WHERE id = ? AND status = 'approved'").run(t.id, c.id);
+        paid++;
+      } catch (e) { console.warn("[partners] transfer", c.id, e.message); }
+    }
+    return paid;
+  } finally { sweeping = false; }
 }
 
 /* ---------- Snapfront's own view (admin) ---------- */
