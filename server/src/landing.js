@@ -11,7 +11,7 @@ const usd = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 export function landingPage() {
   const year = new Date().getFullYear();
   const web = webAppUrl();
-  const featured = ['sneakers','skincare','furniture','jewelry','gaming-monitors','coffee','watches','streetwear']
+  const featured = ['p-bridal-dresses','p-gaming-monitors','p-sneakers','p-chocolate','p-furniture','p-streetwear','p-skincare','p-surfboards']
     .map((id) => publicThemes().find((theme) => theme.id === id)).filter((theme) => theme?.preview_url);
   const safe = (s) => String(s ?? '').replace(/[&<>"']/g, (v) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[v]));
   const showcaseSlides = featured.map((theme, i) => '<article class="theme-slide'+(i===0?' active':'')+'" data-slide="'+i+'" aria-hidden="'+(i!==0)+'"><img loading="'+(i===0?'eager':'lazy')+'" src="'+safe(theme.preview_url)+'" alt="'+safe(theme.name)+' storefront theme preview"><div class="theme-caption"><span>'+safe(theme.name)+'</span><small>'+safe(theme.category||theme.for)+'</small></div></article>').join('');
@@ -90,20 +90,31 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
 @media(max-width:1050px){.feature-showcase{gap:24px}.learn-grid,.capability-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.hero{gap:28px}.feature-showcase,.feature-showcase.reverse{grid-template-columns:1fr}.feature-showcase.reverse .feature-copy,.feature-showcase.reverse .mock-browser{order:initial}.learn-grid,.capability-grid,.difference-grid{grid-template-columns:1fr}.vault-heading{align-items:start;gap:16px}.vault-emblem{width:70px;height:70px;font-size:35px;border-radius:17px}.vault-emblem span{font-size:17px}.mock-browser,.reverse .mock-browser{transform:none}.theme-stage{height:350px}.free-entry{flex-direction:column;align-items:start}}
 @media(max-width:640px){header nav a:not(.btn){display:none}.hero{padding-block:44px}.theme-stage{height:300px}.stage-controls{flex-wrap:wrap}.mock-body{grid-template-columns:1fr}.mock-photo{height:220px}.mock-info{min-height:245px}.feature-showcase{margin:35px 0 60px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.theme-slide.active{animation:none}}
+
+/* Carousel BELOW the restored original Snapfront hero. */
+.featured-stores{background:linear-gradient(180deg,#11161e,#090b0e)}.featured-heading{display:flex;align-items:end;justify-content:space-between;gap:22px}.featured-heading>div{max-width:700px}.featured-heading .sub{margin-bottom:0}.featured-heading>a{flex-shrink:0}
+.hero-showcase.carousel-below{margin-top:30px}.carousel-below .theme-stage{--deck-gap:14px;display:flex;gap:var(--deck-gap);height:auto;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;border:0;background:transparent;padding-bottom:2px}.carousel-below .theme-stage::-webkit-scrollbar{display:none}
+.carousel-below .theme-slide,.carousel-below .theme-slide.active{display:block;position:relative;flex:0 0 calc((100% - 3 * var(--deck-gap))/4);min-width:0;scroll-snap-align:start;border:1px solid #44505f;border-radius:16px;overflow:hidden;animation:none;background:#1a2029}
+.carousel-below .theme-slide img{display:block;width:100%;height:265px;object-fit:cover;object-position:top center}.carousel-below .theme-slide:after{inset:42% 0 0}.carousel-below .theme-caption{bottom:14px;left:13px;right:13px}.carousel-below .theme-caption span{font-size:18px;line-height:1.15}.carousel-below .theme-caption small{font-size:10px}.carousel-below .theme-slide:hover img{transform:scale(1.025);transition:transform .4s}
+.carousel-below .stage-controls>span{max-width:none}.carousel-below .carousel-dot[hidden]{display:none}.carousel-below .stage-top{padding:3px 7px 14px}
+@media(max-width:1050px){.carousel-below .theme-slide,.carousel-below .theme-slide.active{flex-basis:calc((100% - var(--deck-gap))/2)}.featured-heading{align-items:start;flex-direction:column}.carousel-below .theme-slide img{height:290px}}
+@media(max-width:600px){.carousel-below .theme-slide,.carousel-below .theme-slide.active{flex-basis:85%}.carousel-below .theme-slide img{height:340px}}
+@media(prefers-reduced-motion:reduce){.carousel-below .theme-stage{scroll-behavior:auto}.carousel-below .theme-slide:hover img{transform:none}}
 </style></head><body>
 <header><div class="wrap"><a class="brand" href="/"><img src="/site/mark.png" alt="" width="32" height="32">snapfront</a>
 <nav><a href="#features">Features</a><a href="#themes">Themes</a><a href="#learn">Learn &amp; earn</a><a href="#pricing">Pricing</a><a href="${web}/sign-in">Sign in</a><a class="btn small" href="#pricing">Unlock Snapfront</a></nav></div></header>
 <main>
 <div class="wrap hero">
   <div>
-    <p class="eyebrow">The all-in-one creative commerce studio</p>
-    <h1><span>Your store.</span><br>Your audience.<br>Your next chapter.</h1>
-    <p class="lede">Build a polished online storefront from a photo. Discover products, make digital downloads, create marketing content, grow with affiliates and UGC, and learn how to sell — all in one place.</p>
+    <p class="eyebrow">Creative commerce studio</p>
+    <h1><span>Snap a photo.</span><br>Open a store.</h1>
+    <p class="lede">Point your phone at a product, or upload a photo from your computer. Snapfront helps build a product page, design a storefront, create marketing, and learn how to grow — all in one place.</p>
     <div class="ctas"><a class="btn" href="${web}/sign-in">Start free — create account <span aria-hidden="true">↗</span></a><a class="btn ghost" href="#pricing">See what unlocks</a></div>
     <p class="note">Explore the showcase without an account. Verify your email to use the free tools. Upgrade when you are ready to launch.</p>
   </div>
-  <div class="hero-showcase"><div class="stage-top"><span class="live-pulse"></span> THE THEME SHOWROOM <span class="stage-count">${THEMES.length} DESIGNS</span></div><div class="theme-stage" id="theme-stage" aria-label="Animated showcase of storefront themes">${showcaseSlides}</div><div class="stage-controls"><span>Actual Snapfront theme previews · example content</span><div class="stage-actions"><button type="button" id="prev-theme" aria-label="Previous theme">←</button><div class="carousel-dots" id="carousel-dots">${themeDots}</div><button type="button" id="next-theme" aria-label="Next theme">→</button></div></div></div>
+  <figure class="art" style="margin:0"><img src="/site/chrome-hero.webp" alt="The original Snapfront chrome gateway with jewelry and furniture showcases" width="1200" height="900" fetchpriority="high"><figcaption>Concept artwork</figcaption></figure>
 </div>
+<section id="themes" class="featured-stores"><div class="wrap"><div class="featured-heading"><div><p class="eyebrow">Original storefront designs</p><h2>Four eye-catching stores. Endless possibilities.</h2><p class="sub">Four different storefront compositions at a time, selected from our collection of ${THEMES.length} real themes. Scroll through eight distinctive looks, not recolors of the same page.</p></div><a class="btn ghost small" href="/themes">See all ${THEMES.length} themes ↗</a></div><div class="hero-showcase carousel-below"><div class="stage-top"><span class="live-pulse"></span> PREMIUM STOREFRONTS <span class="stage-count">${THEMES.length} DESIGNS</span></div><div class="theme-stage" id="theme-stage" aria-label="Animated showcase of storefront themes">${showcaseSlides}</div><div class="stage-controls"><span>Read-only previews · use arrows to explore</span><div class="stage-actions"><button type="button" id="prev-theme" aria-label="Previous theme">←</button><div class="carousel-dots" id="carousel-dots">${themeDots}</div><button type="button" id="next-theme" aria-label="Next theme">→</button></div></div></div></div></section>
 <section><div class="wrap">
   <h2>From photo to paid in three steps</h2>
   <p class="sub">Everything a small shop needs, written and set up for you.</p>
@@ -124,12 +135,7 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
   </ol>
   <div class="ctas"><a class="btn" href="#pricing">Become a member</a><a class="btn ghost" href="${web}/sign-in">Already have an account? Sign in</a></div>
 </div></section>
-<section id="themes"><div class="wrap">
-  <p class="eyebrow">Your look, your brand</p>
-  <h2>${THEMES.length} themes. Your own storefront.</h2>
-  <p class="sub">Choose a product-specific look for fashion, beauty, electronics, home, outdoor goods and more. Upload your photos, edit the words and preview before applying. Your products, prices and checkout stay yours.</p>
-  <a class="btn ghost" href="/themes">Explore all ${THEMES.length} read-only theme demos</a>
-</div></section>
+>
 
 <section id="features" class="features-section"><div class="wrap">
   <p class="eyebrow">More than a store builder</p>
@@ -172,22 +178,31 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
 <footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="${web}/sign-in">Sign in</a><a href="#features">Features</a><a href="#learn">Academy, UGC &amp; affiliates</a><a href="${web}/sign-in">Create an account</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a><span>support@snapfront.app</span></nav></div></footer>
 <script>
 (function(){
-  const slides=Array.from(document.querySelectorAll('[data-slide]'));
-  const dots=Array.from(document.querySelectorAll('[data-dot]'));
-  const stage=document.getElementById('theme-stage');
-  if(!slides.length||!stage)return;
-  let index=0;let timer;
-  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function show(n){index=(n+slides.length)%slides.length;slides.forEach((el,i)=>{el.classList.toggle('active',i===index);el.setAttribute('aria-hidden',String(i!==index));});dots.forEach((el,i)=>{el.classList.toggle('active',i===index);el.setAttribute('aria-current',String(i===index));});}
-  function stop(){if(timer){clearInterval(timer);timer=null;}}
-  function play(){stop();if(!reduced&&!document.hidden)timer=setInterval(()=>show(index+1),4200);}
-  document.getElementById('prev-theme')?.addEventListener('click',()=>{show(index-1);play();});
-  document.getElementById('next-theme')?.addEventListener('click',()=>{show(index+1);play();});
-  dots.forEach((el,i)=>el.addEventListener('click',()=>{show(i);play();}));
-  stage.addEventListener('mouseenter',stop);
-  stage.addEventListener('mouseleave',play);
-  document.addEventListener('visibilitychange',()=>document.hidden?stop():play());
-  show(0);play();
+ const stage=document.getElementById('theme-stage');
+ const slides=stage?Array.from(stage.querySelectorAll('[data-slide]')):[];
+ const dots=Array.from(document.querySelectorAll('[data-dot]'));
+ const prev=document.getElementById('prev-theme'),next=document.getElementById('next-theme');
+ if(!stage||!slides.length)return;
+ const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ let index=0,timer=null,paused=false;
+ const perPage=()=>window.innerWidth<=600?1:window.innerWidth<=1050?2:4;
+ const maxStart=()=>Math.max(0,slides.length-perPage());
+ function show(n){
+   index=Math.max(0,Math.min(n,maxStart()));
+   stage.scrollTo({left:slides[index].offsetLeft-slides[0].offsetLeft,behavior:reduced?'instant':'smooth'});
+   slides.forEach((slide)=>slide.setAttribute('aria-hidden','false'));
+   dots.forEach((dot,i)=>{dot.hidden=i>maxStart();dot.classList.toggle('active',i===index);dot.setAttribute('aria-pressed',String(i===index));});
+   if(prev)prev.disabled=index===0;if(next)next.disabled=index===maxStart();
+ }
+ function stop(){if(timer){clearInterval(timer);timer=null;}}
+ function play(){stop();if(!reduced&&!paused&&!document.hidden&&maxStart()>0)timer=setInterval(()=>show(index===maxStart()?0:index+1),4500);}
+ prev?.addEventListener('click',()=>{show(index-1);play();});next?.addEventListener('click',()=>{show(index+1);play();});
+ dots.forEach((dot,i)=>dot.addEventListener('click',()=>{show(i);play();}));
+ stage.addEventListener('mouseenter',()=>{paused=true;stop();});stage.addEventListener('mouseleave',()=>{paused=false;play();});
+ stage.addEventListener('focusin',()=>{paused=true;stop();});stage.addEventListener('focusout',()=>{paused=false;play();});
+ document.addEventListener('visibilitychange',()=>document.hidden?stop():play());
+ window.addEventListener('resize',()=>{show(Math.min(index,maxStart()));play();});
+ show(0);play();
 })();
 </script></body></html>`;
 }
