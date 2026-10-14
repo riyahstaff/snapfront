@@ -172,7 +172,7 @@ export async function script(account, b = {}) {
 Brand: ${brand || "the brand"}. Product: ${product}. ${b.points ? `Key points from the brief: ${line(b.points, 500)}.` : ""}
 Style: ${style}. Length: about ${seconds} seconds. Audience: TikTok and Instagram Reels; it may run as a paid ad.
 Rules: natural first-person voice, no claims the brief doesn't support (no medical or income claims), hook in the first 2 seconds, works with the sound off.
-Return JSON: {"hooks": [3 alternative opening lines, each max 70 chars], "scenes": [4-7 objects {"shot": string (what the camera shows, max 90 chars), "line": string (what the creator says, max 140 chars), "text": string (on-screen text, max 40 chars)}], "cta": string (max 60 chars), "tips": [3 short filming tips]}` }], 1100);
+Return JSON: {"hooks": [3 alternative opening lines, each max 70 chars], "scenes": [4-7 objects {"shot": string (what the camera shows, max 90 chars), "line": string (what the creator says, max 140 chars), "text": string (on-screen text, max 40 chars)}], "cta": string (max 60 chars), "tips": [3 short filming tips]}` }], 2500);
     return {
       style, seconds,
       hooks: (Array.isArray(out.hooks) ? out.hooks : []).map((x) => line(x, 90)).filter(Boolean).slice(0, 3),

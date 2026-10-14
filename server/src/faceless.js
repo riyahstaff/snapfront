@@ -58,7 +58,7 @@ export async function writeScript(account, seller, b = {}) {
 Store: ${seller.store_name}. Product: ${p.title}. ${line(p.tagline, 150)} Details: ${line((p.bullets || []).join("; "), 400)} ${line(p.description, 500)} Price: $${(p.price_cents / 100).toFixed(2)}.
 Style: ${style.name}. ${style.how}
 Rules: specific to this product; no made-up claims, reviews, numbers or awards; the first scene is a scroll-stopping hook; spoken lines sound natural read aloud (write numbers as words); the last line tells people the link is in the bio.
-Return JSON: {"hook": string (max 60 chars), "scenes": [4-5 objects {"text": string (on-screen words, max 45 chars), "say": string (voiceover, max 160 chars)}], "cta": string (max 40 chars), "caption": string (max 300 chars), "hashtags": [5-8 strings without #]}` }], 900);
+Return JSON: {"hook": string (max 60 chars), "scenes": [4-5 objects {"text": string (on-screen words, max 45 chars), "say": string (voiceover, max 160 chars)}], "cta": string (max 40 chars), "caption": string (max 300 chars), "hashtags": [5-8 strings without #]}` }], 2500);
     return { product_id: p.id, style: style.id, ...cleanScript(out) };
   });
 }

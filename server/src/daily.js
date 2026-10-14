@@ -48,7 +48,7 @@ ${product ? `Product to feature: ${product.title}. ${clamp(product.tagline, 120)
 Kind of post: ${kind.name}. ${kind.how}
 For TikTok, Instagram Reels and YouTube Shorts. Rules: specific to this product and store; no made-up claims, reviews, numbers or awards; filmable on a phone in under 15 minutes; a hook that works with the sound off.
 Return JSON: {"hook": string (max 70 chars, the first line said or shown), "film": [3-5 short steps, each max 80 chars], "on_screen": string (max 60 chars, text to put on screen),
-"caption": string (max 300 chars, ends by pointing to the link in bio), "hashtags": [5-8 strings without #], "cta": string (max 30 chars)}` }], 700);
+"caption": string (max 300 chars, ends by pointing to the link in bio), "hashtags": [5-8 strings without #], "cta": string (max 30 chars)}` }], 2000);
   return {
     hook: clamp(out.hook, 90), film: (Array.isArray(out.film) ? out.film : []).map((x) => clamp(x, 100)).filter(Boolean).slice(0, 5),
     on_screen: clamp(out.on_screen, 80), caption: String(out.caption || "").trim().slice(0, 500),
@@ -60,16 +60,22 @@ Return JSON: {"hook": string (max 70 chars, the first line said or shown), "film
 export async function today(seller, { fresh = false } = {}) {
   const day = todayFor();
   const row = db.prepare("SELECT * FROM daily_prompts WHERE seller_id = ? AND day = ?").get(seller.id, day);
-  if (row && !fresh) return JSON.parse(row.body);
+  if (row && !fresh) {
+    const body = JSON.parse(row.body);
+    // The built-in idea was used because the AI was busy: try the AI again (at most every 30 minutes).
+    if (!body.fallback || Date.now() - (body.made_at || 0) < 30 * 60e3) return body;
+  }
   if (row && row.n >= 3) throw httpError(429, "That's 3 ideas today. Come back tomorrow for more.");
-  const n = (row?.n || 0) + 1;
-  const kind = KINDS[(dayIndex(day) + (row ? row.n : 0)) % KINDS.length];
+  const retry = row && !fresh;   // replacing a built-in idea doesn't use up one of the 3
+  const n = retry ? row.n : (row?.n || 0) + 1;
+  const turn = row ? (retry ? row.n - 1 : row.n) : 0;
+  const kind = KINDS[(dayIndex(day) + turn) % KINDS.length];
   const products = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' ORDER BY created_at").all(seller.id).map(rowToProduct);
-  const product = products.length ? products[(dayIndex(day) + (row ? row.n : 0)) % products.length] : null;
-  let idea;
+  const product = products.length ? products[(dayIndex(day) + turn) % products.length] : null;
+  let idea, usedFallback = false;
   try { idea = await write(seller, kind, product); if (!idea.hook || !idea.film.length) throw new Error("empty"); }
-  catch { idea = fallback(seller, kind, product); }
-  const body = { day, kind: kind.id, kind_name: kind.name, ...idea, product: product ? { id: product.id, title: product.title, image_url: product.image_url, url: storeUrl(seller.store_slug, `/${product.slug}`) } : null, more_left: Math.max(0, 3 - n) };
+  catch { idea = fallback(seller, kind, product); usedFallback = true; }
+  const body = { day, kind: kind.id, kind_name: kind.name, ...idea, fallback: usedFallback, made_at: Date.now(), product: product ? { id: product.id, title: product.title, image_url: product.image_url, url: storeUrl(seller.store_slug, `/${product.slug}`) } : null, more_left: Math.max(0, 3 - n) };
   db.prepare("INSERT INTO daily_prompts (seller_id, day, n, body) VALUES (?,?,?,?) ON CONFLICT(seller_id, day) DO UPDATE SET n = ?, body = excluded.body")
     .run(seller.id, day, n, JSON.stringify(body), n);
   return body;
