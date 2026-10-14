@@ -45,6 +45,25 @@ export function WebNav() {
     { label: "Sign in / Register", href: "/sign-in", match: (p) => p.startsWith("/sign-in") },
   ];
 
+  // Checkout stays focused even when a visitor already has a verified account.
+  // Never expose any store, marketing, training or profile navigation on /plans.
+  if (path === "/plans") {
+    return (
+      <View style={{ backgroundColor: "rgba(9,11,14,0.94)", borderBottomWidth: 1, borderColor: c.sunk }}>
+        <View style={{ height: 68, width: "100%", maxWidth: CONTENT + 48, alignSelf: "center", paddingHorizontal: 24, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Image source={require("../../assets/brand-mark.png")} contentFit="contain" style={{ width: 30, height: 33 }} />
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, letterSpacing: -0.3, color: c.ink }}>snapfront</Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons name="lock-closed-outline" size={15} color={c.muted} />
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.muted }}>Secure membership</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ zIndex: 50, backgroundColor: "rgba(9,11,14,0.94)", borderBottomWidth: 1, borderColor: c.sunk }}>
       <View role="navigation" style={{ height: 68, width: "100%", maxWidth: CONTENT + 48, alignSelf: "center", paddingHorizontal: 24, flexDirection: "row", alignItems: "center", gap: 28 }}>
