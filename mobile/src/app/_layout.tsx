@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View } from "react-native";
+import { Dimensions, View } from "react-native";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -14,6 +15,11 @@ import * as SecureStore from "expo-secure-store";
 import { DEFAULT_STORE_NAME, NAMED_KEY } from "@/lib/store-address";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+// Phones stay upright; tablets (shortest side 600dp or more) can turn sideways for the wider layout.
+{
+  const { width, height } = Dimensions.get("screen");
+  if (Math.min(width, height) < 600) ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+}
 
 export default function RootLayout() {
   const c = useColors();
