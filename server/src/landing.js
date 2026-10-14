@@ -14,7 +14,7 @@ export function landingPage() {
   const featured = ['p-bridal-dresses','p-gaming-monitors','p-sneakers','p-chocolate','p-furniture','p-streetwear','p-skincare','p-surfboards']
     .map((id) => publicThemes().find((theme) => theme.id === id)).filter((theme) => theme?.preview_url);
   const safe = (s) => String(s ?? '').replace(/[&<>"']/g, (v) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[v]));
-  const showcaseSlides = featured.map((theme, i) => '<article class="theme-slide'+(i===0?' active':'')+'" data-slide="'+i+'" aria-hidden="'+(i!==0)+'"><img loading="'+(i===0?'eager':'lazy')+'" src="'+safe(theme.preview_url)+'" alt="'+safe(theme.name)+' storefront theme preview"><div class="theme-caption"><span>'+safe(theme.name)+'</span><small>'+safe(theme.category||theme.for)+'</small></div></article>').join('');
+  const showcaseSlides = featured.map((theme, i) => '<article class="theme-slide'+(i===0?' active':'')+'" data-slide="'+i+'" aria-hidden="false"><a href="'+safe(theme.demo_url)+'" aria-label="View the '+safe(theme.name)+' storefront theme (read-only demo)"><img loading="'+(i<4?'eager':'lazy')+'" src="'+safe(theme.preview_url)+'" alt="'+safe(theme.name)+' actual Snapfront storefront theme preview"><div class="theme-caption"><span>'+safe(theme.name)+'</span><small>'+safe(theme.category||theme.for)+'</small></div></a></article>').join('');
   const themeDots = featured.map((_,i) => '<button class="carousel-dot'+(i===0?' active':'')+'" type="button" aria-label="Show theme '+(i+1)+'" data-dot="'+i+'"></button>').join('');
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Snapfront: snap a photo, open a store</title>
@@ -95,7 +95,7 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
 .featured-stores{background:linear-gradient(180deg,#11161e,#090b0e)}.featured-heading{display:flex;align-items:end;justify-content:space-between;gap:22px}.featured-heading>div{max-width:700px}.featured-heading .sub{margin-bottom:0}.featured-heading>a{flex-shrink:0}
 .hero-showcase.carousel-below{margin-top:30px}.carousel-below .theme-stage{--deck-gap:14px;display:flex;gap:var(--deck-gap);height:auto;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;border:0;background:transparent;padding-bottom:2px}.carousel-below .theme-stage::-webkit-scrollbar{display:none}
 .carousel-below .theme-slide,.carousel-below .theme-slide.active{display:block;position:relative;flex:0 0 calc((100% - 3 * var(--deck-gap))/4);min-width:0;scroll-snap-align:start;border:1px solid #44505f;border-radius:16px;overflow:hidden;animation:none;background:#1a2029}
-.carousel-below .theme-slide img{display:block;width:100%;height:265px;object-fit:cover;object-position:top center}.carousel-below .theme-slide:after{inset:42% 0 0}.carousel-below .theme-caption{bottom:14px;left:13px;right:13px}.carousel-below .theme-caption span{font-size:18px;line-height:1.15}.carousel-below .theme-caption small{font-size:10px}.carousel-below .theme-slide:hover img{transform:scale(1.025);transition:transform .4s}
+.carousel-below .theme-slide img{display:block;width:100%;height:265px;object-fit:cover;object-position:top center}.carousel-below .theme-slide:after{inset:42% 0 0}.carousel-below .theme-caption{bottom:14px;left:13px;right:13px}.carousel-below .theme-caption span{font-size:18px;line-height:1.15}.carousel-below .theme-caption small{font-size:10px}.carousel-below .theme-slide a{display:block;position:relative;height:100%;text-decoration:none}.carousel-below .theme-slide a:focus-visible{outline:3px solid #e5e9f0;outline-offset:-4px}.carousel-below .theme-slide:hover img{transform:scale(1.025);transition:transform .4s}
 .carousel-below .stage-controls>span{max-width:none}.carousel-below .carousel-dot[hidden]{display:none}.carousel-below .stage-top{padding:3px 7px 14px}
 @media(max-width:1050px){.carousel-below .theme-slide,.carousel-below .theme-slide.active{flex-basis:calc((100% - var(--deck-gap))/2)}.featured-heading{align-items:start;flex-direction:column}.carousel-below .theme-slide img{height:290px}}
 @media(max-width:600px){.carousel-below .theme-slide,.carousel-below .theme-slide.active{flex-basis:85%}.carousel-below .theme-slide img{height:340px}}
@@ -188,7 +188,7 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
  const maxStart=()=>Math.max(0,slides.length-perPage());
  function show(n){
    index=Math.max(0,Math.min(n,maxStart()));
-   stage.scrollTo({left:slides[index].offsetLeft-slides[0].offsetLeft,behavior:reduced?'instant':'smooth'});
+   stage.scrollTo({left:slides[index].offsetLeft-slides[0].offsetLeft,behavior:reduced?'auto':'smooth'});
    slides.forEach((slide)=>slide.setAttribute('aria-hidden','false'));
    dots.forEach((dot,i)=>{dot.hidden=i>maxStart();dot.classList.toggle('active',i===index);dot.setAttribute('aria-pressed',String(i===index));});
    if(prev)prev.disabled=index===0;if(next)next.disabled=index===maxStart();
