@@ -138,3 +138,29 @@ test("cover photo, announcement, about, categories and related products show on 
   me = (await req("themes.test", "DELETE", "/api/me/banner", { token: s.token })).json();
   assert.equal(me.banner_url, null);
 });
+
+
+test("public sales funnel preserves original Snapfront hero and shows four distinct premium themes", async () => {
+  const response = await req("themes.test", "GET", "/");
+  assert.equal(response.status, 200);
+  const html = response.text;
+
+  // Preserve the approved artwork and original brand mark exactly as served from the repo.
+  assert.match(html, /<img src="\/site\/mark\.png"/);
+  assert.match(html, /<img src="\/site\/chrome-hero\.webp"/);
+  assert.match(html, /<h1><span>Snap a photo\.<\/span><br>Open a store\.<\/h1>/);
+  assert.ok(html.indexOf('src="/site/chrome-hero.webp"') < html.indexOf('id="themes"'),
+    "the theme carousel belongs underneath the original hero");
+
+  // Previews are real premium themes with independent layouts, never simple recolors.
+  const showcase = html.match(/<section id="themes"[\s\S]*?<\/section>/)?.[0] || "";
+  assert.equal((showcase.match(/class="theme-slide(?: active)?"/g) || []).length, 8);
+  for (const id of ["bridal-dresses", "gaming-monitors", "sneakers", "chocolate"]) {
+    assert.match(showcase, new RegExp("theme-demo/p-" + id));
+    assert.match(showcase, new RegExp("theme-assets/" + id + "-preview\\.webp"));
+  }
+  assert.match(html, /flex:0 0 calc\(\(100% - 3 \* var\(--deck-gap\)\)\/4\)/,
+    "desktop carousel shows four designs side by side");
+  assert.match(html, /prefers-reduced-motion: reduce/,
+    "reduced-motion visitors should not be forced to watch auto-play");
+});
