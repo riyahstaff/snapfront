@@ -36,7 +36,8 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === "web") {
     if (WEB_STANDINS[moduleName]) return { type: "sourceFile", filePath: WEB_STANDINS[moduleName] };
     // Website versions of a few screens (see WEB_SCREENS).
-    const screen = webScreen(moduleName, context.originModulePath);
+    // SNAPFRONT_PHONE_PREVIEW=1 keeps the phone app's own screens (for store screenshots).
+    const screen = process.env.SNAPFRONT_PHONE_PREVIEW ? null : webScreen(moduleName, context.originModulePath);
     if (screen) return { type: "sourceFile", filePath: screen };
     // react-native-web's Alert does nothing; use a real dialog instead.
     if ((moduleName === "./exports/Alert" && RNW_ALERT.test(context.originModulePath)) || /^react-native-web\/dist\/(cjs\/)?exports\/Alert(\/index(\.js)?)?$/.test(moduleName)) {
