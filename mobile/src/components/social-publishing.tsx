@@ -285,9 +285,8 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
 
       {connection && !connection.enabled ? (
         <View style={{ gap: space.sm, padding: space.md, borderRadius: radius.md, backgroundColor: c.sunk }}>
-          <Text style={[type.label, { color: c.ink }]}>Connection setup required</Text>
-          <Text style={[type.small, { color: c.muted }]}>{connection.setup_required || "Meta publishing is not configured for this Snapfront server yet."}</Text>
-          <Text style={[type.small, { color: c.muted }]}>New publishing is unavailable until server setup is completed.</Text>
+          <Text style={[type.label, { color: c.ink }]}>Coming soon</Text>
+          <Text style={[type.small, { color: c.muted }]}>{connection.setup_required || "Posting straight to Instagram and Facebook is coming soon. For now, save or share your post and add it in the app."}</Text>
         </View>
       ) : (
         <Button label={connection?.accounts.length ? "Connect another Page or Instagram" : "Connect Facebook Page & Instagram"} variant="secondary" loading={busy === "connect"} disabled={isBusy || connection === null} onPress={connect} />

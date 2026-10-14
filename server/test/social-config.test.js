@@ -50,11 +50,11 @@ test("disabled publishing, malformed encryption material, and non-HTTPS public U
   const accounts = await request("GET", "/api/social/accounts", undefined, created.body.token);
   assert.deepEqual(accounts.body, {
     enabled: false,
-    setup_required: social.setupRequired(),
+    setup_required: social.SELLER_SETUP_MESSAGE,
     accounts: [],
   });
   const authorize = await request("POST", "/api/social/authorize", {}, created.body.token);
   assert.equal(authorize.status, 503);
-  assert.match(authorize.body.error, /META_TOKEN_ENCRYPTION_KEY/);
+  assert.equal(authorize.body.error, social.SELLER_SETUP_MESSAGE);   // sellers never see setting names
   assert.equal(graphTouched, false);
 });

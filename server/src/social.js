@@ -50,8 +50,11 @@ export function setupRequired() {
   if (!config.metaPublishingEnabled) return "Set META_PUBLISHING_ENABLED=true only after Meta review, deployment, and live verification.";
   return null;
 }
-function requireOAuth() { if (!oauthReady()) throw httpError(503, setupRequired() || "Meta OAuth is not configured."); }
-function requirePublishing() { if (!publishingReady()) throw httpError(503, setupRequired() || "Meta publishing is not configured."); }
+/** What sellers see while posting to Instagram/Facebook isn't switched on (setupRequired() is for the owner's logs). */
+export const SELLER_SETUP_MESSAGE = "Posting straight to Instagram and Facebook is coming soon. For now, save or share your post and add it in the app.";
+function notReady(what) { console.warn(`[meta] ${what} unavailable: ${setupRequired()}`); return httpError(503, SELLER_SETUP_MESSAGE); }
+function requireOAuth() { if (!oauthReady()) throw notReady("OAuth"); }
+function requirePublishing() { if (!publishingReady()) throw notReady("publishing"); }
 function encrypt(token) {
   const key = encryptionKey();
   if (!key) throw new Error("Meta token encryption is not configured");
@@ -203,7 +206,7 @@ function assertRenderSupportedForMeta(render) {
 export function accounts(seller) {
   // Retain encrypted records until the owner repairs configuration, but never present them as
   // connected while the feature is disabled or an HTTPS/key prerequisite is absent.
-  if (!publishingReady()) return { enabled: false, setup_required: setupRequired(), accounts: [] };
+  if (!publishingReady()) return { enabled: false, setup_required: SELLER_SETUP_MESSAGE, accounts: [] };
   const rows = db.prepare("SELECT id, platform, name, status, token_expires_at, data_access_expires_at, user_token_expires_at, user_data_access_expires_at FROM social_connections WHERE seller_id = ? ORDER BY platform, name").all(seller.id);
   const time = Date.now();
   for (const row of rows) {
@@ -212,7 +215,7 @@ export function accounts(seller) {
       row.status = "reconnect_required";
     }
   }
-  return { enabled: publishingReady(), setup_required: setupRequired(), accounts: rows.map((r) => ({ id: r.id, platform: r.platform, name: r.name, status: r.status })) };
+  return { enabled: publishingReady(), setup_required: publishingReady() ? null : SELLER_SETUP_MESSAGE, accounts: rows.map((r) => ({ id: r.id, platform: r.platform, name: r.name, status: r.status })) };
 }
 export function authorize(seller, account) {
   requirePublishing();
