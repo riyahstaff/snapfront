@@ -113,5 +113,5 @@ test("web membership checkout has no seller navigation, including for signed-in 
   for (const link of ["<NavLink", "menu.map", "onPress=", "Open menu", "My store", "Digital products"]) {
     assert.ok(!isolated.includes(link), `Membership header must not render: ${link}`);
   }
-  assert.ok(nav.indexOf('if (path === "/plans")') < nav.indexOf("signedIn ? NAV"), "Hide navigation regardless of membership status");
+  assert.ok(nav.indexOf('if (path === "/plans")') < nav.indexOf('  return (\n    <View style={{ zIndex: 50'), "Plans header must return before the regular navigation renders");
 });
