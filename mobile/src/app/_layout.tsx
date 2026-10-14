@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { View } from "react-native";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -6,7 +7,8 @@ import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBo
 import { Figtree_400Regular, Figtree_500Medium, Figtree_700Bold } from "@expo-google-fonts/figtree";
 import { fonts, useColors } from "@/lib/theme";
 import { onUpgradeNeeded } from "@/lib/api";
-import { account } from "@/lib/account-store";
+import { account, useMe } from "@/lib/account-store";
+import { gateFor, MemberGate } from "@/components/member-gate";
 import { startBilling } from "@/lib/billing";
 import * as SecureStore from "expo-secure-store";
 import { DEFAULT_STORE_NAME, NAMED_KEY } from "@/lib/store-address";
@@ -21,20 +23,33 @@ export default function RootLayout() {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});
   }, [loaded, error]);
 
+  const me = useMe();
+  const [checked, setChecked] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const load = useCallback(() => {
+    account.refresh().then((m) => startBilling(m.account.id)).then(() => setFailed(false), () => setFailed(true)).finally(() => setChecked(true));
+  }, []);
   useEffect(() => {
     // Anything that needs a membership opens the membership screen with the server's reason.
     onUpgradeNeeded((plan, reason) => router.push({ pathname: "/plans", params: { highlight: plan, reason } }));
-    account.refresh().then(async (m) => {
-      startBilling(m.account.id);
-      // New sellers name their store first; it also becomes the store's web address.
-      if (m.store_name === DEFAULT_STORE_NAME && !(await SecureStore.getItemAsync(NAMED_KEY).catch(() => null))) router.push("/welcome");
-    }).catch(() => {});
+    load();
     return () => onUpgradeNeeded(null);
-  }, []);
+  }, [load]);
+  // Sign in first, then members only (see member-gate.tsx). The app underneath stays mounted.
+  const gate = gateFor(me, checked, failed);
+  const asked = useRef(false);
+  useEffect(() => {
+    if (gate !== "open" || asked.current || !me) return;
+    asked.current = true;
+    // Members name their store first if they haven't yet; it also becomes the store's web address.
+    (async () => {
+      if (me.store_name === DEFAULT_STORE_NAME && !(await SecureStore.getItemAsync(NAMED_KEY).catch(() => null))) router.push("/welcome");
+    })();
+  }, [gate, me]);
   if (!loaded && !error) return null;
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -79,6 +94,11 @@ export default function RootLayout() {
         <Stack.Screen name="supplier/[pid]" options={{ title: "Product" }} />
         <Stack.Screen name="welcome" options={{ title: "", presentation: "modal" }} />
       </Stack>
-    </>
+      {gate !== "open" ? (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }}>
+          <MemberGate state={gate} onRetry={load} />
+        </View>
+      ) : null}
+    </View>
   );
 }

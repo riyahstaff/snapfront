@@ -44,8 +44,7 @@ test("the home page leads to becoming a member; trying it free is a quiet link",
   assert.match(html, /href="https:\/\/app\.shopdomain\.test\/sign-in">Sign in</);
   assert.match(html, /href="https:\/\/app\.shopdomain\.test\/plans\?buy=lifetime">Join for \$299</);
   assert.match(html, /href="https:\/\/app\.shopdomain\.test\/plans\?buy=pro">Join for \$69 a month</);
-  assert.match(html, /Try Snapfront free<\/a> first/);
-  assert.match(html, /The Snapfront Android app, free/);
+  assert.match(html, /class="quiet-link">Try the creative tools free/);
   assert.doesNotMatch(html, /<h3>Free<\/h3>|\$0</, "no free plan card");
 });
 

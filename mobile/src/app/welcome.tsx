@@ -4,47 +4,19 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { Brand } from "@/components/brand";
 import { Body, Button, Field, Notice, Screen } from "@/components/ui";
-import { EmailSignIn } from "@/components/email-sign-in";
 import { api, ApiError } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
-import { startBilling } from "@/lib/billing";
 import { DEFAULT_STORE_NAME, NAMED_KEY, slugPreview } from "@/lib/store-address";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
 
-/** First launch: members sign in with the email they joined with; new people name their store to try it. */
+/** A member's first visit: name the store, which also gives it its web address. (Signing in
+ * happens before this, on the members' sign-in screen.) */
 export default function WelcomeScreen() {
-  const c = useColors();
-  const me = useMe();
-  const [mode, setMode] = useState<"start" | "name">("start");
-  const [note, setNote] = useState<string | null>(null);
-
   async function done() {
     await SecureStore.setItemAsync(NAMED_KEY, "1").catch(() => {});
     if (router.canGoBack()) router.back(); else router.replace("/");
   }
-
-  if (mode === "name") return <NameStore note={note} onDone={done} />;
-  return (
-    <Screen>
-      <Brand size={42} tagline />
-      <View style={{ gap: space.sm, marginTop: space.lg }}>
-        <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Welcome to{"\n"}Snapfront</Text>
-        <Body muted>Members: sign in with the email you joined with. Your stores and everything in your membership come with you.</Body>
-      </View>
-      <EmailSignIn onDone={async ({ me: next }) => {
-        await startBilling(next.account.id);
-        if (next.store_name !== DEFAULT_STORE_NAME) { await done(); return; }
-        setNote(next.account.plan === "free" ? `Signed in as ${next.account.email}.` : `Welcome, member. You’re on ${next.account.plan_name}.`);
-        setMode("name");
-      }} />
-      <View style={{ borderTopWidth: 1, borderTopColor: c.line, paddingTop: space.lg, gap: space.sm, marginTop: space.md }}>
-        <Text style={[type.label, { color: c.ink }]}>New here?</Text>
-        <Body muted>Name your store and try Snapfront free.</Body>
-        <Button label="Try it free" variant="secondary" onPress={() => { setNote(null); setMode("name"); }} />
-      </View>
-      {me?.account.email ? <Button label="Later" variant="ghost" onPress={done} /> : null}
-    </Screen>
-  );
+  return <NameStore note={null} onDone={done} />;
 }
 
 /** Name the store, which also gives it its web address. */

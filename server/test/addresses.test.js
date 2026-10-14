@@ -121,7 +121,7 @@ test("the main domain shows the Snapfront home page; www goes to it", async () =
   const r = await req("shopdomain.test", "GET", "/");
   assert.equal(r.status, 200);
   assert.match(r.text, /Snap a photo/);
-  assert.match(r.text, /0% fees/);
+  assert.match(r.text, /0% Snapfront fees/);
   const w = await req("www.shopdomain.test", "GET", "/terms");
   assert.equal(w.status, 301);
   assert.equal(w.location, "https://shopdomain.test/terms");
