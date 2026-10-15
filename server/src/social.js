@@ -353,6 +353,12 @@ export async function finishAuthorization(rawState, code) {
     } catch { return null; }
   });
   const allowed = inspected.filter(Boolean);
+  // What Meta returned, by name only (no tokens), so a missing Page or Instagram can be explained.
+  console.log(`[meta] connect: Meta returned ${pages.length} Page(s): ${pages.map((p) => {
+    const why = !p?.access_token ? "no token" : !assertPageTask(p) ? `skipped, tasks=${(p.tasks || []).join("/") || "none"}`
+      : !allowed.some((x) => x.page === p) ? "skipped, token check failed" : "saved";
+    return `${cleanText(p?.name, 60) || p?.id} (${why}${p?.instagram_business_account?.id ? `, Instagram ${cleanText(p.instagram_business_account.username, 40) || p.instagram_business_account.id}` : ", no Instagram linked"})`;
+  }).join("; ") || "none"}`);
   if (!allowed.length) throw httpError(400, "No Page with publishing permission was found. Ask a Page administrator for Create Content access, then try again.");
   const seller = db.prepare("SELECT * FROM sellers WHERE id = ? AND account_id = ?").get(state.seller_id, state.account_id);
   if (!seller) throw httpError(400, "This Meta connection link is no longer valid.");
