@@ -40,3 +40,29 @@ test("owners-only: the owner can connect and post; other members see 'coming soo
   assert.equal(autodm.status(owner).blocker, "connect_instagram");
   assert.equal(autodm.status(member).blocker, "pending_meta");
 });
+
+test("a connection started on the website comes back to a web page; the app's comes back to the app", async () => {
+  const owner = db.prepare("SELECT s.* FROM sellers s JOIN accounts a ON a.id = s.account_id WHERE a.email = 'owner@example.com'").get();
+  const acct = plans.getAccount(owner.account_id);
+  const web = social.authorize(owner, acct, { web: true });
+  assert.equal(web.redirect_url, "https://shopdomain.test/social/meta/done");
+  const webState = new URL(web.url).searchParams.get("state");
+  assert.equal(social.stateClient(webState), "web");
+  const app = social.authorize(owner, acct);
+  assert.equal(app.redirect_url, "snapfront://marketing");
+  assert.equal(social.stateClient(new URL(app.url).searchParams.get("state")), "app");
+
+  const { app: server } = await import("../src/index.js");
+  const s = server.listen(0); await new Promise((r) => s.once("listening", r));
+  const base = `http://127.0.0.1:${s.address().port}`;
+  try {
+    const app2 = social.authorize(owner, acct, { web: true });
+    const st = new URL(app2.url).searchParams.get("state");
+    const r = await fetch(`${base}/social/meta/callback?state=${encodeURIComponent(st)}&error=access_denied`, { redirect: "manual" });
+    assert.equal(r.status, 303);
+    assert.equal(r.headers.get("location"), "/social/meta/done?social=error");
+    const done = await (await fetch(`${base}/social/meta/done?social=connected`)).text();
+    assert.match(done, /<h1>Connected<\/h1>/);
+    assert.match(done, /window\.close\(\)/);
+  } finally { s.close(); }
+});

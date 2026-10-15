@@ -225,12 +225,19 @@ export function accounts(seller) {
   }
   return { enabled: true, setup_required: null, accounts: rows.map((r) => ({ id: r.id, platform: r.platform, name: r.name, status: r.status })) };
 }
-export function authorize(seller, account) {
+// Where a connection should land when Meta sends the person back: the website or the phone app.
+if (!db.prepare("PRAGMA table_info(social_oauth_states)").all().some((c) => c.name === "client")) db.exec("ALTER TABLE social_oauth_states ADD COLUMN client TEXT NOT NULL DEFAULT 'app'");
+/** "web" or "app" for a connection in progress (read without using it up). */
+export function stateClient(rawState) {
+  if (!rawState || String(rawState).length > 200) return "app";
+  return db.prepare("SELECT client FROM social_oauth_states WHERE state_hash = ?").get(stateHash(rawState))?.client || "app";
+}
+export function authorize(seller, account, { web = false } = {}) {
   requirePublishing(seller);
   db.prepare("DELETE FROM social_oauth_states WHERE expires_at <= ? OR seller_id = ?").run(now(), seller.id);
   const state = crypto.randomBytes(32).toString("base64url");
-  db.prepare("INSERT INTO social_oauth_states (state_hash, seller_id, account_id, expires_at, created_at) VALUES (?,?,?,?,?)")
-    .run(stateHash(state), seller.id, account.id, isoAfter(10 * 60_000), now());
+  db.prepare("INSERT INTO social_oauth_states (state_hash, seller_id, account_id, expires_at, created_at, client) VALUES (?,?,?,?,?,?)")
+    .run(stateHash(state), seller.id, account.id, isoAfter(10 * 60_000), now(), web ? "web" : "app");
   const url = new URL(`https://www.facebook.com/${config.metaGraphVersion}/dialog/oauth`);
   url.searchParams.set("client_id", config.metaAppId);
   url.searchParams.set("redirect_uri", `${config.publicUrl}/social/meta/callback`);
@@ -240,7 +247,7 @@ export function authorize(seller, account) {
   url.searchParams.set("display", "page");
   url.searchParams.set("scope", scopes().join(","));
   url.searchParams.set("auth_type", "rerequest");
-  return { url: url.toString(), redirect_url: "snapfront://marketing" };
+  return { url: url.toString(), redirect_url: web ? `${config.publicUrl}/social/meta/done` : "snapfront://marketing" };
 }
 function consumeState(state) {
   if (!state || String(state).length > 200) return null;

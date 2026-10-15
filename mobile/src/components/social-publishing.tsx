@@ -124,6 +124,14 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
     return () => { current = false; readGeneration.current++; };
   }, [refresh]));
 
+  // Website: the Facebook window can't always tell this page it's done, so look again whenever this window gets focus back.
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.addEventListener !== "function" || !storeId) return;
+    const onFocus = () => { void refresh(true); };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refresh, storeId]);
+
   const activePosts = useMemo(() => hasActiveSocialPosts(posts), [posts]);
   useEffect(() => {
     if (!focused || !appActive || !activePosts || legacyBackend || !storeId || confirmation || busy || Date.now() >= refreshDeadline.current) return;

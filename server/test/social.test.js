@@ -125,7 +125,8 @@ async function call(method, url, body, { bearer = sellerToken, headers = {}, red
   return { status: response.status, headers: response.headers, body: type.includes("json") ? await response.json() : await response.text() };
 }
 async function beginAuthorization(token = sellerToken) {
-  const auth = await call("POST", "/api/social/authorize", {}, { bearer: token });
+  // The phone app's connection flow (the website's lands on /social/meta/done instead).
+  const auth = await call("POST", "/api/social/authorize", {}, { bearer: token, headers: { "X-Snapfront-App": "android" } });
   assert.equal(auth.status, 200, JSON.stringify(auth.body));
   return new URL(auth.body.url);
 }
