@@ -52,10 +52,13 @@ export const config = {
   metaLoginConfigId: env.META_LOGIN_CONFIG_ID || "",
   metaTokenEncryptionKey: env.META_TOKEN_ENCRYPTION_KEY || "",
   metaGraphVersion: /^v\d+\.\d+$/.test(String(env.META_GRAPH_VERSION || "")) ? env.META_GRAPH_VERSION : "v26.0",
-  metaPublishingEnabled: String(env.META_PUBLISHING_ENABLED || "").toLowerCase() === "true",
+  // "true" = every member; "owners" = only OWNER_EMAILS accounts (while the Meta app is in Development mode).
+  metaPublishingEnabled: ["true", "owners"].includes(String(env.META_PUBLISHING_ENABLED || "").toLowerCase()),
+  metaPublishingOwnersOnly: String(env.META_PUBLISHING_ENABLED || "").toLowerCase() === "owners",
   // Instagram AutoDM (keyword replies to DMs and comments). Needs Meta's approval for the
   // instagram_manage_messages and instagram_manage_comments permissions before it's switched on.
-  metaAutoDmEnabled: String(env.META_AUTODM_ENABLED || "").toLowerCase() === "true",
+  metaAutoDmEnabled: ["true", "owners"].includes(String(env.META_AUTODM_ENABLED || "").toLowerCase()),
+  metaAutoDmOwnersOnly: String(env.META_AUTODM_ENABLED || "").toLowerCase() === "owners",
   metaWebhookVerifyToken: env.META_WEBHOOK_VERIFY_TOKEN || "",
 };
 

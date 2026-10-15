@@ -39,6 +39,14 @@ export function oauthReady() {
   return Boolean(config.metaAppId && config.metaAppSecret && config.metaLoginConfigId && encryptionKey() && validPublicUrl());
 }
 export function publishingReady() { return oauthReady() && config.metaPublishingEnabled === true; }
+/** Is this seller one of the owner's own stores (OWNER_EMAILS)? Used while features are on for owners only. */
+export function ownerSeller(seller) {
+  if (!seller?.account_id || !(config.ownerEmails || []).length) return false;
+  const email = db.prepare("SELECT email FROM accounts WHERE id = ?").get(seller.account_id)?.email;
+  return Boolean(email && config.ownerEmails.includes(String(email).toLowerCase()));
+}
+/** Can this seller connect and publish? (Everyone, or only the owner while the Meta app is being reviewed.) */
+export function publishingFor(seller) { return publishingReady() && (!config.metaPublishingOwnersOnly || ownerSeller(seller)); }
 export function setupRequired() {
   const missing = [];
   if (!config.metaAppId) missing.push("META_APP_ID");
@@ -54,7 +62,7 @@ export function setupRequired() {
 export const SELLER_SETUP_MESSAGE = "Posting straight to Instagram and Facebook is coming soon. For now, save or share your post and add it in the app.";
 function notReady(what) { console.warn(`[meta] ${what} unavailable: ${setupRequired()}`); return httpError(503, SELLER_SETUP_MESSAGE); }
 function requireOAuth() { if (!oauthReady()) throw notReady("OAuth"); }
-function requirePublishing() { if (!publishingReady()) throw notReady("publishing"); }
+function requirePublishing(seller) { if (!(seller ? publishingFor(seller) : publishingReady())) throw notReady("publishing"); }
 function encrypt(token) {
   const key = encryptionKey();
   if (!key) throw new Error("Meta token encryption is not configured");
@@ -206,7 +214,7 @@ function assertRenderSupportedForMeta(render) {
 export function accounts(seller) {
   // Retain encrypted records until the owner repairs configuration, but never present them as
   // connected while the feature is disabled or an HTTPS/key prerequisite is absent.
-  if (!publishingReady()) return { enabled: false, setup_required: SELLER_SETUP_MESSAGE, accounts: [] };
+  if (!publishingFor(seller)) return { enabled: false, setup_required: SELLER_SETUP_MESSAGE, accounts: [] };
   const rows = db.prepare("SELECT id, platform, name, status, token_expires_at, data_access_expires_at, user_token_expires_at, user_data_access_expires_at FROM social_connections WHERE seller_id = ? ORDER BY platform, name").all(seller.id);
   const time = Date.now();
   for (const row of rows) {
@@ -215,10 +223,10 @@ export function accounts(seller) {
       row.status = "reconnect_required";
     }
   }
-  return { enabled: publishingReady(), setup_required: publishingReady() ? null : SELLER_SETUP_MESSAGE, accounts: rows.map((r) => ({ id: r.id, platform: r.platform, name: r.name, status: r.status })) };
+  return { enabled: true, setup_required: null, accounts: rows.map((r) => ({ id: r.id, platform: r.platform, name: r.name, status: r.status })) };
 }
 export function authorize(seller, account) {
-  requirePublishing();
+  requirePublishing(seller);
   db.prepare("DELETE FROM social_oauth_states WHERE expires_at <= ? OR seller_id = ?").run(now(), seller.id);
   const state = crypto.randomBytes(32).toString("base64url");
   db.prepare("INSERT INTO social_oauth_states (state_hash, seller_id, account_id, expires_at, created_at) VALUES (?,?,?,?,?)")
@@ -424,7 +432,7 @@ function requestedSchedule(value) {
 }
 export function posts(seller) { return { posts: listRows(seller.id) }; }
 export function createPosts(seller, body) {
-  requirePublishing();
+  requirePublishing(seller);
   const caption = reviewedCaption(body?.caption);
   const key = cleanText(body?.idempotency_key, 128);
   const accountIds = Array.isArray(body?.account_ids) ? [...new Set(body.account_ids.map(String))] : [];

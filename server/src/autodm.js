@@ -57,15 +57,17 @@ CREATE INDEX IF NOT EXISTS autodm_activity_seller ON autodm_activity (seller_id,
 const line = (s, n) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
 const isPro = (seller) => (seller.account_id ? plans.effectivePlan(plans.getAccount(seller.account_id)) === "pro" : true);
 export const enabled = () => config.metaAutoDmEnabled && social.metaOauthReady() && Boolean(config.metaWebhookVerifyToken);
+/** On for this seller? (Everyone, or only the owner's stores while the Meta app is being reviewed.) */
+const enabledFor = (seller) => enabled() && (!config.metaAutoDmOwnersOnly || social.ownerSeller(seller));
 
 /* ---------- status and rules (the seller's screen) ---------- */
 export function status(seller) {
-  const accounts = enabled() ? social.instagramAccounts(seller.id).map((a) => ({ id: a.id, name: a.name, status: a.status })) : [];
+  const accounts = enabledFor(seller) ? social.instagramAccounts(seller.id).map((a) => ({ id: a.id, name: a.name, status: a.status })) : [];
   const stats = db.prepare("SELECT COUNT(*) FILTER (WHERE status = 'sent') AS sent, COUNT(*) FILTER (WHERE status = 'sent' AND at >= datetime('now','-7 days')) AS sent_7d FROM autodm_activity WHERE seller_id = ?").get(seller.id);
   return {
-    pro: isPro(seller), live: enabled(), accounts,
+    pro: isPro(seller), live: enabledFor(seller), accounts,
     // Plain-language state for the app: what's stopping AutoDM, if anything.
-    blocker: !enabled() ? "pending_meta" : !accounts.length ? "connect_instagram" : !accounts.some((a) => a.status === "connected") ? "reconnect_instagram" : !isPro(seller) ? "upgrade" : null,
+    blocker: !enabledFor(seller) ? "pending_meta" : !accounts.length ? "connect_instagram" : !accounts.some((a) => a.status === "connected") ? "reconnect_instagram" : !isPro(seller) ? "upgrade" : null,
     stats,
     activity: db.prepare("SELECT kind, who, text, status, error, at FROM autodm_activity WHERE seller_id = ? ORDER BY at DESC, rowid DESC LIMIT 30").all(seller.id),
   };
@@ -125,7 +127,7 @@ export function deleteRule(seller, id) {
 }
 /** Ask Meta to send this Page's Instagram comments and messages to Snapfront. */
 export async function subscribePages(seller) {
-  if (!enabled()) throw httpError(503, "AutoDM is waiting on Meta's approval.");
+  if (!enabledFor(seller)) throw httpError(503, "AutoDM is waiting on Meta's approval.");
   const out = [];
   for (const a of social.instagramAccounts(seller.id).filter((x) => x.status === "connected" && x.page_id)) {
     try { await social.metaGraph("POST", `${a.page_id}/subscribed_apps`, { token: a.token(), form: { subscribed_fields: "feed,messages" } }); out.push({ name: a.name, ok: true }); }
