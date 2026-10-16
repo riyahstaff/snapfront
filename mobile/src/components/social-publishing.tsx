@@ -6,7 +6,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
-import { Body, Button, Field, H2, Notice, Pill } from "@/components/ui";
+import { Body, Button, Field, H2, Notice, Pill, Segmented } from "@/components/ui";
 import { api, ApiError, type RenderedPost, type SocialAccount, type SocialAccounts, type SocialLogin, type SocialPost } from "@/lib/api";
 import {
   canCancelSocialPost,
@@ -20,6 +20,7 @@ import {
   mediaDescription,
   ownsStoreResponse,
   parseStrictLocalSchedule,
+  withMeridiem,
   publishingFingerprint,
   type PublishingPayload,
   type StoreOwner,
@@ -68,6 +69,7 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [dateText, setDateText] = useState("");
   const [timeText, setTimeText] = useState("");
+  const [meridiem, setMeridiem] = useState<"AM" | "PM">("PM");
   const [message, setMessage] = useState<Message>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [legacyBackend, setLegacyBackend] = useState(false);
@@ -181,7 +183,7 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
     let publishAt: string | null = null;
     let schedule: Confirmation["schedule"] = null;
     if (scheduleEnabled) {
-      const parsed = parseStrictLocalSchedule(dateText, timeText);
+      const parsed = parseStrictLocalSchedule(dateText, withMeridiem(timeText, meridiem));
       if (!parsed.ok) { setMessage({ text: parsed.error, tone: "error" }); return; }
       publishAt = parsed.publishAt;
       schedule = { local: parsed.local, utc: parsed.utc, timeZone: parsed.timeZone };
@@ -193,7 +195,7 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
     }
     const fingerprint = publishingFingerprint(payload);
     if (!idempotency.current || idempotency.current.fingerprint !== fingerprint) idempotency.current = { fingerprint, key: createIdempotencyKey() };
-    const names = connection?.accounts.filter((account) => payload.account_ids.includes(account.id)).map((account) => `${account.platform === "facebook" ? "Facebook Page" : "Instagram"}: ${account.name}`) ?? [];
+    const names = connection?.accounts.filter((account) => payload.account_ids.includes(account.id)).map((account) => account.platform === "facebook" ? `Facebook Page: ${account.name}` : account.name.startsWith("Instagram") ? account.name : `Instagram: ${account.name}`) ?? [];
     setConfirmation({
       payload,
       idempotencyKey: idempotency.current.key,
@@ -354,9 +356,16 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
                 <Text style={[type.body, { color: c.ink }]}>Schedule this approved post</Text>
               </Pressable>
               {scheduleEnabled ? <View style={{ gap: space.sm }}>
-                <Field label="Local date" hint="YYYY-MM-DD" value={dateText} onChangeText={setDateText} placeholder="2026-10-15" keyboardType="numbers-and-punctuation" editable={!isBusy && !confirmation} />
-                <Field label="Local time" hint="24-hour HH:MM" value={timeText} onChangeText={setTimeText} placeholder="14:30" keyboardType="numbers-and-punctuation" editable={!isBusy && !confirmation} />
-                <Text style={[type.small, { color: c.muted }]}>We’ll show the exact local time, time zone, and UTC time before scheduling.</Text>
+                <Field label="Date" hint="Month/Day/Year" value={dateText} onChangeText={setDateText} placeholder={exampleDate()} keyboardType="numbers-and-punctuation" editable={!isBusy && !confirmation} />
+                <View style={{ flexDirection: "row", alignItems: "flex-end", gap: space.sm }}>
+                  <View style={{ flex: 1 }}>
+                    <Field label="Time" hint="Hour:minutes" value={timeText} onChangeText={setTimeText} placeholder="2:30" keyboardType="numbers-and-punctuation" editable={!isBusy && !confirmation} />
+                  </View>
+                  <View style={{ width: 132 }}>
+                    <Segmented value={meridiem} onChange={setMeridiem} options={[{ value: "AM", label: "AM" }, { value: "PM", label: "PM" }]} />
+                  </View>
+                </View>
+                <Text style={[type.small, { color: c.muted }]}>Your local time. We’ll show the full date and time to check before scheduling.</Text>
               </View> : null}
               <Button label={scheduleEnabled ? "Review schedule" : "Review & publish now"} disabled={isBusy || !connectedAccounts.length} onPress={beginReview} />
             </>
@@ -440,7 +449,6 @@ function ReviewModal({ confirmation, busy, onClose, onConfirm }: { confirmation:
           <Text style={[type.small, { color: c.muted }]}>This review freezes the selected accounts, caption, media, and timing. Edit nothing behind it; close to make changes.</Text>
           <View style={{ gap: 4 }}>
             <Text style={[type.label, { color: c.ink }]}>Destinations</Text>
-          <Text style={[type.small, { color: c.muted }]}>Tick the accounts a post should go to.</Text>
             {confirmation.accountNames.map((name) => <Text key={name} style={[type.small, { color: c.muted }]}>• {name}</Text>)}
           </View>
           <View style={{ gap: 4 }}><Text style={[type.label, { color: c.ink }]}>Media</Text><Text style={[type.small, { color: c.muted }]}>{confirmation.media} · {confirmation.kind}</Text></View>
@@ -449,7 +457,7 @@ function ReviewModal({ confirmation, busy, onClose, onConfirm }: { confirmation:
             {confirmation.mediaUrls.map((url, index) => <Image key={url} source={{ uri: url }} contentFit="contain" accessibilityLabel={`Approved media ${index + 1}`} style={{ width: 160, height: 180, marginRight: 8 }} />)}
           </ScrollView> : <FrozenReel key={confirmation.mediaUrls[0]} url={confirmation.mediaUrls[0]} />}
           <View style={{ gap: 4 }}><Text style={[type.label, { color: c.ink }]}>Exact caption</Text><Text style={[type.small, { color: c.muted }]}>{confirmation.payload.caption}</Text></View>
-          {confirmation.schedule ? <View style={{ gap: 4 }}><Text style={[type.label, { color: c.ink }]}>Exact schedule</Text><Text style={[type.small, { color: c.muted }]}>{confirmation.schedule.local} ({confirmation.schedule.timeZone})</Text><Text style={[type.small, { color: c.muted }]}>UTC: {confirmation.schedule.utc}</Text></View> : <Text style={[type.small, { color: c.muted }]}>Publishing now after confirmation.</Text>}
+          {confirmation.schedule ? <View style={{ gap: 4 }}><Text style={[type.label, { color: c.ink }]}>Exact schedule</Text><Text style={[type.small, { color: c.muted }]}>{confirmation.schedule.local}</Text><Text style={[type.small, { color: c.muted }]}>Time zone: {confirmation.schedule.timeZone.replace(/_/g, " ")}</Text></View> : <Text style={[type.small, { color: c.muted }]}>Publishing now after confirmation.</Text>}
           <Button label={action} loading={busy} onPress={onConfirm} />
           <Button label="Back to edit" variant="ghost" disabled={busy} onPress={onClose} />
         </ScrollView>
@@ -488,5 +496,10 @@ function DisconnectModal({ account, busy, onClose, onConfirm }: { account: Socia
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+}
+/** Tomorrow as Month/Day/Year, as an example in the date box. */
+function exampleDate() {
+  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
 }

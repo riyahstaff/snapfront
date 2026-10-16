@@ -69,26 +69,59 @@ export function isAllowedMetaPermalink(url: string | null) {
  * Parse local text without Date's rollover behavior (for example, rejecting 2026-02-31).
  * Marketing schedules are intentionally capped at 90 days so server validation remains the final authority.
  */
+/** "10/20/2026" (or "2026-10-20") → [year, month, day]. */
+function parseDate(text: string): [number, number, number] | null {
+  const t = text.trim();
+  const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(t);
+  if (us) return [Number(us[3]), Number(us[1]), Number(us[2])];
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  return iso ? [Number(iso[1]), Number(iso[2]), Number(iso[3])] : null;
+}
+/** "2:30 PM", "2pm", "12:05 am" (or 24-hour "14:30") → [hour 0-23, minute]. */
+function parseTime(text: string): [number, number] | null {
+  const t = text.trim().toLowerCase().replace(/\./g, "").replace(/\s+/g, " ");
+  const twelve = /^(\d{1,2})(?::(\d{2}))? ?(am|pm|a|p)$/.exec(t);
+  if (twelve) {
+    const h = Number(twelve[1]), m = Number(twelve[2] ?? "0");
+    if (h < 1 || h > 12 || m > 59) return null;
+    return [(h % 12) + (twelve[3].startsWith("p") ? 12 : 0), m];
+  }
+  const day = /^(\d{1,2}):(\d{2})$/.exec(t);
+  if (!day || Number(day[1]) > 23 || Number(day[2]) > 59) return null;
+  return [Number(day[1]), Number(day[2])];
+}
+/** The time box plus the AM/PM buttons. A time typed with its own AM/PM, or as 24-hour (0:30, 14:30), wins. */
+export function withMeridiem(timeText: string, meridiem: "AM" | "PM") {
+  const typed = timeText.trim();
+  if (/[ap]\.?\s*m?\.?$/i.test(typed)) return typed;
+  const hour = /^(\d{1,2})(?::\d{2})?$/.exec(typed);
+  if (hour && (Number(hour[1]) > 12 || Number(hour[1]) === 0)) return typed;
+  return typed ? `${typed} ${meridiem}` : typed;
+}
+/** A date and time people read every day: "Tuesday, October 20, 2026, 2:30 PM". */
+export function friendlyDateTime(date: Date) {
+  return date.toLocaleString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+}
+
 export function parseStrictLocalSchedule(dateText: string, timeText: string, now = new Date(), maxDays = 90): ScheduleResult {
-  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateText.trim());
-  const timeMatch = /^(\d{2}):(\d{2})$/.exec(timeText.trim());
-  if (!dateMatch || !timeMatch) return { ok: false, error: "Use YYYY-MM-DD and 24-hour HH:MM." };
-  const [, y, mo, d] = dateMatch;
-  const [, h, min] = timeMatch;
-  const year = Number(y), month = Number(mo), day = Number(d), hour = Number(h), minute = Number(min);
-  if (month < 1 || month > 12 || day < 1 || hour > 23 || minute > 59) return { ok: false, error: "Enter a real local date and time." };
+  const date = parseDate(dateText);
+  const time = parseTime(timeText);
+  if (!date || !time) return { ok: false, error: "Enter a date like 10/20/2026 and a time like 2:30 PM." };
+  const [year, month, day] = date;
+  const [hour, minute] = time;
+  if (month < 1 || month > 12 || day < 1) return { ok: false, error: "Enter a real date and time." };
   const local = new Date(year, month - 1, day, hour, minute, 0, 0);
   if (local.getFullYear() !== year || local.getMonth() !== month - 1 || local.getDate() !== day || local.getHours() !== hour || local.getMinutes() !== minute) {
-    return { ok: false, error: "Enter a real local date and time." };
+    return { ok: false, error: "Enter a real date and time." };
   }
   const distance = local.getTime() - now.getTime();
-  if (distance <= 0) return { ok: false, error: "Choose a future local time." };
+  if (distance <= 0) return { ok: false, error: "Choose a time in the future." };
   if (distance > maxDays * 24 * 60 * 60 * 1000) return { ok: false, error: `Choose a time within ${maxDays} days.` };
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "your local time zone";
   return {
     ok: true,
     publishAt: local.toISOString(),
-    local: local.toLocaleString(),
+    local: friendlyDateTime(local),
     utc: local.toISOString().replace(".000Z", "Z"),
     timeZone,
   };

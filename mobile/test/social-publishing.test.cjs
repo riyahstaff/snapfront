@@ -29,6 +29,33 @@ test("strict local scheduling rejects rollover, past, and overlong dates while r
   assert.equal(local.getHours(), 14); assert.equal(local.getMinutes(), 30);
 });
 
+test("scheduling reads everyday dates and 12-hour times (AM/PM), and still accepts 24-hour", () => {
+  const h = helpers();
+  const now = new Date(2026, 9, 12, 12, 0, 0);
+  const at = (date, time) => { const r = h.parseStrictLocalSchedule(date, time, now); assert.equal(r.ok, true, `${date} ${time}: ${r.error}`); const d = new Date(r.publishAt); return [d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes()]; };
+  assert.deepEqual(at("10/13/2026", "2:30 PM"), [10, 13, 14, 30]);
+  assert.deepEqual(at("10/13/2026", "2:30pm"), [10, 13, 14, 30]);
+  assert.deepEqual(at("10/13/2026", "2 p.m."), [10, 13, 14, 0]);
+  assert.deepEqual(at("10/13/2026", "12:15 AM"), [10, 13, 0, 15]);
+  assert.deepEqual(at("10/13/2026", "12:15 PM"), [10, 13, 12, 15]);
+  assert.deepEqual(at("10/13/2026", "9:05 am"), [10, 13, 9, 5]);
+  assert.deepEqual(at("2026-10-13", "14:30"), [10, 13, 14, 30]);
+  for (const bad of ["13:00 PM", "0:30 AM", "2:60 PM", "noon", ""]) assert.equal(h.parseStrictLocalSchedule("10/13/2026", bad, now).ok, false, bad);
+  assert.equal(h.parseStrictLocalSchedule("2/31/2027", "2:00 PM", now).ok, false, "no rolled-over dates");
+  assert.match(h.parseStrictLocalSchedule("13/45/2026", "2 PM", now).error, /real date/);
+  assert.match(h.parseStrictLocalSchedule("10/13", "2 PM", now).error, /10\/20\/2026.*2:30 PM/);
+  // The review shows 12-hour time.
+  assert.match(h.parseStrictLocalSchedule("10/13/2026", "2:30 PM", now).local, /2:30\s?PM/);
+
+  // The AM/PM buttons: added to a plain time; a typed AM/PM or a 24-hour time wins.
+  assert.equal(h.withMeridiem("2:30", "PM"), "2:30 PM");
+  assert.equal(h.withMeridiem(" 9 ", "AM"), "9 AM");
+  assert.equal(h.withMeridiem("2:30 am", "PM"), "2:30 am");
+  assert.equal(h.withMeridiem("14:30", "AM"), "14:30");
+  assert.equal(h.withMeridiem("0:30", "PM"), "0:30");
+  assert.equal(h.withMeridiem("", "PM"), "");
+});
+
 test("frozen publishing payloads are ordered, materially fingerprinted, and require protected media", () => {
   const h = helpers();
   const render = { kind: "carousel", render_id: "render_store_a_1", files: [{ file: "one.jpg", url: "https://example.test/one.jpg" }, { file: "two.jpg", url: "https://example.test/two.jpg" }] };
