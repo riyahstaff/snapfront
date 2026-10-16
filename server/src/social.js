@@ -14,6 +14,13 @@ const META_SCOPES = [
 const AUTODM_SCOPES = ["instagram_manage_messages", "instagram_manage_comments", "pages_manage_metadata"];
 const scopes = () => (config.metaAutoDmEnabled ? [...META_SCOPES, ...AUTODM_SCOPES] : META_SCOPES);
 const REQUIRED_SCOPES = ["pages_show_list", "pages_read_engagement", "pages_manage_posts", "instagram_basic", "instagram_content_publish"];
+// "Connect with Instagram" (Business Login for Instagram): the seller signs in with Instagram
+// itself, so no Facebook Page is involved. Calls go to graph.instagram.com with that token.
+export const IG_HOST = "https://graph.instagram.com";
+const IG_SCOPES = ["instagram_business_basic", "instagram_business_content_publish"];
+const IG_AUTODM_SCOPES = ["instagram_business_manage_messages", "instagram_business_manage_comments"];
+const igScopes = () => (config.metaAutoDmEnabled ? [...IG_SCOPES, ...IG_AUTODM_SCOPES] : IG_SCOPES);
+const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
 const now = () => new Date().toISOString();
 const asJson = (value, fallback = {}) => { try { return JSON.parse(value); } catch { return fallback; } };
@@ -35,10 +42,16 @@ function encryptionKey() {
     return key;
   } catch { return null; }
 }
+/** Facebook Login for Business (Pages, and Instagram accounts linked to them) is configured. */
 export function oauthReady() {
   return Boolean(config.metaAppId && config.metaAppSecret && config.metaLoginConfigId && encryptionKey() && validPublicUrl());
 }
-export function publishingReady() { return oauthReady() && config.metaPublishingEnabled === true; }
+/** "Connect with Instagram" is configured. */
+export function instagramLoginReady() {
+  return Boolean(config.instagramAppId && config.instagramAppSecret && encryptionKey() && validPublicUrl());
+}
+const anyLoginReady = () => oauthReady() || instagramLoginReady();
+export function publishingReady() { return anyLoginReady() && config.metaPublishingEnabled === true; }
 /** Is this seller one of the owner's own stores (OWNER_EMAILS)? Used while features are on for owners only. */
 export function ownerSeller(seller) {
   if (!seller?.account_id || !(config.ownerEmails || []).length) return false;
@@ -49,9 +62,15 @@ export function ownerSeller(seller) {
 export function publishingFor(seller) { return publishingReady() && (!config.metaPublishingOwnersOnly || ownerSeller(seller)); }
 export function setupRequired() {
   const missing = [];
-  if (!config.metaAppId) missing.push("META_APP_ID");
-  if (!config.metaAppSecret) missing.push("META_APP_SECRET");
-  if (!config.metaLoginConfigId) missing.push("META_LOGIN_CONFIG_ID");
+  const facebookSet = Boolean(config.metaAppId && config.metaAppSecret && config.metaLoginConfigId);
+  const instagramSet = Boolean(config.instagramAppId && config.instagramAppSecret);
+  if (!facebookSet && !instagramSet) {
+    // Either login is enough: Facebook Pages, or "Connect with Instagram".
+    if (!config.metaAppId) missing.push("META_APP_ID");
+    if (!config.metaAppSecret) missing.push("META_APP_SECRET");
+    if (!config.metaLoginConfigId) missing.push("META_LOGIN_CONFIG_ID");
+    missing.push("(or INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET)");
+  }
   if (!encryptionKey()) missing.push("META_TOKEN_ENCRYPTION_KEY (a 32-byte base64 key)");
   if (!validPublicUrl()) missing.push("an HTTPS PUBLIC_URL");
   if (missing.length) return `Set ${missing.join(", ")} before connecting Meta.`;
@@ -62,6 +81,7 @@ export function setupRequired() {
 export const SELLER_SETUP_MESSAGE = "Posting straight to Instagram and Facebook is coming soon. For now, save or share your post and add it in the app.";
 function notReady(what) { console.warn(`[meta] ${what} unavailable: ${setupRequired()}`); return httpError(503, SELLER_SETUP_MESSAGE); }
 function requireOAuth() { if (!oauthReady()) throw notReady("OAuth"); }
+function requireInstagramLogin() { if (!instagramLoginReady()) throw notReady("Instagram login"); }
 function requirePublishing(seller) { if (!(seller ? publishingFor(seller) : publishingReady())) throw notReady("publishing"); }
 function encrypt(token) {
   const key = encryptionKey();
@@ -111,7 +131,15 @@ async function defaultTransport({ method, url, headers = {}, form, body }) {
 }
 async function request(request) { return (transportOverride || defaultTransport)(request); }
 function graphUrl(endpoint, host = "https://graph.facebook.com") { return `${host}/${config.metaGraphVersion}/${String(endpoint).replace(/^\//, "")}`; }
-async function graph(method, endpoint, { token, form, body, host } = {}) {
+async function graph(method, endpoint, { token, form, body, host, json } = {}) {
+  if (json !== undefined) {
+    // JSON body (Instagram messaging), with the token in the Authorization header as Meta documents.
+    const headers = { "content-type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+    return request({ method, url: graphUrl(endpoint, host), headers, body: JSON.stringify(json) });
+  }
+  // graph.instagram.com documents the token as the access_token parameter; graph.facebook.com
+  // takes it as a Bearer header.
+  if (host === IG_HOST) return request({ method, url: graphUrl(endpoint, host), headers: {}, form: token ? { ...(form || {}), access_token: token } : form, body });
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
   return request({ method, url: graphUrl(endpoint, host), headers, form, body });
 }
@@ -215,7 +243,7 @@ export function accounts(seller) {
   // Retain encrypted records until the owner repairs configuration, but never present them as
   // connected while the feature is disabled or an HTTPS/key prerequisite is absent.
   if (!publishingFor(seller)) return { enabled: false, setup_required: SELLER_SETUP_MESSAGE, accounts: [] };
-  const rows = db.prepare("SELECT id, platform, name, status, token_expires_at, data_access_expires_at, user_token_expires_at, user_data_access_expires_at FROM social_connections WHERE seller_id = ? ORDER BY platform, name").all(seller.id);
+  const rows = db.prepare("SELECT id, platform, name, status, auth, token_expires_at, data_access_expires_at, user_token_expires_at, user_data_access_expires_at FROM social_connections WHERE seller_id = ? ORDER BY platform, name").all(seller.id);
   const time = Date.now();
   for (const row of rows) {
     if ((row.token_expires_at && Date.parse(row.token_expires_at) <= time) || (row.data_access_expires_at && Date.parse(row.data_access_expires_at) <= time) || (row.platform === "instagram" && expirationInvalid(row, true))) {
@@ -223,21 +251,45 @@ export function accounts(seller) {
       row.status = "reconnect_required";
     }
   }
-  return { enabled: true, setup_required: null, accounts: rows.map((r) => ({ id: r.id, platform: r.platform, name: r.name, status: r.status })) };
+  return {
+    enabled: true, setup_required: null,
+    // Which ways to connect are switched on: "Connect with Instagram" and/or Facebook Pages.
+    logins: { instagram: instagramLoginReady(), facebook: oauthReady() },
+    accounts: rows.map((r) => ({ id: r.id, platform: r.platform, name: r.name, status: r.status, via: r.auth === "instagram" ? "instagram" : "facebook" })),
+  };
 }
+const hasColumn = (table, column) => db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
 // Where a connection should land when Meta sends the person back: the website or the phone app.
-if (!db.prepare("PRAGMA table_info(social_oauth_states)").all().some((c) => c.name === "client")) db.exec("ALTER TABLE social_oauth_states ADD COLUMN client TEXT NOT NULL DEFAULT 'app'");
+if (!hasColumn("social_oauth_states", "client")) db.exec("ALTER TABLE social_oauth_states ADD COLUMN client TEXT NOT NULL DEFAULT 'app'");
+// Which login a connection in progress uses, so one login's state can't finish the other.
+if (!hasColumn("social_oauth_states", "provider")) db.exec("ALTER TABLE social_oauth_states ADD COLUMN provider TEXT NOT NULL DEFAULT 'facebook'");
+// How a destination was connected: through a Facebook Page ('facebook') or Instagram login ('instagram').
+if (!hasColumn("social_connections", "auth")) db.exec("ALTER TABLE social_connections ADD COLUMN auth TEXT NOT NULL DEFAULT 'facebook'");
 /** "web" or "app" for a connection in progress (read without using it up). */
 export function stateClient(rawState) {
   if (!rawState || String(rawState).length > 200) return "app";
   return db.prepare("SELECT client FROM social_oauth_states WHERE state_hash = ?").get(stateHash(rawState))?.client || "app";
 }
-export function authorize(seller, account, { web = false } = {}) {
+export function authorize(seller, account, { web = false, provider = "facebook" } = {}) {
   requirePublishing(seller);
+  const viaInstagram = provider === "instagram";
+  if (viaInstagram) requireInstagramLogin(); else requireOAuth();
   db.prepare("DELETE FROM social_oauth_states WHERE expires_at <= ? OR seller_id = ?").run(now(), seller.id);
   const state = crypto.randomBytes(32).toString("base64url");
-  db.prepare("INSERT INTO social_oauth_states (state_hash, seller_id, account_id, expires_at, created_at, client) VALUES (?,?,?,?,?,?)")
-    .run(stateHash(state), seller.id, account.id, isoAfter(10 * 60_000), now(), web ? "web" : "app");
+  db.prepare("INSERT INTO social_oauth_states (state_hash, seller_id, account_id, expires_at, created_at, client, provider) VALUES (?,?,?,?,?,?,?)")
+    .run(stateHash(state), seller.id, account.id, isoAfter(10 * 60_000), now(), web ? "web" : "app", viaInstagram ? "instagram" : "facebook");
+  const redirect_url = web ? `${config.publicUrl}/social/meta/done` : "snapfront://marketing";
+  if (viaInstagram) {
+    const url = new URL("https://www.instagram.com/oauth/authorize");
+    url.searchParams.set("client_id", config.instagramAppId);
+    url.searchParams.set("redirect_uri", `${config.publicUrl}/social/instagram/callback`);
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set("scope", igScopes().join(","));
+    url.searchParams.set("state", state);
+    url.searchParams.set("enable_fb_login", "false");   // Instagram sign-in only: the Facebook route is the other button
+    url.searchParams.set("force_reauth", "true");       // pick the right Instagram account, even if another is signed in
+    return { url: url.toString(), redirect_url };
+  }
   const url = new URL(`https://www.facebook.com/${config.metaGraphVersion}/dialog/oauth`);
   url.searchParams.set("client_id", config.metaAppId);
   url.searchParams.set("redirect_uri", `${config.publicUrl}/social/meta/callback`);
@@ -247,20 +299,20 @@ export function authorize(seller, account, { web = false } = {}) {
   url.searchParams.set("display", "page");
   url.searchParams.set("scope", scopes().join(","));
   url.searchParams.set("auth_type", "rerequest");
-  return { url: url.toString(), redirect_url: web ? `${config.publicUrl}/social/meta/done` : "snapfront://marketing" };
+  return { url: url.toString(), redirect_url };
 }
-function consumeState(state) {
+function consumeState(state, provider = "facebook") {
   if (!state || String(state).length > 200) return null;
   const hashed = stateHash(state);
   return db.transaction(() => {
     const item = db.prepare("SELECT * FROM social_oauth_states WHERE state_hash = ?").get(hashed);
     // A state is consumed for success, denial, malformed code, or expiry—never reusable.
     if (item) db.prepare("DELETE FROM social_oauth_states WHERE state_hash = ?").run(hashed);
-    if (!item || Date.parse(item.expires_at) < Date.now()) return null;
+    if (!item || Date.parse(item.expires_at) < Date.now() || (item.provider || "facebook") !== provider) return null;
     return item;
   })();
 }
-export function cancelAuthorization(rawState) { return Boolean(consumeState(rawState)); }
+export function cancelAuthorization(rawState, provider = "facebook") { return Boolean(consumeState(rawState, provider)); }
 async function permissionsFor(userToken) {
   const out = await graph("GET", "me/permissions", { token: userToken });
   const granted = new Set((out.data || []).filter((p) => p.status === "granted").map((p) => p.permission));
@@ -378,7 +430,7 @@ export async function finishAuthorization(rawState, code) {
   db.transaction(() => {
     // Reauthorization replaces credentials for destinations returned by Meta, preserving other
     // selected destinations only if Meta did not return them (they become reconnect-required).
-    db.prepare("UPDATE social_connections SET status='reconnect_required', updated_at=? WHERE seller_id=?").run(now(), seller.id);
+    db.prepare("UPDATE social_connections SET status='reconnect_required', updated_at=? WHERE seller_id=? AND auth='facebook'").run(now(), seller.id);
     for (const { page, tokenDebug } of allowed) {
       const token = encrypt(page.access_token);
       const encryptedUserToken = encrypt(userToken);
@@ -386,7 +438,7 @@ export async function finishAuthorization(rawState, code) {
       const pageId = String(page.id), pageName = cleanText(page.name, 200) || "Facebook Page";
       const existingPage = db.prepare("SELECT id FROM social_connections WHERE seller_id=? AND platform='facebook' AND remote_id=?").get(seller.id, pageId);
       const values = [String(userDebug.user_id), pageId, pageName, token, encryptedUserToken, pageDates.expiry, pageDates.dataExpiry, userDates.expiry, userDates.dataExpiry, now()];
-      if (existingPage) db.prepare("UPDATE social_connections SET meta_user_id=?, page_id=?, name=?, access_token_enc=?, user_access_token_enc=?, token_expires_at=?, data_access_expires_at=?, user_token_expires_at=?, user_data_access_expires_at=?, status='connected', updated_at=? WHERE id=?").run(...values, existingPage.id);
+      if (existingPage) db.prepare("UPDATE social_connections SET meta_user_id=?, page_id=?, name=?, access_token_enc=?, user_access_token_enc=?, token_expires_at=?, data_access_expires_at=?, user_token_expires_at=?, user_data_access_expires_at=?, status='connected', auth='facebook', updated_at=? WHERE id=?").run(...values, existingPage.id);
       else db.prepare("INSERT INTO social_connections (id,seller_id,meta_user_id,platform,remote_id,page_id,name,access_token_enc,user_access_token_enc,token_expires_at,data_access_expires_at,user_token_expires_at,user_data_access_expires_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
         .run(newId("social"), seller.id, String(userDebug.user_id), "facebook", pageId, pageId, pageName, token, encryptedUserToken, pageDates.expiry, pageDates.dataExpiry, userDates.expiry, userDates.dataExpiry, "connected", now(), now());
       const igId = page?.instagram_business_account?.id;
@@ -394,7 +446,7 @@ export async function finishAuthorization(rawState, code) {
         const existingIg = db.prepare("SELECT id FROM social_connections WHERE seller_id=? AND platform='instagram' AND remote_id=?").get(seller.id, String(igId));
         const username = instagramNames.get(String(igId));
         const igName = username ? `Instagram @${username}` : `${pageName} on Instagram`;
-        if (existingIg) db.prepare("UPDATE social_connections SET meta_user_id=?, page_id=?, name=?, access_token_enc=?, user_access_token_enc=?, token_expires_at=?, data_access_expires_at=?, user_token_expires_at=?, user_data_access_expires_at=?, status='connected', updated_at=? WHERE id=?").run(...[String(userDebug.user_id), pageId, igName, token, encryptedUserToken, pageDates.expiry, pageDates.dataExpiry, userDates.expiry, userDates.dataExpiry, now(), existingIg.id]);
+        if (existingIg) db.prepare("UPDATE social_connections SET meta_user_id=?, page_id=?, name=?, access_token_enc=?, user_access_token_enc=?, token_expires_at=?, data_access_expires_at=?, user_token_expires_at=?, user_data_access_expires_at=?, status='connected', auth='facebook', updated_at=? WHERE id=?").run(...[String(userDebug.user_id), pageId, igName, token, encryptedUserToken, pageDates.expiry, pageDates.dataExpiry, userDates.expiry, userDates.dataExpiry, now(), existingIg.id]);
         else db.prepare("INSERT INTO social_connections (id,seller_id,meta_user_id,platform,remote_id,page_id,name,access_token_enc,user_access_token_enc,token_expires_at,data_access_expires_at,user_token_expires_at,user_data_access_expires_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
           .run(newId("social"), seller.id, String(userDebug.user_id), "instagram", String(igId), pageId, igName, token, encryptedUserToken, pageDates.expiry, pageDates.dataExpiry, userDates.expiry, userDates.dataExpiry, "connected", now(), now());
       }
@@ -402,18 +454,98 @@ export async function finishAuthorization(rawState, code) {
   })();
   return seller;
 }
+
+/* ---------- "Connect with Instagram" (Business Login for Instagram) ---------- */
+const IG_REQUIRED = ["instagram_business_basic", "instagram_business_content_publish"];
+const IG_FAILED = "Instagram could not confirm this connection. Return to Snapfront and try again.";
+export async function finishInstagramAuthorization(rawState, code) {
+  const state = consumeState(rawState, "instagram");
+  if (!state) throw httpError(400, "This Instagram connection link has expired. Return to Snapfront and try again.");
+  // Instagram appends "#_" to the redirect; it isn't part of the code.
+  const cleanCode = String(code || "").replace(/#_$/, "");
+  if (!cleanCode || cleanCode.length > 2000) throw httpError(400, "Instagram did not approve the connection. Return to Snapfront and try again.");
+  requireInstagramLogin();
+  let short;
+  try {
+    const out = await request({ method: "POST", url: "https://api.instagram.com/oauth/access_token", form: {
+      client_id: config.instagramAppId, client_secret: config.instagramAppSecret, grant_type: "authorization_code",
+      redirect_uri: `${config.publicUrl}/social/instagram/callback`, code: cleanCode,
+    } });
+    short = Array.isArray(out?.data) ? out.data[0] : out;   // Meta documents a data[] wrapper; it often answers flat
+  } catch { throw httpError(400, IG_FAILED); }
+  const shortToken = String(short?.access_token || "");
+  if (!shortToken) throw httpError(400, IG_FAILED);
+  if (short?.permissions !== undefined) {
+    const list = Array.isArray(short.permissions) ? short.permissions : String(short.permissions).split(",");
+    const granted = new Set(list.map((p) => String(p).trim()));
+    if (IG_REQUIRED.some((p) => !granted.has(p))) throw httpError(400, "Instagram permissions were not approved. Return to Snapfront, connect again and allow posting.");
+  }
+  let token, expiresIn, me;
+  try {
+    // Server-side exchange (uses the app secret) for a 60-day token, then who this account is.
+    const long = await request({ method: "GET", url: `${IG_HOST}/access_token`, form: { grant_type: "ig_exchange_token", client_secret: config.instagramAppSecret, access_token: shortToken } });
+    token = String(long?.access_token || "");
+    expiresIn = Number(long?.expires_in);
+    if (!token) throw new Error("no long-lived token");
+    me = await graph("GET", "me", { token, host: IG_HOST, form: { fields: "user_id,username,account_type" } });
+  } catch { throw httpError(400, IG_FAILED); }
+  // user_id is the professional account ID: the one webhooks and publishing use.
+  const igId = String(me?.user_id || me?.id || "");
+  if (!/^\d{1,30}$/.test(igId)) throw httpError(400, IG_FAILED);
+  const seller = db.prepare("SELECT * FROM sellers WHERE id = ? AND account_id = ?").get(state.seller_id, state.account_id);
+  if (!seller) throw httpError(400, "This Instagram connection link is no longer valid.");
+  const username = cleanText(me?.username, 100);
+  const name = username ? `Instagram @${username}` : "Instagram account";
+  const expiry = Number.isFinite(expiresIn) && expiresIn > 0 ? isoAfter(expiresIn * 1000) : isoAfter(60 * DAY);
+  // Meta's deauthorize/data-deletion requests name the Instagram-scoped user, so remember that ID.
+  const metaUserId = String(short?.user_id || me?.id || igId);
+  const enc = encrypt(token);
+  db.transaction(() => {
+    const existing = db.prepare("SELECT id FROM social_connections WHERE seller_id=? AND platform='instagram' AND remote_id=?").get(seller.id, igId);
+    if (existing) db.prepare("UPDATE social_connections SET meta_user_id=?, page_id=NULL, name=?, access_token_enc=?, user_access_token_enc=?, token_expires_at=?, data_access_expires_at=NULL, user_token_expires_at=?, user_data_access_expires_at=NULL, status='connected', auth='instagram', updated_at=? WHERE id=?")
+      .run(metaUserId, name, enc, enc, expiry, expiry, now(), existing.id);
+    else db.prepare("INSERT INTO social_connections (id,seller_id,meta_user_id,platform,remote_id,page_id,name,access_token_enc,user_access_token_enc,token_expires_at,user_token_expires_at,status,auth,created_at,updated_at) VALUES (?,?,?,'instagram',?,NULL,?,?,?,?,?,'connected','instagram',?,?)")
+      .run(newId("social"), seller.id, metaUserId, igId, name, enc, enc, expiry, expiry, now(), now());
+  })();
+  console.log(`[instagram] connect: ${username ? `@${username}` : igId} saved (${cleanText(me?.account_type, 30) || "professional"} account)`);
+  return seller;
+}
+/** Instagram tokens last 60 days; renew each one that is at least a day old and within 20 days of expiring. */
+export async function refreshInstagramTokens() {
+  if (!instagramLoginReady()) return 0;
+  const rows = db.prepare("SELECT id, access_token_enc FROM social_connections WHERE auth='instagram' AND status='connected' AND token_expires_at > ? AND token_expires_at < ? AND updated_at < ?")
+    .all(now(), isoAfter(20 * DAY), isoAfter(-DAY));
+  let renewed = 0;
+  for (const row of rows) {
+    try {
+      const out = await request({ method: "GET", url: `${IG_HOST}/refresh_access_token`, form: { grant_type: "ig_refresh_token", access_token: decrypt(row.access_token_enc) } });
+      const token = String(out?.access_token || "");
+      const seconds = Number(out?.expires_in);
+      if (!token) continue;
+      const expiry = Number.isFinite(seconds) && seconds > 0 ? isoAfter(seconds * 1000) : isoAfter(60 * DAY);
+      const enc = encrypt(token);
+      db.prepare("UPDATE social_connections SET access_token_enc=?, user_access_token_enc=?, token_expires_at=?, user_token_expires_at=?, updated_at=? WHERE id=? AND auth='instagram'").run(enc, enc, expiry, expiry, now(), row.id);
+      renewed++;
+    } catch (error) {
+      // A revoked token (or one that can't be read) needs the seller to connect again; anything else retries next time.
+      if (graphTokenExpired(error) || error?.message?.startsWith("Stored Meta credentials")) db.prepare("UPDATE social_connections SET status='reconnect_required', updated_at=? WHERE id=?").run(now(), row.id);
+    }
+  }
+  return renewed;
+}
 /* ---------- for AutoDM (autodm.js): the seller's Instagram accounts and their Page tokens ---------- */
 export function instagramAccounts(sellerId) {
   return db.prepare("SELECT * FROM social_connections WHERE seller_id = ? AND platform = 'instagram' ORDER BY created_at").all(sellerId).map((r) => ({
-    id: r.id, ig_id: r.remote_id, page_id: r.page_id, name: r.name, status: r.status, token: () => decrypt(r.access_token_enc),
+    id: r.id, ig_id: r.remote_id, page_id: r.page_id, name: r.name, status: r.status, auth: r.auth || "facebook", token: () => decrypt(r.access_token_enc),
   }));
 }
 export function instagramOwner(igId) {
   const r = db.prepare("SELECT * FROM social_connections WHERE platform = 'instagram' AND remote_id = ? AND status = 'connected' ORDER BY updated_at DESC LIMIT 1").get(String(igId));
-  return r ? { seller_id: r.seller_id, ig_id: r.remote_id, page_id: r.page_id, name: r.name, token: () => decrypt(r.access_token_enc) } : null;
+  return r ? { seller_id: r.seller_id, ig_id: r.remote_id, page_id: r.page_id, name: r.name, auth: r.auth || "facebook", token: () => decrypt(r.access_token_enc) } : null;
 }
 export const metaGraph = (method, endpoint, options) => graph(method, endpoint, options);
-export const metaOauthReady = () => oauthReady();
+/** Either login (Facebook Pages or Instagram) is configured. */
+export const metaOauthReady = () => anyLoginReady();
 
 export function disconnect(seller, id) {
   const result = db.prepare("DELETE FROM social_connections WHERE id = ? AND seller_id = ?").run(String(id), seller.id);
@@ -587,7 +719,7 @@ function waiting(job, post, workerId, at, { stage, remoteIds, pollCount, safeRet
   })();
 }
 function loadWork(jobId) {
-  return db.prepare("SELECT j.*, p.*, j.id AS job_id, p.id AS post_id, j.status AS job_status, p.status AS post_status, c.access_token_enc, c.user_access_token_enc, c.remote_id AS account_remote_id, c.status AS connection_status, c.token_expires_at, c.data_access_expires_at, c.user_token_expires_at, c.user_data_access_expires_at FROM social_publish_jobs j JOIN social_posts p ON p.id=j.post_id JOIN social_connections c ON c.id=p.connection_id WHERE j.id=?").get(jobId);
+  return db.prepare("SELECT j.*, p.*, j.id AS job_id, p.id AS post_id, j.status AS job_status, p.status AS post_status, c.access_token_enc, c.user_access_token_enc, c.remote_id AS account_remote_id, c.status AS connection_status, c.auth AS connection_auth, c.token_expires_at, c.data_access_expires_at, c.user_token_expires_at, c.user_data_access_expires_at FROM social_publish_jobs j JOIN social_posts p ON p.id=j.post_id JOIN social_connections c ON c.id=p.connection_id WHERE j.id=?").get(jobId);
 }
 function expirationInvalid(connection, requireUserToken = false) {
   const expired = (value) => value && Date.parse(value) <= Date.now();
@@ -621,7 +753,7 @@ function handleFailure(job, post, workerId, error, ids, publicBoundary = false) 
   return fail(job, post, workerId, error, true);
 }
 async function checkInstagramQuota(job, post, connection, userToken, workerId, ids) {
-  const limit = await graphWithLease(job, workerId, "GET", `${connection.account_remote_id}/content_publishing_limit`, { token: userToken, form: { fields: "quota_usage,config" } });
+  const limit = await graphWithLease(job, workerId, "GET", `${connection.account_remote_id}/content_publishing_limit`, { token: userToken, host: igHost(connection), form: { fields: "quota_usage,config" } });
   const row = Array.isArray(limit?.data) ? limit.data[0] : null;
   const usage = Number(row?.quota_usage);
   const total = Number(row?.config?.quota_total);
@@ -635,12 +767,15 @@ async function lookupInstagramPermalink(post, connection, userToken, mediaId) {
   // Publishing is already committed. Lookup is best-effort and can never roll back public success.
   try {
     if (!db.prepare("SELECT 1 FROM social_connections WHERE id=? AND status='connected'").get(post.connection_id)) return;
-    const media = await graph("GET", mediaId, { token: userToken, form: { fields: "permalink" } });
+    const media = await graph("GET", mediaId, { token: userToken, host: igHost(connection), form: { fields: "permalink" } });
     if (media?.permalink) db.prepare("UPDATE social_posts SET permalink=? WHERE id=? AND connection_id=? AND status='published'").run(String(media.permalink), post.id, post.connection_id);
   } catch { /* An unavailable permalink endpoint does not change an acknowledged publication. */ }
 }
+/** Instagram-login destinations are called on graph.instagram.com; Page-linked ones on graph.facebook.com. */
+const igHost = (connection) => (connection.connection_auth === "instagram" ? IG_HOST : undefined);
 async function instagram(job, post, connection, userToken, workerId) {
   const ids = asJson(job.remote_ids_json, {});
+  const host = igHost(connection);
   const files = parseFiles(post.media_json);
   try {
     if (!ids.container) {
@@ -648,21 +783,21 @@ async function instagram(job, post, connection, userToken, workerId) {
       if (post.kind === "carousel") {
         const children = Array.isArray(ids.children) ? ids.children : [];
         for (let i = children.length; i < files.length; i++) {
-          const response = await graphWithLease(job, workerId, "POST", `${connection.account_remote_id}/media`, { token: userToken, form: { image_url: files[i].url, is_carousel_item: "true" } });
+          const response = await graphWithLease(job, workerId, "POST", `${connection.account_remote_id}/media`, { token: userToken, host, form: { image_url: files[i].url, is_carousel_item: "true" } });
           if (!response?.id) throw new GraphFailure(502, {});
           children.push(String(response.id)); ids.children = children;
           if (!updateOwnedJob(job, workerId, { remote_ids_json: JSON.stringify(ids), stage: "container" })) throw new LeaseLost();
         }
-        const response = await graphWithLease(job, workerId, "POST", `${connection.account_remote_id}/media`, { token: userToken, form: { media_type: "CAROUSEL", children: children.join(","), caption: post.caption } });
+        const response = await graphWithLease(job, workerId, "POST", `${connection.account_remote_id}/media`, { token: userToken, host, form: { media_type: "CAROUSEL", children: children.join(","), caption: post.caption } });
         if (!response?.id) throw new GraphFailure(502, {}); ids.container = String(response.id);
       } else {
         const form = post.kind === "reel" ? { media_type: "REELS", video_url: files[0].url, caption: post.caption } : { image_url: files[0].url, caption: post.caption };
-        const response = await graphWithLease(job, workerId, "POST", `${connection.account_remote_id}/media`, { token: userToken, form });
+        const response = await graphWithLease(job, workerId, "POST", `${connection.account_remote_id}/media`, { token: userToken, host, form });
         if (!response?.id) throw new GraphFailure(502, {}); ids.container = String(response.id);
       }
       waiting(job, post, workerId, isoAfter(60_000), { stage: "poll", remoteIds: ids, pollCount: 0 }); return;
     }
-    const status = await graphWithLease(job, workerId, "GET", `${ids.container}`, { token: userToken, form: { fields: "status_code" } });
+    const status = await graphWithLease(job, workerId, "GET", `${ids.container}`, { token: userToken, host, form: { fields: "status_code" } });
     const code = String(status?.status_code || "").toUpperCase();
     if (code === "PUBLISHED") { complete(job, post, workerId); return; }
     if (code === "EXPIRED" || code === "ERROR") {
@@ -678,7 +813,7 @@ async function instagram(job, post, connection, userToken, workerId) {
     if (!await checkInstagramQuota(job, post, connection, userToken, workerId, ids)) return;
     ids.publish_started = true;
     if (!updateOwnedJob(job, workerId, { remote_ids_json: JSON.stringify(ids), stage: "publish" })) throw new LeaseLost();
-    const published = await graphWithLease(job, workerId, "POST", `${connection.account_remote_id}/media_publish`, { token: userToken, form: { creation_id: ids.container } });
+    const published = await graphWithLease(job, workerId, "POST", `${connection.account_remote_id}/media_publish`, { token: userToken, host, form: { creation_id: ids.container } });
     if (!published?.id) throw new GraphFailure(502, {});
     const warning = published.config_issue ? "Meta published the media but reported a configuration issue; the caption may not be attached. Check and edit the post directly in Instagram. Snapfront will not republish it." : null;
     if (complete(job, post, workerId, { remotePostId: String(published.id), warning })) await lookupInstagramPermalink(post, connection, userToken, String(published.id));
@@ -803,7 +938,14 @@ let workerTimer = null;
 let workerBusy = false;
 export function startWorker() {
   if (!publishingReady() || workerTimer) return false;
-  const tick = async () => { if (workerBusy) return; workerBusy = true; try { await processDue(); } catch { /* persisted jobs retain recovery state */ } finally { workerBusy = false; } };
+  let lastRefresh = 0;
+  const tick = async () => {
+    if (workerBusy) return; workerBusy = true;
+    try {
+      await processDue();
+      if (Date.now() - lastRefresh > 6 * HOUR) { lastRefresh = Date.now(); await refreshInstagramTokens(); }
+    } catch { /* persisted jobs retain recovery state */ } finally { workerBusy = false; }
+  };
   setTimeout(tick, 1_000).unref();
   workerTimer = setInterval(tick, 30_000); workerTimer.unref();
   return true;
@@ -812,11 +954,13 @@ export function stopWorkerForTests() { if (workerTimer) clearInterval(workerTime
 
 function signedPayload(signedRequest) {
   const [encodedSig, payload] = String(signedRequest || "").split(".");
-  if (!encodedSig || !payload || !config.metaAppSecret) return null;
+  // Facebook Login requests are signed with the app secret; Instagram login ones with the Instagram app secret.
+  const secrets = [config.metaAppSecret, config.instagramAppSecret].filter(Boolean);
+  if (!encodedSig || !payload || !secrets.length) return null;
   try {
     const provided = Buffer.from(encodedSig, "base64url");
-    const expected = crypto.createHmac("sha256", config.metaAppSecret).update(payload).digest();
-    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) return null;
+    const signedBy = (secret) => { const expected = crypto.createHmac("sha256", secret).update(payload).digest(); return provided.length === expected.length && crypto.timingSafeEqual(provided, expected); };
+    if (!secrets.some(signedBy)) return null;
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
     if (data?.algorithm !== "HMAC-SHA256" || !data?.user_id) return null;
     return data;
@@ -824,7 +968,9 @@ function signedPayload(signedRequest) {
 }
 function deleteMetaUser(metaUserId) {
   db.transaction(() => {
-    const destinations = db.prepare("SELECT id,seller_id FROM social_connections WHERE meta_user_id=?").all(String(metaUserId));
+    // Instagram-login destinations also match by their Instagram account ID.
+    const match = "meta_user_id=? OR (auth='instagram' AND remote_id=?)";
+    const destinations = db.prepare(`SELECT id,seller_id FROM social_connections WHERE ${match}`).all(String(metaUserId), String(metaUserId));
     const sellers = [...new Set(destinations.map((row) => row.seller_id))];
     // Remove any request snapshot containing this person's destination metadata or caption,
     // including a multi-destination request. Other people's actual post rows remain untouched.
@@ -835,7 +981,7 @@ function deleteMetaUser(metaUserId) {
         if (Array.isArray(payload.account_ids) && payload.account_ids.includes(row.id)) db.prepare("DELETE FROM social_publish_requests WHERE seller_id=? AND idempotency_key=?").run(row.seller_id, request.idempotency_key);
       }
     }
-    db.prepare("DELETE FROM social_connections WHERE meta_user_id=?").run(String(metaUserId));
+    db.prepare(`DELETE FROM social_connections WHERE ${match}`).run(String(metaUserId), String(metaUserId));
     for (const seller of sellers) db.prepare("DELETE FROM social_oauth_states WHERE seller_id=?").run(seller);
   })();
 }

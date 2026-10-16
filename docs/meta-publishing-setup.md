@@ -21,6 +21,22 @@ The requested permissions are `pages_show_list`, `pages_read_engagement`, `pages
 
 Meta's documented discovery call is `GET /me/accounts?fields=id,name,access_token,instagram_business_account`; Snapfront also requests tasks and accepts only destinations with `CREATE_CONTENT` or `MANAGE`. Discovery pagination is bounded and cursor-based. The server exchanges the code-flow token for a long-lived **User** token before discovery, then validates the app identity of that User token and every selected **Page** token with `debug_token`. When discovery omits an Instagram username, it reads the linked professional account's username for display only. No token or debug response is returned to the app.
 
+## "Connect with Instagram" (no Facebook Page)
+
+Sellers can also sign in with Instagram itself (Business Login for Instagram), which needs no Facebook Page. Either login is enough on its own; with both set up, the Marketing screen shows **Connect with Instagram** first and **Connect a Facebook Page** below it.
+
+In the same Meta app, add the **Instagram** product and open **API setup with Instagram login**. Copy its **Instagram app ID** and **Instagram app secret** into `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` (they are different from the Meta app ID and secret). Under **Set up Instagram business login → Business login settings**, set:
+
+| Instagram setting | Exact URL |
+|---|---|
+| OAuth redirect URI | `https://YOUR_PUBLIC_SERVER/social/instagram/callback` |
+| Deauthorize callback URL | `https://YOUR_PUBLIC_SERVER/social/meta/deauthorize` |
+| Data deletion request URL | `https://YOUR_PUBLIC_SERVER/social/meta/data-deletion` |
+
+For AutoDM, in the Instagram product's **Configure webhooks** step use the same callback URL (`https://YOUR_PUBLIC_SERVER/api/meta/webhook`) and `META_WEBHOOK_VERIFY_TOKEN`, and subscribe to `comments` and `messages`. Snapfront subscribes each account to them (`POST /me/subscribed_apps`) when it connects. Webhook and deletion signatures are accepted from either the Meta app secret or the Instagram app secret.
+
+The requested permissions are `instagram_business_basic` and `instagram_business_content_publish`, plus `instagram_business_manage_messages` and `instagram_business_manage_comments` when AutoDM is on. The server exchanges the code for a 60-day Instagram token, stores it encrypted, renews it automatically while it is between 1 and 40 days old (`GET graph.instagram.com/refresh_access_token`), and marks the destination "reconnect" if Instagram revokes it. Posting, AutoDM replies and comment replies for these accounts go to `graph.instagram.com`. While the app is in development mode, only Instagram accounts added under **App roles → Roles → Instagram testers** (and accepted in Instagram) can sign in.
+
 ## App review, verification, and deployment
 
 Development-mode apps only work for people with roles on the Meta app. Before serving ordinary sellers, submit the requested permissions/features for **App Review**, provide a working screencast that shows the seller-owned connection and reviewed posting workflow, and complete any **Business Verification** Meta requires. Keep the app in development mode and leave publishing disabled until those approvals are complete. Do not claim that a test seller or a live Page was verified until the owner has performed that check.

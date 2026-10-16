@@ -7,7 +7,7 @@ import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, H2, Notice, Pill } from "@/components/ui";
-import { api, ApiError, type RenderedPost, type SocialAccount, type SocialAccounts, type SocialPost } from "@/lib/api";
+import { api, ApiError, type RenderedPost, type SocialAccount, type SocialAccounts, type SocialLogin, type SocialPost } from "@/lib/api";
 import {
   canCancelSocialPost,
   canPublishRenderedPost,
@@ -143,24 +143,28 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
   const isBusy = disabled || !!busy;
   const connectedAccounts = connection?.accounts.filter((account) => account.status === "connected") ?? [];
   const publishable = canPublishRenderedPost(renderedPost, format ?? renderedPost?.format);
+  // Older servers don't send `logins`: they only connect through Facebook Pages.
+  const logins = connection?.logins ?? { instagram: false, facebook: true };
+  const hasInstagramLogin = connection?.accounts.some((account) => account.via === "instagram") ?? false;
+  const hasPage = connection?.accounts.some((account) => account.platform === "facebook") ?? false;
 
-  async function connect() {
+  async function connect(provider: SocialLogin) {
     const started: StoreOwner = { storeId, revision: storeRevision };
     if (!started.storeId || isBusy) return;
     readGeneration.current++;
-    setBusy("connect"); setMessage(null);
+    setBusy(`connect:${provider}`); setMessage(null);
     try {
-      const auth = await api.socialAuthorize(started.storeId);
+      const auth = await api.socialAuthorize(started.storeId, provider);
       if (!ownsStoreResponse(started, ownerNow(storeId))) return;
       // The server owns the fixed callback/state. The native app only opens its returned auth URL and redirect URL.
       const result = await WebBrowser.openAuthSessionAsync(auth.url, auth.redirect_url);
       if (!ownsStoreResponse(started, ownerNow(storeId))) return;
-      if (result.type === "success") setMessage({ text: "Connection returned. Refreshing your Pages and Instagram accounts…", tone: "info" });
+      if (result.type === "success") setMessage({ text: "Connection returned. Refreshing your accounts…", tone: "info" });
       await refresh(false, () => ownsStoreResponse(started, ownerNow(storeId)));
     } catch (error) {
       if (!ownsStoreResponse(started, ownerNow(storeId))) return;
       if (isOlderSocialBackend(error)) setLegacyBackend(true);
-      else setMessage({ text: errorText(error, "Couldn’t open secure Meta connection."), tone: "error" });
+      else setMessage({ text: errorText(error, provider === "instagram" ? "Couldn’t open Instagram sign-in." : "Couldn’t open the Facebook connection."), tone: "error" });
     } finally {
       if (ownsStoreResponse(started, ownerNow(storeId))) setBusy(null);
     }
@@ -286,8 +290,10 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
   return (
     <PublishingShell>
       <View style={{ gap: 5 }}>
-        <H2>Meta publishing</H2>
-        <Body muted>Connect Facebook Pages and their linked professional Instagram accounts. Personal Facebook profiles and unlinked Instagram accounts aren’t supported on this route.</Body>
+        <H2>Instagram & Facebook posting</H2>
+        <Body muted>{logins.instagram
+          ? "Sign in with your Instagram professional (business or creator) account to post and run AutoDM. No Facebook Page needed."
+          : "Connect Facebook Pages and their linked professional Instagram accounts. Personal Facebook profiles and unlinked Instagram accounts aren’t supported on this route."}</Body>
       </View>
       <Notice text={message?.text ?? null} tone={message?.tone} />
 
@@ -297,7 +303,11 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
           <Text style={[type.small, { color: c.muted }]}>{connection.setup_required || "Posting straight to Instagram and Facebook is coming soon. For now, save or share your post and add it in the app."}</Text>
         </View>
       ) : (
-        <Button label={connection?.accounts.length ? "Connect another Page or Instagram" : "Connect Facebook Page & Instagram"} variant="secondary" loading={busy === "connect"} disabled={isBusy || connection === null} onPress={connect} />
+        <View style={{ gap: space.sm }}>
+          {logins.instagram ? <Button label={hasInstagramLogin ? "Connect another Instagram account" : "Connect with Instagram"} variant="secondary" loading={busy === "connect:instagram"} disabled={isBusy || connection === null} onPress={() => connect("instagram")} /> : null}
+          {logins.facebook ? <Button label={logins.instagram ? (hasPage ? "Connect another Facebook Page" : "Connect a Facebook Page") : connection?.accounts.length ? "Connect another Page or Instagram" : "Connect Facebook Page & Instagram"}
+            variant={logins.instagram ? "ghost" : "secondary"} loading={busy === "connect:facebook"} disabled={isBusy || connection === null} onPress={() => connect("facebook")} /> : null}
+        </View>
       )}
 
       {connection?.enabled && connection.accounts.length ? (
@@ -320,7 +330,7 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
             );
           })}
         </View>
-      ) : connection?.enabled ? <Body muted>No connected Pages or linked professional Instagram accounts yet.</Body> : null}
+      ) : connection?.enabled ? <Body muted>{logins.instagram ? "No Instagram account or Facebook Page connected yet." : "No connected Pages or linked professional Instagram accounts yet."}</Body> : null}
 
       {renderedPost ? (
         <View style={{ gap: space.md, paddingTop: space.sm, borderTopWidth: 1, borderColor: c.line }}>

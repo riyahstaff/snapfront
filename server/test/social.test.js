@@ -188,7 +188,7 @@ test("OAuth exchanges a long-lived user token, validates every Page token, and s
   seller = created.body.seller;
   sellerToken = created.body.token;
   const initial = await call("GET", "/api/social/accounts");
-  assert.deepEqual(initial.body, { enabled: true, setup_required: null, accounts: [] });
+  assert.deepEqual(initial.body, { enabled: true, setup_required: null, logins: { instagram: false, facebook: true }, accounts: [] });
 
   graphCalls.length = 0;
   const login = await finishAuthorization();

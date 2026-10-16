@@ -51,6 +51,10 @@ export const config = {
   metaAppSecret: env.META_APP_SECRET || "",
   metaLoginConfigId: env.META_LOGIN_CONFIG_ID || "",
   metaTokenEncryptionKey: env.META_TOKEN_ENCRYPTION_KEY || "",
+  // "Connect with Instagram" (Business Login for Instagram): the Instagram app ID and secret from
+  // the Meta app's Instagram product. Sellers sign in with Instagram itself; no Facebook Page needed.
+  instagramAppId: env.INSTAGRAM_APP_ID || "",
+  instagramAppSecret: env.INSTAGRAM_APP_SECRET || "",
   metaGraphVersion: /^v\d+\.\d+$/.test(String(env.META_GRAPH_VERSION || "")) ? env.META_GRAPH_VERSION : "v26.0",
   // "true" = every member; "owners" = only OWNER_EMAILS accounts (while the Meta app is in Development mode).
   metaPublishingEnabled: ["true", "owners"].includes(String(env.META_PUBLISHING_ENABLED || "").toLowerCase()),

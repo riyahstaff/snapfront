@@ -267,14 +267,31 @@ app.get("/social/meta/callback", wrap(async (req, res) => {
     return res.redirect(303, back("error"));
   }
 }));
-// The website's Facebook window lands here: it says how it went and closes itself.
+// "Connect with Instagram": Instagram sends the person back here.
+app.get("/social/instagram/callback", wrap(async (req, res) => {
+  const web = social.stateClient(req.query.state) === "web";
+  const back = (state) => (web ? `/social/meta/done?social=${state === "connected" ? "connected" : "error"}` : metaReturn(state));
+  if (req.query.error || !req.query.code) {
+    social.cancelAuthorization(req.query.state, "instagram");
+    return res.redirect(303, back("error"));
+  }
+  try {
+    const seller = await social.finishInstagramAuthorization(req.query.state, req.query.code);
+    autodm.subscribeQuietly(seller).catch(() => {});   // comments and messages start reaching AutoDM
+    return res.redirect(303, back("connected"));
+  } catch (e) {
+    console.warn("[instagram] OAuth callback was not completed", e.status || 500, e.status && e.status < 500 ? e.message : "");
+    return res.redirect(303, back("error"));
+  }
+}));
+// The website's Facebook or Instagram window lands here: it says how it went and closes itself.
 app.get("/social/meta/done", (req, res) => {
   const ok = req.query.social === "connected";
   const back = config.storeDomain ? `https://app.${config.storeDomain}/marketing` : `${config.publicUrl}/app/marketing`;
   res.set("Cache-Control", "no-store").type("html").send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${ok ? "Connected" : "Not connected"} | Snapfront</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#090B0E;color:#F5F6F8;font:17px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:420px;padding:32px 24px;text-align:center}h1{font-size:28px;margin:0 0 10px}p{color:#ADB4BF;margin:0 0 24px}a{display:inline-block;padding:12px 22px;border-radius:999px;background:#E5E9F0;color:#11151B;font-weight:700;text-decoration:none}</style></head>
-<body><main><h1>${ok ? "Connected" : "That didn’t connect"}</h1><p>${ok ? "Your Facebook Pages and Instagram accounts are now in Snapfront. This window will close." : "Nothing was changed. Close this window and try Connect again in Snapfront."}</p><a href="${back}">Back to Snapfront</a></main>
+<body><main><h1>${ok ? "Connected" : "That didn’t connect"}</h1><p>${ok ? "Your account is now connected to Snapfront. This window will close." : "Nothing was changed. Close this window and try Connect again in Snapfront."}</p><a href="${back}">Back to Snapfront</a></main>
 <script>setTimeout(function(){try{window.close()}catch(e){}},${ok ? 1200 : 4000})</script></body></html>`);
 });
 app.post("/social/meta/deauthorize", express.urlencoded({ extended: false, limit: "16kb" }), (req, res) => {
@@ -687,7 +704,9 @@ app.post("/api/marketing/render", auth, aiLimit, wrap(async (req, res) => {
 // both the account and its X-Store seller before any social data is read or changed.
 app.get("/api/social/accounts", auth, (req, res) => res.json(social.accounts(req.seller)));
 // The phone app sends X-Snapfront-App; anything else is the website, which gets a web page back.
-app.post("/api/social/authorize", auth, (req, res) => res.json(social.authorize(req.seller, req.account, { web: !req.get("x-snapfront-app") })));
+app.post("/api/social/authorize", auth, (req, res) => res.json(social.authorize(req.seller, req.account, {
+  web: !req.get("x-snapfront-app"), provider: req.body?.provider === "instagram" ? "instagram" : "facebook",
+})));
 app.delete("/api/social/accounts/:id", auth, (req, res) => res.json(social.disconnect(req.seller, req.params.id)));
 app.get("/api/social/posts", auth, (req, res) => res.json(social.posts(req.seller)));
 app.post("/api/social/posts", auth, (req, res) => res.status(201).json(social.createPosts(req.seller, req.body || {})));

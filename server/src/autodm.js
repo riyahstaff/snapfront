@@ -1,11 +1,13 @@
 // Instagram AutoDM: when someone comments a keyword on a post ("LINK", "PRICE") or sends it in a
 // DM, the seller's Instagram account replies by direct message with a link, and can also answer
 // the comment publicly. Meta delivers comments and messages to a signed webhook; replies go out
-// through the Page connected in Marketing. Each person gets a rule's reply at most once a day.
+// through the account connected in Marketing: an Instagram login (graph.instagram.com) or a
+// Facebook Page linked to Instagram. Each person gets a rule's reply at most once a day.
 //
-// Needs, from the Snapfront owner (once): Meta app review for instagram_manage_messages and
-// instagram_manage_comments, the Instagram webhook (comments, messages) pointed at
-// /api/meta/webhook with META_WEBHOOK_VERIFY_TOKEN, and META_AUTODM_ENABLED=true.
+// Needs, from the Snapfront owner (once): Meta app review for the messaging and comment
+// permissions (instagram_business_manage_* for Instagram login, instagram_manage_* for Pages), the
+// Instagram webhook (comments, messages) pointed at /api/meta/webhook with
+// META_WEBHOOK_VERIFY_TOKEN, and META_AUTODM_ENABLED=true.
 import crypto from "node:crypto";
 import { config } from "./config.js";
 import { db, newId } from "./db.js";
@@ -125,15 +127,24 @@ export function updateRule(seller, id, b = {}) {
 export function deleteRule(seller, id) {
   if (!db.prepare("DELETE FROM autodm_rules WHERE id = ? AND seller_id = ?").run(String(id), seller.id).changes) throw httpError(404, "That rule doesn't exist.");
 }
-/** Ask Meta to send this Page's Instagram comments and messages to Snapfront. */
+/** Ask Meta to send the seller's Instagram comments and messages to Snapfront. */
 export async function subscribePages(seller) {
   if (!enabledFor(seller)) throw httpError(503, "AutoDM is waiting on Meta's approval.");
   const out = [];
-  for (const a of social.instagramAccounts(seller.id).filter((x) => x.status === "connected" && x.page_id)) {
-    try { await social.metaGraph("POST", `${a.page_id}/subscribed_apps`, { token: a.token(), form: { subscribed_fields: "feed,messages" } }); out.push({ name: a.name, ok: true }); }
-    catch { out.push({ name: a.name, ok: false }); }
+  for (const a of social.instagramAccounts(seller.id).filter((x) => x.status === "connected" && (x.page_id || x.auth === "instagram"))) {
+    try {
+      if (a.auth === "instagram") await social.metaGraph("POST", "me/subscribed_apps", { token: a.token(), host: social.IG_HOST, form: { subscribed_fields: "comments,messages" } });
+      else await social.metaGraph("POST", `${a.page_id}/subscribed_apps`, { token: a.token(), form: { subscribed_fields: "feed,messages" } });
+      out.push({ name: a.name, ok: true });
+    } catch { out.push({ name: a.name, ok: false }); }
   }
   return out;
+}
+/** Right after an Instagram account connects: switch on its comments and messages, if AutoDM is on. */
+export async function subscribeQuietly(seller) {
+  if (!enabledFor(seller)) return;
+  try { const r = await subscribePages(seller); if (r.some((x) => !x.ok)) console.warn("[autodm] webhook subscription not confirmed for", r.filter((x) => !x.ok).length, "account(s)"); }
+  catch { /* the seller can refresh it from AutoDM */ }
 }
 
 /* ---------- matching ---------- */
@@ -159,10 +170,14 @@ export function verifyChallenge(q) {
   return null;
 }
 export function signatureValid(raw, header) {
-  if (!config.metaAppSecret || !raw) return false;
-  const want = `sha256=${crypto.createHmac("sha256", config.metaAppSecret).update(raw).digest("hex")}`;
+  // Signed with the app secret; Instagram-login deliveries may be signed with the Instagram app secret.
+  const secrets = [config.metaAppSecret, config.instagramAppSecret].filter(Boolean);
+  if (!secrets.length || !raw) return false;
   const got = String(header || "");
-  return got.length === want.length && crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want));
+  return secrets.some((secret) => {
+    const want = `sha256=${crypto.createHmac("sha256", secret).update(raw).digest("hex")}`;
+    return got.length === want.length && crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want));
+  });
 }
 const firstTime = (id) => db.prepare("INSERT OR IGNORE INTO autodm_events (id) VALUES (?)").run(String(id).slice(0, 200)).changes === 1;
 function activity(sellerId, ruleId, kind, who, text, status, error = null) {
@@ -176,8 +191,10 @@ async function respond(owner, seller, rule, { kind, userId, who, text, commentId
   db.prepare("INSERT INTO autodm_log (rule_id, user_id, at) VALUES (?,?,datetime('now')) ON CONFLICT(rule_id, user_id) DO UPDATE SET at = excluded.at").run(rule.id, userId);
   const token = owner.token();
   const recipient = kind === "comment" ? { comment_id: commentId } : { id: userId };
+  const viaInstagram = owner.auth === "instagram";
   try {
-    await social.metaGraph("POST", `${owner.page_id}/messages`, { token, form: { recipient: JSON.stringify(recipient), message: JSON.stringify({ text: replyText(seller, rule) }), messaging_type: "RESPONSE" } });
+    if (viaInstagram) await social.metaGraph("POST", `${owner.ig_id}/messages`, { token, host: social.IG_HOST, json: { recipient, message: { text: replyText(seller, rule) } } });
+    else await social.metaGraph("POST", `${owner.page_id}/messages`, { token, form: { recipient: JSON.stringify(recipient), message: JSON.stringify({ text: replyText(seller, rule) }), messaging_type: "RESPONSE" } });
     db.prepare("UPDATE autodm_rules SET sent = sent + 1 WHERE id = ?").run(rule.id);
     activity(seller.id, rule.id, kind, who, text, "sent");
   } catch (e) {
@@ -185,7 +202,7 @@ async function respond(owner, seller, rule, { kind, userId, who, text, commentId
     return;
   }
   if (kind === "comment" && rule.comment_reply) {
-    await social.metaGraph("POST", `${commentId}/replies`, { token, form: { message: rule.comment_reply } }).catch(() => {});
+    await social.metaGraph("POST", `${commentId}/replies`, { token, host: viaInstagram ? social.IG_HOST : undefined, form: { message: rule.comment_reply } }).catch(() => {});
   }
 }
 /** Handle one webhook delivery from Meta (already signature-checked). */

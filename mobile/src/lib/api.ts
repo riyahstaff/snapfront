@@ -147,8 +147,12 @@ export type SocialAccount = {
   platform: "instagram" | "facebook";
   name: string;
   status: "connected" | "reconnect_required";
+  /** How it was connected: signing in with Instagram, or through a Facebook Page (older servers omit it). */
+  via?: "instagram" | "facebook";
 };
-export type SocialAccounts = { enabled: boolean; setup_required: string | null; accounts: SocialAccount[] };
+/** `logins` says which ways to connect are switched on (older servers omit it: Facebook only). */
+export type SocialAccounts = { enabled: boolean; setup_required: string | null; logins?: { instagram: boolean; facebook: boolean }; accounts: SocialAccount[] };
+export type SocialLogin = "instagram" | "facebook";
 export type SocialPost = {
   id: string;
   platform: "instagram" | "facebook";
@@ -439,7 +443,7 @@ export const api = {
     request<RenderedPost>("POST", "/api/marketing/render", input, storeId),
   /** Public connection metadata only; the server keeps OAuth tokens and state. */
   socialAccounts: (storeId?: string) => request<SocialAccounts>("GET", "/api/social/accounts", undefined, storeId),
-  socialAuthorize: (storeId?: string) => request<{ url: string; redirect_url: "snapfront://marketing" }>("POST", "/api/social/authorize", undefined, storeId),
+  socialAuthorize: (storeId?: string, provider: SocialLogin = "facebook") => request<{ url: string; redirect_url: string }>("POST", "/api/social/authorize", { provider }, storeId),
   disconnectSocialAccount: (id: string, storeId?: string) => request<SocialAccounts>("DELETE", `/api/social/accounts/${encodeURIComponent(id)}`, undefined, storeId),
   socialPosts: (storeId?: string) => request<SocialPosts>("GET", "/api/social/posts", undefined, storeId),
   createSocialPosts: (input: SocialPublishInput, storeId?: string) => request<SocialPosts>("POST", "/api/social/posts", input, storeId),
