@@ -53,7 +53,7 @@ ${tone ? `Tone: ${tone}` : ""}
 Rules: be specific to this product; no made-up claims, reviews, numbers of customers or awards; at most 3 emoji in the caption; the caption ends by telling people the link is in the bio.
 Return JSON: {"headline": string (max 32 chars, the scroll-stopping line on the graphic), "subline": string (max 60 chars),
 "bullets": [3 strings, each max 38 chars, real benefits from the details], "cta": string (max 18 chars, e.g. "Shop now"),
-"caption": string (max 600 chars), "hashtags": [8-12 strings without #, relevant and specific]}` }], 900);
+"caption": string (max 600 chars), "hashtags": [8-12 strings without #, relevant and specific]}` }], 2000);
   return {
     headline: clamp(out.headline || product.title, 40), subline: clamp(out.subline || product.tagline, 80),
     bullets: (Array.isArray(out.bullets) ? out.bullets : []).map((b) => clamp(b, 44)).filter(Boolean).slice(0, 3),

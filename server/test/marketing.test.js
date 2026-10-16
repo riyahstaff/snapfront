@@ -37,6 +37,7 @@ const outbox = [];
 audience.setEmailTransport(async (msgs) => { outbox.push(...msgs); return { errors: [] }; });
 // Meta stand-in.
 const graphCalls = [];
+social.setPictureFetch(false);
 social.setMetaTransport(async (req) => { graphCalls.push(req); return { id: "ok", success: true }; });
 
 let server, base, token, seller, account, slug, mug;

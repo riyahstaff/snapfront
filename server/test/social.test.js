@@ -27,6 +27,7 @@ function installMeta(handler) {
   graphCalls.length = 0;
   metaHandler = handler;
 }
+social.setPictureFetch(false);   // profile pictures are tested in instagram-login.test.js
 social.setMetaTransport(async (request) => {
   const endpoint = endpointOf(request);
   graphCalls.push({

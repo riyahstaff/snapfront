@@ -243,7 +243,7 @@ export function accounts(seller) {
   // Retain encrypted records until the owner repairs configuration, but never present them as
   // connected while the feature is disabled or an HTTPS/key prerequisite is absent.
   if (!publishingFor(seller)) return { enabled: false, setup_required: SELLER_SETUP_MESSAGE, accounts: [] };
-  const rows = db.prepare("SELECT id, platform, name, status, auth, token_expires_at, data_access_expires_at, user_token_expires_at, user_data_access_expires_at FROM social_connections WHERE seller_id = ? ORDER BY platform, name").all(seller.id);
+  const rows = db.prepare("SELECT id, platform, name, status, auth, picture_file, token_expires_at, data_access_expires_at, user_token_expires_at, user_data_access_expires_at FROM social_connections WHERE seller_id = ? ORDER BY platform, name").all(seller.id);
   const time = Date.now();
   for (const row of rows) {
     if ((row.token_expires_at && Date.parse(row.token_expires_at) <= time) || (row.data_access_expires_at && Date.parse(row.data_access_expires_at) <= time) || (row.platform === "instagram" && expirationInvalid(row, true))) {
@@ -255,7 +255,8 @@ export function accounts(seller) {
     enabled: true, setup_required: null,
     // Which ways to connect are switched on: "Connect with Instagram" and/or Facebook Pages.
     logins: { instagram: instagramLoginReady(), facebook: oauthReady() },
-    accounts: rows.map((r) => ({ id: r.id, platform: r.platform, name: r.name, status: r.status, via: r.auth === "instagram" ? "instagram" : "facebook" })),
+    accounts: rows.map((r) => ({ id: r.id, platform: r.platform, name: r.name, status: r.status, via: r.auth === "instagram" ? "instagram" : "facebook",
+      picture_url: r.picture_file ? `${config.publicUrl}/img/${r.picture_file}` : null })),
   };
 }
 const hasColumn = (table, column) => db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
@@ -265,6 +266,9 @@ if (!hasColumn("social_oauth_states", "client")) db.exec("ALTER TABLE social_oau
 if (!hasColumn("social_oauth_states", "provider")) db.exec("ALTER TABLE social_oauth_states ADD COLUMN provider TEXT NOT NULL DEFAULT 'facebook'");
 // How a destination was connected: through a Facebook Page ('facebook') or Instagram login ('instagram').
 if (!hasColumn("social_connections", "auth")) db.exec("ALTER TABLE social_connections ADD COLUMN auth TEXT NOT NULL DEFAULT 'facebook'");
+// Each destination's profile picture, saved as a small copy (Meta's picture links expire after a few days).
+if (!hasColumn("social_connections", "picture_file")) db.exec("ALTER TABLE social_connections ADD COLUMN picture_file TEXT");
+if (!hasColumn("social_connections", "picture_checked_at")) db.exec("ALTER TABLE social_connections ADD COLUMN picture_checked_at TEXT");
 /** "web" or "app" for a connection in progress (read without using it up). */
 export function stateClient(rawState) {
   if (!rawState || String(rawState).length > 200) return "app";
@@ -533,6 +537,52 @@ export async function refreshInstagramTokens() {
   }
   return renewed;
 }
+/* ---------- profile pictures for the Destinations list ---------- */
+// Only Meta's own image hosts, over HTTPS, and only small images: the server fetches these itself.
+const PICTURE_HOSTS = /(^|\.)(fbcdn\.net|cdninstagram\.com|fbsbx\.com|facebook\.com|instagram\.com)$/i;
+const PICTURE_FILE = /^avatar-[\w-]+\.jpg$/;
+async function defaultPictureFetch(url) {
+  const r = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(15_000) });
+  if (!r.ok) throw new Error(`picture ${r.status}`);
+  if (Number(r.headers.get("content-length")) > 5 * 1024 * 1024) throw new Error("picture too large");
+  const buf = Buffer.from(await r.arrayBuffer());
+  if (buf.length > 5 * 1024 * 1024) throw new Error("picture too large");
+  return buf;
+}
+let pictureFetch = defaultPictureFetch;
+/** Test-only: stand in for downloading a picture (false switches picture lookups off). */
+export function setPictureFetch(fn) { pictureFetch = fn === false ? null : fn || defaultPictureFetch; }
+function removePicture(file) { if (file && PICTURE_FILE.test(file)) fs.rm(path.join(dirs.images, file), { force: true }, () => {}); }
+async function pictureUrlFor(row) {
+  const token = decrypt(row.access_token_enc);
+  if (row.auth === "instagram") return (await graph("GET", "me", { token, host: IG_HOST, form: { fields: "profile_picture_url" } }))?.profile_picture_url;
+  if (row.platform === "facebook") return (await graph("GET", String(row.remote_id), { token, form: { fields: "picture.type(large)" } }))?.picture?.data?.url;
+  return (await graph("GET", String(row.remote_id), { token, form: { fields: "profile_picture_url" } }))?.profile_picture_url;
+}
+/** Save (or refresh, weekly) the profile picture of connected destinations: one store's, or any due. */
+export async function refreshPictures({ sellerId = null, limit = 10 } = {}) {
+  if (!encryptionKey() || !pictureFetch) return 0;
+  const weekAgo = isoAfter(-7 * DAY);
+  const rows = sellerId
+    ? db.prepare("SELECT * FROM social_connections WHERE seller_id = ? AND status = 'connected' AND (picture_file IS NULL OR picture_checked_at IS NULL OR picture_checked_at < ?) LIMIT ?").all(sellerId, weekAgo, limit)
+    : db.prepare("SELECT * FROM social_connections WHERE status = 'connected' AND (picture_checked_at IS NULL OR picture_checked_at < ?) ORDER BY picture_checked_at IS NOT NULL, picture_checked_at LIMIT ?").all(weekAgo, limit);
+  let saved = 0;
+  for (const row of rows) {
+    db.prepare("UPDATE social_connections SET picture_checked_at = ? WHERE id = ?").run(now(), row.id);   // at most one try a week, even if it fails
+    try {
+      const url = String(await pictureUrlFor(row) || "");
+      let u; try { u = new URL(url); } catch { continue; }
+      if (u.protocol !== "https:" || !PICTURE_HOSTS.test(u.hostname)) continue;
+      const small = await sharp(await pictureFetch(url), { failOn: "error" }).rotate().resize(160, 160, { fit: "cover" }).jpeg({ quality: 82 }).toBuffer();
+      const file = `avatar-${crypto.randomBytes(12).toString("hex")}.jpg`;
+      fs.writeFileSync(path.join(dirs.images, file), small);
+      const changed = db.prepare("UPDATE social_connections SET picture_file = ? WHERE id = ?").run(file, row.id).changes;
+      if (changed) { if (row.picture_file !== file) removePicture(row.picture_file); saved++; } else removePicture(file);
+    } catch { /* no picture: the list shows the platform icon instead */ }
+  }
+  if (rows.length) console.log(`[meta] profile pictures: saved ${saved} of ${rows.length}`);
+  return saved;
+}
 /* ---------- for AutoDM (autodm.js): the seller's Instagram accounts and their Page tokens ---------- */
 export function instagramAccounts(sellerId) {
   return db.prepare("SELECT * FROM social_connections WHERE seller_id = ? AND platform = 'instagram' ORDER BY created_at").all(sellerId).map((r) => ({
@@ -548,7 +598,9 @@ export const metaGraph = (method, endpoint, options) => graph(method, endpoint, 
 export const metaOauthReady = () => anyLoginReady();
 
 export function disconnect(seller, id) {
+  const picture = db.prepare("SELECT picture_file FROM social_connections WHERE id = ? AND seller_id = ?").get(String(id), seller.id)?.picture_file;
   const result = db.prepare("DELETE FROM social_connections WHERE id = ? AND seller_id = ?").run(String(id), seller.id);
+  if (result.changes) removePicture(picture);
   if (!result.changes) throw httpError(404, "That social account is not connected to this store.");
   return accounts(seller);
 }
@@ -938,12 +990,13 @@ let workerTimer = null;
 let workerBusy = false;
 export function startWorker() {
   if (!publishingReady() || workerTimer) return false;
-  let lastRefresh = 0;
+  let lastRefresh = 0, lastPictures = 0;
   const tick = async () => {
     if (workerBusy) return; workerBusy = true;
     try {
       await processDue();
       if (Date.now() - lastRefresh > 6 * HOUR) { lastRefresh = Date.now(); await refreshInstagramTokens(); }
+      if (Date.now() - lastPictures > 30 * 60_000) { lastPictures = Date.now(); await refreshPictures(); }
     } catch { /* persisted jobs retain recovery state */ } finally { workerBusy = false; }
   };
   setTimeout(tick, 1_000).unref();
@@ -981,6 +1034,7 @@ function deleteMetaUser(metaUserId) {
         if (Array.isArray(payload.account_ids) && payload.account_ids.includes(row.id)) db.prepare("DELETE FROM social_publish_requests WHERE seller_id=? AND idempotency_key=?").run(row.seller_id, request.idempotency_key);
       }
     }
+    for (const row of db.prepare(`SELECT picture_file FROM social_connections WHERE ${match}`).all(String(metaUserId), String(metaUserId))) removePicture(row.picture_file);
     db.prepare(`DELETE FROM social_connections WHERE ${match}`).run(String(metaUserId), String(metaUserId));
     for (const seller of sellers) db.prepare("DELETE FROM social_oauth_states WHERE seller_id=?").run(seller);
   })();

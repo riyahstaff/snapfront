@@ -44,8 +44,9 @@ export async function askJson(content, maxTokens, model = config.claudeModel) {
   for (let attempt = 1; ; attempt++) {
     let msg;
     try {
+      // A reply cut short gets a retry with twice the room, so it can't stop at the same place again.
       msg = await ai.messages.create({
-        model, max_tokens: maxTokens,
+        model, max_tokens: attempt === 1 ? maxTokens : Math.min(maxTokens * 2, 32000),
         system: "Always deliver your answer by calling the submit tool with the finished object as its input. Do not write the answer as text.",
         messages: [{ role: "user", content }],
         tools: [{ name: "submit", description: "Submit the finished JSON object described in the request.", input_schema: { type: "object", additionalProperties: true } }],

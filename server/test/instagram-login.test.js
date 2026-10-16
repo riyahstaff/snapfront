@@ -244,7 +244,39 @@ test("tokens are renewed before their 60 days run out; a revoked one asks the se
   handler = null;
 });
 
+test("each destination gets a small copy of its profile picture, only from Meta's own image hosts", async () => {
+  const row = () => db.prepare("SELECT * FROM social_connections WHERE seller_id = ? AND auth = 'instagram'").get(seller.id);
+  db.prepare("UPDATE social_connections SET picture_file = NULL, picture_checked_at = NULL WHERE id = ?").run(row().id);
+  let pictureUrl = "https://evil.example.com/me.jpg";
+  const fetched = [];
+  social.setPictureFetch(async (url) => { fetched.push(url); return sharp({ create: { width: 320, height: 320, channels: 3, background: "#aa3366" } }).png().toBuffer(); });
+  handler = (c) => {
+    assert.equal(c.host, "graph.instagram.com");
+    assert.equal(c.path, "/me");
+    assert.equal(c.form.fields, "profile_picture_url");
+    return { profile_picture_url: pictureUrl };
+  };
+  assert.equal(await social.refreshPictures({ sellerId: seller.id }), 0, "a picture from any other host is ignored");
+  assert.deepEqual(fetched, []);
+  pictureUrl = "https://scontent-iad3-1.cdninstagram.com/v/t51/abc.jpg?stp=1";
+  assert.equal(await social.refreshPictures({ sellerId: seller.id }), 1);
+  const file = row().picture_file;
+  assert.match(file, /^avatar-[0-9a-f]{24}\.jpg$/);
+  const meta = await sharp(path.join(tmp, "images", file)).metadata();
+  assert.deepEqual([meta.format, meta.width, meta.height], ["jpeg", 160, 160]);
+  const accounts = await call("GET", "/api/social/accounts");
+  assert.equal(accounts.body.accounts[0].picture_url, `https://ig.test/img/${file}`);
+  // Checked this week: not fetched again until next week.
+  fetched.length = 0;
+  assert.equal(await social.refreshPictures(), 0);
+  assert.deepEqual(fetched, []);
+  social.setPictureFetch(null);
+  handler = null;
+});
+
 test("Instagram's signed data-deletion request removes the Instagram-login connection", async () => {
+  const picture = db.prepare("SELECT picture_file FROM social_connections WHERE seller_id = ?").get(seller.id).picture_file;
+  assert.ok(fs.existsSync(path.join(tmp, "images", picture)));
   const data = Buffer.from(JSON.stringify({ algorithm: "HMAC-SHA256", user_id: "555" })).toString("base64url");
   const forged = `${crypto.createHmac("sha256", "wrong").update(data).digest("base64url")}.${data}`;
   assert.throws(() => social.dataDeletion(forged), (e) => e.status === 400);
@@ -253,4 +285,6 @@ test("Instagram's signed data-deletion request removes the Instagram-login conne
   const r = social.dataDeletion(signed);
   assert.match(r.url, /^https:\/\/ig\.test\/social\/meta\/data-deletion\//);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM social_connections WHERE seller_id = ?").get(seller.id).n, 0);
+  await new Promise((r) => setTimeout(r, 50));
+  assert.equal(fs.existsSync(path.join(tmp, "images", picture)), false, "its saved picture is removed too");
 });

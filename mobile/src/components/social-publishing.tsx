@@ -313,18 +313,24 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
       {connection?.enabled && connection.accounts.length ? (
         <View style={{ gap: space.sm }}>
           <Text style={[type.label, { color: c.ink }]}>Destinations</Text>
+          <Text style={[type.small, { color: c.muted }]}>Tick the accounts a post should go to.</Text>
           {connection.accounts.map((account) => {
             const checked = selected.includes(account.id);
             const available = account.status === "connected";
             return (
               <View key={account.id} style={{ flexDirection: "row", alignItems: "center", gap: space.sm, padding: space.md, borderRadius: radius.md, backgroundColor: c.surface, borderWidth: 1, borderColor: checked ? c.accent : c.line }}>
-                <Pressable accessibilityRole="checkbox" accessibilityLabel={`Publish to ${account.platform === "facebook" ? "Facebook Page" : "Instagram"}: ${account.name}`} accessibilityState={{ checked, disabled: !available || isBusy || !!confirmation }} disabled={!available || isBusy || !!confirmation} onPress={() => toggleDestination(account.id)} style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: checked ? c.accent : c.line, backgroundColor: checked ? c.accent : c.sunk, alignItems: "center", justifyContent: "center" }}>
-                  {checked ? <Ionicons name="checkmark" size={18} color={c.onAccent} /> : null}
+                {/* The whole left side (picture and name) ticks this destination on or off. */}
+                <Pressable accessibilityRole="checkbox" accessibilityLabel={`Publish to ${account.platform === "facebook" ? "Facebook Page" : "Instagram"}: ${account.name}`} accessibilityState={{ checked, disabled: !available || isBusy || !!confirmation }} disabled={!available || isBusy || !!confirmation} onPress={() => toggleDestination(account.id)}
+                  style={{ flex: 1, minHeight: 44, flexDirection: "row", alignItems: "center", gap: space.sm }}>
+                  <AccountPicture account={account} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={[type.label, { color: c.ink }]}>{account.name}</Text>
+                    <Text style={[type.small, { color: c.muted }]}>{account.platform === "facebook" ? "Facebook Page" : "Professional Instagram"} · {account.status === "connected" ? "Connected" : "Reconnect required"}</Text>
+                  </View>
+                  <View style={{ width: 26, height: 26, borderRadius: 7, borderWidth: 2, borderColor: checked ? c.accent : c.line, backgroundColor: checked ? c.accent : "transparent", alignItems: "center", justifyContent: "center", opacity: available ? 1 : 0.4 }}>
+                    {checked ? <Ionicons name="checkmark" size={17} color={c.onAccent} /> : null}
+                  </View>
                 </Pressable>
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={[type.label, { color: c.ink }]}>{account.name}</Text>
-                  <Text style={[type.small, { color: c.muted }]}>{account.platform === "facebook" ? "Facebook Page" : "Professional Instagram"} · {account.status === "connected" ? "Connected" : "Reconnect required"}</Text>
-                </View>
                 <Pressable accessibilityRole="button" accessibilityLabel={`Disconnect ${account.name}`} disabled={isBusy || !!confirmation} style={{ minHeight: 44, justifyContent: "center" }} onPress={() => setDisconnecting(account)}><Text style={[type.small, { color: c.bad, opacity: isBusy || confirmation ? 0.5 : 1 }]}>Disconnect</Text></Pressable>
               </View>
             );
@@ -363,6 +369,30 @@ function SocialPublishingForStore({ storeId, storeRevision, renderedPost, captio
       <ReviewModal confirmation={confirmation} busy={busy === "publish"} onClose={() => setConfirmation(null)} onConfirm={confirmPublish} />
       <DisconnectModal account={disconnecting} busy={busy?.startsWith("disconnect:") ?? false} onClose={() => setDisconnecting(null)} onConfirm={disconnect} />
     </PublishingShell>
+  );
+}
+
+/** The account's profile picture with a small Instagram or Facebook badge; the platform icon until there's a picture. */
+function AccountPicture({ account }: { account: SocialAccount }) {
+  const c = useColors();
+  const [failed, setFailed] = useState(false);
+  const instagram = account.platform === "instagram";
+  const picture = account.picture_url && !failed ? account.picture_url : null;
+  return (
+    <View style={{ width: 44, height: 44 }}>
+      {picture ? (
+        <Image source={{ uri: picture }} onError={() => setFailed(true)} contentFit="cover" accessibilityIgnoresInvertColors style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.sunk }} />
+      ) : (
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.sunk, alignItems: "center", justifyContent: "center" }}>
+          <Ionicons name={instagram ? "logo-instagram" : "logo-facebook"} size={22} color={c.muted} />
+        </View>
+      )}
+      {picture ? (
+        <View style={{ position: "absolute", right: -3, bottom: -3, width: 20, height: 20, borderRadius: 10, backgroundColor: instagram ? "#D6249F" : "#1877F2", borderWidth: 2, borderColor: c.surface, alignItems: "center", justifyContent: "center" }}>
+          <Ionicons name={instagram ? "logo-instagram" : "logo-facebook"} size={11} color="#FFFFFF" />
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -410,6 +440,7 @@ function ReviewModal({ confirmation, busy, onClose, onConfirm }: { confirmation:
           <Text style={[type.small, { color: c.muted }]}>This review freezes the selected accounts, caption, media, and timing. Edit nothing behind it; close to make changes.</Text>
           <View style={{ gap: 4 }}>
             <Text style={[type.label, { color: c.ink }]}>Destinations</Text>
+          <Text style={[type.small, { color: c.muted }]}>Tick the accounts a post should go to.</Text>
             {confirmation.accountNames.map((name) => <Text key={name} style={[type.small, { color: c.muted }]}>• {name}</Text>)}
           </View>
           <View style={{ gap: 4 }}><Text style={[type.label, { color: c.ink }]}>Media</Text><Text style={[type.small, { color: c.muted }]}>{confirmation.media} · {confirmation.kind}</Text></View>

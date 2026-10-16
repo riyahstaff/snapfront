@@ -259,7 +259,8 @@ app.get("/social/meta/callback", wrap(async (req, res) => {
     return res.redirect(303, back("error"));
   }
   try {
-    await social.finishAuthorization(req.query.state, req.query.code);
+    const seller = await social.finishAuthorization(req.query.state, req.query.code);
+    social.refreshPictures({ sellerId: seller.id }).catch(() => {});   // profile pictures for the Destinations list
     return res.redirect(303, back("connected"));
   } catch (e) {
     // Do not expose OAuth codes, Graph responses, tokens, or configuration details in the browser.
@@ -278,6 +279,7 @@ app.get("/social/instagram/callback", wrap(async (req, res) => {
   try {
     const seller = await social.finishInstagramAuthorization(req.query.state, req.query.code);
     autodm.subscribeQuietly(seller).catch(() => {});   // comments and messages start reaching AutoDM
+    social.refreshPictures({ sellerId: seller.id }).catch(() => {});
     return res.redirect(303, back("connected"));
   } catch (e) {
     console.warn("[instagram] OAuth callback was not completed", e.status || 500, e.status && e.status < 500 ? e.message : "");
@@ -413,6 +415,7 @@ function purgeStores(sellerIds) {
       if (/^[\w-]+\.(pdf|png)$/.test(file)) fs.rmSync(path.join(dirs.files, file), { force: true });
     }
     covers.push(...db.prepare("SELECT image_file FROM seller_media WHERE seller_id=?").all(id).map((row) => row.image_file));
+    covers.push(...db.prepare("SELECT picture_file FROM social_connections WHERE seller_id=? AND picture_file IS NOT NULL").all(id).map((row) => row.picture_file));
     if (seller?.banner_file) covers.push(seller.banner_file);
     covers.push(...designPhotoFiles(seller?.design_photos).filter(Boolean));
     for (const file of new Set(covers)) {

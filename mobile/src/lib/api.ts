@@ -149,6 +149,8 @@ export type SocialAccount = {
   status: "connected" | "reconnect_required";
   /** How it was connected: signing in with Instagram, or through a Facebook Page (older servers omit it). */
   via?: "instagram" | "facebook";
+  /** A small copy of the account's profile picture, when Snapfront has one. */
+  picture_url?: string | null;
 };
 /** `logins` says which ways to connect are switched on (older servers omit it: Facebook only). */
 export type SocialAccounts = { enabled: boolean; setup_required: string | null; logins?: { instagram: boolean; facebook: boolean }; accounts: SocialAccount[] };
