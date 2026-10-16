@@ -41,6 +41,10 @@ export const config = {
   adminToken: env.ADMIN_TOKEN || "",
   // The owner's own accounts: always full access, for running and testing Snapfront (comma-separated).
   ownerEmails: (env.OWNER_EMAILS || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean),
+  // App store and Meta reviewers can't receive sign-in emails: "email:123456" pairs (comma-separated)
+  // sign in with that fixed 6-digit code instead, and no email is sent. Remove after review.
+  reviewLogins: new Map((env.REVIEW_LOGINS || "").split(",").map((p) => p.trim().toLowerCase().split(":"))
+    .filter(([e, c]) => e && /^\d{6}$/.test(c || "")).map(([e, c]) => [e, c])),
   storeDomain: String(env.STORE_DOMAIN || "").trim().toLowerCase().replace(/^\.+|\/+$/g, ""),
   downloadSecret: env.DOWNLOAD_SIGNING_SECRET || "dev-only-secret-change-me",
   resendKey: env.RESEND_API_KEY || "",

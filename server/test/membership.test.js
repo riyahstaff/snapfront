@@ -112,3 +112,30 @@ test("owner emails always have full access, even on a brand-new account", async 
   assert.equal((await (await call("GET", "/api/me", { token: other })).json()).account.plan, "free");
   config.ownerEmails = [];
 });
+
+test("a reviewer's login works with its fixed code and sends no email; nobody else's does", async () => {
+  const { config } = await import("../src/config.js");
+  const auth = await import("../src/auth.js");
+  config.reviewLogins = new Map([["reviewer@example.com", "482913"]]);
+  config.ownerEmails = ["reviewer@example.com"];
+  const sent = [];
+  auth.setEmailSender(async (to, c) => { sent.push([to, c]); });
+  const { token } = await (await call("POST", "/api/sellers", { body: {} })).json();
+  assert.equal((await call("POST", "/api/auth/email/start", { token, body: { email: "Reviewer@Example.com" } })).status, 200);
+  assert.deepEqual(sent, [], "no email for the review login");
+  assert.equal((await call("POST", "/api/auth/email/verify", { token, body: { email: "reviewer@example.com", code: "111111" } })).status, 400);
+  assert.equal((await call("POST", "/api/auth/email/verify", { token, body: { email: "reviewer@example.com", code: "482913" } })).status, 200);
+  assert.equal((await (await call("GET", "/api/me", { token })).json()).account.plan, "pro", "the reviewer sees the full membership");
+  // The fixed code means nothing for any other email, which gets a normal emailed code.
+  const other = (await (await call("POST", "/api/sellers", { body: {} })).json()).token;
+  await call("POST", "/api/auth/email/start", { token: other, body: { email: "someone-else@example.com" } });
+  assert.equal(sent.length, 1);
+  assert.notEqual(sent[0][1], "482913");
+  assert.equal((await call("POST", "/api/auth/email/verify", { token: other, body: { email: "someone-else@example.com", code: "482913" } })).status, 400);
+  // Wrong guesses are still limited.
+  const third = (await (await call("POST", "/api/sellers", { body: {} })).json()).token;
+  await call("POST", "/api/auth/email/start", { token: third, body: { email: "reviewer@example.com" } });
+  for (let i = 0; i < 5; i++) await call("POST", "/api/auth/email/verify", { token: third, body: { email: "reviewer@example.com", code: "000000" } });
+  assert.equal((await call("POST", "/api/auth/email/verify", { token: third, body: { email: "reviewer@example.com", code: "482913" } })).status, 429);
+  config.reviewLogins = new Map(); config.ownerEmails = [];
+});

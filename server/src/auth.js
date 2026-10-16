@@ -37,11 +37,13 @@ export async function startEmailLogin(account, rawEmail) {
   const list = (recent.get(email) || []).filter((t) => now - t < 60 * 60 * 1000);
   if (list.length >= 5) throw httpError(429, "Too many codes requested. Wait a little and try again.");
   list.push(now); recent.set(email, list);
-  const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
+  // A reviewer's login (REVIEW_LOGINS) uses its fixed code and gets no email; the same limits apply.
+  const review = config.reviewLogins.get(email);
+  const code = review || String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
   db.prepare(`INSERT INTO login_codes (email, code_hash, account_id, expires_at, attempts) VALUES (?,?,?,?,0)
     ON CONFLICT(email) DO UPDATE SET code_hash = excluded.code_hash, account_id = excluded.account_id, expires_at = excluded.expires_at, attempts = 0`)
     .run(email, hashCode(email, code), account.id, new Date(now + 10 * 60 * 1000).toISOString());
-  await sendImpl(email, code);
+  if (!review) await sendImpl(email, code);
   return { sent: true, email };
 }
 
