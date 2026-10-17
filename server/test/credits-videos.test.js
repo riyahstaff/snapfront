@@ -270,3 +270,74 @@ test("the owner (OWNER_EMAILS) makes videos without spending credits; others sti
   // Everyone else still needs credits.
   assert.equal((await call("GET", "/api/avatar-videos")).body.free, false);
 });
+
+/* ---------- premium voices (stand-in ElevenLabs) ---------- */
+test("premium ElevenLabs voices: stock voices only, priced by length, used for talking avatars", async () => {
+  const elevenlabs = await import("../src/elevenlabs.js");
+  const mp3 = path.join(tmp, "el.mp3");
+  execFileSync(ffmpegPath, ["-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=f=330:d=1.5", "-c:a", "libmp3lame", "-b:a", "64k", mp3]);
+  const calls = [];
+  let speechStatus = 200;
+  process.env.ELEVENLABS_API_KEY = "el_test";
+  elevenlabs.setElevenFetch(async (url, init = {}) => {
+    calls.push({ url, init });
+    if (url.includes("/v2/voices")) return { ok: true, status: 200, json: async () => ({ voices: [
+      { voice_id: "pNInz6obpgDQGcFmaJgB", name: "Adam - Deep and confident", category: "premade", labels: { accent: "american", gender: "male" } },
+      { voice_id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah", category: "premade", labels: { accent: "american", gender: "female" } },
+      { voice_id: "OwnerClone123456789", name: "Torrey (my clone)", category: "cloned", labels: {} },
+    ] }) };
+    if (url.includes("/v1/text-to-speech/")) {
+      if (speechStatus !== 200) return { ok: false, status: speechStatus, text: async () => "quota exceeded" };
+      const b = fs.readFileSync(mp3);
+      return { ok: true, status: 200, arrayBuffer: async () => b.buffer.slice(b.byteOffset, b.byteOffset + b.length) };
+    }
+    throw new Error(`unexpected ${url}`);
+  });
+  try {
+    const opts = (await call("GET", "/api/avatar-videos")).body;
+    const premium = opts.talk.voices.filter((v) => v.premium);
+    assert.deepEqual(premium.map((v) => [v.id, v.name, v.accent]), [["el:pNInz6obpgDQGcFmaJgB", "Adam", "American"], ["el:EXAVITQu4vr4xnSDxMaL", "Sarah", "American"]]);
+    assert.ok(!JSON.stringify(opts).includes("OwnerClone"));                 // the owner's own voices are never on sale
+    assert.ok(opts.talk.voices.some((v) => v.id === "af_heart" && !v.premium)); // free voices are still there
+    assert.equal(calls[0].init.headers["xi-api-key"], "el_test");
+    assert.match(calls[0].url, /category=premade/);
+    const appPrice = (n) => Math.max(opts.premium_voice.min, Math.ceil((n / 1000) * opts.premium_voice.per_1k_chars / opts.premium_voice.step) * opts.premium_voice.step);
+    for (const n of [10, 49, 120, 333, 450]) assert.equal(appPrice(n), elevenlabs.priceFor(n));   // the app prices it exactly like the server
+    assert.equal(elevenlabs.priceFor(50), 5);
+    assert.equal(elevenlabs.priceFor(450), 10);
+
+    // Someone else's voice id can't be used.
+    assert.equal((await call("POST", "/api/avatar-videos", { kind: "talk", avatar_id: "avt_nova", script: "Hello there, this is my serum.", voice: "el:OwnerClone123456789" })).status, 400);
+
+    status = "IN_PROGRESS";
+    const before = credits.balance(accountId());
+    const script = "Hi! This is the serum I use every single morning.";
+    const r = await call("POST", "/api/avatar-videos", { kind: "talk", avatar_id: "avt_nova", script, voice: "el:EXAVITQu4vr4xnSDxMaL", resolution: "720p" });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.equal(r.body.credits, videos.talkPrice("720p") + elevenlabs.priceFor(script.length));
+    assert.equal(r.body.premium_voice, true);
+    assert.equal(credits.balance(accountId()), before - r.body.credits);
+    for (let i = 0; i < 100 && !rp.at(-1).url.includes("infinitetalk"); i++) await new Promise((s) => setTimeout(s, 20));
+    const speech = calls.find((c) => c.url.includes("/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL"));
+    assert.ok(speech, "ElevenLabs was asked to read the script");
+    assert.deepEqual(JSON.parse(speech.init.body), { text: script, model_id: "eleven_multilingual_v2" });
+    const wavFile = path.join(tmp, "media", rp.at(-1).body.input.audio.split("/").pop());
+    assert.match(probe(wavFile), /Audio: pcm_s16le.*24000 Hz, mono/);
+
+    // ElevenLabs fails on a voiceover: the free voice reads it, and the premium part comes back.
+    speechStatus = 429;
+    const vo = "Plan your whole week in two minutes. Link in bio.";
+    const v = await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 5, motion: "walk", voiceover: vo, voice: "el:pNInz6obpgDQGcFmaJgB" });
+    assert.equal(v.status, 201, JSON.stringify(v.body));
+    const extra = elevenlabs.priceFor(vo.length);
+    assert.equal(v.body.credits, 50 + extra);
+    const afterStart = credits.balance(accountId());
+    status = "COMPLETED";
+    let done = (await call("GET", `/api/avatar-videos/${v.body.id}`)).body;
+    for (let i = 0; i < 100 && done.status !== "done"; i++) { await new Promise((s) => setTimeout(s, 100)); done = (await call("GET", `/api/avatar-videos/${v.body.id}`)).body; }
+    assert.equal(done.status, "done");
+    assert.match(done.note, /premium voice was unavailable/);
+    assert.equal(credits.balance(accountId()), afterStart + extra);
+    assert.match(probe(path.join(tmp, "media", done.url.split("/").pop())), /Audio: aac/);
+  } finally { delete process.env.ELEVENLABS_API_KEY; elevenlabs.setElevenFetch((...a) => fetch(...a)); }
+});

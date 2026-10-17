@@ -850,7 +850,7 @@ app.delete("/api/avatars/:id", auth, (req, res) => { avatars.remove(req.seller, 
 app.post("/api/avatar-shots", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatars.shoot(req.account, req.seller, req.body || {}))));
 app.get("/api/avatar-shots/:id", auth, wrap(async (req, res) => res.json(await avatars.shot(req.seller, req.params.id))));
 /* ---------- avatar videos and talking avatars, paid with credits ---------- */
-app.get("/api/avatar-videos", auth, (req, res) => res.json(avatarVideos.list(req.account, req.seller)));
+app.get("/api/avatar-videos", auth, wrap(async (req, res) => res.json(await avatarVideos.list(req.account, req.seller))));
 app.post("/api/avatar-videos", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatarVideos.start(req.account, req.seller, req.body || {}))));
 app.get("/api/avatar-videos/:id", auth, wrap(async (req, res) => res.json(await avatarVideos.one(req.seller, req.params.id))));
 app.delete("/api/avatar-videos/:id", auth, (req, res) => { avatarVideos.remove(req.seller, req.params.id); res.status(204).end(); });
