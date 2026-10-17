@@ -49,7 +49,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
     if (!m.resolutions.includes(resolution)) setResolution(m.resolutions[0]);
   };
   const price = mode === "talk" ? studio.talk.prices[resolution] : model?.prices[`${duration}|${resolution}`];
-  const short = price != null && studio.balance < price;
+  const short = !studio.free && price != null && studio.balance < price;
   const ready = mode === "talk" ? script.trim().length >= 8 : !!motion || prompt.trim().length >= 3;
 
   async function go() {
@@ -58,7 +58,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
       const v = await api.startAvatarVideo(mode === "talk"
         ? { kind: "talk", shot_id: shotId, avatar_id: shotId ? undefined : avatarId, script: script.trim(), voice, resolution }
         : { kind: "motion", shot_id: shotId, model: model.id, duration, resolution, sound, motion: motion ?? undefined, prompt: motion ? undefined : prompt.trim() });
-      onStarted(v, studio.balance - v.credits);
+      onStarted(v, studio.free ? studio.balance : studio.balance - v.credits);
     } catch (e) {
       if (e instanceof ApiError && e.credits) setMsg({ text: `This needs ${e.credits.need} credits and you have ${e.credits.balance}.`, tone: "error" });
       else setMsg({ text: errText(e, "Couldn’t start the video."), tone: "error" });
@@ -113,13 +113,13 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
       )}
 
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md, flexWrap: "wrap" }}>
-        <Text style={[type.body, { color: c.ink }]}><Text style={{ fontWeight: "700" }}>{price ?? "–"} credits</Text><Text style={{ color: c.muted }}>  ·  you have {studio.balance.toLocaleString()}</Text></Text>
+        <Text style={[type.body, { color: c.ink }]}><Text style={{ fontWeight: "700" }}>{price ?? "–"} credits</Text><Text style={{ color: c.muted }}>{studio.free ? "  ·  free for you (owner account)" : `  ·  you have ${studio.balance.toLocaleString()}`}</Text></Text>
       </View>
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
       {short ? (
         <Button label="Top up credits" variant="flash" icon={<Ionicons name="add-circle-outline" size={18} color={c.onFlash} />} onPress={() => router.push("/credits")} />
       ) : (
-        <Button label={`${mode === "talk" ? "Make it talk" : "Make the video"} · ${price} credits`} icon={<Ionicons name="film-outline" size={18} color={c.onAccent} />} loading={busy} disabled={!ready} onPress={go} />
+        <Button label={`${mode === "talk" ? "Make it talk" : "Make the video"} · ${studio.free ? "free" : `${price} credits`}`} icon={<Ionicons name="film-outline" size={18} color={c.onAccent} />} loading={busy} disabled={!ready} onPress={go} />
       )}
       <Text style={[type.small, { color: c.muted }]}>If a video fails, its credits come straight back.</Text>
     </View>

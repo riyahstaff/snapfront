@@ -82,6 +82,7 @@ export function options(account) {
   return {
     enabled: aimedia.enabled(),
     balance: credits.balance(account.id),
+    free: credits.isOwner(account),
     models: MODELS.map((m) => ({ id: m.id, name: m.name, badge: m.badge, blurb: m.blurb, durations: m.durations, resolutions: m.resolutions, sound: m.sound,
       prices: Object.fromEntries(m.durations.flatMap((d) => m.resolutions.map((r) => [`${d}|${r}`, priceOf(m, d, r)]))) })),
     talk: { resolutions: TALK.resolutions, prices: Object.fromEntries(TALK.resolutions.map((r) => [r, talkPrice(r)])), max_chars: TALK.max_chars,

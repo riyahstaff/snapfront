@@ -180,11 +180,11 @@ export type AvatarShot = { id: string; avatar_id: string; product_id: string | n
 /** Credits: bought in packs on the website, spent on avatar videos and talking avatars. */
 export type CreditPack = { id: string; name: string; credits: number; bonus: number; total: number; cents: number; price: string; per_credit: string; badge?: string };
 export type CreditEntry = { id: string; delta: number; kind: "purchase" | "spend" | "refund" | "grant" | "reversal"; note: string; created_at: string };
-export type CreditsView = { enabled: boolean; balance: number; terms: string; packs: CreditPack[]; history: CreditEntry[]; added?: number };
+export type CreditsView = { enabled: boolean; balance: number; terms: string; packs: CreditPack[]; history: CreditEntry[]; added?: number; free?: boolean };
 export type VideoModel = { id: "kling" | "seedance" | "sora"; name: string; badge: string; blurb: string; durations: number[]; resolutions: string[]; sound: "none" | "optional" | "always"; prices: Record<string, number> };
 export type AvatarVideo = { id: string; kind: "motion" | "talk"; model: string; model_name: string; avatar_id: string | null; shot_id: string | null; duration: number | null; resolution: string;
   sound: boolean; script: string | null; credits: number; status: AvatarJobStatus; error: string | null; url: string | null; created_at: string };
-export type AvatarVideoStudio = { enabled: boolean; balance: number; models: VideoModel[]; motions: { id: string; name: string }[];
+export type AvatarVideoStudio = { enabled: boolean; balance: number; free?: boolean; models: VideoModel[]; motions: { id: string; name: string }[];
   talk: { resolutions: string[]; prices: Record<string, number>; max_chars: number; styles: string[]; voices: { id: string; name: string; accent: string }[] }; videos: AvatarVideo[] };
 export type AvatarStudio = { enabled: boolean; max_avatars: number; styles: { id: string; name: string; blurb: string }[]; poses: { id: string; name: string }[]; avatars: Avatar[]; shots: AvatarShot[] };
 /** Store insights (Pro) */
