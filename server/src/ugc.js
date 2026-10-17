@@ -168,23 +168,72 @@ export function publicPage(seller) {
 }
 
 /* ---------- scripts ---------- */
+// The creator describes the video in their own words (or pastes a brand brief or a rough script) and
+// gets back a complete script ready to film: hooks, the full spoken script, scene-by-scene shots and
+// on-screen text, a call to action, a caption and filming tips. They can then ask for changes.
+export const SCRIPT_STYLES = ["testimonial", "unboxing", "problem-solution", "how-to", "before-after", "day-in-my-life", "storytime", "comparison"];
+const SCRIPT_LENGTHS = [15, 30, 45, 60];
+// Spoken pace for a natural UGC read: about 2.5 words a second.
+const wordsFor = (seconds) => Math.round(seconds * 2.5);
+let writerImpl = null;
+/** Tests: replace the AI writer. */
+export function setScriptWriter(f) { writerImpl = f; }
+const para = (v, n) => String(v ?? "").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim().slice(0, n);
+function cleanScript(out, style, seconds) {
+  const hooks = (Array.isArray(out.hooks) ? out.hooks : []).map((x) => line(x, 90)).filter(Boolean).slice(0, 3);
+  const scenes = (Array.isArray(out.scenes) ? out.scenes : []).map((sc) => ({ shot: line(sc?.shot, 120), line: line(sc?.line ?? sc?.say, 220), text: line(sc?.text, 60), seconds: Math.max(0, Math.min(30, Number(sc?.seconds) || 0)) || null }))
+    .filter((sc) => sc.shot || sc.line).slice(0, 8);
+  const cta = line(out.cta, 80);
+  // If the model didn't write the full script out, put it together from the hook and the scenes.
+  const full = para(out.full_script, 2000) || [hooks[0], ...scenes.map((sc) => sc.line)].filter(Boolean).join("\n\n");
+  return {
+    style: SCRIPT_STYLES.includes(out.style_used) ? out.style_used : style === "auto" ? "testimonial" : style, seconds,
+    title: line(out.title, 80), why: line(out.why, 220), hooks, full_script: full, scenes, cta,
+    caption: line(out.caption, 220), hashtags: (Array.isArray(out.hashtags) ? out.hashtags : []).map((h) => line(h, 30).replace(/^#?/, "#").replace(/\s+/g, "")).filter((h) => h.length > 1).slice(0, 6),
+    tips: (Array.isArray(out.tips) ? out.tips : []).map((x) => line(x, 140)).filter(Boolean).slice(0, 4),
+    words: full.split(/\s+/).filter(Boolean).length,
+  };
+}
 export async function script(account, b = {}) {
-  const brand = line(b.brand, 80), product = line(b.product, 200);
-  if (!product) throw httpError(400, "Say what product the video is for.");
-  const style = ["testimonial", "unboxing", "problem-solution", "how-to", "before-after", "day-in-my-life"].includes(b.style) ? b.style : "testimonial";
-  const seconds = [15, 30, 60].includes(Number(b.seconds)) ? Number(b.seconds) : 30;
+  const idea = para(b.idea, 1500);
+  const brand = line(b.brand, 80), product = line(b.product, 200), points = line(b.points, 500);
+  if (idea.length < 10 && !product) throw httpError(400, "Describe the video you want: the product, what happens in it and the feeling you're going for.");
+  const style = SCRIPT_STYLES.includes(b.style) ? b.style : "auto";
+  const seconds = SCRIPT_LENGTHS.includes(Number(b.seconds)) ? Number(b.seconds) : 30;
+  const change = line(b.change, 300);
+  const previous = change && b.previous && typeof b.previous === "object" ? cleanScript(b.previous, style, seconds) : null;
+  const words = wordsFor(seconds);
+  const prompt = `You are a top UGC scriptwriter who writes TikTok, Reels and Shorts videos that brands run as ads. Write a complete script a creator will film on their phone.
+
+What the creator wants, in their own words (it may be an idea, a brand's brief or a rough script; keep their meaning and make it much better):
+"""${idea || "(no description)"}"""
+${brand ? `Brand: ${brand}.\n` : ""}${product ? `Product: ${product}.\n` : ""}${points ? `Points the brand wants covered: ${points}.\n` : ""}Style: ${style === "auto" ? "pick whichever of these fits best: " + SCRIPT_STYLES.join(", ") : style}.
+Length: about ${seconds} seconds, so the full spoken script is about ${words} words (no more than ${Math.round(words * 1.15)}).
+${previous ? `\nThis is the current version of the script:\n"""${previous.full_script}"""\nRewrite it with this change: ${change}. Keep what works.\n` : ""}
+How to write it:
+- Open with a hook that stops the scroll in the first 2 seconds (a bold statement, a question, a surprising visual or a relatable problem). Never open with "Hi guys" or the brand name.
+- First person and conversational, like talking to a friend. Short sentences. Specific, sensory details about the product instead of generic praise.
+- One idea per scene. Every scene says what the camera shows, so it's easy to film alone with a phone.
+- On-screen text so it works with the sound off.
+- One clear call to action at the end.
+- Don't invent facts, prices, discounts or results that the description doesn't give. No medical, health-cure, weight-loss or income claims, and no guarantees.
+
+Return this JSON object:
+{"title": a short name for this video (max 60 chars),
+ "style_used": one of ${JSON.stringify(SCRIPT_STYLES)},
+ "hooks": [3 different opening lines, each max 70 chars; the first is the one used in full_script],
+ "full_script": the complete words the creator says, in order, from the hook to the call to action, with a blank line between scenes,
+ "scenes": [4 to 8 objects {"shot": what the camera shows (max 100 chars), "line": what the creator says in this scene (max 200 chars), "text": on-screen text (max 40 chars, or ""), "seconds": rough length of the scene}],
+ "cta": the call to action line (max 60 chars),
+ "caption": a post caption (max 150 chars),
+ "hashtags": [4 to 6 relevant hashtags],
+ "tips": [3 short, specific filming tips for this video],
+ "why": one sentence on why this script works}`;
   return plans.withAllowance(account, "post", async () => {
-    const out = await askJson([{ type: "text", text: `Write a UGC video script a creator will film on their phone for a brand.
-Brand: ${brand || "the brand"}. Product: ${product}. ${b.points ? `Key points from the brief: ${line(b.points, 500)}.` : ""}
-Style: ${style}. Length: about ${seconds} seconds. Audience: TikTok and Instagram Reels; it may run as a paid ad.
-Rules: natural first-person voice, no claims the brief doesn't support (no medical or income claims), hook in the first 2 seconds, works with the sound off.
-Return JSON: {"hooks": [3 alternative opening lines, each max 70 chars], "scenes": [4-7 objects {"shot": string (what the camera shows, max 90 chars), "line": string (what the creator says, max 140 chars), "text": string (on-screen text, max 40 chars)}], "cta": string (max 60 chars), "tips": [3 short filming tips]}` }], 2500);
-    return {
-      style, seconds,
-      hooks: (Array.isArray(out.hooks) ? out.hooks : []).map((x) => line(x, 90)).filter(Boolean).slice(0, 3),
-      scenes: (Array.isArray(out.scenes) ? out.scenes : []).map((s) => ({ shot: line(s?.shot, 110), line: line(s?.line, 180), text: line(s?.text, 60) })).filter((s) => s.shot || s.line).slice(0, 7),
-      cta: line(out.cta, 80), tips: (Array.isArray(out.tips) ? out.tips : []).map((x) => line(x, 120)).filter(Boolean).slice(0, 3),
-    };
+    const out = writerImpl ? await writerImpl(prompt) : await askJson([{ type: "text", text: prompt }], 3000);
+    const result = cleanScript(out || {}, style, seconds);
+    if (!result.full_script && !result.scenes.length) throw httpError(502, "The AI's script came back empty. Try again.");
+    return result;
   });
 }
 
