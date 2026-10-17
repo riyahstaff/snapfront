@@ -187,3 +187,20 @@ test("the presenter slide pictures leave room for the avatar and the phone", () 
   assert.match(screen, new RegExp(`x="${presenter.LAYOUT.screen.phone.x}"`));
   assert.match(screen, /Get paid/);
 });
+
+test("the studio can run Runpod jobs for site artwork, on known models only", async () => {
+  const aimedia = await import("../src/aimedia.js");
+  const seen = [];
+  aimedia.setRunpodFetch(async (url, opts) => { seen.push({ url, body: opts?.body ? JSON.parse(opts.body) : null }); return new Response(JSON.stringify({ id: "job-123456", status: "IN_QUEUE" }), { status: 200 }); });
+  const r = await call("POST", "/api/studio/runpod/qwen-image-t2i/run", { input: { prompt: "a mug" } }, STUDIO);
+  assert.equal(r.status, 200);
+  assert.equal(r.body.id, "job-123456");
+  assert.match(seen[0].url, /\/qwen-image-t2i\/run$/);
+  assert.deepEqual(seen[0].body, { input: { prompt: "a mug" } });
+  assert.equal((await call("GET", "/api/studio/runpod/vidu-q3-i2v/status/job-123456", null, STUDIO)).status, 200);
+  assert.match(seen[1].url, /\/vidu-q3-i2v\/status\/job-123456$/);
+  assert.equal((await call("POST", "/api/studio/runpod/some-other-endpoint/run", { input: {} }, STUDIO)).status, 404);
+  assert.equal((await call("GET", "/api/studio/runpod/vidu-q3-i2v/status/..%2Fx", null, STUDIO)).status, 400);
+  assert.equal((await call("POST", "/api/studio/runpod/qwen-image-t2i/run", { input: {} }, other.token)).status, 403);
+  assert.equal(seen.length, 2);
+});
