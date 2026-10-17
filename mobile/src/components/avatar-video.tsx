@@ -1,0 +1,167 @@
+// Avatar videos, paid with credits: the panel that sets one up (model, length, quality, motion or
+// script and voice) with its price in credits, and the card that plays a finished video.
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { router } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { Ionicons } from "@expo/vector-icons";
+import { Button, Field, Notice, Pill } from "@/components/ui";
+import { Toggle } from "@/components/panel";
+import { api, ApiError, type AvatarVideo, type AvatarVideoStudio } from "@/lib/api";
+import { saveToPhone, shareFile } from "@/lib/media";
+import { radius, space, type, useColors } from "@/lib/theme";
+
+type Msg = { text: string; tone: "ok" | "error" | "info" } | null;
+const errText = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
+
+function Chip({ label, on, onPress, sub }: { label: string; on: boolean; onPress: () => void; sub?: string }) {
+  const c = useColors();
+  return (
+    <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: on }}
+      style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: radius.pill, borderWidth: on ? 2 : 1, borderColor: on ? c.accent : c.line, backgroundColor: c.bg }}>
+      <Text style={[type.label, { color: c.ink }]}>{label}{sub ? <Text style={[type.small, { color: c.muted }]}>  {sub}</Text> : null}</Text>
+    </Pressable>
+  );
+}
+
+/** Set up a video from an avatar photo (mode "motion") or make the avatar talk (mode "talk"). */
+export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStarted, onClose }: {
+  studio: AvatarVideoStudio; mode: "motion" | "talk"; shotId?: string; avatarId?: string; avatarName: string;
+  onStarted: (v: AvatarVideo, balance: number) => void; onClose: () => void;
+}) {
+  const c = useColors();
+  const [modelId, setModelId] = useState(studio.models[0]?.id ?? "kling");
+  const model = studio.models.find((m) => m.id === modelId) ?? studio.models[0];
+  const [duration, setDuration] = useState(model?.durations[0] ?? 5);
+  const [resolution, setResolution] = useState(mode === "talk" ? "720p" : model?.resolutions[0] ?? "720p");
+  const [sound, setSound] = useState(true);
+  const [motion, setMotion] = useState<string | null>(studio.motions[0]?.id ?? null);
+  const [prompt, setPrompt] = useState("");
+  const [script, setScript] = useState("");
+  const [voice, setVoice] = useState(studio.talk.voices[0]?.id ?? "af_heart");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<Msg>(null);
+
+  const pickModel = (id: string) => {
+    const m = studio.models.find((x) => x.id === id)!;
+    setModelId(m.id as typeof modelId);
+    if (!m.durations.includes(duration)) setDuration(m.durations[0]);
+    if (!m.resolutions.includes(resolution)) setResolution(m.resolutions[0]);
+  };
+  const price = mode === "talk" ? studio.talk.prices[resolution] : model?.prices[`${duration}|${resolution}`];
+  const short = price != null && studio.balance < price;
+  const ready = mode === "talk" ? script.trim().length >= 8 : !!motion || prompt.trim().length >= 3;
+
+  async function go() {
+    setBusy(true); setMsg(null);
+    try {
+      const v = await api.startAvatarVideo(mode === "talk"
+        ? { kind: "talk", shot_id: shotId, avatar_id: shotId ? undefined : avatarId, script: script.trim(), voice, resolution }
+        : { kind: "motion", shot_id: shotId, model: model.id, duration, resolution, sound, motion: motion ?? undefined, prompt: motion ? undefined : prompt.trim() });
+      onStarted(v, studio.balance - v.credits);
+    } catch (e) {
+      if (e instanceof ApiError && e.credits) setMsg({ text: `This needs ${e.credits.need} credits and you have ${e.credits.balance}.`, tone: "error" });
+      else setMsg({ text: errText(e, "Couldn’t start the video."), tone: "error" });
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <View style={{ gap: space.md, borderTopWidth: 1, borderColor: c.sunk, paddingTop: space.md }}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <Text style={[type.heading, { color: c.ink }]}>{mode === "talk" ? `Make ${avatarName} talk` : "Make it a video"}</Text>
+        <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close"><Ionicons name="close" size={20} color={c.muted} /></Pressable>
+      </View>
+
+      {mode === "motion" ? (
+        <>
+          <View style={{ gap: space.sm }}>
+            {studio.models.map((m) => (
+              <Pressable key={m.id} onPress={() => pickModel(m.id)} accessibilityRole="radio" accessibilityState={{ selected: m.id === modelId }}
+                style={{ flexDirection: "row", gap: space.md, alignItems: "flex-start", padding: space.md, borderRadius: radius.md, borderWidth: m.id === modelId ? 2 : 1, borderColor: m.id === modelId ? c.accent : c.line, backgroundColor: c.bg }}>
+                <Ionicons name={m.id === modelId ? "radio-button-on" : "radio-button-off"} size={20} color={m.id === modelId ? c.accent : c.muted} style={{ marginTop: 2 }} />
+                <View style={{ flex: 1, gap: 3 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}><Text style={[type.label, { color: c.ink }]}>{m.name}</Text><Pill text={m.badge} tone="good" /></View>
+                  <Text style={[type.small, { color: c.muted }]}>{m.blurb}</Text>
+                  <Text style={[type.small, { color: c.ink }]}>From {Math.min(...Object.values(m.prices))} credits</Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+            {model.durations.map((d) => <Chip key={d} label={`${d} sec`} on={d === duration} onPress={() => setDuration(d)} />)}
+            {model.resolutions.length > 1 ? model.resolutions.map((r) => <Chip key={r} label={r} on={r === resolution} onPress={() => setResolution(r)} />) : null}
+          </View>
+          {model.sound === "optional" ? <Toggle label="Add sound and music" sub="Made for the clip by the AI" value={sound} onChange={setSound} /> : null}
+          {model.sound === "always" ? <Text style={[type.small, { color: c.muted }]}>Sora makes its own sound. Write a line in quotes below if you want the avatar to say something.</Text> : null}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+            {studio.motions.map((m) => <Chip key={m.id} label={m.name} on={motion === m.id} onPress={() => setMotion(motion === m.id ? null : m.id)} />)}
+          </View>
+          {!motion ? <Field label="Or describe what happens" value={prompt} onChangeText={setPrompt} maxLength={300} multiline placeholder="she spins around, holds it up and says “this changed my mornings”" /> : null}
+        </>
+      ) : (
+        <>
+          <Field label="What should they say?" hint={`Up to ${studio.talk.max_chars} characters, about 30 seconds.`} value={script} onChangeText={setScript} maxLength={studio.talk.max_chars} multiline
+            placeholder="Hey! This is the serum I use every single morning. Link's in my bio." />
+          <Text style={[type.label, { color: c.ink }]}>Voice</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+            {studio.talk.voices.map((v) => <Chip key={v.id} label={v.name} sub={v.accent === "British" ? "UK" : undefined} on={voice === v.id} onPress={() => setVoice(v.id)} />)}
+          </View>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+            {studio.talk.resolutions.map((r) => <Chip key={r} label={r} sub={`${studio.talk.prices[r]} cr`} on={r === resolution} onPress={() => setResolution(r)} />)}
+          </View>
+        </>
+      )}
+
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md, flexWrap: "wrap" }}>
+        <Text style={[type.body, { color: c.ink }]}><Text style={{ fontWeight: "700" }}>{price ?? "–"} credits</Text><Text style={{ color: c.muted }}>  ·  you have {studio.balance.toLocaleString()}</Text></Text>
+      </View>
+      <Notice text={msg?.text ?? null} tone={msg?.tone} />
+      {short ? (
+        <Button label="Top up credits" variant="flash" icon={<Ionicons name="add-circle-outline" size={18} color={c.onFlash} />} onPress={() => router.push("/credits")} />
+      ) : (
+        <Button label={`${mode === "talk" ? "Make it talk" : "Make the video"} · ${price} credits`} icon={<Ionicons name="film-outline" size={18} color={c.onAccent} />} loading={busy} disabled={!ready} onPress={go} />
+      )}
+      <Text style={[type.small, { color: c.muted }]}>If a video fails, its credits come straight back.</Text>
+    </View>
+  );
+}
+
+/** A finished (or in-progress) avatar video. */
+export function VideoCard({ video, width, onDelete, onMsg }: { video: AvatarVideo; width: number; onDelete: (id: string) => void; onMsg: (m: Msg) => void }) {
+  const c = useColors();
+  const [saving, setSaving] = useState(false);
+  const label = video.kind === "talk" ? "Talking avatar" : `${video.model_name} · ${video.duration}s ${video.resolution}`;
+  return (
+    <View style={{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.md, gap: space.md }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <Text style={[type.label, { color: c.ink, flex: 1 }]} numberOfLines={1}>{label}</Text>
+        <Pill text={video.status === "done" ? "Ready" : video.status === "failed" ? "Didn’t work" : "Making…"} tone={video.status === "done" ? "good" : "neutral"} />
+      </View>
+      {video.status === "queued" || video.status === "running" ? (
+        <View style={{ flexDirection: "row", gap: space.sm, alignItems: "center" }}><ActivityIndicator color={c.accent} /><Text style={[type.small, { color: c.muted }]}>Usually 1 to 5 minutes. You can leave this screen.</Text></View>
+      ) : null}
+      {video.status === "failed" ? <Text style={[type.small, { color: c.muted }]}>{video.error}</Text> : null}
+      {video.status === "done" && video.url ? (
+        <>
+          <Clip url={video.url} width={Math.min(width, 360)} />
+          <View style={{ flexDirection: "row", gap: space.sm }}>
+            <Button label="Save" variant="secondary" style={{ flex: 1 }} loading={saving} onPress={async () => {
+              setSaving(true);
+              try { onMsg((await saveToPhone([video.url!])) ? { text: "Saved to your phone.", tone: "ok" } : { text: "Allow photo access in Settings to save.", tone: "error" }); }
+              finally { setSaving(false); }
+            }} />
+            <Button label="Share" variant="secondary" style={{ flex: 1 }} onPress={() => shareFile(video.url!).catch(() => {})} />
+          </View>
+        </>
+      ) : null}
+      {video.status === "done" || video.status === "failed" ? (
+        <Pressable onPress={() => onDelete(video.id)} accessibilityRole="button" style={{ alignSelf: "flex-start" }}><Text style={[type.small, { color: c.muted }]}>Delete</Text></Pressable>
+      ) : null}
+    </View>
+  );
+}
+function Clip({ url, width }: { url: string; width: number }) {
+  const player = useVideoPlayer(url, (p) => { p.loop = true; p.muted = true; p.play(); });
+  const style = useMemo(() => ({ width, height: (width * 16) / 9, borderRadius: radius.md, alignSelf: "center" as const, backgroundColor: "#000" }), [width]);
+  return <VideoView player={player} style={style} contentFit="contain" nativeControls />;
+}

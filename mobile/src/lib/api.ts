@@ -177,6 +177,15 @@ export type AiJob = { id: string; kind: "video" | "scene"; status: "queued" | "r
 export type AvatarJobStatus = "queued" | "running" | "done" | "failed";
 export type Avatar = { id: string; name: string; style: string; look: string; status: AvatarJobStatus; error: string | null; image_url: string | null; created_at: string };
 export type AvatarShot = { id: string; avatar_id: string; product_id: string | null; pose: string; status: AvatarJobStatus; error: string | null; image_url: string | null; created_at: string };
+/** Credits: bought in packs on the website, spent on avatar videos and talking avatars. */
+export type CreditPack = { id: string; name: string; credits: number; bonus: number; total: number; cents: number; price: string; per_credit: string; badge?: string };
+export type CreditEntry = { id: string; delta: number; kind: "purchase" | "spend" | "refund" | "grant" | "reversal"; note: string; created_at: string };
+export type CreditsView = { enabled: boolean; balance: number; terms: string; packs: CreditPack[]; history: CreditEntry[]; added?: number };
+export type VideoModel = { id: "kling" | "seedance" | "sora"; name: string; badge: string; blurb: string; durations: number[]; resolutions: string[]; sound: "none" | "optional" | "always"; prices: Record<string, number> };
+export type AvatarVideo = { id: string; kind: "motion" | "talk"; model: string; model_name: string; avatar_id: string | null; shot_id: string | null; duration: number | null; resolution: string;
+  sound: boolean; script: string | null; credits: number; status: AvatarJobStatus; error: string | null; url: string | null; created_at: string };
+export type AvatarVideoStudio = { enabled: boolean; balance: number; models: VideoModel[]; motions: { id: string; name: string }[];
+  talk: { resolutions: string[]; prices: Record<string, number>; max_chars: number; styles: string[]; voices: { id: string; name: string; accent: string }[] }; videos: AvatarVideo[] };
 export type AvatarStudio = { enabled: boolean; max_avatars: number; styles: { id: string; name: string; blurb: string }[]; poses: { id: string; name: string }[]; avatars: Avatar[]; shots: AvatarShot[] };
 /** Store insights (Pro) */
 export type Insights = { days: number; visitors: number; views: number; orders: number; sales: number; conversion: number;
@@ -295,7 +304,7 @@ export type AgentEvent =
 export type AgentRun = { id: string; status: "running" | "done" | "error"; events: AgentEvent[]; next: number; reply: string | null; error: string | null };
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number, public upgrade: PlanId | null = null) {
+  constructor(message: string, public status: number, public upgrade: PlanId | null = null, public credits: { need: number; balance: number } | null = null) {
     super(message);
   }
 }
@@ -356,8 +365,8 @@ async function request<T>(method: string, path: string, body?: unknown, storeId?
     if (res.status === 204) return undefined as T;
     const data = await res.json().catch((error: unknown) => { if (controller?.signal.aborted) throw error; return {}; });
     if (!res.ok) {
-      const { error, upgrade } = data as { error?: string; upgrade?: PlanId | null };
-      const err = new ApiError(error || "Something went wrong. Try again.", res.status, upgrade ?? null);
+      const { error, upgrade, credits } = data as { error?: string; upgrade?: PlanId | null; credits?: { need: number; balance: number } };
+      const err = new ApiError(error || "Something went wrong. Try again.", res.status, upgrade ?? null, credits ?? null);
       if (res.status === 402 && upgrade && upgradeListener) upgradeListener(upgrade, err.message);
       throw err;
     }
@@ -465,6 +474,14 @@ export const api = {
   deleteAvatar: (id: string) => request<null>("DELETE", `/api/avatars/${id}`),
   avatarShot: (input: { avatar_id: string; product_id: string; pose?: string; prompt?: string }) => request<AvatarShot>("POST", "/api/avatar-shots", input),
   avatarShotStatus: (id: string) => request<AvatarShot>("GET", `/api/avatar-shots/${id}`),
+  avatarVideos: () => request<AvatarVideoStudio>("GET", "/api/avatar-videos"),
+  startAvatarVideo: (input: { kind?: "motion" | "talk"; shot_id?: string; avatar_id?: string; model?: string; duration?: number; resolution?: string; sound?: boolean; motion?: string; prompt?: string; script?: string; voice?: string }) =>
+    request<AvatarVideo>("POST", "/api/avatar-videos", input),
+  avatarVideo: (id: string) => request<AvatarVideo>("GET", `/api/avatar-videos/${id}`),
+  deleteAvatarVideo: (id: string) => request<null>("DELETE", `/api/avatar-videos/${id}`),
+  credits: () => request<CreditsView>("GET", "/api/credits"),
+  buyCredits: (pack: string) => request<{ url: string }>("POST", "/api/credits/checkout", { pack }),
+  confirmCredits: (session_id: string) => request<CreditsView>("POST", "/api/credits/confirm", { session_id }),
   insights: (days: 7 | 30 | 90) => request<Insights>("GET", `/api/insights?days=${days}`),
   reviews: () => request<Review[]>("GET", "/api/reviews"),
   setReview: (id: string, status: "published" | "hidden") => request<Review[]>("PATCH", `/api/reviews/${id}`, { status }),

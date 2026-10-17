@@ -6,7 +6,8 @@ import { router } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, H2, Notice, Pill } from "@/components/ui";
-import { api, ApiError, type Avatar, type AvatarShot, type AvatarStudio, type Product } from "@/lib/api";
+import { api, ApiError, type Avatar, type AvatarShot, type AvatarStudio, type AvatarVideo, type AvatarVideoStudio, type Product } from "@/lib/api";
+import { VideoCard, VideoPanel } from "@/components/avatar-video";
 import { account, useMe } from "@/lib/account-store";
 import { saveToPhone, shareFile } from "@/lib/media";
 import { radius, space, type, useColors } from "@/lib/theme";
@@ -34,15 +35,43 @@ export default function AvatarsScreen() {
   const [prompt, setPrompt] = useState("");
   const [shooting, setShooting] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Videos (paid with credits)
+  const [vstudio, setVstudio] = useState<AvatarVideoStudio | null>(null);
+  const [panel, setPanel] = useState<{ key: string; mode: "motion" | "talk"; shotId?: string; avatarId?: string; name: string } | null>(null);
+  const vtimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(() => api.avatars().then((s) => {
     setStudio(s);
     setAvatarId((id) => id ?? s.avatars.find((a) => a.status === "done")?.id ?? null);
   }).catch((e) => setMsg({ text: errText(e, "Couldn’t load your avatars."), tone: "error" })), []);
+  const loadVideos = useCallback(() => api.avatarVideos().then(setVstudio).catch(() => {}), []);
   useEffect(() => {
     load();
+    loadVideos();
     api.products().then((list) => { const w = list.filter((p) => p.image_file); setProducts(w); setProductId((x) => x ?? w[0]?.id ?? null); }).catch(() => {});
-  }, [load]);
+  }, [load, loadVideos]);
+  // Check videos still being made (they take a few minutes).
+  useEffect(() => {
+    if (vtimer.current) clearInterval(vtimer.current);
+    const running = vstudio?.videos.filter((v) => busyStatus(v.status)) ?? [];
+    if (!running.length) return;
+    vtimer.current = setInterval(async () => {
+      const fresh = await Promise.all(running.map((v) => api.avatarVideo(v.id).catch(() => v)));
+      setVstudio((st) => st && ({ ...st, videos: st.videos.map((v) => fresh.find((f) => f.id === v.id) ?? v) }));
+      if (fresh.some((f) => f.status === "failed")) api.avatarVideos().then((s) => setVstudio((st) => st && ({ ...st, balance: s.balance }))).catch(() => {});
+    }, 6000);
+    return () => { if (vtimer.current) clearInterval(vtimer.current); };
+  }, [vstudio]);
+  const startedVideo = (v: AvatarVideo, balance: number) => {
+    setVstudio((st) => st && ({ ...st, balance, videos: [v, ...st.videos] }));
+    setPanel(null);
+    setMsg({ text: v.kind === "talk" ? "Making the voice, then the video. Usually 1 to 3 minutes." : `Making your ${v.model_name} video. Usually 1 to 5 minutes.`, tone: "info" });
+  };
+  const deleteVideo = async (id: string) => {
+    try { await api.deleteAvatarVideo(id); setVstudio((st) => st && ({ ...st, videos: st.videos.filter((v) => v.id !== id) })); }
+    catch (e) { setMsg({ text: errText(e, "Couldn’t delete it."), tone: "error" }); }
+  };
+  const canTalk = (av?: Avatar | null) => !!av && !!vstudio?.talk.styles.includes(av.style);
 
   // Check avatars and shots that are still being made.
   useEffect(() => {
@@ -108,7 +137,15 @@ export default function AvatarsScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
-      <Body muted>Post without being on camera. Make an original character once, then put it in photos with your products for posts and stories.</Body>
+      <Body muted>Post without being on camera. Make an original character once, put it in photos with your products, then turn those into videos.</Body>
+      {vstudio ? (
+        <Pressable onPress={() => router.push("/credits")} accessibilityRole="button" accessibilityLabel={`${vstudio.balance} credits. Top up`}
+          style={{ flexDirection: "row", alignItems: "center", gap: space.sm, alignSelf: "flex-start", paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }}>
+          <Ionicons name="sparkles" size={16} color={c.accent} />
+          <Text style={[type.label, { color: c.ink }]}>{vstudio.balance.toLocaleString()} credits</Text>
+          <Text style={[type.small, { color: c.accent }]}>Top up</Text>
+        </Pressable>
+      ) : null}
 
       {/* ---------- your avatars ---------- */}
       {studio.avatars.length ? (
@@ -154,6 +191,12 @@ export default function AvatarsScreen() {
           {!pose ? <Field label="Or describe the shot" value={prompt} onChangeText={setPrompt} maxLength={200} placeholder="sitting on a beach towel, putting the sunscreen in a tote bag" /> : null}
           <Button label="Make the photo" icon={<Ionicons name="sparkles" size={18} color={c.onAccent} />} loading={shooting}
             disabled={!chosen || !product || (!pose && prompt.trim().length < 3)} onPress={makeShot} />
+          {vstudio?.enabled && chosen && canTalk(chosen) && panel?.key !== `talk:${chosen.id}` ? (
+            <Button label={`Make ${chosen.name} talk`} variant="secondary" icon={<Ionicons name="mic-outline" size={18} color={c.ink} />} onPress={() => setPanel({ key: `talk:${chosen.id}`, mode: "talk", avatarId: chosen.id, name: chosen.name })} />
+          ) : null}
+          {vstudio && chosen && panel?.key === `talk:${chosen.id}` ? (
+            <VideoPanel studio={vstudio} mode="talk" avatarId={chosen.id} avatarName={chosen.name} onStarted={startedVideo} onClose={() => setPanel(null)} />
+          ) : null}
         </View>
       ) : null}
 
@@ -183,9 +226,28 @@ export default function AvatarsScreen() {
       </View>
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
 
+      {/* ---------- videos ---------- */}
+      {vstudio?.videos.length ? <H2>Your avatar videos</H2> : null}
+      {vstudio?.videos.map((v) => <VideoCard key={v.id} video={v} width={Math.min(width - space.lg * 2, 520) - space.md * 2} onDelete={deleteVideo} onMsg={setMsg} />)}
+
       {/* ---------- finished shots ---------- */}
       {studio.shots.length ? <H2>Your avatar photos</H2> : null}
-      {studio.shots.map((s) => <ShotCard key={s.id} shot={s} avatar={studio.avatars.find((x) => x.id === s.avatar_id)} onMsg={setMsg} />)}
+      {studio.shots.map((s) => {
+        const av = studio.avatars.find((x) => x.id === s.avatar_id);
+        const open = panel?.shotId === s.id ? panel : null;
+        return (
+          <ShotCard key={s.id} shot={s} avatar={av} onMsg={setMsg}
+            video={vstudio?.enabled && s.status === "done" ? (
+              open ? <VideoPanel studio={vstudio} mode={open.mode} shotId={s.id} avatarName={av?.name ?? "Your avatar"} onStarted={startedVideo} onClose={() => setPanel(null)} />
+                : (
+                  <View style={{ flexDirection: "row", gap: space.sm }}>
+                    <Button label="Make a video" variant="secondary" style={{ flex: 1 }} icon={<Ionicons name="film-outline" size={18} color={c.ink} />} onPress={() => setPanel({ key: `motion:${s.id}`, mode: "motion", shotId: s.id, name: av?.name ?? "" })} />
+                    {canTalk(av) ? <Button label="Make it talk" variant="secondary" style={{ flex: 1 }} icon={<Ionicons name="mic-outline" size={18} color={c.ink} />} onPress={() => setPanel({ key: `talk:${s.id}`, mode: "talk", shotId: s.id, name: av?.name ?? "" })} /> : null}
+                  </View>
+                )
+            ) : null} />
+        );
+      })}
     </ScrollView>
   );
 }
@@ -200,7 +262,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-function ShotCard({ shot, avatar, onMsg }: { shot: AvatarShot; avatar?: Avatar; onMsg: (m: Msg) => void }) {
+function ShotCard({ shot, avatar, onMsg, video }: { shot: AvatarShot; avatar?: Avatar; onMsg: (m: Msg) => void; video?: React.ReactNode }) {
   const c = useColors();
   const { width } = useWindowDimensions();
   const w = Math.min(width - space.lg * 2, 520) - space.md * 2;
@@ -229,6 +291,7 @@ function ShotCard({ shot, avatar, onMsg }: { shot: AvatarShot; avatar?: Avatar; 
             }} />
             <Button label="Share" variant="ghost" style={{ flex: 1 }} onPress={() => shareFile(shot.image_url!).catch(() => {})} />
           </View>
+          {video}
         </>
       ) : null}
     </View>
