@@ -142,9 +142,34 @@ test("UGC kit: portfolio page with uploaded videos, rates and contact; scripts; 
   assert.equal((await call(A.token, "PUT", "/api/ugc/profile", { enabled: true })).status, 402);
   pro();
 
+  // The older form still works (brand + product), and a missing full script is put together from the scenes.
   const sc = (await call(A.token, "POST", "/api/ugc/script", { brand: "Lumo", product: "Desk lamp", style: "unboxing", seconds: 30 })).json();
   assert.equal(sc.hooks.length, 3);
   assert.ok(sc.scenes.length >= 2);
+  assert.match(sc.full_script, /This lamp changed my desk\./);
+
+  // Describe it in your own words: the writer gets the description, the right length and the rules; you get a full script.
+  const ugcMod = await import("../src/ugc.js");
+  const prompts = [];
+  ugcMod.setScriptWriter(async (p) => { prompts.push(p); return {
+    title: "Desk glow-up in 30 seconds", style_used: "problem-solution", hooks: ["My desk looked sad until this", "POV: you finally fixed your lighting", "Stop working in the dark"],
+    full_script: "My desk looked sad until this.\n\nOne tap and the whole corner glows warm.\n\nLink's in my bio.", why: "It opens on a relatable problem and shows the fix fast.",
+    scenes: [{ shot: "Dark desk, sigh", line: "My desk looked sad until this.", text: "Desk glow-up", seconds: 3 }, { shot: "Tap the lamp", line: "One tap and the whole corner glows warm.", text: "One tap", seconds: 5 }],
+    cta: "Link's in my bio", caption: "Fixed my desk vibe in one tap", hashtags: ["desksetup", "#wfh", "home office"], tips: ["Film at dusk"] }; });
+  assert.equal((await call(A.token, "POST", "/api/ugc/script", { idea: "lamp" })).status, 400);   // too little to go on
+  const full = (await call(A.token, "POST", "/api/ugc/script", { idea: "A video showing how my Lumo desk lamp makes my boring desk cozy at night, chill vibe", seconds: 45 })).json();
+  assert.match(prompts.at(-1), /makes my boring desk cozy at night/);
+  assert.match(prompts.at(-1), /about 45 seconds, so the full spoken script is about 113 words/);
+  assert.match(prompts.at(-1), /pick whichever of these fits best/);
+  assert.match(prompts.at(-1), /No medical, health-cure, weight-loss or income claims/);
+  assert.deepEqual([full.title, full.style, full.seconds, full.hooks.length, full.scenes.length, full.cta], ["Desk glow-up in 30 seconds", "problem-solution", 45, 3, 2, "Link's in my bio"]);
+  assert.match(full.full_script, /One tap and the whole corner glows warm\./);
+  assert.deepEqual(full.hashtags, ["#desksetup", "#wfh", "#homeoffice"]);
+  assert.equal(full.words, 18);
+  // Ask for a change: the current script and the change go to the writer.
+  await call(A.token, "POST", "/api/ugc/script", { idea: "A video showing how my Lumo desk lamp makes my boring desk cozy at night", seconds: 45, previous: full, change: "make the hook funnier" });
+  assert.match(prompts.at(-1), /This is the current version of the script:[\s\S]*One tap and the whole corner glows warm[\s\S]*Rewrite it with this change: make the hook funnier/);
+  ugcMod.setScriptWriter(null);
 
   const d1 = (await call(A.token, "POST", "/api/ugc/deals", { brand: "Lumo", amount: 150, status: "booked", due: "2026-11-01" })).json();
   await call(A.token, "POST", "/api/ugc/deals", { brand: "Nook", amount: 300, status: "pitched" });

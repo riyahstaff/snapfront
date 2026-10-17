@@ -140,46 +140,109 @@ function MyPage({ profile, onSaved }: { profile: UgcProfile; onSaved: (p: UgcPro
 }
 
 /* ---------------- Scripts ---------------- */
+// Describe the video in your own words (or paste a brief or a rough script); AI writes the full script.
+// Then ask for changes ("make the hook funnier") or try a new version.
+const STYLE_CHIPS = [["auto", "AI picks"], ["testimonial", "Testimonial"], ["unboxing", "Unboxing"], ["problem-solution", "Problem, solution"], ["how-to", "How to"],
+  ["before-after", "Before and after"], ["day-in-my-life", "Day in my life"], ["storytime", "Storytime"], ["comparison", "Comparison"]].map(([value, label]) => ({ value, label }));
+const STYLE_NAME = Object.fromEntries(STYLE_CHIPS.map((x) => [x.value, x.label]));
 function Scripts() {
   const c = useColors();
+  const [idea, setIdea] = useState("");
+  const [more, setMore] = useState(false);
   const [brand, setBrand] = useState("");
   const [product, setProduct] = useState("");
-  const [points, setPoints] = useState("");
-  const [style, setStyle] = useState("testimonial");
+  const [style, setStyle] = useState("auto");
   const [seconds, setSeconds] = useState("30");
   const [out, setOut] = useState<UgcScript | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [change, setChange] = useState("");
+  const [busy, setBusy] = useState<"write" | "change" | "again" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  async function write() {
-    setBusy(true); setError(null);
-    try { setOut(await ugcApi.script({ brand, product, points, style, seconds: Number(seconds) })); } catch (e) { setError(errText(e, "Couldn't write the script.")); } finally { setBusy(false); }
+  const [copied, setCopied] = useState<string | null>(null);
+  const ready = idea.trim().length >= 10 || product.trim().length > 0;
+  async function write(kind: "write" | "change" | "again") {
+    setBusy(kind); setError(null);
+    try {
+      const next = await ugcApi.script({ idea: idea.trim(), brand: brand.trim() || undefined, product: product.trim() || undefined, style, seconds: Number(seconds),
+        ...(kind === "change" && out ? { previous: out, change: change.trim() } : {}) });
+      setOut(next);
+      if (kind === "change") setChange("");
+    } catch (e) { setError(errText(e, "Couldn't write the script.")); } finally { setBusy(null); }
   }
-  const text = out ? [`HOOKS:\n${out.hooks.map((h, i) => `${i + 1}. ${h}`).join("\n")}`, ...out.scenes.map((s, i) => `SCENE ${i + 1}\nShot: ${s.shot}\nSay: ${s.line}${s.text ? `\nText: ${s.text}` : ""}`), `CTA: ${out.cta}`].join("\n\n") : "";
+  const copy = async (what: string, text: string) => { await Clipboard.setStringAsync(text); setCopied(what); setTimeout(() => setCopied(null), 1800); };
+  const everything = out ? [
+    out.title ? out.title.toUpperCase() : "",
+    `HOOK OPTIONS:\n${out.hooks.map((h, i) => `${i + 1}. ${h}`).join("\n")}`,
+    out.full_script ? `FULL SCRIPT:\n${out.full_script}` : "",
+    `SHOT LIST:\n${out.scenes.map((s, i) => `${i + 1}. ${s.shot}${s.seconds ? ` (${s.seconds}s)` : ""}\n   Say: ${s.line}${s.text ? `\n   On screen: ${s.text}` : ""}`).join("\n")}`,
+    `CALL TO ACTION: ${out.cta}`,
+    out.caption ? `CAPTION:\n${out.caption}${out.hashtags?.length ? `\n${out.hashtags.join(" ")}` : ""}` : "",
+  ].filter(Boolean).join("\n\n") : "";
   return (
     <View style={{ gap: space.lg }}>
-      <Card title="Write a UGC script" sub="Paste what's in the brand's brief. You'll get hooks, shots and lines to say.">
-        <Field label="Brand" value={brand} onChangeText={setBrand} maxLength={80} />
-        <Field label="Product" value={product} onChangeText={setProduct} maxLength={200} placeholder="Vitamin C serum, 30 ml" />
-        <Field label="Key points from the brief (optional)" value={points} onChangeText={setPoints} multiline maxLength={500} />
-        <ChipRow label="Style" value={style} onChange={setStyle} options={[["testimonial", "Testimonial"], ["unboxing", "Unboxing"], ["problem-solution", "Problem, solution"], ["how-to", "How to"], ["before-after", "Before and after"], ["day-in-my-life", "Day in my life"]].map(([value, label]) => ({ value, label }))} />
-        <ChipRow label="Length" value={seconds} onChange={setSeconds} options={["15", "30", "60"].map((s) => ({ value: s, label: `${s} seconds` }))} />
+      <Card title="Write a UGC script" sub="Describe the video you want in your own words, paste a brand's brief, or paste a rough script. AI turns it into a full script ready to film.">
+        <Field label="Describe your video" value={idea} onChangeText={setIdea} multiline maxLength={1500}
+          placeholder="e.g. A chill night-time video showing how my new desk lamp makes my boring desk feel cozy. I want it to feel relatable, not salesy, and end with the link in my bio."
+          style={{ minHeight: 120, textAlignVertical: "top" }} />
+        <Pressable onPress={() => setMore(!more)} accessibilityRole="button" style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Text style={[type.small, { color: c.accent }]}>{more ? "Hide brand and product" : "Add brand and product (optional)"}</Text>
+        </Pressable>
+        {more ? (
+          <>
+            <Field label="Brand" value={brand} onChangeText={setBrand} maxLength={80} />
+            <Field label="Product" value={product} onChangeText={setProduct} maxLength={200} placeholder="Vitamin C serum, 30 ml" />
+          </>
+        ) : null}
+        <ChipRow label="Style" value={style} onChange={setStyle} options={STYLE_CHIPS} />
+        <ChipRow label="Length" value={seconds} onChange={setSeconds} options={["15", "30", "45", "60"].map((s) => ({ value: s, label: `${s} sec` }))} />
         <Notice text={error} tone="error" />
-        <Button label="Write it" loading={busy} disabled={!product.trim()} onPress={write} />
+        <Button label={out ? "Write a fresh script" : "Write my script"} loading={busy === "write"} disabled={!ready || busy !== null} onPress={() => write("write")} />
       </Card>
+
       {out ? (
-        <Card title="Your script" right={<TextAction label="Copy all" onPress={() => Clipboard.setStringAsync(text)} />}>
-          <Text style={[type.label, { color: c.muted }]}>Pick a hook</Text>
-          {out.hooks.map((h) => <Text key={h} style={[type.body, { color: c.ink }]}>“{h}”</Text>)}
-          {out.scenes.map((s, i) => (
-            <View key={i} style={{ gap: 2, padding: space.md, borderRadius: radius.md, backgroundColor: c.bg, borderWidth: 1, borderColor: c.line }}>
-              <Text style={[type.label, { color: c.muted }]}>Scene {i + 1}: {s.shot}</Text>
-              <Text style={[type.body, { color: c.ink }]}>{s.line}</Text>
-              {s.text ? <Text style={[type.small, { color: c.muted }]}>On screen: {s.text}</Text> : null}
+        <>
+          <Card title={out.title || "Your script"} sub={`${STYLE_NAME[out.style] ?? out.style} · about ${out.seconds} seconds${out.words ? ` · ${out.words} words` : ""}`}
+            right={<TextAction label={copied === "all" ? "Copied" : "Copy all"} onPress={() => copy("all", everything)} />}>
+            {out.why ? <Text style={[type.small, { color: c.muted }]}>{out.why}</Text> : null}
+            <Text style={[type.label, { color: c.ink }]}>Hook options</Text>
+            {out.hooks.map((h, i) => <Text key={h} style={[type.body, { color: c.ink }]}>{i + 1}. “{h}”{i === 0 ? <Text style={[type.small, { color: c.muted }]}>  used below</Text> : null}</Text>)}
+            {out.full_script ? (
+              <View style={{ gap: space.sm, padding: space.md, borderRadius: radius.md, backgroundColor: c.bg, borderWidth: 1, borderColor: c.line }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={[type.label, { color: c.ink }]}>Full script (what you say)</Text>
+                  <TextAction label={copied === "script" ? "Copied" : "Copy"} onPress={() => copy("script", out.full_script!)} />
+                </View>
+                <Text selectable style={[type.body, { color: c.ink, lineHeight: 24 }]}>{out.full_script}</Text>
+              </View>
+            ) : null}
+            <Text style={[type.label, { color: c.ink }]}>Shot list</Text>
+            {out.scenes.map((s, i) => (
+              <View key={i} style={{ gap: 2, padding: space.md, borderRadius: radius.md, backgroundColor: c.bg, borderWidth: 1, borderColor: c.line }}>
+                <Text style={[type.label, { color: c.muted }]}>Scene {i + 1}{s.seconds ? ` · ${s.seconds}s` : ""}: {s.shot}</Text>
+                <Text style={[type.body, { color: c.ink }]}>{s.line}</Text>
+                {s.text ? <Text style={[type.small, { color: c.muted }]}>On screen: {s.text}</Text> : null}
+              </View>
+            ))}
+            <Text style={[type.body, { color: c.ink }]}>End with: {out.cta}</Text>
+            {out.caption ? (
+              <View style={{ gap: 4 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={[type.label, { color: c.ink }]}>Caption</Text>
+                  <TextAction label={copied === "caption" ? "Copied" : "Copy"} onPress={() => copy("caption", `${out.caption}${out.hashtags?.length ? `\n${out.hashtags.join(" ")}` : ""}`)} />
+                </View>
+                <Text selectable style={[type.body, { color: c.ink }]}>{out.caption}</Text>
+                {out.hashtags?.length ? <Text selectable style={[type.small, { color: c.accent }]}>{out.hashtags.join(" ")}</Text> : null}
+              </View>
+            ) : null}
+            {out.tips.map((t) => <Text key={t} style={[type.small, { color: c.muted }]}>Tip: {t}</Text>)}
+          </Card>
+          <Card title="Want it different?" sub="Say what to change and AI rewrites it, keeping what works.">
+            <Field label="What should change?" value={change} onChangeText={setChange} maxLength={300} placeholder="Make the hook funnier, mention it's on sale, shorter ending…" />
+            <View style={{ flexDirection: "row", gap: space.sm }}>
+              <Button label="Rewrite it" style={{ flex: 1 }} loading={busy === "change"} disabled={change.trim().length < 3 || busy !== null} onPress={() => write("change")} />
+              <Button label="New version" variant="secondary" style={{ flex: 1 }} loading={busy === "again"} disabled={busy !== null} onPress={() => write("again")} />
             </View>
-          ))}
-          <Text style={[type.body, { color: c.ink }]}>End with: {out.cta}</Text>
-          {out.tips.map((t) => <Text key={t} style={[type.small, { color: c.muted }]}>Tip: {t}</Text>)}
-        </Card>
+          </Card>
+        </>
       ) : null}
     </View>
   );

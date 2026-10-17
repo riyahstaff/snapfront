@@ -754,13 +754,14 @@ export type UgcProfile = { enabled: boolean; name: string; headline: string; bio
   socials: { tiktok: string; instagram: string; youtube: string }; items: UgcItem[]; page_url: string };
 export type UgcPlatform = { name: string; url: string; pay?: string; fee?: string; what: string; referral?: boolean };
 export type UgcDeal = { id: string; brand: string; contact: string; status: "pitched" | "talking" | "booked" | "delivered" | "paid" | "lost"; amount: number; due: string | null; note: string; created_at: string; updated_at: string };
-export type UgcScript = { style: string; seconds: number; hooks: string[]; scenes: { shot: string; line: string; text: string }[]; cta: string; tips: string[] };
+export type UgcScript = { style: string; seconds: number; title?: string; why?: string; hooks: string[]; full_script?: string; scenes: { shot: string; line: string; text: string; seconds?: number | null }[];
+  cta: string; caption?: string; hashtags?: string[]; tips: string[]; words?: number };
 export type UgcKit = { profile: UgcProfile; platforms: { creators: UgcPlatform[]; stores: UgcPlatform[]; note: string; disclosure?: string | null }; deals: UgcDeal[]; totals: { paid: number; owed: number; booked: number; pipeline: number } };
 export const ugcApi = {
   kit: () => request<UgcKit>("GET", "/api/ugc"),
   saveProfile: (p: Partial<Omit<UgcProfile, "items" | "page_url">> & { items?: { id?: string; url?: string; title?: string }[] }) => request<UgcProfile>("PUT", "/api/ugc/profile", p),
   uploadVideo: (blob: Blob, contentType: string, title: string) => uploadRaw<UgcProfile>(`/api/ugc/videos?title=${encodeURIComponent(title)}`, blob, contentType),
-  script: (b: { brand: string; product: string; style: string; seconds: number; points?: string }) => request<UgcScript>("POST", "/api/ugc/script", b),
+  script: (b: { idea?: string; brand?: string; product?: string; style: string; seconds: number; points?: string; previous?: UgcScript; change?: string }) => request<UgcScript>("POST", "/api/ugc/script", b),
   addDeal: (d: Partial<Omit<UgcDeal, "id">>) => request<UgcDeal>("POST", "/api/ugc/deals", d),
   updateDeal: (id: string, d: Partial<Omit<UgcDeal, "id">>) => request<UgcDeal>("PATCH", `/api/ugc/deals/${encodeURIComponent(id)}`, d),
   deleteDeal: (id: string) => request<void>("DELETE", `/api/ugc/deals/${encodeURIComponent(id)}`),
