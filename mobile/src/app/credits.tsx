@@ -65,9 +65,10 @@ export default function CreditsScreen() {
                   <Text style={[type.heading, { color: c.ink }]}>{p.name}</Text>
                   {p.badge ? <Pill text={p.badge} tone="good" /> : null}
                 </View>
-                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 30, color: c.ink, fontVariant: ["tabular-nums"] }}>{p.credits.toLocaleString()} <Text style={[type.small, { color: c.muted }]}>credits</Text></Text>
+                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 30, color: c.ink, fontVariant: ["tabular-nums"] }}>{p.total.toLocaleString()} <Text style={[type.small, { color: c.muted }]}>credits</Text></Text>
+                {p.bonus ? <Text style={[type.small, { color: c.good }]}>{p.credits.toLocaleString()} + {p.bonus} bonus credits</Text> : null}
                 <Text style={[type.body, { color: c.muted }]}>{p.price} · {p.per_credit} a credit</Text>
-                <Text style={[type.small, { color: c.muted }]}>About {Math.floor(p.credits / 35)} Kling videos or {Math.floor(p.credits / 115)} Seedance videos</Text>
+                <Text style={[type.small, { color: c.muted }]}>About {Math.floor(p.total / 35)} Kling videos or {Math.floor(p.total / 115)} Seedance videos</Text>
                 <Button label={`Buy for ${p.price}`} variant={p.badge ? "primary" : "secondary"} loading={busy === p.id} disabled={!data.enabled || !!busy} onPress={() => buy(p)} />
               </View>
             ))}

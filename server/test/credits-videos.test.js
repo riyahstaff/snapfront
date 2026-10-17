@@ -100,16 +100,18 @@ test("buying a pack: needs an email, then credits land once (on return and in th
   const s = await pay4("creator");
   assert.equal(s.mode, "payment");
   assert.equal(s.line_items[0].price_data.unit_amount, 3500);
+  assert.equal(s.line_items[0].price_data.product_data.name, "900 Snapfront credits (800 + 100 bonus)");   // every pack gets +100
   assert.equal(s.metadata.snapfront_credits, "creator");
   assert.match(s.success_url, /\/credits\?checkout=done&session_id=\{CHECKOUT_SESSION_ID\}$/);
   const done = (await call("POST", "/api/credits/confirm", { session_id: s.id })).body;
-  assert.equal(done.added, 800);
-  assert.equal(done.balance, 800);
+  assert.equal(done.added, 900);
+  assert.equal(done.balance, 900);
+  assert.deepEqual(done.packs.map((p) => [p.id, p.total]), [["starter", 400], ["creator", 900], ["studio", 2100], ["agency", 5600]]);
   // Coming back twice, or the sweep, never adds them again.
-  assert.equal((await call("POST", "/api/credits/confirm", { session_id: s.id })).body.balance, 800);
+  assert.equal((await call("POST", "/api/credits/confirm", { session_id: s.id })).body.balance, 900);
   db.prepare("UPDATE credit_purchases SET checked_at = datetime('now','-2 days')").run();
   await credits.sweep();
-  assert.equal(credits.balance(accountId()), 800);
+  assert.equal(credits.balance(accountId()), 900);
   // Someone else's payment can't be claimed.
   const other = (await call("POST", "/api/sellers", { store_name: "Other" }, null)).body;
   assert.equal((await call("POST", "/api/credits/confirm", { session_id: s.id }, other.token)).status, 409);
@@ -118,11 +120,11 @@ test("buying a pack: needs an email, then credits land once (on return and in th
 test("a refunded or charged-back pack takes its credits back", async () => {
   const s = await pay4("starter");
   await call("POST", "/api/credits/confirm", { session_id: s.id });
-  assert.equal(credits.balance(accountId()), 1100);
+  assert.equal(credits.balance(accountId()), 1300);
   intents.get(`pi_${s.id}`).latest_charge.disputed = true;
   db.prepare("UPDATE credit_purchases SET checked_at = datetime('now','-2 days') WHERE session_id = ?").run(s.id);
   await credits.sweep();
-  assert.equal(credits.balance(accountId()), 800);
+  assert.equal(credits.balance(accountId()), 900);
   const kinds = (await call("GET", "/api/credits")).body.history.map((h) => h.kind);
   assert.ok(kinds.includes("reversal"));
 });
@@ -141,14 +143,14 @@ test("Kling O1: avatar, product and photo as references, vertical, credits spent
   assert.equal(job.body.input.aspect_ratio, "9:16");
   assert.equal(job.body.input.duration, 10);
   assert.match(job.body.input.prompt, /opens the packaging/);
-  assert.equal(credits.balance(accountId()), 730);
+  assert.equal(credits.balance(accountId()), 830);
 
   status = "COMPLETED";
   const done = (await call("GET", `/api/avatar-videos/${kling.id}`)).body;
   assert.equal(done.status, "done");
   assert.match(done.url, /^https:\/\/cv\.test\/media\/[\w-]+\.mp4$/);
   assert.ok(fs.existsSync(path.join(tmp, "media", done.url.split("/").pop())));
-  assert.equal(credits.balance(accountId()), 730);   // finishing doesn't charge again
+  assert.equal(credits.balance(accountId()), 830);   // finishing doesn't charge again
 });
 
 test("Seedance 2.5 (sound on, 1080p) and Sora 2 Pro send the right inputs", async () => {
@@ -166,7 +168,7 @@ test("Seedance 2.5 (sound on, 1080p) and Sora 2 Pro send the right inputs", asyn
   assert.match(job.url, /sora-2-pro-i2v\/run$/);
   assert.deepEqual({ duration: job.body.input.duration, size: job.body.input.size }, { duration: 8, size: "720p" });
   assert.match(job.body.input.prompt, /this changed my mornings/);
-  assert.equal(credits.balance(accountId()), 730 - 285 - 150);
+  assert.equal(credits.balance(accountId()), 830 - 285 - 150);
   // Bad choices are refused before anything is charged.
   assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "kling", duration: 7, motion: "walk" })).status, 400);
   assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "sora", duration: 4, resolution: "4k", motion: "walk" })).status, 400);

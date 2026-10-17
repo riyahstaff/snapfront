@@ -41,14 +41,14 @@ Avatar videos are paid with **credits**, bought in packs on the website (like Hi
 
 ### Packs (Stripe Checkout on Snapfront's account)
 
-| Pack | Credits | Price | Per credit |
-|---|---|---|---|
-| Starter | 300 | $15 | 5.0¢ |
-| Creator | 800 | $35 | 4.4¢ |
-| Studio | 2,000 | $79 | 4.0¢ |
-| Agency | 5,500 | $199 | 3.6¢ |
+| Pack | Credits | Bonus | Total | Price | Per credit |
+|---|---|---|---|---|---|
+| Starter | 300 | +100 | 400 | $15 | 3.8¢ |
+| Creator | 800 | +100 | 900 | $35 | 3.9¢ |
+| Studio | 2,000 | +100 | 2,100 | $79 | 3.8¢ |
+| Agency | 5,500 | +100 | 5,600 | $199 | 3.6¢ |
 
-Change them with `CREDIT_PACKS` (JSON list of `{id, name, credits, cents, badge?}`) on Railway. Credits never expire; all sales are final; a failed video always refunds its credits. A refunded or disputed pack takes its credits back (the background check looks at purchases from the last 120 days). Packs are only sold on the website: the phone app shows the balance and history and names no prices, like memberships.
+Every pack gets `CREDIT_BONUS` extra credits at no extra cost (default 100; set 0 to turn it off). The bonus is saved with each purchase, so changing it later doesn't alter past purchases. Change the packs with `CREDIT_PACKS` (JSON list of `{id, name, credits, cents, badge?}`) on Railway. Credits never expire; all sales are final; a failed video always refunds its credits. A refunded or disputed pack takes its credits back (the background check looks at purchases from the last 120 days). Packs are only sold on the website: the phone app shows the balance and history and names no prices, like memberships.
 
 ### Video models and prices
 

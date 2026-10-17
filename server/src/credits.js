@@ -51,15 +51,18 @@ const DEFAULT_PACKS = [
   { id: "studio", name: "Studio", credits: 2000, cents: 7900 },
   { id: "agency", name: "Agency", credits: 5500, cents: 19900, badge: "Best value" },
 ];
+/** Bonus credits added to every pack at no extra cost (CREDIT_BONUS, default 100; 0 turns it off). */
+export const BONUS = () => { const v = Number(process.env.CREDIT_BONUS); return Number.isInteger(v) && v >= 0 && v <= 100000 ? v : 100; };
+const withBonus = (p) => ({ ...p, bonus: BONUS(), total: p.credits + BONUS() });
 export function packs() {
   try {
     const custom = JSON.parse(process.env.CREDIT_PACKS || "null");
     if (Array.isArray(custom) && custom.length) {
       return custom.filter((p) => p && /^[a-z0-9-]{2,20}$/.test(p.id) && Number.isInteger(p.credits) && p.credits > 0 && Number.isInteger(p.cents) && p.cents >= 100)
-        .map((p) => ({ id: p.id, name: String(p.name || p.id).slice(0, 30), credits: p.credits, cents: p.cents, badge: p.badge ? String(p.badge).slice(0, 20) : undefined }));
+        .map((p) => withBonus({ id: p.id, name: String(p.name || p.id).slice(0, 30), credits: p.credits, cents: p.cents, badge: p.badge ? String(p.badge).slice(0, 20) : undefined }));
     }
   } catch { /* fall back to the defaults */ }
-  return DEFAULT_PACKS;
+  return DEFAULT_PACKS.map(withBonus);
 }
 const num = (env, fallback, min, max) => { const v = Number(process.env[env]); return Number.isFinite(v) && v >= min && v <= max ? v : fallback; };
 /** What one credit is worth to us at list price, and the margin over the AI provider's cost. */
@@ -110,7 +113,7 @@ export function view(account) {
     .map((r) => ({ id: r.id, delta: r.delta, kind: r.kind, note: r.note, created_at: r.created_at }));
   return {
     enabled: enabled(), balance: balance(account.id), terms: NO_REFUNDS,
-    packs: packs().map((p) => ({ ...p, price: money(p.cents), per_credit: `${(p.cents / p.credits).toFixed(1)}¢` })),
+    packs: packs().map((p) => ({ ...p, price: money(p.cents), per_credit: `${(p.cents / p.total).toFixed(1)}¢` })),
     history,
   };
 }
@@ -132,14 +135,14 @@ export async function startCheckout(account, packId) {
     mode: "payment",
     customer: await customerFor(account),
     client_reference_id: account.id,
-    line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: p.cents, product_data: { name: `${p.credits.toLocaleString("en-US")} Snapfront credits`, description: "For AI avatar videos and talking avatars. Credits don't expire." } } }],
-    metadata: { snapfront_credits: p.id, snapfront_account: account.id, credits: String(p.credits) },
+    line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: p.cents, product_data: { name: `${p.total.toLocaleString("en-US")} Snapfront credits${p.bonus ? ` (${p.credits.toLocaleString("en-US")} + ${p.bonus} bonus)` : ""}`, description: "For AI avatar videos and talking avatars. Credits don't expire." } } }],
+    metadata: { snapfront_credits: p.id, snapfront_account: account.id, credits: String(p.total) },
     payment_intent_data: { metadata: { snapfront_credits: p.id, snapfront_account: account.id } },
     success_url: `${webAppUrl()}/credits?checkout=done&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${webAppUrl()}/credits?checkout=canceled`,
     custom_text: { submit: { message: NO_REFUNDS } },
   });
-  db.prepare("INSERT INTO credit_purchases (session_id, account_id, pack, credits, cents) VALUES (?,?,?,?,?)").run(session.id, account.id, p.id, p.credits, p.cents);
+  db.prepare("INSERT INTO credit_purchases (session_id, account_id, pack, credits, cents) VALUES (?,?,?,?,?)").run(session.id, account.id, p.id, p.total, p.cents);
   return { url: session.url };
 }
 

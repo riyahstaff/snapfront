@@ -178,7 +178,7 @@ export type AvatarJobStatus = "queued" | "running" | "done" | "failed";
 export type Avatar = { id: string; name: string; style: string; look: string; status: AvatarJobStatus; error: string | null; image_url: string | null; created_at: string };
 export type AvatarShot = { id: string; avatar_id: string; product_id: string | null; pose: string; status: AvatarJobStatus; error: string | null; image_url: string | null; created_at: string };
 /** Credits: bought in packs on the website, spent on avatar videos and talking avatars. */
-export type CreditPack = { id: string; name: string; credits: number; cents: number; price: string; per_credit: string; badge?: string };
+export type CreditPack = { id: string; name: string; credits: number; bonus: number; total: number; cents: number; price: string; per_credit: string; badge?: string };
 export type CreditEntry = { id: string; delta: number; kind: "purchase" | "spend" | "refund" | "grant" | "reversal"; note: string; created_at: string };
 export type CreditsView = { enabled: boolean; balance: number; terms: string; packs: CreditPack[]; history: CreditEntry[]; added?: number };
 export type VideoModel = { id: "kling" | "seedance" | "sora"; name: string; badge: string; blurb: string; durations: number[]; resolutions: string[]; sound: "none" | "optional" | "always"; prices: Record<string, number> };
