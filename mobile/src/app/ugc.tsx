@@ -48,12 +48,13 @@ function FindWork({ kit }: { kit: UgcKit }) {
         {kit.platforms.creators.map((p) => (
           <Pressable key={p.name} onPress={() => Linking.openURL(p.url)} accessibilityRole="link" style={{ gap: 2, paddingVertical: 8, borderTopWidth: 1, borderColor: c.sunk }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", gap: space.md }}>
-              <Text style={[type.heading, { color: c.ink }]}>{p.name}</Text>
+              <Text style={[type.heading, { color: c.ink }]}>{p.name}{p.referral ? <Text style={[type.small, { color: c.muted }]}>  Referral link</Text> : null}</Text>
               {p.pay ? <Text style={[type.small, { color: c.good }]}>{p.pay}</Text> : null}
             </View>
             <Text style={[type.body, { color: c.muted }]}>{p.what}{p.fee ? ` ${p.fee}.` : ""}</Text>
           </Pressable>
         ))}
+        {kit.platforms.disclosure ? <Text style={[type.small, { color: c.muted }]}>{kit.platforms.disclosure}</Text> : null}
       </Card>
       <Card title="Price your videos" sub="Typical starting rates. Raise them as your portfolio grows.">
         {[["Your first videos", "$50 to $150 a video"], ["With a solid portfolio", "$150 to $400 a video"], ["Paid ad usage rights", "+30% to +100%, or a monthly fee"], ["Raw footage", "+$50 to $100"], ["Rush (under 72 hours)", "+25%"]].map(([a, b]) => (
@@ -63,7 +64,8 @@ function FindWork({ kit }: { kit: UgcKit }) {
         ))}
       </Card>
       <Card title="Need UGC for your own store?" sub="Hire creators to make videos for your products.">
-        {kit.platforms.stores.map((p) => <Button key={p.name} label={`${p.name}: ${p.what}`} variant="secondary" onPress={() => Linking.openURL(p.url)} />)}
+        {kit.platforms.stores.map((p) => <Button key={p.name} label={`${p.name}: ${p.what}${p.referral ? " (referral link)" : ""}`} variant="secondary" onPress={() => Linking.openURL(p.url)} />)}
+        {kit.platforms.stores.some((p) => p.referral) && kit.platforms.disclosure ? <Text style={[type.small, { color: c.muted }]}>{kit.platforms.disclosure}</Text> : null}
       </Card>
     </View>
   );

@@ -60,7 +60,7 @@ Webhook deliveries are verified with `X-Hub-Signature-256` (app secret). Each pe
 
 - **Academy** (`academy-content.js`): 17 lessons in 6 modules, including the top 10 ways to market and going LIVE on TikTok. The first module is free. Videos are narrated by Kokoro-82M (open source, Apache-2.0), drawn as slides and joined with ffmpeg on the server (`narrated.js`, voice in its own process `voice-worker.js`). They build in the background after each deploy (only missing or changed lessons); `ACADEMY_AUTOBUILD=false` turns that off, `POST /api/admin/academy/build` starts it by hand. Links to the videos are signed and expire after 6 hours.
 - **Today's post** (`daily.js`): one idea per store per day (rotating kinds: in use, a question, behind the scenes, a result, faceless, a deal, a LIVE), up to 3 a day.
-- **Community**: set the links with the admin token: `PUT /api/admin/settings` with `discord_url`, `whop_url`, `live_schedule` (and `insense_url`, `joinbrands_url` for UGC affiliate links). The Discord invite is shown to paid members only.
+- **Community**: set the links with the admin token: `PUT /api/admin/settings` with `discord_url`, `whop_url`, `live_schedule` (and `insense_url`, `joinbrands_url` for UGC referral links). The referral links can also be set on Railway as `INSENSE_URL` / `JOINBRANDS_URL`, which win over the admin setting. When set, they're used on both the "where brands hire creators" and "need UGC for your store" buttons, marked "Referral link", with a note that Snapfront may earn a fee. The Discord invite is shown to paid members only.
 
 ## UGC creator kit and faceless videos
 

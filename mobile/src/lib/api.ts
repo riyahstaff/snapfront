@@ -752,10 +752,10 @@ export const academy = {
 export type UgcItem = { id: string; kind: "video" | "link"; file?: string; poster?: string | null; url?: string; title: string };
 export type UgcProfile = { enabled: boolean; name: string; headline: string; bio: string; niches: string[]; email: string; rates: { label: string; price: number }[];
   socials: { tiktok: string; instagram: string; youtube: string }; items: UgcItem[]; page_url: string };
-export type UgcPlatform = { name: string; url: string; pay?: string; fee?: string; what: string };
+export type UgcPlatform = { name: string; url: string; pay?: string; fee?: string; what: string; referral?: boolean };
 export type UgcDeal = { id: string; brand: string; contact: string; status: "pitched" | "talking" | "booked" | "delivered" | "paid" | "lost"; amount: number; due: string | null; note: string; created_at: string; updated_at: string };
 export type UgcScript = { style: string; seconds: number; hooks: string[]; scenes: { shot: string; line: string; text: string }[]; cta: string; tips: string[] };
-export type UgcKit = { profile: UgcProfile; platforms: { creators: UgcPlatform[]; stores: UgcPlatform[]; note: string }; deals: UgcDeal[]; totals: { paid: number; owed: number; booked: number; pipeline: number } };
+export type UgcKit = { profile: UgcProfile; platforms: { creators: UgcPlatform[]; stores: UgcPlatform[]; note: string; disclosure?: string | null }; deals: UgcDeal[]; totals: { paid: number; owed: number; booked: number; pipeline: number } };
 export const ugcApi = {
   kit: () => request<UgcKit>("GET", "/api/ugc"),
   saveProfile: (p: Partial<Omit<UgcProfile, "items" | "page_url">> & { items?: { id?: string; url?: string; title?: string }[] }) => request<UgcProfile>("PUT", "/api/ugc/profile", p),

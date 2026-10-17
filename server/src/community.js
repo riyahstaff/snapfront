@@ -15,7 +15,15 @@ export const SETTINGS = {
   joinbrands_url: "JoinBrands link (your JoinBrands affiliate link)",
 };
 const URL_KEYS = new Set(["discord_url", "whop_url", "insense_url", "joinbrands_url"]);
-export function get(key) { return db.prepare("SELECT value FROM app_settings WHERE key = ?").get(key)?.value || ""; }
+// A link set on the server (e.g. JOINBRANDS_URL on Railway) wins over one saved with the admin token,
+// so it can be set without the admin token. Only https links are used.
+function fromEnv(key) {
+  const v = String(process.env[key.toUpperCase()] || "").trim();
+  if (!v) return "";
+  if (!URL_KEYS.has(key)) return v.slice(0, 500);
+  try { const u = new URL(v); return u.protocol === "https:" ? u.href : ""; } catch { return ""; }
+}
+export function get(key) { return fromEnv(key) || db.prepare("SELECT value FROM app_settings WHERE key = ?").get(key)?.value || ""; }
 export function all() { return Object.fromEntries(Object.keys(SETTINGS).map((k) => [k, get(k)])); }
 export function update(b = {}) {
   for (const [k, v] of Object.entries(b)) {
