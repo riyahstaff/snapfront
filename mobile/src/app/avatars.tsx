@@ -41,7 +41,10 @@ export default function AvatarsScreen() {
   const [name, setName] = useState("");
   const [look, setLook] = useState("");
   const [creating, setCreating] = useState(false);
-  const [waitingFor, setWaitingFor] = useState<string | null>(null);   // a new avatar to pick when it's ready
+  const [waitingFor, setWaitingFor] = useState<string | null>(null);
+  const [outfitOpen, setOutfitOpen] = useState(false);
+  const [outfit, setOutfit] = useState("");
+  const [dressing, setDressing] = useState(false);   // a new avatar to pick when it's ready
   // Step 2: making a photo
   const [avatarId, setAvatarId] = useState<string | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
@@ -165,6 +168,16 @@ export default function AvatarsScreen() {
     } catch (e) { if (!(e instanceof ApiError && e.upgrade)) say("photo")({ text: errText(e, "Couldn’t start the photo."), tone: "error" }); }
     finally { setShooting(false); }
   }
+  async function changeOutfit() {
+    if (!chosen) return;
+    setDressing(true); setNote(null);
+    try {
+      const made = await api.avatarOutfit(chosen.id, outfit.trim());
+      setOutfit(""); setOutfitOpen(false);
+      madeAvatar(made);
+    } catch (e) { if (!(e instanceof ApiError && e.upgrade)) say("avatar")({ text: errText(e, "Couldn’t change the outfit."), tone: "error" }); }
+    finally { setDressing(false); }
+  }
   function confirmDelete(av: Avatar) {
     const go = async () => {
       try { await api.deleteAvatar(av.id); setStudio((s) => s && ({ ...s, avatars: s.avatars.filter((x) => x.id !== av.id), shots: s.shots.filter((x) => x.avatar_id !== av.id) })); if (avatarId === av.id) setAvatarId(null); }
@@ -259,6 +272,22 @@ export default function AvatarsScreen() {
           </View>
         ) : null}
         {full && !showForm ? <Text style={[type.small, { color: c.muted }]}>You have {studio.max_avatars} avatars, the most you can keep. Delete one to make another.</Text> : null}
+
+        {/* The same avatar in different clothes (a new avatar; this one stays) */}
+        {chosen && !showForm && !full && chosen.style !== "hands" && chosen.style !== "silhouette" ? (
+          outfitOpen ? (
+            <View style={{ gap: space.sm, borderTopWidth: 1, borderColor: c.sunk, paddingTop: space.md }}>
+              <Field label={`New outfit for ${chosen.name}`} hint="Describe the clothes. You get a new avatar with the same face; this one stays." value={outfit} onChangeText={setOutfit} maxLength={240}
+                placeholder="a fitted cream blazer over a black silk top, gold necklace" />
+              <View style={{ flexDirection: "row", gap: space.sm }}>
+                <Button label="Change outfit" style={{ flex: 1 }} loading={dressing} disabled={outfit.trim().length < 3} onPress={changeOutfit} />
+                <Button label="Cancel" variant="ghost" onPress={() => setOutfitOpen(false)} />
+              </View>
+            </View>
+          ) : (
+            <Button label="New outfit" variant="ghost" icon={<Ionicons name="shirt-outline" size={18} color={c.ink} />} onPress={() => { setOutfitOpen(true); setNote(null); }} />
+          )
+        ) : null}
 
         {/* A talking video straight from the avatar's portrait */}
         {chosen && vstudio?.enabled && canTalk(chosen) && !showForm ? (

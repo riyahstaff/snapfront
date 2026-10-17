@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS avatar_photos (
 CREATE INDEX IF NOT EXISTS avatar_photos_seller ON avatar_photos (seller_id, created_at);
 `);
 // Where an avatar came from: "ai" (a described character), "photo" (the seller's photo) or "blend".
-for (const [col, def] of [["source", "TEXT NOT NULL DEFAULT 'ai'"], ["consent_at", "TEXT"], ["src_files", "TEXT"], ["engine", "TEXT"], ["gen_prompt", "TEXT"]]) {
+for (const [col, def] of [["source", "TEXT NOT NULL DEFAULT 'ai'"], ["consent_at", "TEXT"], ["src_files", "TEXT"], ["engine", "TEXT"], ["gen_prompt", "TEXT"], ["ref_files", "TEXT"]]) {
   if (!db.prepare("PRAGMA table_info(avatars)").all().some((c) => c.name === col)) db.exec(`ALTER TABLE avatars ADD COLUMN ${col} ${def}`);
 }
 
@@ -117,7 +117,7 @@ const NO_TEXT = "No added text, captions, logos or watermarks.";
 // A description can shape the avatar but can't ask for a real person's likeness.
 const LIKENESS_WORDS = /\b(resembl\w*|lookalike|look-alike|deep\s*fakes?|celebrit(y|ies)|famous|same\s+face\s+as|my\s+face|my\s+photo|real\s+person)\b/i;
 // "looks like a barista" is fine; "looks like Taylor Swift" names someone.
-const LIKENESS_NAMED = /\b(?:[Ll]ook(?:s|ing)?|[Ss]tyled)\s+(?:just\s+|exactly\s+)?(?:like|as)\s+[A-Z][a-z]+/;
+const LIKENESS_NAMED = /\b(?:[Ll]ook(?:s|ing)?|[Ss]tyled|[Dd]ressed)\s+(?:just\s+|exactly\s+)?(?:like|as)\s+[A-Z][a-z]+/;
 export const asksForLikeness = (text) => LIKENESS_WORDS.test(text) || LIKENESS_NAMED.test(text);
 
 const clean = (s, n) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
@@ -281,7 +281,8 @@ function blendPrompt(mix, look, plan) {
 async function submitBlend(id, step) {
   const row = db.prepare("SELECT * FROM avatars WHERE id = ?").get(id);
   const engine = BLENDERS[step];
-  const images = JSON.parse(row.src_files).map(img);
+  // A blend sends its two uploaded photos (deleted afterwards); a new outfit sends the avatar it starts from (kept).
+  const images = JSON.parse(row.src_files || row.ref_files).map(img);
   const r = await aimedia.runpod(`${engine.id()}/run`, { input: engine.input(images, row.gen_prompt) });
   db.prepare("UPDATE avatars SET status='running', runpod_id=?, engine=?, updated_at=datetime('now') WHERE id=?").run(r.id, engine.id(), id);
 }
@@ -311,6 +312,40 @@ export async function blend(account, seller, b = {}) {
   } catch (e) { fail("avatars", id, e.message); throw e; }
   return avatarView(getAvatar(seller, id));
 }
+/* ---------- a new outfit for an avatar ---------- */
+function outfitPrompt(style, look) {
+  if (style.real) {
+    return "Image 1 shows a person. Create a new photo of the exact same person: the same face, facial features, skin tone, hair and body, unchanged and instantly recognisable. "
+      + `Change only the clothing: they are now wearing ${look}. The clothing is fully visible and covers the torso. `
+      + `Same framing as image 1 (head and shoulders to half-body), centered, facing the camera with a relaxed, natural expression. Soft, even studio light, plain light background, photorealistic, sharp focus. One person only. ${NO_TEXT}`;
+  }
+  return `Image 1 shows a brand character. Create a new image of the exact same character (same design, face, colors and proportions), now wearing ${look}. ${style.keep} `
+    + `Half-body, centered, facing the viewer, plain soft gradient background, same art style as image 1. ${ORIGINAL} ${NO_TEXT}`;
+}
+/**
+ * The same avatar in different clothes, as a new avatar (the original stays). Uses the AI photo
+ * allowance like other avatars. Real-person avatars keep their face; characters keep their design.
+ */
+export async function restyle(account, seller, id, b = {}) {
+  const from = getAvatar(seller, id);
+  if (from.status !== "done" || !from.image_file || !fs.existsSync(path.join(dirs.images, from.image_file))) throw httpError(409, "This avatar isn't ready yet.");
+  const look = clean(b.look, 240);
+  if (look.length < 3) throw httpError(400, "Describe the outfit, like \"a fitted cream blazer over a black top\".");
+  if (asksForLikeness(look)) throw httpError(400, "Describe the clothes without naming a real person.");
+  const style = STYLES.find((s) => s.id === from.style) || STYLES[0];
+  if (style.id === "hands" || style.id === "silhouette") throw httpError(400, "This style shows no outfit to change. Make a new avatar instead.");
+  roomForAvatar(seller);
+  if (!aimedia.enabled()) throw httpError(503, "AI avatars aren't switched on yet.");
+  plans.assertAllowance(account, KIND);
+  const newId_ = newId("avt");
+  const name = clean(b.name, 30) || `${from.name.replace(/\s*\(new look\)$/i, "").slice(0, 19)} (new look)`;
+  db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, look, source, consent_at, ref_files, gen_prompt) VALUES (?,?,?,?,?,?,?,?,?,?)")
+    .run(newId_, seller.id, account.id, name, from.style, look, from.source || "ai", from.consent_at, JSON.stringify([from.image_file]), outfitPrompt(style, look));
+  plans.recordUsage(account, KIND);
+  try { await submitBlend(newId_, 0); } catch (e) { fail("avatars", newId_, e.message); throw e; }
+  return avatarView(getAvatar(seller, newId_));
+}
+
 /** Delete a blend's two source photos once it's finished either way. */
 function dropSources(id) {
   const row = db.prepare("SELECT src_files FROM avatars WHERE id = ?").get(id);
@@ -379,8 +414,9 @@ export async function poll({ table = null, id = null } = {}) {
       try {
         // A blend is made by the photo editor, not text-to-image, so it's checked there.
         // Blends run on the photo models (older ones on Qwen Image Edit), not text-to-image.
-        const blending = t === "avatars" && row.source === "blend";
-        const r = await aimedia.runpod(`${blending ? row.engine || EDIT : endpoint}/status/${row.runpod_id}`);
+        // New outfits run on the photo models too (they record which one).
+        const blending = t === "avatars" && (row.source === "blend" || Boolean(row.engine));
+        const r = await aimedia.runpod(`${t === "avatars" && row.engine ? row.engine : blending ? EDIT : endpoint}/status/${row.runpod_id}`);
         if (r.status === "COMPLETED") {
           const url = aimedia.resultUrl(r.output, "scene");
           if (!url) { console.warn("[avatars]", row.id, "finished without an image:", JSON.stringify(r).slice(0, 400)); fail(t, row.id, "The AI finished but didn't send the image back. Try again."); continue; }
@@ -399,10 +435,10 @@ export async function poll({ table = null, id = null } = {}) {
           console.warn("[avatars]", row.id, r.status, JSON.stringify(r.error || r.output || "").slice(0, 400));
           // A blend the first model refused or failed gets one more try on the backup model.
           const step = blending ? BLENDERS.findIndex((b) => b.id() === row.engine) : -1;
-          if (step >= 0 && step + 1 < BLENDERS.length && row.src_files && row.gen_prompt) {
+          if (step >= 0 && step + 1 < BLENDERS.length && (row.src_files || row.ref_files) && row.gen_prompt) {
             try { await submitBlend(row.id, step + 1); continue; } catch (e) { console.warn("[avatars] blend backup", row.id, e.message); }
           }
-          fail(t, row.id, t === "avatars" ? (row.source === "blend" ? "The AI couldn't blend these photos. Try two clear, front-facing photos." : "The AI couldn't make this avatar. Try a different description.") : "The AI couldn't make this shot. Try another pose or product photo.");
+          fail(t, row.id, t === "avatars" ? (row.ref_files ? "The AI couldn't change the outfit. Try describing it differently." : row.source === "blend" ? "The AI couldn't blend these photos. Try two clear, front-facing photos." : "The AI couldn't make this avatar. Try a different description.") : "The AI couldn't make this shot. Try another pose or product photo.");
         } else if (tooOld(row)) fail(t, row.id, "This took too long. Try again.");
       } catch (e) {
         console.warn("[avatars] poll", row.id, e.message);

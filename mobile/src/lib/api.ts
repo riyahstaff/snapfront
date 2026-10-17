@@ -483,6 +483,7 @@ export const api = {
   blendAvatar: (input: { photos: [string, string]; mix: string; name?: string; look?: string; consent: boolean }) => request<Avatar>("POST", "/api/avatars", { source: "blend", ...input }),
   avatar: (id: string) => request<Avatar>("GET", `/api/avatars/${id}`),
   deleteAvatar: (id: string) => request<null>("DELETE", `/api/avatars/${id}`),
+  avatarOutfit: (id: string, look: string) => request<Avatar>("POST", `/api/avatars/${id}/outfit`, { look }),
   avatarShot: (input: { avatar_id: string; product_id: string; pose?: string; prompt?: string }) => request<AvatarShot>("POST", "/api/avatar-shots", input),
   avatarShotStatus: (id: string) => request<AvatarShot>("GET", `/api/avatar-shots/${id}`),
   avatarVideos: () => request<AvatarVideoStudio>("GET", "/api/avatar-videos"),
@@ -740,6 +741,8 @@ export type AcademyLesson = { id: string; title: string; summary: string; module
 export type DailyPrompt = { day: string; kind: string; kind_name: string; hook: string; film: string[]; on_screen: string; caption: string; hashtags: string[]; cta: string;
   product: { id: string; title: string; image_url: string | null; url: string } | null; more_left: number };
 export type Community = { member: boolean; discord: string | null; has_discord: boolean; whop: string | null; live_schedule: string | null };
+/** A voice in ElevenLabs' public library (owner's presenter search). */
+export type LibraryVoice = { voice_id: string; public_owner_id: string; name: string; accent: string; gender: string; age: string; descriptive: string; use_case: string; description: string; preview_url: string | null; uses: number };
 /** Academy lessons taught by an avatar (owner only). */
 export type AcademyPresenter = {
   presenter: { avatar_id: string; voice: string; lessons: string[] | "all" } | null; active: boolean;
@@ -752,6 +755,8 @@ export type AcademyPresenter = {
 export const academy = {
   presenter: () => request<AcademyPresenter>("GET", "/api/academy-presenter"),
   setPresenter: (b: { avatar_id?: string; voice?: string; lessons?: string[] | "all" }) => request<AcademyPresenter>("PUT", "/api/academy-presenter", b),
+  voiceLibrary: (q: { search?: string; gender?: string; accent?: string }) => request<{ voices: LibraryVoice[] }>("GET", `/api/academy-presenter/voice-library?${new URLSearchParams(Object.entries(q).filter(([, v]) => v) as [string, string][]).toString()}`),
+  addLibraryVoice: (v: { public_owner_id: string; voice_id: string; name: string }) => request<{ id: string }>("POST", "/api/academy-presenter/voices", v),
   catalog: () => request<AcademyCatalog>("GET", "/api/academy"),
   lesson: (id: string) => request<AcademyLesson>("GET", `/api/academy/${encodeURIComponent(id)}`),
   setDone: (id: string, done: boolean) => request<AcademyCatalog>("POST", `/api/academy/${encodeURIComponent(id)}/done`, { done }),

@@ -2,11 +2,11 @@
 // teaches. Saving starts making those lesson videos in the background; the old videos stay up until
 // the new ones are ready.
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Notice, Segmented } from "@/components/ui";
-import { academy, ApiError, type AcademyPresenter } from "@/lib/api";
+import { Button, Field, Notice, Segmented } from "@/components/ui";
+import { academy, ApiError, type AcademyPresenter, type LibraryVoice } from "@/lib/api";
 import { radius, space, type, useColors } from "@/lib/theme";
 
 export function PresenterCard() {
@@ -19,6 +19,27 @@ export function PresenterCard() {
   const [pilot, setPilot] = useState("partner");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; tone: "ok" | "error" | "info" } | null>(null);
+  // Searching ElevenLabs' voice library for more voices.
+  const [query, setQuery] = useState("");
+  const [found, setFound] = useState<LibraryVoice[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [adding, setAdding] = useState<string | null>(null);
+  const search = async () => {
+    setSearching(true); setMsg(null);
+    try { setFound((await academy.voiceLibrary({ search: query.trim(), gender: "female" })).voices); }
+    catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't search the voice library.", tone: "error" }); }
+    finally { setSearching(false); }
+  };
+  const addVoice = async (v: LibraryVoice) => {
+    setAdding(v.voice_id);
+    try {
+      const { id } = await academy.addLibraryVoice({ public_owner_id: v.public_owner_id, voice_id: v.voice_id, name: v.name });
+      const fresh = await academy.presenter();
+      setData(fresh); setVoice(id);
+      setMsg({ text: `${v.name} added to your ElevenLabs voices and picked. Save to use it.`, tone: "ok" });
+    } catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't add that voice.", tone: "error" }); }
+    finally { setAdding(null); }
+  };
 
   const apply = useCallback((v: AcademyPresenter) => {
     setData(v);
@@ -96,6 +117,20 @@ export function PresenterCard() {
             ))}
           </View>
           <Text style={[type.small, { color: c.muted }]}>★ ElevenLabs voices use characters from your ElevenLabs plan.</Text>
+          <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-end" }}>
+            <View style={{ flex: 1 }}><Field label="Find more voices (ElevenLabs library)" value={query} onChangeText={setQuery} placeholder="warm, smooth, confident…" onSubmitEditing={search} /></View>
+            <Button label="Search" variant="secondary" loading={searching} onPress={search} />
+          </View>
+          {found ? (found.length ? found.slice(0, 8).map((v) => (
+            <View key={v.voice_id} style={{ flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: 6, borderTopWidth: 1, borderColor: c.sunk }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[type.label, { color: c.ink }]}>{v.name}</Text>
+                <Text style={[type.small, { color: c.muted }]} numberOfLines={2}>{[v.accent, v.age, v.descriptive].filter(Boolean).join(" · ")}{v.description ? ` · ${v.description}` : ""}</Text>
+              </View>
+              {v.preview_url ? <Button label="Listen" variant="ghost" onPress={() => Linking.openURL(v.preview_url!)} /> : null}
+              <Button label="Add" variant="secondary" loading={adding === v.voice_id} onPress={() => addVoice(v)} />
+            </View>
+          )) : <Text style={[type.small, { color: c.muted }]}>No voices found. Try other words.</Text>) : null}
           <Text style={[type.label, { color: c.ink }]}>Which lessons</Text>
           <Segmented value={scope} onChange={setScope} options={[{ value: "pilot", label: "Try one lesson" }, { value: "all", label: "Every lesson" }]} />
           {scope === "pilot" ? (

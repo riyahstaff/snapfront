@@ -12,6 +12,11 @@ Academy → **Lesson presenter** (only the owner sees it; the owner is any accou
 
 The old video stays up until the new one is ready. Talking-head clips and voices are cached by their words, voice and avatar, so remaking a lesson only pays for slides that changed. Lessons that aren't chosen keep their plain narrated slides.
 
+## Her look and her voice
+
+- **New outfit:** in AI avatars, pick an avatar and tap **New outfit**, then describe the clothes. You get a new avatar with the same face (Nano Banana Pro, Seedream as backup); the original stays. `POST /api/avatars/:id/outfit {look}` (or `POST /api/academy-presenter/outfit {avatar_id, look}` with the studio token).
+- **More voices:** the Lesson presenter card can search ElevenLabs' public voice library and add a voice to Snapfront's ElevenLabs account. Added voices are only offered to the owner here, never sold to sellers. `GET /api/academy-presenter/voice-library?search=&gender=&accent=`, `POST /api/academy-presenter/voices {public_owner_id, voice_id, name}`, `POST /api/academy-presenter/voice-sample {voice, text}` (a playable link for two hours).
+
 ## App demos (screen recordings)
 
 A slide's `screen` in `server/src/academy-content.js` describes the demo: the route to open, text that shows the page is ready, and steps:
