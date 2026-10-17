@@ -36,7 +36,7 @@ const TOOLS: { title: string; detail: string; icon: Icon; href: Href }[] = [
   { title: "Snapfront Academy", detail: "Short video lessons: your store, content, going LIVE on TikTok and the top 10 ways to market.", icon: "school-outline", href: "/academy" },
   { title: "Faceless videos", detail: "Your product photos, big captions and a natural voiceover, ready for TikTok and Reels.", icon: "videocam-outline", href: "/faceless" },
   { title: "Faceless avatars", detail: "An original AI character that shows off your products in posts, stories and videos, so you never have to be on camera.", icon: "person-circle-outline", href: "/avatars" },
-  { title: "Credits", detail: "Top up credits for avatar videos made with Kling O1, Seedance 2.5 and Sora 2 Pro, and talking avatars.", icon: "sparkles-outline", href: "/credits" },
+  { title: "Credits", detail: "Top up credits for avatar videos made with Vidu Q3, Seedance 2.5 and Sora 2 Pro, plus voiceovers and talking avatars.", icon: "sparkles-outline", href: "/credits" },
   { title: "UGC creator kit", detail: "A portfolio page, rates, scripts and pitches to get paid by brands for short videos.", icon: "aperture-outline", href: "/ugc" },
   { title: "Community", detail: "The members' Discord, Whop and live coaching.", icon: "chatbubbles-outline", href: "/community" },
 ];
