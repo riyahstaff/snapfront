@@ -399,12 +399,30 @@ el.setOnLoadError&&el.setOnLoadError(function(e){fail("Stripe couldn't load this
 }
 
 /** Link-in-bio: one page for Instagram and TikTok bios. */
-export function linksPage(store, products, links) {
+/**
+ * The Snapfront membership card a partner can add to their link-in-bio page. It goes to their
+ * own sales page (snapfront.app/join/CODE) and always says they earn a commission.
+ */
+export function membershipCard(card) {
+  if (!card) return "";
+  const usd = (n) => `$${Number(n).toFixed(Number(n) % 1 ? 2 : 0)}`;
+  return `<a class="lk sfm" href="${esc(card.url)}" rel="noopener" target="_blank">
+<span class="sfm-mark" aria-hidden="true">✦</span><span class="sfm-t"><b>Snapfront membership</b><small>Build a store from one photo. The AI does the heavy lifting.</small><em>${esc(usd(card.lifetime))} for life · or ${esc(usd(card.monthly))}/month</em></span><span class="sfm-go">See it</span></a>
+<p class="sfm-note">I earn a commission if you join through this link.</p>`;
+}
+const MEMBERSHIP_CARD_CSS = `<style>.lk.sfm{justify-content:flex-start;text-align:left;gap:14px;border-color:var(--line);background:var(--surface);border-radius:var(--r-in);padding:14px 16px}
+.sfm-mark{width:52px;height:52px;flex:none;border-radius:min(12px,var(--r-in));display:grid;place-items:center;font-size:22px;color:#11151B;background:linear-gradient(160deg,#FFFFFF,#AEB6C2)}
+.sfm-t{flex:1;display:grid;gap:2px;min-width:0}.sfm-t b{font-size:16px}.sfm-t small{color:var(--muted);font-weight:500;font-size:14px;line-height:1.35}.sfm-t em{font-style:normal;font-size:13px;font-variant-numeric:tabular-nums}
+.sfm-go{flex:none;font-size:14px;padding:6px 12px;border-radius:999px;background:var(--accent);color:var(--on-accent)}
+.sfm-note{margin:-4px 0 0;text-align:center;font-size:12px;color:var(--muted)}</style>`;
+
+export function linksPage(store, products, links, card = null) {
   const btn = (href, label, cls = "") => `<a class="lk ${cls}" href="${esc(href)}"${/^https?:/.test(href) ? ' rel="noopener" target="_blank"' : ""}>${esc(label)}</a>`;
   return shell({ title: `${store.store_name} · Links`, description: store.tagline || `Shop ${store.store_name}`, store, canonical: storeUrl(store.store_slug, "/links"),
-    body: `<div class="wrap links"><header>${store.banner_file ? `<img class="av" src="${esc(`${config.publicUrl}/img/${store.banner_file}`)}" alt="">` : ""}<h1>${esc(store.store_name)}</h1>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</header>
+    body: `${card ? MEMBERSHIP_CARD_CSS : ""}<div class="wrap links"><header>${store.banner_file ? `<img class="av" src="${esc(`${config.publicUrl}/img/${store.banner_file}`)}" alt="">` : ""}<h1>${esc(store.store_name)}</h1>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</header>
 ${btn(`${home(store)}?utm_source=bio`, "Shop the store", "main")}
 ${products.map((p) => `<a class="lk prod" href="${esc(base(store))}/${esc(p.slug)}?utm_source=bio">${img(p.image_url, "", ' loading="lazy"')}<span>${esc(p.title)}</span><b>${priceLabel(p)}</b></a>`).join("")}
+${membershipCard(card)}
 ${links.map((l) => btn(l.url, l.label)).join("")}</div>`, signup: true });
 }
 

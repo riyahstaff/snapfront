@@ -20,6 +20,7 @@ import * as dropship from "./dropship.js";
 import * as urls from "./urls.js";
 import * as domains from "./domains.js";
 import { landingPage } from "./landing.js";
+import { salesPage } from "./sales-page.js";
 import { THEME_IDS, publicThemes } from "./themes.js";
 import * as studio from "./studio.js";
 import { ensureModel as ensureCutoutModel } from "./cutout.js";
@@ -243,6 +244,14 @@ app.get("/", (req, res) => {
 app.get("/r/:code", (req, res) => {
   partners.recordClick(req, res, req.params.code);
   res.redirect(302, "/");
+});
+// The membership sales page (a link-in-bio style offer). /join/CODE is a partner's own copy: the
+// visit is counted, the code is remembered for checkout, and the page discloses the commission.
+app.get("/join", (_req, res) => res.send(salesPage()));
+app.get("/join/:code", (req, res) => {
+  const code = partners.recordClick(req, res, req.params.code);
+  if (!code) return res.redirect(302, "/join");
+  res.send(salesPage({ code }));
 });
 // The home page's images (brand mark and chrome art).
 app.use("/site", express.static(path.resolve(new URL("../assets/site/", import.meta.url).pathname), { maxAge: "30d", fallthrough: false }));
@@ -609,9 +618,11 @@ app.post("/api/billing/web/checkout", auth, wrap(async (req, res) => {
   res.json(await webbilling.startCheckout(req.account, String(req.body?.plan || "")));
 }));
 /* ---------- Snapfront Partners (affiliates who sell Snapfront) ---------- */
-app.get("/api/partners/me", auth, (req, res) => res.json(partners.view(req.account)));
-app.post("/api/partners/join", auth, (req, res) => res.status(201).json(partners.join(req.account, req.body || {})));
-app.patch("/api/partners/me", auth, (req, res) => res.json(partners.update(req.account, req.body || {})));
+app.get("/api/partners/me", auth, (req, res) => res.json(partners.view(req.account, req.seller)));
+app.post("/api/partners/join", auth, (req, res) => { partners.join(req.account, req.body || {}); res.status(201).json(partners.view(req.account, req.seller)); });
+app.patch("/api/partners/me", auth, (req, res) => { partners.update(req.account, req.body || {}); res.json(partners.view(req.account, req.seller)); });
+// The Snapfront membership card on this store's link-in-bio page (sends visitors to the partner's /join page).
+app.put("/api/partners/bio-card", auth, (req, res) => res.json(partners.setBioCard(req.account, req.seller, Boolean(req.body?.on))));
 app.post("/api/partners/claim", auth, (req, res) => res.json(partners.claim(req.account, String(req.body?.code || ""))));
 app.get("/api/admin/partners", adminOnly, (_req, res) => res.json(partners.adminSummary()));
 app.post("/api/admin/partners/:id/paid", adminOnly, (req, res) => res.json(partners.markPaid(req.params.id, req.body?.note)));
@@ -1143,7 +1154,7 @@ app.get("/s/:store/links", (req, res) => {
   growth.recordVisit(req, store, "");
   affiliates.recordClick(req, store);
   const rows = db.prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'live' ORDER BY created_at DESC LIMIT 4").all(store.id);
-  res.send(linksPage(view(req, store), rows.map(rowToProduct), growth.linksOf(store)));
+  res.send(linksPage(view(req, store), rows.map(rowToProduct), growth.linksOf(store), partners.bioCard(store)));
 });
 app.get("/s/:store/review", (req, res) => {
   const store = storeBySlug(req.params.store);

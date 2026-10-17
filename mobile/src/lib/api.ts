@@ -667,6 +667,10 @@ export type PartnerCommission = { id: string; created_at: string; plan: string; 
 export type PartnerView = {
   joined: boolean; has_email?: boolean; program: PartnerProgram;
   code?: string; status?: "active" | "suspended"; link?: string; home_link?: string;
+  /** The partner's own membership sales page (snapfront.app/join/CODE). */
+  sales_link?: string;
+  /** The Snapfront membership card on the current store's link-in-bio page. */
+  bio_card?: { on: boolean; store_name: string } | null;
   stats?: { clicks: number; signups: number; sales: number; pending: number; ready: number; paid: number };
   payout?: { method: "stripe" | "paypal" | "none"; detail: string; paypal_email: string | null };
   commissions?: PartnerCommission[];
@@ -675,6 +679,7 @@ export const partners = {
   me: () => request<PartnerView>("GET", "/api/partners/me"),
   join: (b: { agree: boolean; paypal_email?: string; code?: string }) => request<PartnerView>("POST", "/api/partners/join", b),
   update: (b: { paypal_email?: string | null; code?: string }) => request<PartnerView>("PATCH", "/api/partners/me", b),
+  setBioCard: (on: boolean) => request<PartnerView>("PUT", "/api/partners/bio-card", { on }),
 };
 
 /** Send a file's bytes as the request body (videos and other large uploads). */
