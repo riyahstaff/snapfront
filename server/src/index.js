@@ -174,6 +174,32 @@ app.use(express.json({ limit: "12mb" }));
 
 /* ---------- helpers ---------- */
 /** Mark an order paid (once) and send the confirmation email. Safe to call from both the webhook and /thanks. */
+/**
+ * Safety net for missed webhooks (an outage, a wrong signing secret): finish orders that Stripe says
+ * are paid but are still pending here, cancel expired ones, and mark sellers whose Stripe account can
+ * now take payments. Runs every 15 minutes and once at start-up.
+ */
+export async function reconcileStripe() {
+  if (!config.stripeKey) return { orders: 0, sellers: 0 };
+  let orders = 0, sellers = 0;
+  const pending = db.prepare(`SELECT o.id, o.checkout_session_id, s.stripe_account_id FROM orders o JOIN sellers s ON s.id = o.seller_id
+    WHERE o.status = 'pending' AND o.checkout_session_id IS NOT NULL AND s.stripe_account_id IS NOT NULL AND o.created_at > datetime('now', '-4 days')
+    ORDER BY o.created_at DESC LIMIT 100`).all();
+  for (const o of pending) {
+    try {
+      const session = await pay.getSession(o.stripe_account_id, o.checkout_session_id);
+      if (session?.payment_status === "paid") { await completeOrder(o.id, session); orders++; console.log("[reconcile] completed paid order", o.id); }
+      else if (session?.status === "expired") db.prepare("UPDATE orders SET status='canceled' WHERE id=? AND status='pending'").run(o.id);
+    } catch (e) { console.warn("[reconcile] order", o.id, e.message); }
+  }
+  for (const s of db.prepare("SELECT id, stripe_account_id FROM sellers WHERE stripe_account_id IS NOT NULL AND stripe_ready = 0 LIMIT 100").all()) {
+    try {
+      const a = await pay.getAccount(s.stripe_account_id);
+      if (a?.charges_enabled) { db.prepare("UPDATE sellers SET stripe_ready = 1 WHERE id = ?").run(s.id); sellers++; console.log("[reconcile] seller can take payments", s.id); }
+    } catch (e) { console.warn("[reconcile] seller", s.id, e.message); }
+  }
+  return { orders, sellers };
+}
 async function completeOrder(orderId, session) {
   const before = db.prepare("SELECT status FROM orders WHERE id = ?").get(orderId);
   const order = commerce.finalizeOrder(orderId, session);
@@ -1385,6 +1411,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   // Website plans (Stripe): notice renewals, cancellations and refunds.
   setInterval(() => webbilling.sweep().catch((e) => console.error("[webbilling] sweep", e.message)), 30 * 60e3).unref();
   setInterval(() => credits.sweep().catch((e) => console.error("[credits] sweep", e.message)), 10 * 60e3).unref();
+  setTimeout(() => reconcileStripe().catch((e) => console.error("[reconcile]", e.message)), 45e3).unref();
+  setInterval(() => reconcileStripe().catch((e) => console.error("[reconcile]", e.message)), 15 * 60e3).unref();
   // Create the Lifetime and Pro products in Play (retries hourly until Google allows it).
   const products = () => playbilling.ensureProducts().catch((e) => console.error("[play] products", e.message));
   setTimeout(products, 15e3).unref();

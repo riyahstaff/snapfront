@@ -112,10 +112,22 @@ export async function paidSession(accountId, sessionId) {
   return session.payment_status === "paid" ? session : null;
 }
 
+/**
+ * Check a webhook's signature. STRIPE_WEBHOOK_SECRET can hold several secrets separated by commas:
+ * one for Snapfront's own account and one for the Connect endpoint (sellers' stores), each of which
+ * Stripe signs with its own secret.
+ */
 export function verifyWebhook(rawBody, signature) {
-  if (!config.stripeWebhookSecret) throw httpError(503, "STRIPE_WEBHOOK_SECRET is not set.");
-  return stripeClient().webhooks.constructEvent(rawBody, signature, config.stripeWebhookSecret);
+  const secrets = String(config.stripeWebhookSecret || "").split(",").map((x) => x.trim()).filter(Boolean);
+  if (!secrets.length) throw httpError(503, "STRIPE_WEBHOOK_SECRET is not set.");
+  let last;
+  for (const secret of secrets) {
+    try { return stripeClient().webhooks.constructEvent(rawBody, signature, secret); } catch (e) { last = e; }
+  }
+  throw last;
 }
+/** A seller's connected Stripe account (to check whether it can take payments). */
+export async function getAccount(accountId) { return stripeClient().accounts.retrieve(accountId); }
 
 /* ---- signed, expiring download links (no login needed for buyers) ---- */
 const sign = (payload) => crypto.createHmac("sha256", config.downloadSecret).update(payload).digest("base64url");
