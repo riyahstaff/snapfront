@@ -53,6 +53,7 @@ export default function CreditsScreen() {
         </View>
         <Text style={[type.body, { color: c.muted }]}>Credits make avatar videos (Kling O1, Seedance 2.5, Sora 2 Pro) and talking avatars. They never expire, and a video that fails gives its credits back.</Text>
       </View>
+      {data.free ? <Notice text="This is an owner account: avatar videos and talking avatars are free for you, so you can test every model without buying credits." tone="ok" /> : null}
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
 
       {web ? (

@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "snapfront-credits-"));
-Object.assign(process.env, { DATA_DIR: tmp, PUBLIC_URL: "https://cv.test", STORE_DOMAIN: "cv.test", STRIPE_SECRET_KEY: "sk_test_fake", RUNPOD_API_KEY: "rp_test", ADMIN_TOKEN: "admin_secret" });
+Object.assign(process.env, { DATA_DIR: tmp, PUBLIC_URL: "https://cv.test", STORE_DOMAIN: "cv.test", STRIPE_SECRET_KEY: "sk_test_fake", RUNPOD_API_KEY: "rp_test", ADMIN_TOKEN: "admin_secret", OWNER_EMAILS: "boss@snapfront.test" });
 delete process.env.CREDIT_PACKS; delete process.env.CREDIT_MARKUP; delete process.env.CREDIT_VALUE_USD;
 
 const { app } = await import("../src/index.js");
@@ -227,4 +227,29 @@ test("videos are private to the store; admins can grant credits", async () => {
   const g = await call("POST", `/api/admin/credits/${other.account.id}`, { amount: 100, note: "Tester" }, "admin_secret");
   assert.equal(g.body.balance, 100);
   assert.equal((await call("DELETE", `/api/avatar-videos/${kling.id}`)).status, 204);
+});
+
+test("the owner (OWNER_EMAILS) makes videos without spending credits; others still pay", async () => {
+  const boss = (await call("POST", "/api/sellers", { store_name: "Boss" }, null)).body;
+  db.prepare("UPDATE accounts SET email = 'Boss@Snapfront.test' WHERE id = ?").run(boss.account.id);
+  const bossSeller = db.prepare("SELECT id FROM sellers WHERE account_id = ?").get(boss.account.id).id;
+  db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, status, image_file) VALUES (?,?,?,?,?,?,?)").run("avt_boss", bossSeller, boss.account.id, "Boss", "soft3d", "done", "nova.jpg");
+  db.prepare("INSERT INTO avatar_shots (id, seller_id, account_id, avatar_id, pose, prompt, status, image_file) VALUES (?,?,?,?,?,?,?,?)").run("shot_boss", bossSeller, boss.account.id, "avt_boss", "present", "x", "done", "nova-shot.jpg");
+  const opts = (await call("GET", "/api/avatar-videos", null, boss.token)).body;
+  assert.equal(opts.free, true);
+  assert.equal(opts.balance, 0);
+  status = "IN_PROGRESS";
+  const r = await call("POST", "/api/avatar-videos", { shot_id: "shot_boss", model: "seedance", duration: 10, resolution: "1080p", motion: "walk" }, boss.token);
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.equal(credits.balance(boss.account.id), 0);
+  const line = (await call("GET", "/api/credits", null, boss.token)).body;
+  assert.equal(line.free, true);
+  assert.equal(line.history[0].delta, 0);
+  assert.match(line.history[0].note, /owner, free/);
+  // A failure doesn't hand the owner credits they never paid.
+  status = "FAILED";
+  await videos.poll();
+  assert.equal(credits.balance(boss.account.id), 0);
+  // Everyone else still needs credits.
+  assert.equal((await call("GET", "/api/avatar-videos")).body.free, false);
 });

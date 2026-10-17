@@ -76,6 +76,10 @@ const webAppUrl = () => (config.storeDomain ? `https://app.${config.storeDomain}
 const money = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 export const NO_REFUNDS = "All sales are final. Credits don't expire, and failed generations always get their credits back.";
 
+/* ---------- the owner ---------- */
+/** OWNER_EMAILS accounts (Snapfront's own, for running and testing it) make videos without spending credits. */
+export const isOwner = (account) => Boolean(account?.email && (config.ownerEmails || []).includes(String(account.email).trim().toLowerCase()));
+
 /* ---------- the balance ---------- */
 export const balance = (accountId) => db.prepare("SELECT COALESCE(SUM(delta),0) AS b FROM credit_ledger WHERE account_id = ?").get(accountId).b;
 const insert = (accountId, delta, kind, ref, note = "") =>
@@ -88,6 +92,8 @@ const insert = (accountId, delta, kind, ref, note = "") =>
 export const spend = db.transaction((account, amount, ref, note = "") => {
   amount = Math.round(amount);
   if (!(amount > 0)) throw httpError(400, "Nothing to charge.");
+  // The owner isn't charged; the zero line keeps a record of what was made.
+  if (isOwner(account)) { insert(account.id, 0, "spend", ref, `${note} (owner, free)`.trim()); return balance(account.id); }
   const have = balance(account.id);
   if (have < amount) throw httpError(402, `This needs ${amount} credits and you have ${have}. Top up your credits to make it.`, { credits: { need: amount, balance: have } });
   if (!insert(account.id, -amount, "spend", ref, note)) throw httpError(409, "This was already charged.");
@@ -96,7 +102,7 @@ export const spend = db.transaction((account, amount, ref, note = "") => {
 /** Give back a job's credits (once). */
 export function refund(ref, note = "Didn't work, so the credits came back") {
   const s = db.prepare("SELECT * FROM credit_ledger WHERE kind = 'spend' AND ref = ?").get(String(ref));
-  if (!s) return false;
+  if (!s || !s.delta) return false;   // nothing was charged (the owner's free videos)
   return insert(s.account_id, -s.delta, "refund", ref, note);
 }
 /** Snapfront adds (or removes) credits by hand: promos, support, testers. */
@@ -112,7 +118,7 @@ export function view(account) {
   const history = db.prepare("SELECT * FROM credit_ledger WHERE account_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 50").all(account.id)
     .map((r) => ({ id: r.id, delta: r.delta, kind: r.kind, note: r.note, created_at: r.created_at }));
   return {
-    enabled: enabled(), balance: balance(account.id), terms: NO_REFUNDS,
+    enabled: enabled(), balance: balance(account.id), terms: NO_REFUNDS, free: isOwner(account),
     packs: packs().map((p) => ({ ...p, price: money(p.cents), per_credit: `${(p.cents / p.total).toFixed(1)}¢` })),
     history,
   };

@@ -142,8 +142,8 @@ export default function AvatarsScreen() {
         <Pressable onPress={() => router.push("/credits")} accessibilityRole="button" accessibilityLabel={`${vstudio.balance} credits. Top up`}
           style={{ flexDirection: "row", alignItems: "center", gap: space.sm, alignSelf: "flex-start", paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }}>
           <Ionicons name="sparkles" size={16} color={c.accent} />
-          <Text style={[type.label, { color: c.ink }]}>{vstudio.balance.toLocaleString()} credits</Text>
-          <Text style={[type.small, { color: c.accent }]}>Top up</Text>
+          <Text style={[type.label, { color: c.ink }]}>{vstudio.free ? "Owner: videos are free" : `${vstudio.balance.toLocaleString()} credits`}</Text>
+          {vstudio.free ? null : <Text style={[type.small, { color: c.accent }]}>Top up</Text>}
         </Pressable>
       ) : null}
 
