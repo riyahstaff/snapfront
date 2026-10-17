@@ -4,15 +4,23 @@
 //   2. Put it in a shot with one of the seller's products (Qwen Image Edit 2511, avatar + product
 //      photo in, one 4:5 photo out). Shots are owned store photos, so Marketing can turn them into
 //      posts, stories, carousels and reels with the usual designs.
-// Avatars are always original characters: descriptions that ask for a real or famous person's
-// likeness are refused, and every prompt tells the model not to resemble anyone. Results are marked
-// as AI images, like the other AI photos, so the store can say so.
+// Characters made from a description are always original: descriptions that ask for a real or famous
+// person's likeness are refused, and every prompt tells the model not to resemble anyone. Results are
+// marked as AI images, like the other AI photos, so the store can say so.
+//
+// Two avatars come from real photos instead, and both need the seller to confirm consent:
+//   - "Your photo": the seller's own photo becomes the avatar (no AI step, so it's free).
+//   - "Blend": two photos of two adults become one new, believable person (Qwen Image Edit 2511).
+// Every uploaded photo is checked by Claude first: exactly one real person, clearly an adult, no
+// nudity. Photos are re-saved without their metadata (no location), photos staged but never used
+// are deleted after a day, and a blend's two source photos are deleted as soon as it's finished.
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
 import { db, newId, rowToProduct } from "./db.js";
-import { httpError } from "./claude.js";
+import { httpError, askJson, sniffImage } from "./claude.js";
+import sharp from "sharp";
 import * as plans from "./plans.js";
 import * as aimedia from "./aimedia.js";
 import { ownsSellerImage } from "./media-ownership.js";
@@ -53,7 +61,18 @@ CREATE TABLE IF NOT EXISTS avatar_shots (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS avatar_shots_seller ON avatar_shots (seller_id, created_at);
+CREATE TABLE IF NOT EXISTS avatar_photos (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  image_file TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS avatar_photos_seller ON avatar_photos (seller_id, created_at);
 `);
+// Where an avatar came from: "ai" (a described character), "photo" (the seller's photo) or "blend".
+for (const [col, def] of [["source", "TEXT NOT NULL DEFAULT 'ai'"], ["consent_at", "TEXT"], ["src_files", "TEXT"]]) {
+  if (!db.prepare("PRAGMA table_info(avatars)").all().some((c) => c.name === col)) db.exec(`ALTER TABLE avatars ADD COLUMN ${col} ${def}`);
+}
 
 /* ---------- what sellers can pick ---------- */
 // "keep" is repeated in every shot so the avatar stays faceless in the way the seller chose.
@@ -76,6 +95,11 @@ export const STYLES = [
   { id: "mascot", name: "Mascot", blurb: "A cute original creature for playful brands.",
     prompt: "a cute original creature mascot with a simple memorable silhouette and a friendly personality, polished 3D render, soft colorful studio lighting",
     keep: "Keep the same mascot design and colors." },
+  // Avatars from real photos. Not offered as styles to pick: they come from "Use my photo" and "Blend".
+  { id: "photo", name: "Your photo", hidden: true, real: true,
+    keep: "Keep this exact person: the same face, hair, skin tone and build as in the reference, photorealistic." },
+  { id: "blend", name: "Blend", hidden: true, real: true,
+    keep: "Keep this exact person: the same face, hair, skin tone and build as in the reference, photorealistic." },
 ];
 export const POSES = [
   { id: "present", name: "Showing it off", prompt: "holding the product up toward the viewer and presenting it proudly" },
@@ -96,7 +120,10 @@ export const asksForLikeness = (text) => LIKENESS_WORDS.test(text) || LIKENESS_N
 const clean = (s, n) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
 export const presets = () => ({
   enabled: aimedia.enabled(), max_avatars: MAX_AVATARS,
-  styles: STYLES.map(({ id, name, blurb }) => ({ id, name, blurb })),
+  styles: STYLES.filter((s) => !s.hidden).map(({ id, name, blurb }) => ({ id, name, blurb })),
+  // Avatars from real photos need the photo check (Claude) as well as the image AI.
+  from_photos: aimedia.enabled() && (Boolean(config.anthropicKey) || Boolean(screenImpl)),
+  mixes: MIXES.map(({ id, name }) => ({ id, name })),
   poses: POSES.map(({ id, name }) => ({ id, name })),
 });
 
@@ -123,12 +150,129 @@ export async function create(account, seller, b = {}) {
   return avatarView(getAvatar(seller, id));
 }
 
+/* ---------- avatars from real photos ---------- */
+const STAGED_KEEP_HOURS = 24, MAX_STAGED = 10;
+const CONSENT = { photo: "Confirm this is you, or that the person agreed to be your avatar.", blend: "Confirm both people are adults who agreed to have their photos blended." };
+export const MIXES = [
+  { id: "even", name: "Even mix", prompt: "an even mix of both people" },
+  { id: "1", name: "More like photo 1", prompt: "mostly like the person in image 1, with clear features from the person in image 2" },
+  { id: "2", name: "More like photo 2", prompt: "mostly like the person in image 2, with clear features from the person in image 1" },
+];
+const SCREEN_PROMPT = `You check photos that people upload to make an AI avatar of a person for their online store. Do not say who anyone is. Answer with this JSON object:
+{"people": the number of real people visible in the photo,
+ "face_visible": true if one person's face is clearly visible, in focus and not tiny,
+ "photo": true if this is a real photograph of a person (not a drawing, cartoon, 3D render, or a picture of a screen, poster or magazine),
+ "adult": true only if every person visible clearly appears to be an adult, 18 or older. If anyone might be under 18, or you can't tell, answer false,
+ "nudity": true if anyone is nude or partly nude, or the photo is sexual}`;
+let screenImpl = null;
+/** Tests: replace the photo check. */
+export function setPhotoScreen(f) { screenImpl = f; }
+async function screenPhoto(buf) {
+  if (screenImpl) return screenImpl(buf);
+  return askJson([{ type: "image", source: { type: "base64", media_type: "image/jpeg", data: buf.toString("base64") } }, { type: "text", text: SCREEN_PROMPT }], 300);
+}
+/** Why a photo can't be used, or null if it's fine. Fails closed: anything unclear is refused. */
+function photoProblem(r) {
+  if (!r || typeof r !== "object") return "We couldn't check that photo. Try again.";
+  if (r.nudity !== false) return "We can't use this photo. Choose a different one.";
+  if (r.adult !== true) return "Avatars can only be made from photos of adults (18 or older).";
+  if (r.photo !== true) return "Use a real photo of a person, not a drawing or a picture of a screen.";
+  if (Number(r.people) > 1) return "Use a photo with just one person in it.";
+  if (Number(r.people) < 1 || r.face_visible !== true) return "We couldn't see a face clearly. Use a bright photo facing the camera.";
+  return null;
+}
+/** Upload a photo of a person for "Use my photo" or "Blend". Checked first; saved without metadata. */
+export async function stagePhoto(account, seller, b = {}) {
+  if (!config.anthropicKey && !screenImpl) throw httpError(503, "Photo avatars aren't switched on yet.");
+  const raw = Buffer.from(String(b.imageBase64 || ""), "base64");
+  if (raw.length < 100 || !sniffImage(raw)) throw httpError(400, "Use a JPG, PNG or WebP photo.");
+  if (raw.length > 12 * 1024 * 1024) throw httpError(413, "That photo is too big. Choose a smaller one.");
+  let buf;
+  // Upright, at most 1536 px, re-encoded: this also drops the photo's metadata (location, device).
+  try { buf = await sharp(raw).rotate().resize(1536, 1536, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 90 }).toBuffer(); }
+  catch { throw httpError(400, "We couldn't open that photo. Try another one."); }
+  const problem = photoProblem(await screenPhoto(buf));
+  if (problem) throw httpError(422, problem);
+  const old = db.prepare("SELECT * FROM avatar_photos WHERE seller_id = ? ORDER BY created_at DESC, rowid DESC").all(seller.id).slice(MAX_STAGED - 1);
+  for (const p of old) dropPhoto(p);
+  const id = newId("aph");
+  const file = `${crypto.randomUUID()}.jpg`;
+  fs.writeFileSync(path.join(dirs.images, file), buf);
+  db.prepare("INSERT INTO avatar_photos (id, seller_id, image_file) VALUES (?,?,?)").run(id, seller.id, file);
+  return { id, image_url: img(file) };
+}
+function dropPhoto(p, keepFile = false) {
+  db.prepare("DELETE FROM avatar_photos WHERE id = ?").run(p.id);
+  if (!keepFile) fs.rmSync(path.join(dirs.images, p.image_file), { force: true });
+}
+function stagedPhoto(seller, id) {
+  const p = db.prepare("SELECT * FROM avatar_photos WHERE id = ? AND seller_id = ?").get(String(id || ""), seller.id);
+  if (!p || !fs.existsSync(path.join(dirs.images, p.image_file))) throw httpError(404, "Upload the photo again.");
+  return p;
+}
+function roomForAvatar(seller) {
+  if (db.prepare("SELECT COUNT(*) AS n FROM avatars WHERE seller_id = ? AND status != 'failed'").get(seller.id).n >= MAX_AVATARS) throw httpError(400, `You can keep up to ${MAX_AVATARS} avatars. Delete one to make another.`);
+}
+/** "Use my photo": the photo itself becomes the avatar. No AI step, so it's ready at once and free. */
+export function fromPhoto(account, seller, b = {}) {
+  if (b.consent !== true) throw httpError(400, CONSENT.photo);
+  const photo = stagedPhoto(seller, b.photo);
+  const name = clean(b.name, 30) || "Me";
+  roomForAvatar(seller);
+  const id = newId("avt");
+  db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, source, status, image_file, consent_at) VALUES (?,?,?,?,?,?,?,?,datetime('now'))")
+    .run(id, seller.id, account.id, name, "photo", "photo", "done", photo.image_file);
+  db.prepare("INSERT OR IGNORE INTO seller_media (image_file, seller_id) VALUES (?,?)").run(photo.image_file, seller.id);
+  dropPhoto(photo, true);
+  return avatarView(getAvatar(seller, id));
+}
+function blendPrompt(mix, look) {
+  return `Image 1 and image 2 each show a real adult person. Create a photorealistic portrait of one new adult person whose face is ${mix.prompt}. `
+    + "Blend the face shape, eyes, nose, mouth, skin tone and hair of both so the result looks like one believable new person: not a copy of either, not a collage or split face. "
+    + `${look ? `Styling: ${look}. ` : ""}Half-body, centered, facing the camera with a relaxed natural expression, soft even light, plain soft gradient background, sharp focus, shot on a modern camera. One person only. ${NO_TEXT}`;
+}
+/** "Blend": two photos of two adults become one new person. Uses the AI photo allowance, like other avatars. */
+export async function blend(account, seller, b = {}) {
+  if (b.consent !== true) throw httpError(400, CONSENT.blend);
+  const ids = Array.isArray(b.photos) ? b.photos.map(String) : [];
+  if (ids.length !== 2 || ids[0] === ids[1]) throw httpError(400, "Add two different photos to blend.");
+  const [p1, p2] = ids.map((x) => stagedPhoto(seller, x));
+  const mix = MIXES.find((m) => m.id === (b.mix || "even"));
+  if (!mix) throw httpError(400, "Pick how to mix the two photos.");
+  const name = clean(b.name, 30) || "Blend";
+  const look = clean(b.look, 200);
+  if (asksForLikeness(`${name} ${look}`)) throw httpError(400, "Describe the styling (outfit, hair, background) without naming a real person.");
+  roomForAvatar(seller);
+  if (!aimedia.enabled()) throw httpError(503, "AI avatars aren't switched on yet.");
+  plans.assertAllowance(account, KIND);
+  const id = newId("avt");
+  db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, look, source, consent_at, src_files) VALUES (?,?,?,?,?,?,?,datetime('now'),?)")
+    .run(id, seller.id, account.id, name, "blend", look, "blend", JSON.stringify([p1.image_file, p2.image_file]));
+  dropPhoto(p1, true); dropPhoto(p2, true);   // the files now belong to this job and go when it ends
+  plans.recordUsage(account, KIND);
+  try {
+    const r = await aimedia.runpod(`${EDIT}/run`, { input: { images: [img(p1.image_file), img(p2.image_file)], prompt: blendPrompt(mix, look), size: "1024*1280", output_format: "jpeg", seed: -1 } });
+    db.prepare("UPDATE avatars SET status='running', runpod_id=?, updated_at=datetime('now') WHERE id=?").run(r.id, id);
+  } catch (e) { fail("avatars", id, e.message); throw e; }
+  return avatarView(getAvatar(seller, id));
+}
+/** Delete a blend's two source photos once it's finished either way. */
+function dropSources(id) {
+  const row = db.prepare("SELECT src_files FROM avatars WHERE id = ?").get(id);
+  if (!row?.src_files) return;
+  for (const f of JSON.parse(row.src_files)) fs.rmSync(path.join(dirs.images, f), { force: true });
+  db.prepare("UPDATE avatars SET src_files = NULL WHERE id = ?").run(id);
+}
+
 /* ---------- putting an avatar in a post or story photo ---------- */
 function shotPrompt(style, pose, custom) {
   const action = pose ? pose.prompt : custom;
-  return `Image 1 shows a brand character. Image 2 shows a product. Create one new photo of the exact character from image 1 (same design, outfit, colors and proportions) ${action}, with the exact product from image 2. `
+  const who = style.real
+    ? "Image 1 shows a person. Image 2 shows a product. Create one new photo of the exact person from image 1 (same face, hair, skin tone and build)"
+    : "Image 1 shows a brand character. Image 2 shows a product. Create one new photo of the exact character from image 1 (same design, outfit, colors and proportions)";
+  return `${who} ${action}, with the exact product from image 2. `
     + `Keep the product exactly as it is: same shape, colors, logo, label and any text. ${style.keep} `
-    + `Vertical social media composition with some calm space near the top for a headline. ${ORIGINAL} ${NO_TEXT}`;
+    + `Vertical social media composition with some calm space near the top for a headline. ${style.real ? "" : `${ORIGINAL} `}${NO_TEXT}`;
 }
 export async function shoot(account, seller, b = {}) {
   const avatar = getAvatar(seller, b.avatar_id);
@@ -165,10 +309,13 @@ function fail(table, id, message) {
   if (!row || row.status === "failed") return;
   db.prepare(`UPDATE ${table} SET status='failed', error=?, updated_at=datetime('now') WHERE id=?`).run(String(message).slice(0, 300), id);
   plans.refundUsage(plans.getAccount(row.account_id), KIND);
+  if (table === "avatars") dropSources(id);
 }
 const tooOld = (row) => Date.now() - Date.parse(`${String(row.created_at).replace(" ", "T")}Z`) > 15 * 60_000;
 /** Check running avatars and shots; save finished images as the store's own (AI-marked) photos. */
 export async function poll({ table = null, id = null } = {}) {
+  // Photos uploaded for an avatar but never used go after a day.
+  if (!id) for (const p of db.prepare(`SELECT * FROM avatar_photos WHERE created_at < datetime('now', '-${STAGED_KEEP_HOURS} hours')`).all()) dropPhoto(p);
   for (const [t, endpoint] of Object.entries(TABLES)) {
     if (table && t !== table) continue;
     const rows = id ? db.prepare(`SELECT * FROM ${t} WHERE id = ? AND status = 'running'`).all(id)
@@ -186,9 +333,10 @@ export async function poll({ table = null, id = null } = {}) {
           aimedia.markAi(name);
           db.prepare("INSERT OR IGNORE INTO seller_media (image_file, seller_id) VALUES (?,?)").run(name, row.seller_id);
           db.prepare(`UPDATE ${t} SET status='done', image_file=?, updated_at=datetime('now') WHERE id=? AND status='running'`).run(name, row.id);
+          if (t === "avatars") dropSources(row.id);
         } else if (["FAILED", "CANCELLED", "TIMED_OUT"].includes(r.status)) {
           console.warn("[avatars]", row.id, r.status, JSON.stringify(r.error || r.output || "").slice(0, 400));
-          fail(t, row.id, t === "avatars" ? "The AI couldn't make this avatar. Try a different description." : "The AI couldn't make this shot. Try another pose or product photo.");
+          fail(t, row.id, t === "avatars" ? (row.source === "blend" ? "The AI couldn't blend these photos. Try two clear, front-facing photos." : "The AI couldn't make this avatar. Try a different description.") : "The AI couldn't make this shot. Try another pose or product photo.");
         } else if (tooOld(row)) fail(t, row.id, "This took too long. Try again.");
       } catch (e) {
         console.warn("[avatars] poll", row.id, e.message);
@@ -205,7 +353,7 @@ function getAvatar(seller, id) {
   if (!a) throw httpError(404, "That isn't one of your avatars.");
   return a;
 }
-const avatarView = (a) => ({ id: a.id, name: a.name, style: a.style, look: a.look, status: a.status, error: a.status === "failed" ? a.error : null, image_url: img(a.image_file), created_at: a.created_at, ai_generated: true });
+const avatarView = (a) => ({ id: a.id, name: a.name, style: a.style, source: a.source || "ai", look: a.look, status: a.status, error: a.status === "failed" ? a.error : null, image_url: img(a.image_file), created_at: a.created_at, ai_generated: a.source !== "photo" });
 const shotView = (s) => ({ id: s.id, avatar_id: s.avatar_id, product_id: s.product_id, pose: s.pose, status: s.status, error: s.status === "failed" ? s.error : null, image_url: img(s.image_file), created_at: s.created_at, ai_generated: true });
 
 export function overview(seller) {
@@ -228,7 +376,13 @@ export async function shot(seller, id) {
 }
 /** Delete an avatar and its shots. Photos already used in posts or products stay where they are. */
 export function remove(seller, id) {
-  getAvatar(seller, id);
+  const a = getAvatar(seller, id);
+  dropSources(a.id);
+  // A seller's own photo is theirs: deleting the avatar deletes the photo too.
+  if (a.source === "photo" && a.image_file) {
+    db.prepare("DELETE FROM seller_media WHERE image_file = ? AND seller_id = ?").run(a.image_file, seller.id);
+    fs.rmSync(path.join(dirs.images, a.image_file), { force: true });
+  }
   db.prepare("DELETE FROM avatar_shots WHERE avatar_id = ? AND seller_id = ?").run(String(id), seller.id);
   db.prepare("DELETE FROM avatars WHERE id = ? AND seller_id = ?").run(String(id), seller.id);
 }

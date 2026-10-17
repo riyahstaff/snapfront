@@ -185,6 +185,9 @@ test("Seedance 2.5 (sound on, 1080p) and Sora 2 Pro send the right inputs", asyn
   assert.deepEqual({ duration: job.body.input.duration, size: job.body.input.size }, { duration: 8, size: "720p" });
   assert.match(job.body.input.prompt, /holds the phone up/);
   assert.match(job.body.input.prompt, /Nobody speaks: no dialogue, no voices/);
+  // Sora always makes sound (often a song), so by default its audio track is removed afterwards.
+  assert.equal(so.body.sound, false);
+  assert.doesNotMatch(job.body.input.prompt, /background music/);
   assert.equal(credits.balance(accountId()), 805 - 285 - 150);
   // Bad choices are refused before anything is charged.
   assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 7, motion: "walk" })).status, 400);
@@ -193,6 +196,20 @@ test("Seedance 2.5 (sound on, 1080p) and Sora 2 Pro send the right inputs", asyn
   // Three in progress is the limit.
   assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 5, motion: "walk" })).status, 201);
   assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 5, motion: "walk" })).status, 429);
+});
+
+test("removing a video's sound keeps the picture", async () => {
+  const copy = path.join(tmp, "media", "strip-me.mp4");
+  fs.copyFileSync(sampleMp4, copy);
+  assert.match(probe(copy), /Audio:/);
+  await videos.stripAudio(copy);
+  const after = probe(copy);
+  assert.doesNotMatch(after, /Audio:/);
+  assert.match(after, /Video: h264/);
+  const opts = (await call("GET", "/api/avatar-videos")).body;
+  const sora = opts.models.find((m) => m.id === "sora");
+  assert.deepEqual({ sound: sora.sound, sound_default: sora.sound_default }, { sound: "strip", sound_default: false });
+  assert.equal(opts.models.find((m) => m.id === "vidu").sound_default, true);
 });
 
 test("a failed video gives its credits back, exactly once", async () => {

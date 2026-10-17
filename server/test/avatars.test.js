@@ -148,3 +148,127 @@ test("deleting an avatar removes it and its shots", async () => {
   assert.ok(!list.avatars.some((a) => a.id === avatar.id));
   assert.equal(list.shots.length, 0);
 });
+
+/* ---------- avatars from real photos: "Use my photo" and "Blend" ---------- */
+let screenReply = { people: 1, face_visible: true, photo: true, adult: true, nudity: false };
+const screened = [];
+avatars.setPhotoScreen(async (buf) => { screened.push(buf); return screenReply; });
+const face = async (color = "#c99a7a") => (await sharp({ create: { width: 900, height: 1200, channels: 3, background: color } })
+  .withExif({ IFD0: { Copyright: "secret-location-test" } }).jpeg().toBuffer()).toString("base64");
+const staged = () => db.prepare("SELECT COUNT(*) AS n FROM avatar_photos").get().n;
+
+test("uploaded photos are checked first: not an adult, more than one person or nudity is refused", async () => {
+  const before = staged();
+  for (const [reply, msg] of [
+    [{ people: 1, face_visible: true, photo: true, adult: false, nudity: false }, /adults \(18 or older\)/],
+    [{ people: 2, face_visible: true, photo: true, adult: true, nudity: false }, /just one person/],
+    [{ people: 1, face_visible: true, photo: true, adult: true, nudity: true }, /can't use this photo/],
+    [{ people: 1, face_visible: true, photo: false, adult: true, nudity: false }, /real photo/],
+    [{ people: 0, face_visible: false, photo: true, adult: true, nudity: false }, /see a face/],
+    [{ people: 1, face_visible: true, photo: true, nudity: false }, /adults/],          // unsure counts as no
+  ]) {
+    screenReply = reply;
+    const r = await call("POST", "/api/avatar-photos", { imageBase64: await face(), mediaType: "image/jpeg" });
+    assert.equal(r.status, 422, JSON.stringify(r.body));
+    assert.match(r.body.error, msg);
+  }
+  assert.equal(staged(), before);   // nothing kept
+  assert.equal((await call("POST", "/api/avatar-photos", { imageBase64: Buffer.from("not a photo at all, just some text that is long enough to pass the size check ok ok ok ok").toString("base64") })).status, 400);
+  screenReply = { people: 1, face_visible: true, photo: true, adult: true, nudity: false };
+});
+
+let mine;
+test("use my photo: a checked photo, saved without its metadata, becomes the avatar at once and for free", async () => {
+  const calls = rp.length;
+  const up = await call("POST", "/api/avatar-photos", { imageBase64: await face(), mediaType: "image/jpeg" });
+  assert.equal(up.status, 201, JSON.stringify(up.body));
+  const file = up.body.image_url.split("/").pop();
+  const meta = await sharp(path.join(tmp, "images", file)).metadata();
+  assert.equal(meta.exif, undefined);                          // location/device data gone
+  assert.ok(Math.max(meta.width, meta.height) <= 1536);
+  const noConsent = await call("POST", "/api/avatars", { source: "photo", photo: up.body.id });
+  assert.equal(noConsent.status, 400);
+  assert.match(noConsent.body.error, /agreed/);
+  const r = await call("POST", "/api/avatars", { source: "photo", photo: up.body.id, consent: true, name: "Torrey" });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  mine = r.body;
+  assert.equal(mine.status, "done");
+  assert.equal(mine.source, "photo");
+  assert.equal(mine.style, "photo");
+  assert.equal(mine.ai_generated, false);
+  assert.equal(mine.image_url, up.body.image_url);
+  assert.equal(rp.length, calls);                               // no AI step
+  assert.equal(db.prepare("SELECT consent_at FROM avatars WHERE id = ?").get(mine.id).consent_at != null, true);
+  // A staged photo is used once.
+  assert.equal((await call("POST", "/api/avatars", { source: "photo", photo: up.body.id, consent: true })).status, 404);
+  // The new options show up, and the photo styles aren't in the style picker.
+  const list = (await call("GET", "/api/avatars")).body;
+  assert.equal(list.from_photos, true);
+  assert.ok(list.mixes.some((m) => m.id === "even"));
+  assert.ok(!list.styles.some((s) => s.id === "photo" || s.id === "blend"));
+});
+
+test("a photo avatar keeps the real person in shots, and can talk", async () => {
+  status = "IN_PROGRESS";
+  const r = await call("POST", "/api/avatar-shots", { avatar_id: mine.id, product_id: product.id, pose: "present" });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  const prompt = rp.at(-1).body.input.prompt;
+  assert.match(prompt, /exact person from image 1/);
+  assert.match(prompt, /same face, hair, skin tone/);
+  assert.doesNotMatch(prompt, /must not resemble any real person/);
+  const v = (await call("GET", "/api/avatar-videos")).body;
+  assert.ok(v.talk.styles.includes("photo") && v.talk.styles.includes("blend"));
+});
+
+test("blend two photos: two checked photos and consent, one AI job, sources deleted when it's done", async () => {
+  const a = (await call("POST", "/api/avatar-photos", { imageBase64: await face("#a07050"), mediaType: "image/jpeg" })).body;
+  const b = (await call("POST", "/api/avatar-photos", { imageBase64: await face("#e0b090"), mediaType: "image/jpeg" })).body;
+  const files = [a, b].map((x) => path.join(tmp, "images", x.image_url.split("/").pop()));
+  assert.equal((await call("POST", "/api/avatars", { source: "blend", photos: [a.id, b.id] })).status, 400);              // no consent
+  assert.equal((await call("POST", "/api/avatars", { source: "blend", photos: [a.id, a.id], consent: true })).status, 400); // same photo twice
+  assert.equal((await call("POST", "/api/avatars", { source: "blend", photos: [a.id, b.id], consent: true, look: "styled like Beyonce" })).status, 400);
+  status = "IN_PROGRESS";
+  const r = await call("POST", "/api/avatars", { source: "blend", photos: [a.id, b.id], mix: "1", consent: true, look: "denim jacket" });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.equal(r.body.status, "running");
+  assert.equal(r.body.source, "blend");
+  const job = rp.at(-1);
+  assert.match(job.url, /qwen-image-edit-2511\/run$/);
+  assert.deepEqual(job.body.input.images, [a.image_url, b.image_url]);
+  assert.match(job.body.input.prompt, /one new adult person/);
+  assert.match(job.body.input.prompt, /mostly like the person in image 1/);
+  assert.match(job.body.input.prompt, /denim jacket/);
+  assert.ok(files.every((f) => fs.existsSync(f)));             // kept while the AI works
+  status = "COMPLETED";
+  const done = (await call("GET", `/api/avatars/${r.body.id}`)).body;
+  assert.equal(done.status, "done");
+  assert.equal(done.ai_generated, true);
+  assert.ok(files.every((f) => !fs.existsSync(f)));            // then deleted
+});
+
+test("a failed blend deletes its photos and gives the allowance back; other stores can't use my photos", async () => {
+  const a = (await call("POST", "/api/avatar-photos", { imageBase64: await face("#906040") })).body;
+  const b = (await call("POST", "/api/avatar-photos", { imageBase64: await face("#d0a080") })).body;
+  const other = (await call("POST", "/api/sellers", { store_name: "Someone Else" }, null)).body;
+  assert.equal((await call("POST", "/api/avatars", { source: "photo", photo: a.id, consent: true }, other.token)).status, 404);
+  status = "IN_PROGRESS";
+  const r = (await call("POST", "/api/avatars", { source: "blend", photos: [a.id, b.id], consent: true })).body;
+  status = "FAILED";
+  const failed = (await call("GET", `/api/avatars/${r.id}`)).body;
+  assert.equal(failed.status, "failed");
+  assert.match(failed.error, /couldn't blend/);
+  for (const x of [a, b]) assert.ok(!fs.existsSync(path.join(tmp, "images", x.image_url.split("/").pop())));
+});
+
+test("unused uploads go after a day; deleting a photo avatar deletes the photo", async () => {
+  const p = (await call("POST", "/api/avatar-photos", { imageBase64: await face() })).body;
+  const file = path.join(tmp, "images", p.image_url.split("/").pop());
+  db.prepare("UPDATE avatar_photos SET created_at = datetime('now', '-25 hours') WHERE id = ?").run(p.id);
+  await avatars.poll();
+  assert.ok(!fs.existsSync(file));
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM avatar_photos WHERE id = ?").get(p.id).n, 0);
+  const photoFile = path.join(tmp, "images", mine.image_url.split("/").pop());
+  assert.ok(fs.existsSync(photoFile));
+  assert.equal((await call("DELETE", `/api/avatars/${mine.id}`)).status, 204);
+  assert.ok(!fs.existsSync(photoFile));
+});

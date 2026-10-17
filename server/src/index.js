@@ -842,9 +842,15 @@ app.post("/api/faceless/script", auth, aiLimit, wrap(async (req, res) => res.jso
 app.post("/api/faceless/videos", auth, (req, res) => res.status(201).json(faceless.start(req.seller, req.body || {})));
 app.get("/api/faceless/videos/:id", auth, (req, res) => res.json(faceless.job(req.seller, req.params.id)));
 app.delete("/api/faceless/videos/:id", auth, (req, res) => { faceless.remove(req.seller, req.params.id); res.status(204).end(); });
-/* ---------- faceless avatars: an original AI character for posts and stories ---------- */
+/* ---------- avatars for posts and stories: original AI characters, your own photo, or a blend ---------- */
 app.get("/api/avatars", auth, (req, res) => res.json(avatars.overview(req.seller)));
-app.post("/api/avatars", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatars.create(req.account, req.seller, req.body || {}))));
+app.post("/api/avatars", auth, aiLimit, wrap(async (req, res) => {
+  const b = req.body || {};
+  const made = b.source === "photo" ? avatars.fromPhoto(req.account, req.seller, b) : b.source === "blend" ? await avatars.blend(req.account, req.seller, b) : await avatars.create(req.account, req.seller, b);
+  res.status(201).json(made);
+}));
+// A photo of a person for "Use my photo" or "Blend": checked (one adult, no nudity) and staged for a day.
+app.post("/api/avatar-photos", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatars.stagePhoto(req.account, req.seller, req.body || {}))));
 app.get("/api/avatars/:id", auth, wrap(async (req, res) => res.json(await avatars.avatar(req.seller, req.params.id))));
 app.delete("/api/avatars/:id", auth, (req, res) => { avatars.remove(req.seller, req.params.id); res.status(204).end(); });
 app.post("/api/avatar-shots", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatars.shoot(req.account, req.seller, req.body || {}))));

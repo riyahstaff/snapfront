@@ -23,15 +23,27 @@ Earn with Snapfront → **Your sales page** has the partner's `/join/CODE` link 
 - `PUT /api/partners/bio-card {on}` (per store; only active partners can turn it on). `GET /api/partners/me` now returns `sales_link` and `bio_card`.
 - Suspending a partner hides the card immediately.
 
-## Faceless avatars
+## AI avatars
 
-Store → **Faceless avatars**. Sellers make an original AI character once, then put it in photos with their products. Each finished photo opens Marketing (post or story) with that photo, so all the usual designs, carousels and reels work.
+Store → **AI avatars** (was "Faceless avatars"). Sellers make an original AI character once, then put it in photos with their products. Each finished photo opens Marketing (post or story) with that photo, so all the usual designs, carousels and reels work.
 
 - Styles: Chrome host (mirrored visor, no face), Soft 3D character, Illustrated, From behind, Hands only, Mascot. Each style's rule (for example "no human face is ever visible") is repeated in every photo prompt.
 - Avatars are original characters. Descriptions that ask for a real or famous person's likeness are refused before anything is sent to the AI, and every prompt tells the model not to resemble anyone.
 - Models (Runpod public endpoints, the existing `RUNPOD_API_KEY`): `qwen-image-t2i` makes the avatar; `qwen-image-edit-2511` takes the avatar plus the product photo and returns a 4:5 photo.
 - Both use the "AI lifestyle photos" allowance (`scene`) and are refunded if they fail. Results are saved as the store's own photos and marked as AI images. Up to 12 avatars per store.
 - API: `GET/POST /api/avatars`, `GET/DELETE /api/avatars/:id`, `POST /api/avatar-shots`, `GET /api/avatar-shots/:id`. A background check runs every 8 seconds alongside the AI photo check.
+
+### Your own photo, or a blend of two
+
+Under **Make your avatar**, sellers choose **Character** (above), **My photo** or **Blend two**.
+
+- **My photo:** the seller's own photo becomes the avatar. No AI step, so it's free and ready at once. It works in product photos and can talk (InfiniteTalk).
+- **Blend two:** two photos of two adults become one new, believable person (`qwen-image-edit-2511`, both photos in), with an "even mix / more like photo 1 / more like photo 2" choice and optional styling. Uses the AI photo allowance like other avatars.
+- **Consent:** both need a ticked box (it's me or they agreed; both are adults who agreed), checked on the server and saved with the avatar (`consent_at`).
+- **Photo check:** every photo is checked by Claude as soon as it's picked (`POST /api/avatar-photos`): exactly one real person, clearly an adult (18+; unsure counts as no), a real photo, no nudity. Refused photos aren't kept. Claude is never asked who someone is.
+- **Privacy:** photos are re-saved upright at up to 1536 px with no metadata (no location). Photos picked but never used are deleted after a day. A blend's two source photos are deleted as soon as it finishes or fails. Deleting a "My photo" avatar deletes the photo.
+- Real-person avatars keep the person's face in product photos (the "original character" rule only applies to described characters). Sora and Seedance may refuse photos of real people; if they do, the credits come back automatically. Vidu and talking avatars are the safer choices for these.
+- Needs `ANTHROPIC_API_KEY` (already set) and `RUNPOD_API_KEY`. API: `POST /api/avatar-photos {imageBase64, mediaType}`, then `POST /api/avatars {source: "photo", photo, consent: true}` or `{source: "blend", photos: [a, b], mix, look?, consent: true}`.
 
 The web app picks this up on the next deploy (Railway rebuilds it). The Android app needs a new build to show the new screen.
 
@@ -58,10 +70,10 @@ Credits = provider cost × `CREDIT_MARKUP` (2.5) ÷ `CREDIT_VALUE_USD` ($0.04), 
 |---|---|---|---|
 | Vidu Q3 (`vidu-q3-i2v`) | Fast and affordable; keeps the photo's look; optional music | 5 or 10 s, 720p or 1080p | 50 / 95 |
 | Seedance 2.5 (`16jsvx5ncmm24x`) | Best quality, optional sound and music | 9:16, 5 or 10 s, 720p or 1080p | 115 / 225 (720p), 285 / 565 (1080p) |
-| Sora 2 Pro (`sora-2-pro-i2v`) | Most lifelike; ambient sound; keeps the photo's framing | 4, 8 or 12 s, 720p or 1080p | 75 / 150 / 225 (720p), 125 / 250 / 375 (1080p) |
+| Sora 2 Pro (`sora-2-pro-i2v`) | Most lifelike; keeps the photo's framing. Its own sound (often music or singing) is removed unless the seller ticks "Keep Sora's own sound" | 4, 8 or 12 s, 720p or 1080p | 75 / 150 / 225 (720p), 125 / 250 / 375 (1080p) |
 | InfiniteTalk (`infinitetalk`) | Talking avatar, lip-synced to Snapfront's own Kokoro voice | Up to 450 characters, 480p or 720p | 20 / 35 |
 
-- Videos start from a finished avatar photo (avatar + product). Talking avatars can also start from the avatar's portrait, and only work for styles with a face (Soft 3D, Illustrated, Mascot).
+- Videos start from a finished avatar photo (avatar + product). Talking avatars can also start from the avatar's portrait, and only work for avatars with a face (Soft 3D, Illustrated, Mascot, My photo, Blend).
 - **Voiceover (free):** any motion video can have a voiceover. Kokoro reads it on our server and ffmpeg mixes it over the finished video (the model's own music drops to a quarter; the last frame holds if the voice runs longer). About 15 characters per second of video. If the mix fails, the video is delivered without it and says so.
 - The models are always told nobody speaks: left alone, Sora and Seedance invent speech that comes out as gibberish. Words come only from the voiceover or a talking avatar.
 - Endpoint ids can be swapped with `RUNPOD_EP_VIDU`, `RUNPOD_EP_SEEDANCE`, `RUNPOD_EP_SORA`, `RUNPOD_EP_TALK`.
