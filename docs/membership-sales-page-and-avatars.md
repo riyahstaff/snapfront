@@ -34,3 +34,36 @@ Store → **Faceless avatars**. Sellers make an original AI character once, then
 - API: `GET/POST /api/avatars`, `GET/DELETE /api/avatars/:id`, `POST /api/avatar-shots`, `GET /api/avatar-shots/:id`. A background check runs every 8 seconds alongside the AI photo check.
 
 The web app picks this up on the next deploy (Railway rebuilds it). The Android app needs a new build to show the new screen.
+
+## Credits, avatar videos and talking avatars
+
+Avatar videos are paid with **credits**, bought in packs on the website (like Higgsfield or OpenArt). Plans cover the everyday tools; credits pay for the expensive video models, so Lifetime members pay for heavy video use.
+
+### Packs (Stripe Checkout on Snapfront's account)
+
+| Pack | Credits | Price | Per credit |
+|---|---|---|---|
+| Starter | 300 | $15 | 5.0¢ |
+| Creator | 800 | $35 | 4.4¢ |
+| Studio | 2,000 | $79 | 4.0¢ |
+| Agency | 5,500 | $199 | 3.6¢ |
+
+Change them with `CREDIT_PACKS` (JSON list of `{id, name, credits, cents, badge?}`) on Railway. Credits never expire; all sales are final; a failed video always refunds its credits. A refunded or disputed pack takes its credits back (the background check looks at purchases from the last 120 days). Packs are only sold on the website: the phone app shows the balance and history and names no prices, like memberships.
+
+### Video models and prices
+
+Credits = provider cost × `CREDIT_MARKUP` (2.5) ÷ `CREDIT_VALUE_USD` ($0.04), rounded up to 5.
+
+| Model (Runpod endpoint) | Use | Options | Credits |
+|---|---|---|---|
+| Kling O1 (`kling-video-o1-r2v`) | Avatar + product + photo as references; most consistent | 9:16, 5 or 10 s, 720p | 35 / 70 |
+| Seedance 2.5 (`16jsvx5ncmm24x`) | Best quality, optional sound and music | 9:16, 5 or 10 s, 720p or 1080p | 115 / 225 (720p), 285 / 565 (1080p) |
+| Sora 2 Pro (`sora-2-pro-i2v`) | Sound and dialogue; keeps the photo's framing | 4, 8 or 12 s, 720p or 1080p | 75 / 150 / 225 (720p), 125 / 250 / 375 (1080p) |
+| InfiniteTalk (`infinitetalk`) | Talking avatar, lip-synced to Snapfront's own Kokoro voice | Up to 450 characters, 480p or 720p | 20 / 35 |
+
+- Videos start from a finished avatar photo (avatar + product). Talking avatars can also start from the avatar's portrait, and only work for styles with a face (Soft 3D, Illustrated, Mascot).
+- Endpoint ids can be swapped with `RUNPOD_EP_KLING`, `RUNPOD_EP_SEEDANCE`, `RUNPOD_EP_SORA`, `RUNPOD_EP_TALK`.
+- Wan 2.6 isn't used: Runpod lists only horizontal sizes for it.
+- Up to 3 videos in progress per store. Jobs that fail, time out (40 minutes) or never start get their credits back.
+- Admin: `POST /api/admin/credits/:account {amount, note}` with `ADMIN_TOKEN` adds or removes credits (promos, support, testers).
+- API: `GET /api/credits`, `POST /api/credits/checkout {pack}`, `POST /api/credits/confirm {session_id}`, `GET/POST /api/avatar-videos`, `GET/DELETE /api/avatar-videos/:id`.

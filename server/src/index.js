@@ -42,6 +42,8 @@ import * as community from "./community.js";
 import * as ugc from "./ugc.js";
 import * as faceless from "./faceless.js";
 import * as avatars from "./avatars.js";
+import * as credits from "./credits.js";
+import * as avatarVideos from "./avatar-videos.js";
 import * as social from "./social.js";
 import * as digitalDesigns from "./digital-designs.js";
 import * as imageAssistant from "./image-assistant.js";
@@ -847,6 +849,16 @@ app.get("/api/avatars/:id", auth, wrap(async (req, res) => res.json(await avatar
 app.delete("/api/avatars/:id", auth, (req, res) => { avatars.remove(req.seller, req.params.id); res.status(204).end(); });
 app.post("/api/avatar-shots", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatars.shoot(req.account, req.seller, req.body || {}))));
 app.get("/api/avatar-shots/:id", auth, wrap(async (req, res) => res.json(await avatars.shot(req.seller, req.params.id))));
+/* ---------- avatar videos and talking avatars, paid with credits ---------- */
+app.get("/api/avatar-videos", auth, (req, res) => res.json(avatarVideos.list(req.account, req.seller)));
+app.post("/api/avatar-videos", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatarVideos.start(req.account, req.seller, req.body || {}))));
+app.get("/api/avatar-videos/:id", auth, wrap(async (req, res) => res.json(await avatarVideos.one(req.seller, req.params.id))));
+app.delete("/api/avatar-videos/:id", auth, (req, res) => { avatarVideos.remove(req.seller, req.params.id); res.status(204).end(); });
+/* ---------- credits: packs bought on the website with Stripe ---------- */
+app.get("/api/credits", auth, (req, res) => res.json(credits.view(req.account)));
+app.post("/api/credits/checkout", auth, wrap(async (req, res) => res.json(await credits.startCheckout(plans.getAccount(req.account.id), String(req.body?.pack || "")))));
+app.post("/api/credits/confirm", auth, wrap(async (req, res) => res.json(await credits.confirm(req.account, req.body?.session_id))));
+app.post("/api/admin/credits/:account", adminOnly, (req, res) => res.json(credits.grant(req.params.account, req.body?.amount, req.body?.note)));
 
 /* ---------- email opens, clicks and unsubscribes (links in sent emails) ---------- */
 app.get("/e/o/:file", (req, res) => {
@@ -1094,7 +1106,7 @@ app.get("/qr.png", wrap(async (req, res) => {
   res.type("png").set("Cache-Control", "public, max-age=86400").send(await growth.qrPng(u.href));
 }));
 app.get("/media/:file", (req, res) => {
-  if (!/^[\w-]+\.(jpg|png|mp4)$/.test(req.params.file)) return res.status(404).end();
+  if (!/^[\w-]+\.(jpg|png|mp4|wav)$/.test(req.params.file)) return res.status(404).end();
   res.set("Cache-Control", "public, max-age=31536000, immutable");
   if (req.query.download) res.attachment(req.params.file);
   res.sendFile(path.join(dirs.media, req.params.file), (err) => err && !res.headersSent && res.status(404).end());
@@ -1316,6 +1328,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
     aimedia.check().then((st) => console.log(`[runpod] key ${st === 200 ? "ok" : `check returned ${st}`}`)).catch((e) => console.error("[runpod] check", e.message));
     setInterval(() => aimedia.poll().catch((e) => console.error("[runpod] poll", e.message)), 8_000).unref();
     setInterval(() => avatars.poll().catch((e) => console.error("[avatars] poll", e.message)), 8_000).unref();
+    setInterval(() => avatarVideos.poll().catch((e) => console.error("[avatar-videos] poll", e.message)), 10_000).unref();
+    avatarVideos.kick();
   }
   // Email broadcasts and automatic emails go out from a queue.
   audience.startWorker();
@@ -1335,6 +1349,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   setInterval(() => partners.sweep().catch((e) => console.error("[partners] sweep", e.message)), 6 * 3600e3).unref();
   // Website plans (Stripe): notice renewals, cancellations and refunds.
   setInterval(() => webbilling.sweep().catch((e) => console.error("[webbilling] sweep", e.message)), 30 * 60e3).unref();
+  setInterval(() => credits.sweep().catch((e) => console.error("[credits] sweep", e.message)), 10 * 60e3).unref();
   // Create the Lifetime and Pro products in Play (retries hourly until Google allows it).
   const products = () => playbilling.ensureProducts().catch((e) => console.error("[play] products", e.message));
   setTimeout(products, 15e3).unref();

@@ -83,6 +83,7 @@ export default function RootLayout() {
         <Stack.Screen name="community" options={{ title: "Community" }} />
         <Stack.Screen name="faceless" options={{ title: "Faceless videos" }} />
         <Stack.Screen name="avatars" options={{ title: "Faceless avatars" }} />
+        <Stack.Screen name="credits" options={{ title: "Credits" }} />
         <Stack.Screen name="ugc" options={{ title: "UGC creator kit" }} />
         <Stack.Screen name="discounts" options={{ title: "Discount codes" }} />
         <Stack.Screen name="looks" options={{ title: "Store look" }} />
