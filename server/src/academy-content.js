@@ -1,6 +1,9 @@
 // Snapfront Academy: the lessons. Each slide is what's on screen (heading and points) and what the
 // narrator says (`say`, written to be spoken: numbers and symbols spelled out). `action` opens the
 // Snapfront tool that does the lesson's step. Free accounts can watch the first module.
+// A slide's `screen` is an app demo for lessons taught by the avatar: the route to open, text that
+// shows the page is ready, and steps (wait seconds, tap text or { label }, scroll to text, highlight
+// text, type text). tools/academy-screens records them with demo data and uploads the recordings.
 export const MODULES = [
   { id: "start", title: "Start here", free: true },
   { id: "brand", title: "Your brand and store" },
@@ -224,9 +227,19 @@ export const LESSONS = [
     action: { label: "Get your link", route: "/earn" },
     slides: [
       { heading: "Earn by sharing Snapfront", points: [],
-        say: "If Snapfront helps you, you can earn by sharing it." },
+        say: "If Snapfront helps you, you can earn by sharing it. I'll show you exactly where everything is, so you can set it up in two minutes." },
       { heading: "What you earn", points: ["40% of each Lifetime sale", "$19 every month a Monthly member pays", "Paid straight to your Stripe or PayPal"],
         say: "You earn forty percent of every Lifetime sale, and nineteen dollars for every month a Monthly member you referred keeps paying. You're paid to your Stripe account or PayPal once Snapfront is paid." },
+      { heading: "Get your link", points: ["Tap Earn with Snapfront", "Join the partner program", "Copy your link"],
+        say: "To start, tap Earn with Snapfront. Join the partner program, and you get your own link right at the top. Tap Copy, and you're ready to share it.",
+        // Shown as a phone screen recording of the app (tools/academy-screens records these with demo data).
+        screen: { route: "/", ready: "Earn with Snapfront", steps: [["wait", 1], ["scroll", "Earn with Snapfront"], ["wait", 0.8], ["tap", "Earn with Snapfront"], ["wait", 2], ["highlight", "Your link"], ["wait", 1.2], ["tap", "Copy"], ["wait", 2]] } },
+      { heading: "Choose how you get paid", points: ["Scroll down to Getting paid", "Connect Stripe for automatic payouts", "Or type your PayPal email and tap Save"],
+        say: "Next, choose how you get paid. On the same page, scroll down to Getting paid. If your store is connected to Stripe, your commissions go there automatically. If not, tap Connect Stripe, or just type your PayPal email here and tap Save.",
+        screen: { route: "/earn", ready: "Your link", steps: [["wait", 1], ["scroll", "Getting paid"], ["wait", 1.5], ["highlight", "Connect Stripe for automatic payouts"], ["wait", 1.5], ["tap", { label: "PayPal email" }], ["type", "yourname@example.com"], ["wait", 0.6], ["tap", "Save"], ["wait", 2.2]] } },
+      { heading: "Use your sales page", points: ["A full page that sells Snapfront for you", "Put it in your bio instead of the plain link", "Add the Snapfront card to your links page"],
+        say: "Then scroll down to Your sales page. It's a full page that sells Snapfront for you, so put that link in your bio instead of the plain one. You can also switch on a Snapfront card on your own link in bio page.",
+        screen: { route: "/earn", ready: "Your link", steps: [["wait", 1], ["scroll", "Your sales page"], ["wait", 1.5], ["highlight", "Your sales page"], ["wait", 1.5], ["tap", "Show it on my link-in-bio page"], ["wait", 2.5]] } },
       { heading: "Share the right way", points: ["Show what you built", "Always say you earn a commission", "Never promise income"],
         say: "Share it the right way. Show what you built with Snapfront, always say you earn a commission, and never promise anyone income. Honest content sells better and keeps you within the rules." },
     ] },

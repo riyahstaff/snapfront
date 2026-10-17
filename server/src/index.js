@@ -37,6 +37,7 @@ import * as pixels from "./pixels.js";
 import * as autodm from "./autodm.js";
 import * as partners from "./partners.js";
 import * as academy from "./academy.js";
+import * as academyPresenter from "./academy-presenter.js";
 import * as daily from "./daily.js";
 import * as community from "./community.js";
 import * as ugc from "./ugc.js";
@@ -818,6 +819,25 @@ app.get("/academy-media/:file", (req, res) => {
   res.set("Cache-Control", "private, max-age=3600").type("video/mp4").sendFile(file);
 });
 app.get("/api/admin/academy", adminOnly, (_req, res) => res.json(academy.buildStatus()));
+/* ---------- Academy lessons taught by an avatar: the owner (or ACADEMY_STUDIO_TOKEN, for the screen recorder) ---------- */
+function ownerOrStudio(req, res, next) {
+  const t = (req.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  const studio = String(process.env.ACADEMY_STUDIO_TOKEN || "").trim();
+  if (studio.length >= 24 && t && sameSecret(t, studio)) return next();
+  auth(req, res, (err) => (err ? next(err) : credits.isOwner(req.account) ? next() : next(httpError(403, "Only Snapfront's owner can change the Academy presenter."))));
+}
+app.get("/api/academy-presenter", ownerOrStudio, wrap(async (_req, res) => res.json(await academyPresenter.view(academy.buildStatus()))));
+app.put("/api/academy-presenter", ownerOrStudio, wrap(async (req, res) => {
+  await academyPresenter.setSettings(req.body || {});
+  academy.buildPresenterLessons();
+  res.json(await academyPresenter.view(academy.buildStatus()));
+}));
+app.post("/api/academy-presenter/build", ownerOrStudio, wrap(async (_req, res) => {
+  academy.buildPresenterLessons();
+  res.json(await academyPresenter.view(academy.buildStatus()));
+}));
+app.put("/api/academy-presenter/screens/:lesson/:slide", ownerOrStudio, express.raw({ type: ["video/*", "application/octet-stream"], limit: "80mb" }),
+  wrap(async (req, res) => res.json(await academyPresenter.saveScreen(req.params.lesson, req.params.slide, req.body))));
 app.post("/api/admin/academy/build", adminOnly, (req, res) => { academy.buildMissing({ voice: req.body?.voice }).catch((e) => console.error("[academy]", e.message)); res.json(academy.buildStatus()); });
 app.get("/api/daily-prompt", auth, wrap(async (req, res) => res.json(await daily.today(req.seller, { fresh: req.query.fresh === "1" }))));
 app.get("/api/community", auth, (req, res) => res.json(community.view(req.account)));

@@ -5,6 +5,7 @@ import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Button, Notice, Pill } from "@/components/ui";
 import { academy, ApiError, type AcademyCatalog } from "@/lib/api";
+import { PresenterCard } from "@/components/academy-presenter";
 import { radius, space, type, useColors } from "@/lib/theme";
 
 export default function AcademyScreen() {
@@ -26,6 +27,7 @@ export default function AcademyScreen() {
         {next ? <Button label={data.done ? `Continue: ${next.title}` : `Start: ${next.title}`} onPress={() => router.push({ pathname: "/lesson/[id]", params: { id: next.id } })} /> : null}
       </View>
       {!data.member ? <Notice text="The first module is free. Every lesson opens with Snapfront Pro." /> : null}
+      {data.owner ? <PresenterCard /> : null}
       {data.modules.map((m, mi) => (
         <View key={m.id} style={{ gap: space.sm }}>
           <Text accessibilityRole="header" style={[type.title, { color: c.ink, fontSize: 21 }]}>{mi + 1}. {m.title}</Text>
