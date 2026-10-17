@@ -202,6 +202,7 @@ export function buildMissing({ voice = "af_heart", only = null } = {}) {
   if (building) return building;
   building = (async () => {
     fs.mkdirSync(dir(), { recursive: true });
+    lastError = null;   // a new run: only this run's failures are worth showing
     let made = 0;
     for (const l of LESSONS.filter((x) => !only || only.includes(x.id))) {
       if (fs.existsSync(fileOf(l))) continue;
