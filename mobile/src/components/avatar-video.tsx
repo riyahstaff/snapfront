@@ -30,7 +30,8 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
   onStarted: (v: AvatarVideo, balance: number) => void; onClose: () => void;
 }) {
   const c = useColors();
-  const [modelId, setModelId] = useState(studio.models[0]?.id ?? "kling");
+  const [modelId, setModelId] = useState(studio.models[0]?.id ?? "vidu");
+  const [voiceover, setVoiceover] = useState("");
   const model = studio.models.find((m) => m.id === modelId) ?? studio.models[0];
   const [duration, setDuration] = useState(model?.durations[0] ?? 5);
   const [resolution, setResolution] = useState(mode === "talk" ? "720p" : model?.resolutions[0] ?? "720p");
@@ -50,14 +51,16 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
   };
   const price = mode === "talk" ? studio.talk.prices[resolution] : model?.prices[`${duration}|${resolution}`];
   const short = !studio.free && price != null && studio.balance < price;
-  const ready = mode === "talk" ? script.trim().length >= 8 : !!motion || prompt.trim().length >= 3;
+  const voMax = Math.max(40, Math.floor(duration * (studio.voiceover?.chars_per_second ?? 15)));
+  const ready = mode === "talk" ? script.trim().length >= 8 : (!!motion || prompt.trim().length >= 3) && (voiceover.trim().length === 0 || voiceover.trim().length >= 4);
 
   async function go() {
     setBusy(true); setMsg(null);
     try {
       const v = await api.startAvatarVideo(mode === "talk"
         ? { kind: "talk", shot_id: shotId, avatar_id: shotId ? undefined : avatarId, script: script.trim(), voice, resolution }
-        : { kind: "motion", shot_id: shotId, model: model.id, duration, resolution, sound, motion: motion ?? undefined, prompt: motion ? undefined : prompt.trim() });
+        : { kind: "motion", shot_id: shotId, model: model.id, duration, resolution, sound, motion: motion ?? undefined, prompt: motion ? undefined : prompt.trim(),
+          voiceover: voiceover.trim().slice(0, voMax) || undefined, voice: voiceover.trim() ? voice : undefined });
       onStarted(v, studio.free ? studio.balance : studio.balance - v.credits);
     } catch (e) {
       if (e instanceof ApiError && e.credits) setMsg({ text: `This needs ${e.credits.need} credits and you have ${e.credits.balance}.`, tone: "error" });
@@ -91,12 +94,19 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
             {model.durations.map((d) => <Chip key={d} label={`${d} sec`} on={d === duration} onPress={() => setDuration(d)} />)}
             {model.resolutions.length > 1 ? model.resolutions.map((r) => <Chip key={r} label={r} on={r === resolution} onPress={() => setResolution(r)} />) : null}
           </View>
-          {model.sound === "optional" ? <Toggle label="Add sound and music" sub="Made for the clip by the AI" value={sound} onChange={setSound} /> : null}
-          {model.sound === "always" ? <Text style={[type.small, { color: c.muted }]}>Sora makes its own sound. Write a line in quotes below if you want the avatar to say something.</Text> : null}
+          {model.sound === "optional" ? <Toggle label="Background music" sub="Made for the clip by the AI" value={sound} onChange={setSound} /> : null}
+          {model.sound === "always" ? <Text style={[type.small, { color: c.muted }]}>Sora adds its own ambient sound.</Text> : null}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
             {studio.motions.map((m) => <Chip key={m.id} label={m.name} on={motion === m.id} onPress={() => setMotion(motion === m.id ? null : m.id)} />)}
           </View>
-          {!motion ? <Field label="Or describe what happens" value={prompt} onChangeText={setPrompt} maxLength={300} multiline placeholder="she spins around, holds it up and says “this changed my mornings”" /> : null}
+          {!motion ? <Field label="Or describe what happens" value={prompt} onChangeText={setPrompt} maxLength={300} multiline placeholder="he spins around and holds the phone up to the camera" /> : null}
+          <Field label="Voiceover (optional, free)" hint={`Snapfront's AI voice reads this over the video. Up to ${voMax} characters for ${duration} seconds. To make the avatar's lips move, use Make it talk.`}
+            value={voiceover} onChangeText={setVoiceover} maxLength={voMax} multiline placeholder="Plan your week in two minutes. Link in bio." />
+          {voiceover.trim() ? (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+              {(studio.voiceover?.voices ?? studio.talk.voices).map((v) => <Chip key={v.id} label={v.name} sub={v.accent === "British" ? "UK" : undefined} on={voice === v.id} onPress={() => setVoice(v.id)} />)}
+            </View>
+          ) : null}
         </>
       ) : (
         <>
@@ -130,7 +140,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
 export function VideoCard({ video, width, onDelete, onMsg }: { video: AvatarVideo; width: number; onDelete: (id: string) => void; onMsg: (m: Msg) => void }) {
   const c = useColors();
   const [saving, setSaving] = useState(false);
-  const label = video.kind === "talk" ? "Talking avatar" : `${video.model_name} · ${video.duration}s ${video.resolution}`;
+  const label = video.kind === "talk" ? "Talking avatar" : `${video.model_name} · ${video.duration}s ${video.resolution}${video.voiceover ? " · voiceover" : ""}`;
   return (
     <View style={{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.md, gap: space.md }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -138,9 +148,10 @@ export function VideoCard({ video, width, onDelete, onMsg }: { video: AvatarVide
         <Pill text={video.status === "done" ? "Ready" : video.status === "failed" ? "Didn’t work" : "Making…"} tone={video.status === "done" ? "good" : "neutral"} />
       </View>
       {video.status === "queued" || video.status === "running" ? (
-        <View style={{ flexDirection: "row", gap: space.sm, alignItems: "center" }}><ActivityIndicator color={c.accent} /><Text style={[type.small, { color: c.muted }]}>Usually 1 to 5 minutes. You can leave this screen.</Text></View>
+        <View style={{ flexDirection: "row", gap: space.sm, alignItems: "center" }}><ActivityIndicator color={c.accent} /><Text style={[type.small, { color: c.muted }]}>{video.stage === "voice" ? "Adding your voiceover…" : "Usually 1 to 5 minutes. You can leave this screen."}</Text></View>
       ) : null}
       {video.status === "failed" ? <Text style={[type.small, { color: c.muted }]}>{video.error}</Text> : null}
+      {video.status === "done" && video.note ? <Text style={[type.small, { color: c.muted }]}>{video.note}</Text> : null}
       {video.status === "done" && video.url ? (
         <>
           <Clip url={video.url} width={Math.min(width, 360)} />

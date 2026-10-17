@@ -56,14 +56,16 @@ Credits = provider cost × `CREDIT_MARKUP` (2.5) ÷ `CREDIT_VALUE_USD` ($0.04), 
 
 | Model (Runpod endpoint) | Use | Options | Credits |
 |---|---|---|---|
-| Kling O1 (`kling-video-o1-r2v`) | Avatar + product + photo as references; most consistent | 9:16, 5 or 10 s, 720p | 35 / 70 |
+| Vidu Q3 (`vidu-q3-i2v`) | Fast and affordable; keeps the photo's look; optional music | 5 or 10 s, 720p or 1080p | 50 / 95 |
 | Seedance 2.5 (`16jsvx5ncmm24x`) | Best quality, optional sound and music | 9:16, 5 or 10 s, 720p or 1080p | 115 / 225 (720p), 285 / 565 (1080p) |
-| Sora 2 Pro (`sora-2-pro-i2v`) | Sound and dialogue; keeps the photo's framing | 4, 8 or 12 s, 720p or 1080p | 75 / 150 / 225 (720p), 125 / 250 / 375 (1080p) |
+| Sora 2 Pro (`sora-2-pro-i2v`) | Most lifelike; ambient sound; keeps the photo's framing | 4, 8 or 12 s, 720p or 1080p | 75 / 150 / 225 (720p), 125 / 250 / 375 (1080p) |
 | InfiniteTalk (`infinitetalk`) | Talking avatar, lip-synced to Snapfront's own Kokoro voice | Up to 450 characters, 480p or 720p | 20 / 35 |
 
 - Videos start from a finished avatar photo (avatar + product). Talking avatars can also start from the avatar's portrait, and only work for styles with a face (Soft 3D, Illustrated, Mascot).
-- Endpoint ids can be swapped with `RUNPOD_EP_KLING`, `RUNPOD_EP_SEEDANCE`, `RUNPOD_EP_SORA`, `RUNPOD_EP_TALK`.
-- Wan 2.6 isn't used: Runpod lists only horizontal sizes for it.
+- **Voiceover (free):** any motion video can have a voiceover. Kokoro reads it on our server and ffmpeg mixes it over the finished video (the model's own music drops to a quarter; the last frame holds if the voice runs longer). About 15 characters per second of video. If the mix fails, the video is delivered without it and says so.
+- The models are always told nobody speaks: left alone, Sora and Seedance invent speech that comes out as gibberish. Words come only from the voiceover or a talking avatar.
+- Endpoint ids can be swapped with `RUNPOD_EP_VIDU`, `RUNPOD_EP_SEEDANCE`, `RUNPOD_EP_SORA`, `RUNPOD_EP_TALK`.
+- Not used: Wan 2.6 (Runpod lists only horizontal sizes); Kling (Runpod's Kling O1 now requires a reference video, and its image-to-video Kling was retired).
 - Up to 3 videos in progress per store. Jobs that fail, time out (40 minutes) or never start get their credits back.
 - Admin: `POST /api/admin/credits/:account {amount, note}` with `ADMIN_TOKEN` adds or removes credits (promos, support, testers).
 - API: `GET /api/credits`, `POST /api/credits/checkout {pack}`, `POST /api/credits/confirm {session_id}`, `GET/POST /api/avatar-videos`, `GET/DELETE /api/avatar-videos/:id`.

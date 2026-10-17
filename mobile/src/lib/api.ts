@@ -181,10 +181,11 @@ export type AvatarShot = { id: string; avatar_id: string; product_id: string | n
 export type CreditPack = { id: string; name: string; credits: number; bonus: number; total: number; cents: number; price: string; per_credit: string; badge?: string };
 export type CreditEntry = { id: string; delta: number; kind: "purchase" | "spend" | "refund" | "grant" | "reversal"; note: string; created_at: string };
 export type CreditsView = { enabled: boolean; balance: number; terms: string; packs: CreditPack[]; history: CreditEntry[]; added?: number; free?: boolean };
-export type VideoModel = { id: "kling" | "seedance" | "sora"; name: string; badge: string; blurb: string; durations: number[]; resolutions: string[]; sound: "none" | "optional" | "always"; prices: Record<string, number> };
+export type VideoModel = { id: "vidu" | "seedance" | "sora"; name: string; badge: string; blurb: string; durations: number[]; resolutions: string[]; sound: "none" | "optional" | "always"; prices: Record<string, number> };
 export type AvatarVideo = { id: string; kind: "motion" | "talk"; model: string; model_name: string; avatar_id: string | null; shot_id: string | null; duration: number | null; resolution: string;
-  sound: boolean; script: string | null; credits: number; status: AvatarJobStatus; error: string | null; url: string | null; created_at: string };
+  sound: boolean; script: string | null; voiceover?: boolean; credits: number; status: AvatarJobStatus; stage?: "voice" | null; error: string | null; note?: string | null; url: string | null; created_at: string };
 export type AvatarVideoStudio = { enabled: boolean; balance: number; free?: boolean; models: VideoModel[]; motions: { id: string; name: string }[];
+  voiceover?: { chars_per_second: number; voices: { id: string; name: string; accent: string }[] };
   talk: { resolutions: string[]; prices: Record<string, number>; max_chars: number; styles: string[]; voices: { id: string; name: string; accent: string }[] }; videos: AvatarVideo[] };
 export type AvatarStudio = { enabled: boolean; max_avatars: number; styles: { id: string; name: string; blurb: string }[]; poses: { id: string; name: string }[]; avatars: Avatar[]; shots: AvatarShot[] };
 /** Store insights (Pro) */
@@ -475,7 +476,7 @@ export const api = {
   avatarShot: (input: { avatar_id: string; product_id: string; pose?: string; prompt?: string }) => request<AvatarShot>("POST", "/api/avatar-shots", input),
   avatarShotStatus: (id: string) => request<AvatarShot>("GET", `/api/avatar-shots/${id}`),
   avatarVideos: () => request<AvatarVideoStudio>("GET", "/api/avatar-videos"),
-  startAvatarVideo: (input: { kind?: "motion" | "talk"; shot_id?: string; avatar_id?: string; model?: string; duration?: number; resolution?: string; sound?: boolean; motion?: string; prompt?: string; script?: string; voice?: string }) =>
+  startAvatarVideo: (input: { kind?: "motion" | "talk"; shot_id?: string; avatar_id?: string; model?: string; duration?: number; resolution?: string; sound?: boolean; motion?: string; prompt?: string; script?: string; voice?: string; voiceover?: string }) =>
     request<AvatarVideo>("POST", "/api/avatar-videos", input),
   avatarVideo: (id: string) => request<AvatarVideo>("GET", `/api/avatar-videos/${id}`),
   deleteAvatarVideo: (id: string) => request<null>("DELETE", `/api/avatar-videos/${id}`),

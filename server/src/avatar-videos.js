@@ -1,12 +1,14 @@
 // Avatar videos, paid with credits: a finished avatar photo (the avatar with a product) becomes a
 // short vertical video, or the avatar talks, lip-synced to a script read by Snapfront's own voice.
 // The best video models on Runpod's public endpoints:
-//   Kling O1 (reference-to-video): the avatar, the product and the photo as references, so both
-//                                  stay looking the same. 9:16, 5 or 10 s.
+//   Vidu Q3 (image-to-video):     smooth motion that keeps the photo's look, optional music. Fast and affordable.
 //   Seedance 2.5 (image-to-video): highest quality, optional sound and music. 9:16, 720p or 1080p.
 //   Sora 2 Pro (image-to-video):   OpenAI's model, with sound and dialogue. Follows the photo's shape.
 //   InfiniteTalk (talking avatar): the avatar speaks a script read by Kokoro (free, on our server).
-// Wan 2.6 is left out: Runpod lists only horizontal sizes for it.
+// Wan 2.6 is left out: Runpod lists only horizontal sizes for it. Kling is left out: Runpod's Kling O1
+// now requires a reference video and its image-to-video Kling was retired.
+// Words come only from our own voiceover (Kokoro, mixed in with ffmpeg after the video is made); the
+// models are told nobody speaks, because their own invented speech comes out as gibberish.
 // Prices come from the provider's per-second (or per-video) cost, turned into credits by
 // credits.creditsFor. Credits are spent when a video starts and refunded if it fails.
 // Endpoint ids can be changed without a code change: RUNPOD_EP_KLING, _SEEDANCE, _SORA, _TALK.
@@ -19,6 +21,8 @@ import { httpError } from "./claude.js";
 import * as aimedia from "./aimedia.js";
 import * as credits from "./credits.js";
 import { STYLES, asksForLikeness } from "./avatars.js";
+import { spawn } from "node:child_process";
+import ffmpegPath from "ffmpeg-static";
 import { speak, wav, VOICES } from "./narrated.js";
 
 db.exec(`
@@ -47,20 +51,28 @@ CREATE TABLE IF NOT EXISTS avatar_videos (
 );
 CREATE INDEX IF NOT EXISTS avatar_videos_seller ON avatar_videos (seller_id, created_at);
 `);
+// Motion videos with a voiceover: "ai" while the model works, then "voice" while our voice is mixed in.
+for (const [col, def] of [["stage", "TEXT NOT NULL DEFAULT 'ai'"], ["raw_file", "TEXT"], ["note", "TEXT"]]) {
+  if (!db.prepare("PRAGMA table_info(avatar_videos)").all().some((c) => c.name === col)) db.exec(`ALTER TABLE avatar_videos ADD COLUMN ${col} ${def}`);
+}
 
 const ep = (env, fallback) => (process.env[env] || fallback).trim();
 const NO_TEXT = "No on-screen text, captions, subtitles, logos or watermarks.";
 export const MODELS = [
-  { id: "kling", name: "Kling O1", badge: "Most consistent", blurb: "Uses your avatar, the product and the photo as references, so both keep their exact look.",
-    endpoint: () => ep("RUNPOD_EP_KLING", "kling-video-o1-r2v"), durations: [5, 10], resolutions: ["720p"], sound: "none", usd: (d) => 0.112 * d,
-    input: ({ images, prompt, duration }) => ({ prompt, images, aspect_ratio: "9:16", duration, negative_prompt: "text, watermark, logo, distorted product, extra limbs, morphing face", enable_prompt_expansion: false, enable_safety_checker: true, seed: -1 }) },
+  { id: "vidu", name: "Vidu Q3", badge: "Fast and affordable", blurb: "Smooth, natural motion that keeps your photo's look, with optional background music. Up to 1080p.",
+    endpoint: () => ep("RUNPOD_EP_VIDU", "vidu-q3-i2v"), durations: [5, 10], resolutions: ["720p", "1080p"], sound: "optional", usd: (d) => 0.15 * d,
+    input: ({ image, prompt, duration, resolution, sound }) => ({ prompt, image, duration, resolution, movement_amplitude: "auto", generate_audio: sound, bgm: sound, seed: -1 }) },
   { id: "seedance", name: "Seedance 2.5", badge: "Best quality", blurb: "The most cinematic motion, with sound and music made for the clip. Up to 1080p.",
     endpoint: () => ep("RUNPOD_EP_SEEDANCE", "16jsvx5ncmm24x"), durations: [5, 10], resolutions: ["720p", "1080p"], sound: "optional", usd: (d, r) => (r === "1080p" ? 0.9 : 0.36) * d,
     input: ({ image, prompt, duration, resolution, sound }) => ({ prompt, image, duration, resolution, aspect_ratio: "9:16", generate_audio: sound, seed: -1 }) },
-  { id: "sora", name: "Sora 2 Pro", badge: "Sound and dialogue", blurb: "OpenAI's top model. Natural acting with sound, and lines if you write them. Keeps your photo's framing.",
+  { id: "sora", name: "Sora 2 Pro", badge: "Most lifelike", blurb: "OpenAI's top model. The most natural acting, with ambient sound. Keeps your photo's framing.",
     endpoint: () => ep("RUNPOD_EP_SORA", "sora-2-pro-i2v"), durations: [4, 8, 12], resolutions: ["720p", "1080p"], sound: "always", usd: (d, r) => (r === "1080p" ? 0.5 : 0.3) * d,
     input: ({ image, prompt, duration, resolution }) => ({ prompt, image, duration, size: resolution }) },
 ];
+// Retired models still name their old videos.
+const OLD_NAMES = { kling: "Kling O1" };
+/** About how many characters of voiceover fit a video of this length (Kokoro speaks ~15 a second). */
+export const voiceoverChars = (seconds) => Math.max(40, Math.floor(seconds * 15));
 export const TALK = { id: "talk", name: "InfiniteTalk", endpoint: () => ep("RUNPOD_EP_TALK", "infinitetalk"), resolutions: ["480p", "720p"], usd: (r) => (r === "720p" ? 0.5 : 0.25), max_chars: 450 };
 // Styles with a face that can lip-sync. The others are faceless by design.
 const TALKING_STYLES = new Set(["soft3d", "illustrated", "mascot"]);
@@ -88,6 +100,7 @@ export function options(account) {
     talk: { resolutions: TALK.resolutions, prices: Object.fromEntries(TALK.resolutions.map((r) => [r, talkPrice(r)])), max_chars: TALK.max_chars,
       styles: [...TALKING_STYLES], voices: VOICES.map(({ id, name, accent }) => ({ id, name, accent })) },
     motions: MOTIONS.map(({ id, name }) => ({ id, name })),
+    voiceover: { chars_per_second: 15, voices: VOICES.map(({ id, name, accent }) => ({ id, name, accent })) },
   };
 }
 
@@ -136,15 +149,20 @@ async function startMotion(account, seller, b) {
   const custom = clean(b.prompt, 300);
   if (!motion && custom.length < 3) throw httpError(400, "Pick a motion or describe what happens.");
   if (asksForLikeness(custom)) throw httpError(400, "Describe what happens, not a real person.");
+  const voiceover = clean(b.voiceover, voiceoverChars(duration));
+  if (voiceover && voiceover.length < 4) throw httpError(400, "Write a little more for the voiceover, or leave it empty.");
+  if (asksForLikeness(voiceover)) throw httpError(400, "Write the voiceover in your own words, not as a real person.");
+  const voice = VOICES.some((v) => v.id === b.voice) ? b.voice : "af_heart";
   busy(seller);
   const style = STYLES.find((s) => s.id === src.avatar.style) || STYLES[0];
   const sound = model.sound === "always" ? true : model.sound === "optional" ? b.sound !== false : false;
   const prompt = `${motion ? motion.prompt : custom}. Keep the character exactly as in the reference image (same design, outfit and colors) and the product exactly as it is (same shape, colors, label and text). ${style.keep} `
-    + `Smooth, natural motion for a vertical social media video. ${sound ? "Sound that fits the scene, with no narration unless the description includes spoken lines. " : ""}${NO_TEXT}`;
+    + `Smooth, natural motion for a vertical social media video. Nobody speaks: no dialogue, no voices, no narration, no singing. `
+    + `${sound ? "Only background music and natural ambient sound. " : ""}${NO_TEXT}`;
   const price = priceOf(model, duration, resolution);
   const id = newId("vid");
-  db.prepare(`INSERT INTO avatar_videos (id, seller_id, account_id, avatar_id, shot_id, kind, model, duration, resolution, sound, prompt, credits)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, seller.id, account.id, src.avatar.id, src.shot.id, "motion", model.id, duration, resolution, sound ? 1 : 0, prompt, price);
+  db.prepare(`INSERT INTO avatar_videos (id, seller_id, account_id, avatar_id, shot_id, kind, model, duration, resolution, sound, prompt, script, voice, credits)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, seller.id, account.id, src.avatar.id, src.shot.id, "motion", model.id, duration, resolution, sound ? 1 : 0, prompt, voiceover || null, voiceover ? voice : null, price);
   try { credits.spend(account, price, id, `${model.name} video, ${duration}s ${resolution}`); }
   catch (e) { db.prepare("DELETE FROM avatar_videos WHERE id = ?").run(id); throw e; }
   const images = [img(src.image), img(src.avatar.image_file), ...(src.product ? [img(src.product)] : [])];
@@ -184,12 +202,58 @@ export function kick() {
   (async () => {
     try {
       for (;;) {
-        const row = db.prepare("SELECT * FROM avatar_videos WHERE kind = 'talk' AND status = 'queued' AND runpod_id IS NULL ORDER BY created_at LIMIT 1").get();
-        if (!row) break;
-        await voiceAndSubmit(row);
+        const talk = db.prepare("SELECT * FROM avatar_videos WHERE kind = 'talk' AND status = 'queued' AND runpod_id IS NULL ORDER BY created_at LIMIT 1").get();
+        if (talk) { await voiceAndSubmit(talk); continue; }
+        const mix = db.prepare("SELECT * FROM avatar_videos WHERE kind = 'motion' AND status = 'running' AND stage = 'voice' ORDER BY updated_at LIMIT 1").get();
+        if (mix) { await addVoiceover(mix); continue; }
+        break;
       }
     } finally { working = false; }
-  })().catch((e) => console.warn("[avatar-videos] talk worker", e.message));
+  })().catch((e) => console.warn("[avatar-videos] voice worker", e.message));
+}
+
+/* ---------- voiceovers: our voice over the model's video ---------- */
+function ffmpeg(args, timeout = 180_000) {
+  return new Promise((resolve, reject) => {
+    const p = spawn(ffmpegPath, args, { stdio: ["ignore", "ignore", "pipe"] });
+    let err = "";
+    p.stderr.on("data", (d) => { err = (err + d).slice(-4000); });
+    const t = setTimeout(() => { p.kill("SIGKILL"); reject(new Error("ffmpeg took too long")); }, timeout);
+    p.on("close", (code) => { clearTimeout(t); resolve({ code, err }); });
+    p.on("error", (e) => { clearTimeout(t); reject(e); });
+  });
+}
+/** Mix a spoken voiceover into a video: the video's own music drops to a quarter, and the last frame holds if the voice runs longer. */
+export async function mixVoiceover(videoPath, voicePath, voiceSeconds, outPath) {
+  const probe = await ffmpeg(["-hide_banner", "-i", videoPath]);
+  const hasAudio = /Stream #\S+.*Audio:/.test(probe.err);
+  const dur = /Duration: (\d+):(\d+):([\d.]+)/.exec(probe.err);
+  const videoSeconds = dur ? Number(dur[1]) * 3600 + Number(dur[2]) * 60 + Number(dur[3]) : 0;
+  const hold = Math.max(0, voiceSeconds + 0.4 - videoSeconds);
+  const v = hold > 0 ? `[0:v]tpad=stop_mode=clone:stop_duration=${hold.toFixed(2)}[v]` : "[0:v]null[v]";
+  const a = hasAudio
+    ? "[0:a]volume=0.25[m];[1:a]adelay=300|300,volume=1.0[s];[m][s]amix=inputs=2:duration=longest:normalize=0[a]"
+    : "[1:a]adelay=300|300[a]";
+  const r = await ffmpeg(["-y", "-hide_banner", "-loglevel", "error", "-i", videoPath, "-i", voicePath, "-filter_complex", `${v};${a}`,
+    "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", outPath]);
+  if (r.code !== 0) throw new Error(`mix failed: ${r.err.slice(-300)}`);
+}
+async function addVoiceover(row) {
+  const raw = path.join(dirs.media, row.raw_file);
+  const voicePath = path.join(dirs.media, `${crypto.randomUUID()}.wav`);
+  const out = `${crypto.randomUUID()}.mp4`;
+  try {
+    const spoken = await speak(row.script, row.voice || "af_heart");
+    fs.writeFileSync(voicePath, wav(spoken));
+    await mixVoiceover(raw, voicePath, spoken.samples.length / spoken.rate, path.join(dirs.media, out));
+    db.prepare("UPDATE avatar_videos SET status='done', stage='done', file=?, updated_at=datetime('now') WHERE id=? AND status='running'").run(out, row.id);
+    fs.rmSync(raw, { force: true });
+  } catch (e) {
+    // The video itself is fine: deliver it without the voiceover rather than lose it.
+    console.warn("[avatar-videos] voiceover", row.id, e.message);
+    db.prepare("UPDATE avatar_videos SET status='done', stage='done', file=raw_file, note=?, updated_at=datetime('now') WHERE id=? AND status='running'")
+      .run("The voiceover couldn't be added, so this is the video without it.", row.id);
+  } finally { fs.rmSync(voicePath, { force: true }); }
 }
 async function voiceAndSubmit(row) {
   try {
@@ -218,11 +282,13 @@ const minutesOld = (row) => (Date.now() - Date.parse(`${String(row.created_at).r
 export async function poll(id = null) {
   // A motion video that never reached the AI (the server stopped mid-start): give the credits back.
   if (!id) for (const r of db.prepare("SELECT id FROM avatar_videos WHERE kind = 'motion' AND status = 'queued' AND runpod_id IS NULL AND created_at < datetime('now', '-10 minutes')").all()) fail(r.id, "This didn't start. Your credits are back.");
-  const rows = id ? db.prepare("SELECT * FROM avatar_videos WHERE id = ? AND status = 'running'").all(id)
-    : db.prepare("SELECT * FROM avatar_videos WHERE status = 'running' ORDER BY created_at LIMIT 20").all();
+  const rows = id ? db.prepare("SELECT * FROM avatar_videos WHERE id = ? AND status = 'running' AND stage = 'ai'").all(id)
+    : db.prepare("SELECT * FROM avatar_videos WHERE status = 'running' AND stage = 'ai' ORDER BY created_at LIMIT 20").all();
   for (const row of rows) {
     try {
-      const r = await aimedia.runpod(`${endpointOf(row)}/status/${row.runpod_id}`);
+      const endpoint = endpointOf(row);
+      if (!endpoint) { fail(row.id, "This video model was retired. Your credits are back."); continue; }
+      const r = await aimedia.runpod(`${endpoint}/status/${row.runpod_id}`);
       if (r.status === "COMPLETED") {
         const url = aimedia.resultUrl(r.output, "video");
         if (!url) { console.warn("[avatar-videos]", row.id, "no video link:", JSON.stringify(r).slice(0, 400)); fail(row.id, "The AI finished but didn't send the video back. Your credits are back."); continue; }
@@ -230,7 +296,12 @@ export async function poll(id = null) {
         if (!res.ok) throw new Error(`download ${res.status}`);
         const name = `${crypto.randomUUID()}.mp4`;
         fs.writeFileSync(path.join(dirs.media, name), Buffer.from(await res.arrayBuffer()));
-        db.prepare("UPDATE avatar_videos SET status='done', file=?, updated_at=datetime('now') WHERE id=? AND status='running'").run(name, row.id);
+        if (row.kind === "motion" && row.script) {
+          db.prepare("UPDATE avatar_videos SET stage='voice', raw_file=?, updated_at=datetime('now') WHERE id=? AND status='running'").run(name, row.id);
+          kick();
+        } else {
+          db.prepare("UPDATE avatar_videos SET status='done', stage='done', file=?, updated_at=datetime('now') WHERE id=? AND status='running'").run(name, row.id);
+        }
         if (row.audio_file) fs.rmSync(path.join(dirs.media, row.audio_file), { force: true });
       } else if (["FAILED", "CANCELLED", "TIMED_OUT"].includes(r.status)) {
         console.warn("[avatar-videos]", row.id, r.status, JSON.stringify(r.error || r.output || "").slice(0, 400));
@@ -249,9 +320,10 @@ function get(seller, id) {
   if (!v) throw httpError(404, "That isn't one of your avatar videos.");
   return v;
 }
-const nameOf = (row) => (row.kind === "talk" ? TALK.name : MODELS.find((m) => m.id === row.model)?.name || row.model);
+const nameOf = (row) => (row.kind === "talk" ? TALK.name : MODELS.find((m) => m.id === row.model)?.name || OLD_NAMES[row.model] || row.model);
 export const view = (v) => ({ id: v.id, kind: v.kind, model: v.model, model_name: nameOf(v), avatar_id: v.avatar_id, shot_id: v.shot_id, duration: v.duration, resolution: v.resolution,
-  sound: Boolean(v.sound), script: v.script, credits: v.credits, status: v.status, error: v.status === "failed" ? v.error : null,
+  sound: Boolean(v.sound), script: v.script, voiceover: v.kind === "motion" && Boolean(v.script), credits: v.credits, status: v.status,
+  stage: v.status === "running" && v.stage === "voice" ? "voice" : null, error: v.status === "failed" ? v.error : null, note: v.note || null,
   url: v.file ? `${config.publicUrl}/media/${v.file}` : null, created_at: v.created_at, ai_generated: true });
 export function list(account, seller) {
   return { ...options(account), videos: db.prepare("SELECT * FROM avatar_videos WHERE seller_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 40").all(seller.id).map(view) };

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "snapfront-credits-"));
 Object.assign(process.env, { DATA_DIR: tmp, PUBLIC_URL: "https://cv.test", STORE_DOMAIN: "cv.test", STRIPE_SECRET_KEY: "sk_test_fake", RUNPOD_API_KEY: "rp_test", ADMIN_TOKEN: "admin_secret", OWNER_EMAILS: "boss@snapfront.test" });
@@ -29,6 +30,11 @@ pay.setStripeClient({
   paymentIntents: { async retrieve(id) { return intents.get(id); } },
 });
 narrated.setVoiceEngine(async () => ({ audio: new Float32Array(2400), sampling_rate: 24000 }));
+// A real little video with music, so the voiceover mix runs for real.
+const ffmpegPath = (await import("ffmpeg-static")).default;
+const sampleMp4 = path.join(tmp, "sample.mp4");
+execFileSync(ffmpegPath, ["-y", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=gray:s=180x320:d=2", "-f", "lavfi", "-i", "sine=f=220:d=2", "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", sampleMp4]);
+const probe = (file) => { try { execFileSync(ffmpegPath, ["-hide_banner", "-i", file], { stdio: "pipe" }); return ""; } catch (e) { return String(e.stderr); } };
 const rp = [];
 let status = "IN_PROGRESS";
 const jpeg = await sharp({ create: { width: 400, height: 500, channels: 3, background: "#8a93a3" } }).jpeg().toBuffer();
@@ -37,7 +43,7 @@ aimedia.setRunpodFetch(async (url, init = {}) => {
   const ok = (j) => ({ ok: true, status: 200, json: async () => j });
   if (url.endsWith("/run")) return ok({ id: `rp${rp.length}`, status: "IN_QUEUE" });
   if (url.includes("/status/")) return ok(status === "COMPLETED" ? { status, output: { video_url: "https://video.runpod.ai/x/out.mp4", cost: 0.5 } } : { status });
-  if (url.startsWith("https://video.runpod.ai")) return { ok: true, status: 200, arrayBuffer: async () => new Uint8Array(Buffer.alloc(4000, 7)).buffer };
+  if (url.startsWith("https://video.runpod.ai")) { const b = fs.readFileSync(sampleMp4); return { ok: true, status: 200, arrayBuffer: async () => b.buffer.slice(b.byteOffset, b.byteOffset + b.length) }; }
   throw new Error(`unexpected ${url}`);
 });
 
@@ -75,8 +81,9 @@ test("set up a store, a product and a talking-capable avatar with a photo", asyn
 
 test("prices: credits follow the provider's cost with the markup, rounded to 5", () => {
   const by = Object.fromEntries(videos.MODELS.map((m) => [m.id, m]));
-  assert.equal(videos.priceOf(by.kling, 5, "720p"), 35);
-  assert.equal(videos.priceOf(by.kling, 10, "720p"), 70);
+  assert.equal(by.kling, undefined);   // retired: Runpod's Kling O1 needs a reference video now
+  assert.equal(videos.priceOf(by.vidu, 5, "720p"), 50);
+  assert.equal(videos.priceOf(by.vidu, 10, "1080p"), 95);
   assert.equal(videos.priceOf(by.seedance, 5, "720p"), 115);
   assert.equal(videos.priceOf(by.seedance, 5, "1080p"), 285);
   assert.equal(videos.priceOf(by.sora, 4, "720p"), 75);
@@ -86,9 +93,9 @@ test("prices: credits follow the provider's cost with the markup, rounded to 5",
 });
 
 test("no credits, no video: the app is told what's needed", async () => {
-  const r = await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "kling", duration: 5, motion: "showcase" });
+  const r = await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 5, motion: "showcase" });
   assert.equal(r.status, 402);
-  assert.deepEqual(r.body.credits, { need: 35, balance: 0 });
+  assert.deepEqual(r.body.credits, { need: 50, balance: 0 });
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM avatar_videos").get().n, 0);
   assert.equal(rp.length, 0);
 });
@@ -129,28 +136,37 @@ test("a refunded or charged-back pack takes its credits back", async () => {
   assert.ok(kinds.includes("reversal"));
 });
 
-let kling;
-test("Kling O1: avatar, product and photo as references, vertical, credits spent once", async () => {
+let kling;   // the first video made (Vidu with a voiceover)
+test("Vidu Q3 with a voiceover: our voice is mixed over the model's music, and the model is told nobody speaks", async () => {
   status = "IN_PROGRESS";
-  const r = await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "kling", duration: 10, motion: "unbox" });
+  assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 5, motion: "unbox", voiceover: "x".repeat(76) })).status, 201);   // trimmed to 75
+  const trimmed = db.prepare("SELECT script FROM avatar_videos ORDER BY rowid DESC LIMIT 1").get().script;
+  assert.equal(trimmed.length, 75);
+  db.prepare("DELETE FROM avatar_videos WHERE script = ?").run(trimmed);
+  db.prepare("DELETE FROM credit_ledger WHERE kind = 'spend' AND note LIKE 'Vidu%'").run();
+  const r = await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 10, resolution: "1080p", motion: "unbox", voiceover: "Plan your whole week in two minutes. Link in bio.", voice: "bf_emma" });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   kling = r.body;
-  assert.equal(kling.credits, 70);
-  assert.equal(kling.status, "running");
+  assert.equal(kling.credits, 95);
+  assert.equal(kling.voiceover, true);
   const job = rp.at(-1);
-  assert.match(job.url, /kling-video-o1-r2v\/run$/);
-  assert.deepEqual(job.body.input.images, ["https://cv.test/img/nova-shot.jpg", "https://cv.test/img/nova.jpg", "https://cv.test/img/serum.jpg"]);
-  assert.equal(job.body.input.aspect_ratio, "9:16");
-  assert.equal(job.body.input.duration, 10);
+  assert.match(job.url, /vidu-q3-i2v\/run$/);
+  assert.deepEqual({ image: job.body.input.image, duration: job.body.input.duration, resolution: job.body.input.resolution, generate_audio: job.body.input.generate_audio, bgm: job.body.input.bgm },
+    { image: "https://cv.test/img/nova-shot.jpg", duration: 10, resolution: "1080p", generate_audio: true, bgm: true });
   assert.match(job.body.input.prompt, /opens the packaging/);
-  assert.equal(credits.balance(accountId()), 830);
+  assert.match(job.body.input.prompt, /Nobody speaks/);
+  assert.equal(credits.balance(accountId()), 805);
 
   status = "COMPLETED";
-  const done = (await call("GET", `/api/avatar-videos/${kling.id}`)).body;
-  assert.equal(done.status, "done");
-  assert.match(done.url, /^https:\/\/cv\.test\/media\/[\w-]+\.mp4$/);
-  assert.ok(fs.existsSync(path.join(tmp, "media", done.url.split("/").pop())));
-  assert.equal(credits.balance(accountId()), 830);   // finishing doesn't charge again
+  let v = (await call("GET", `/api/avatar-videos/${kling.id}`)).body;
+  for (let i = 0; i < 100 && v.status !== "done"; i++) { await new Promise((s) => setTimeout(s, 100)); v = (await call("GET", `/api/avatar-videos/${kling.id}`)).body; }
+  assert.equal(v.status, "done");
+  assert.equal(v.note, null);
+  assert.match(v.url, /^https:\/\/cv\.test\/media\/[\w-]+\.mp4$/);
+  const file = path.join(tmp, "media", v.url.split("/").pop());
+  assert.match(probe(file), /Audio: aac/);
+  assert.equal(db.prepare("SELECT raw_file FROM avatar_videos WHERE id = ?").get(kling.id).raw_file && fs.existsSync(path.join(tmp, "media", db.prepare("SELECT raw_file FROM avatar_videos WHERE id = ?").get(kling.id).raw_file)), false);   // the version without the voice is cleaned up
+  assert.equal(credits.balance(accountId()), 805);   // finishing doesn't charge again
 });
 
 test("Seedance 2.5 (sound on, 1080p) and Sora 2 Pro send the right inputs", async () => {
@@ -162,20 +178,21 @@ test("Seedance 2.5 (sound on, 1080p) and Sora 2 Pro send the right inputs", asyn
   assert.deepEqual({ image: job.body.input.image, aspect_ratio: job.body.input.aspect_ratio, resolution: job.body.input.resolution, generate_audio: job.body.input.generate_audio },
     { image: "https://cv.test/img/nova-shot.jpg", aspect_ratio: "9:16", resolution: "1080p", generate_audio: true });
   assert.equal(sd.body.credits, 285);
-  const so = await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "sora", duration: 8, prompt: "she smiles and says: this changed my mornings" });
+  const so = await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "sora", duration: 8, prompt: "he smiles and holds the phone up to the camera" });
   assert.equal(so.status, 201, JSON.stringify(so.body));
   job = rp.at(-1);
   assert.match(job.url, /sora-2-pro-i2v\/run$/);
   assert.deepEqual({ duration: job.body.input.duration, size: job.body.input.size }, { duration: 8, size: "720p" });
-  assert.match(job.body.input.prompt, /this changed my mornings/);
-  assert.equal(credits.balance(accountId()), 830 - 285 - 150);
+  assert.match(job.body.input.prompt, /holds the phone up/);
+  assert.match(job.body.input.prompt, /Nobody speaks: no dialogue, no voices/);
+  assert.equal(credits.balance(accountId()), 805 - 285 - 150);
   // Bad choices are refused before anything is charged.
-  assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "kling", duration: 7, motion: "walk" })).status, 400);
+  assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 7, motion: "walk" })).status, 400);
   assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "sora", duration: 4, resolution: "4k", motion: "walk" })).status, 400);
-  assert.equal((await call("POST", "/api/avatar-videos", { avatar_id: "avt_nova", model: "kling", duration: 5, motion: "walk" })).status, 400);   // needs a product photo
+  assert.equal((await call("POST", "/api/avatar-videos", { avatar_id: "avt_nova", model: "vidu", duration: 5, motion: "walk" })).status, 400);   // needs a product photo
   // Three in progress is the limit.
-  assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "kling", duration: 5, motion: "walk" })).status, 201);
-  assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "kling", duration: 5, motion: "walk" })).status, 429);
+  assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 5, motion: "walk" })).status, 201);
+  assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 5, motion: "walk" })).status, 429);
 });
 
 test("a failed video gives its credits back, exactly once", async () => {
@@ -186,9 +203,9 @@ test("a failed video gives its credits back, exactly once", async () => {
   const failed = list.videos.filter((v) => v.status === "failed");
   assert.equal(failed.length, 3);
   assert.match(failed[0].error, /credits are back/);
-  assert.equal(credits.balance(accountId()), before + 285 + 150 + 35);
+  assert.equal(credits.balance(accountId()), before + 285 + 150 + 50);
   await videos.poll();
-  assert.equal(credits.balance(accountId()), before + 285 + 150 + 35);
+  assert.equal(credits.balance(accountId()), before + 285 + 150 + 50);
   assert.equal(list.balance, credits.balance(accountId()));
 });
 
@@ -222,7 +239,7 @@ test("talking avatar: Snapfront's voice reads the script, InfiniteTalk lip-syncs
 test("videos are private to the store; admins can grant credits", async () => {
   const other = (await call("POST", "/api/sellers", { store_name: "Third" }, null)).body;
   assert.equal((await call("GET", `/api/avatar-videos/${kling.id}`, null, other.token)).status, 404);
-  assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "kling", duration: 5, motion: "walk" }, other.token)).status, 404);
+  assert.equal((await call("POST", "/api/avatar-videos", { shot_id: "shot_nova", model: "vidu", duration: 5, motion: "walk" }, other.token)).status, 404);
   assert.equal((await call("POST", `/api/admin/credits/${other.account.id}`, { amount: 100, note: "Tester" }, "wrong")).status, 401);
   const g = await call("POST", `/api/admin/credits/${other.account.id}`, { amount: 100, note: "Tester" }, "admin_secret");
   assert.equal(g.body.balance, 100);

@@ -51,7 +51,7 @@ export default function CreditsScreen() {
           <Text accessibilityRole="header" style={{ fontFamily: fonts.bodyBold, fontSize: 52, lineHeight: 58, color: c.ink, fontVariant: ["tabular-nums"] }}>{data.balance.toLocaleString()}</Text>
           {busy === "confirm" ? <ActivityIndicator color={c.accent} /> : null}
         </View>
-        <Text style={[type.body, { color: c.muted }]}>Credits make avatar videos (Kling O1, Seedance 2.5, Sora 2 Pro) and talking avatars. They never expire, and a video that fails gives its credits back.</Text>
+        <Text style={[type.body, { color: c.muted }]}>Credits make avatar videos (Vidu Q3, Seedance 2.5, Sora 2 Pro) and talking avatars. They never expire, and a video that fails gives its credits back.</Text>
       </View>
       {data.free ? <Notice text="This is an owner account: avatar videos and talking avatars are free for you, so you can test every model without buying credits." tone="ok" /> : null}
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
@@ -69,7 +69,7 @@ export default function CreditsScreen() {
                 <Text style={{ fontFamily: fonts.bodyBold, fontSize: 30, color: c.ink, fontVariant: ["tabular-nums"] }}>{p.total.toLocaleString()} <Text style={[type.small, { color: c.muted }]}>credits</Text></Text>
                 {p.bonus ? <Text style={[type.small, { color: c.good }]}>{p.credits.toLocaleString()} + {p.bonus} bonus credits</Text> : null}
                 <Text style={[type.body, { color: c.muted }]}>{p.price} · {p.per_credit} a credit</Text>
-                <Text style={[type.small, { color: c.muted }]}>About {Math.floor(p.total / 35)} Kling videos or {Math.floor(p.total / 115)} Seedance videos</Text>
+                <Text style={[type.small, { color: c.muted }]}>About {Math.floor(p.total / 50)} Vidu videos or {Math.floor(p.total / 115)} Seedance videos</Text>
                 <Button label={`Buy for ${p.price}`} variant={p.badge ? "primary" : "secondary"} loading={busy === p.id} disabled={!data.enabled || !!busy} onPress={() => buy(p)} />
               </View>
             ))}
