@@ -69,6 +69,7 @@ async function demoStore() {
     db.prepare("INSERT INTO seller_media (image_file, seller_id) VALUES (?,?)").run(file, me.id);
     await api("POST", "/api/products", { title, tagline: "Loved by our customers", price, kind: "physical", image_file: file, description: "A demo product." }, s.token);
   }
+  db.prepare("UPDATE products SET status = 'live' WHERE seller_id = ?").run(me.id);   // published, not drafts
   const account = plans.accountForToken(s.token);
   partners.join(account, { agree: true, code: "GLOWLAB" });
   // A few link clicks so the stats aren't empty. No sales: lessons don't show made-up earnings.
@@ -87,7 +88,9 @@ async function routeApi(context) {
     const headers = { ...req.headers() };
     delete headers.host; delete headers.origin;
     const res = await fetch(url, { method: req.method(), headers, body: ["GET", "HEAD"].includes(req.method()) ? undefined : req.postDataBuffer() });
-    const body = Buffer.from(await res.arrayBuffer());
+    let body = Buffer.from(await res.arrayBuffer());
+    // Store links read like the real thing (glow-lab.snapfront.app), not the private server's address.
+    if (/json/.test(res.headers.get("content-type") || "")) body = Buffer.from(body.toString("utf8").replace(/http:\/\/([a-z0-9-]+\.)?sf\.localhost(:\d+)?/g, "https://$1snapfront.app").replace(/sf\.localhost(:\d+)?/g, "snapfront.app"));
     const h = Object.fromEntries([...res.headers.entries()].filter(([k]) => !["content-encoding", "content-length", "transfer-encoding"].includes(k)));
     return route.fulfill({ status: res.status, headers: { ...h, ...cors }, body });
   });
@@ -100,9 +103,11 @@ window.__sfTap = (x, y) => { const d = document.createElement('div'); Object.ass
 window.__sfScroll = (el) => { let p = el.parentElement; while (p && !(p.scrollHeight > p.clientHeight + 4 && /(auto|scroll)/.test(getComputedStyle(p).overflowY))) p = p.parentElement; const box = el.getBoundingClientRect(); const top = p ? p.getBoundingClientRect().top : 0; (p || document.scrollingElement).scrollBy({ top: box.top - top - 96, behavior: 'smooth' }); };
 `;
 const find = (page, target) => (typeof target === "string" ? page.getByText(target, { exact: true }).first() : page.getByLabel(target.label, { exact: true }).first());
-async function runStep(page, [kind, target]) {
+async function runStep(page, [kind, target, extra]) {
   if (kind === "wait") return page.waitForTimeout(Number(target) * 1000);
   if (kind === "type") return page.keyboard.type(String(target), { delay: 85 });
+  // ["fill", { label }, "text"]: replace what's in a field (tap it, select all, type).
+  if (kind === "fill") { const f = find(page, target); await f.waitFor({ state: "visible", timeout: 15000 }); await runStep(page, ["tap", target]); await page.keyboard.press("Control+A"); return page.keyboard.type(String(extra), { delay: 85 }); }
   const el = find(page, target);
   await el.waitFor({ state: "visible", timeout: 15000 });
   if (kind === "scroll") { await el.evaluate((n) => window.__sfScroll(n)); return page.waitForTimeout(900); }
@@ -152,6 +157,24 @@ try {
   fs.mkdirSync(OUT, { recursive: true });
   const token = await demoStore();
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium" });
+  // --dump /route,/route2: print what each page shows (with the demo data), for writing screen steps.
+  if (arg("dump")) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: "dark" });
+    await routeApi(context);
+    await context.addInitScript(`try { localStorage.setItem('snapfront.token', ${JSON.stringify(token)}); } catch (e) {}`);
+    for (const route of arg("dump").split(",")) {
+      const page = await context.newPage();
+      await page.goto(`http://app.sf.localhost:${PORT}${route}`, { waitUntil: "networkidle" }).catch(() => {});
+      await page.waitForTimeout(2500);
+      const text = await page.evaluate(() => document.body.innerText);
+      const labels = await page.evaluate(() => [...document.querySelectorAll("input,textarea")].map((n) => n.getAttribute("aria-label") || n.placeholder).filter(Boolean));
+      console.log(`\n===== ${route}\n${text.replace(/\n{2,}/g, "\n").slice(0, 6000)}\n-- fields: ${labels.join(" | ")}`);
+      if (flag("shots")) await page.screenshot({ path: path.join(OUT, `dump${route.replace(/\W+/g, "_") || "_home"}.png`), fullPage: true });
+      await page.close();
+    }
+    await browser.close();
+    process.exit(0);
+  }
   for (const l of LESSONS.filter((x) => !ONLY_LESSON || x.id === ONLY_LESSON)) {
     for (const [i, s] of l.slides.entries()) {
       if (!s.screen || (ONLY_SLIDE != null && i !== ONLY_SLIDE)) continue;
