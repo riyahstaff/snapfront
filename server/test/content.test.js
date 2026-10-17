@@ -99,8 +99,20 @@ test("community links are set by Snapfront's owner; the Discord invite is for me
 });
 
 test("UGC kit: portfolio page with uploaded videos, rates and contact; scripts; deal tracker", async () => {
-  const k = (await call(A.token, "GET", "/api/ugc")).json();
+  let k = (await call(A.token, "GET", "/api/ugc")).json();
   assert.ok(k.platforms.creators.some((p) => p.name === "Insense"));
+  // No referral link set: plain links and no disclosure.
+  const jb = (list) => list.find((p) => p.name === "JoinBrands");
+  assert.deepEqual([jb(k.platforms.creators).url, jb(k.platforms.creators).referral, k.platforms.disclosure], ["https://joinbrands.com/", false, null]);
+  // Set on the server (JOINBRANDS_URL): used on both JoinBrands links, marked, and disclosed. http links are ignored.
+  process.env.JOINBRANDS_URL = "http://joinbrands.com/?ref=bad";
+  assert.equal(jb((await call(A.token, "GET", "/api/ugc")).json().platforms.stores).url, "https://joinbrands.com/");
+  process.env.JOINBRANDS_URL = "https://joinbrands.com/?ref=FFobJa";
+  k = (await call(A.token, "GET", "/api/ugc")).json();
+  for (const list of [k.platforms.creators, k.platforms.stores]) assert.deepEqual([jb(list).url, jb(list).referral], ["https://joinbrands.com/?ref=FFobJa", true]);
+  assert.equal(k.platforms.creators.find((p) => p.name === "Insense").referral, false);
+  assert.match(k.platforms.disclosure, /Snapfront may earn a fee/);
+  delete process.env.JOINBRANDS_URL;
   assert.equal(k.profile.enabled, false);
   assert.equal((await fetch(`${base}/s/${slug}/ugc`)).status, 404);
 

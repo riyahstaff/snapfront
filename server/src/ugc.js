@@ -42,22 +42,28 @@ const MAX_ITEMS = 12;
 /* ---------- where the paid work is ---------- */
 export function platforms() {
   const s = community.all();
-  return {
+  // Snapfront's referral links (set by the owner) are marked, and the screen says Snapfront may earn a fee.
+  const via = (link, plain) => (link ? { url: link, referral: true } : { url: plain, referral: false });
+  const insense = (extra) => ({ name: "Insense", ...via(s.insense_url, "https://insense.pro/"), ...extra });
+  const joinbrands = (extra) => ({ name: "JoinBrands", ...via(s.joinbrands_url, "https://joinbrands.com/"), ...extra });
+  const out = {
     creators: [
-      { name: "Insense", url: "https://insense.pro/", pay: "About $100 to $500 a video", fee: "Paid by the brand through the platform", what: "Brands post UGC and creator-ad briefs; strong demand from online brands." },
-      { name: "JoinBrands", url: "https://joinbrands.com/", pay: "About $25 to $200 a video", fee: "20% fee on paid jobs", what: "Low barrier to start, quick approvals, lots of small jobs." },
+      insense({ pay: "About $100 to $500 a video", fee: "Paid by the brand through the platform", what: "Brands post UGC and creator-ad briefs; strong demand from online brands." }),
+      joinbrands({ pay: "About $25 to $200 a video", fee: "20% fee on paid jobs", what: "Low barrier to start, quick approvals, lots of small jobs." }),
       { name: "Billo", url: "https://billo.app/", pay: "About $60 to $200 a video", fee: "Built into the job price", what: "Mobile-first; no portfolio needed to begin." },
       { name: "Trend", url: "https://www.trend.io/", pay: "About $75 to $400 a video", fee: "Built into the job price", what: "Fixed-price gigs from direct-to-consumer brands." },
       { name: "Collabstr", url: "https://collabstr.com/", pay: "You set your own prices", fee: "15% on completed orders", what: "A public profile brands can find and book." },
       { name: "Whop Content Rewards", url: "https://whop.com/", pay: "Paid per 1,000 views (often about $1)", fee: "10% on view-based payouts", what: "Clip and post content for campaigns; good for faceless creators." },
     ],
-    // For stores that want UGC for their own products. These are Snapfront's affiliate links when set.
+    // For stores that want UGC for their own products.
     stores: [
-      { name: "Insense", url: s.insense_url || "https://insense.pro/", what: "Hire vetted creators for UGC videos and creator ads." },
-      { name: "JoinBrands", url: s.joinbrands_url || "https://joinbrands.com/", what: "Post a job and get UGC videos from creators fast." },
+      insense({ what: "Hire vetted creators for UGC videos and creator ads." }),
+      joinbrands({ what: "Post a job and get UGC videos from creators fast." }),
     ],
     note: "Pay ranges are typical figures reported by creators and review sites; each job lists its own rate.",
   };
+  const referrals = [...out.creators, ...out.stores].some((p) => p.referral);
+  return { ...out, disclosure: referrals ? "Links marked \"Referral link\" are Snapfront referral links: Snapfront may earn a fee if you sign up through them, at no cost to you." : null };
 }
 
 /* ---------- the portfolio page ---------- */
