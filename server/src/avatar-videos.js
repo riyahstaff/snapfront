@@ -3,7 +3,9 @@
 // The best video models on Runpod's public endpoints:
 //   Vidu Q3 (image-to-video):     smooth motion that keeps the photo's look, optional music. Fast and affordable.
 //   Seedance 2.5 (image-to-video): highest quality, optional sound and music. 9:16, 720p or 1080p.
-//   Sora 2 Pro (image-to-video):   OpenAI's model, with sound and dialogue. Follows the photo's shape.
+//   Sora 2 Pro (image-to-video):   OpenAI's model. Follows the photo's shape. It always makes its own sound,
+//                                  often music or singing whatever it's told, so that track is removed
+//                                  unless the seller asks to keep it.
 //   InfiniteTalk (talking avatar): the avatar speaks a script read by Kokoro (free, on our server).
 // Wan 2.6 is left out: Runpod lists only horizontal sizes for it. Kling is left out: Runpod's Kling O1
 // now requires a reference video and its image-to-video Kling was retired.
@@ -61,13 +63,14 @@ const ep = (env, fallback) => (process.env[env] || fallback).trim();
 const NO_TEXT = "No on-screen text, captions, subtitles, logos or watermarks.";
 export const MODELS = [
   { id: "vidu", name: "Vidu Q3", badge: "Fast and affordable", blurb: "Smooth, natural motion that keeps your photo's look, with optional background music. Up to 1080p.",
-    endpoint: () => ep("RUNPOD_EP_VIDU", "vidu-q3-i2v"), durations: [5, 10], resolutions: ["720p", "1080p"], sound: "optional", usd: (d) => 0.15 * d,
+    endpoint: () => ep("RUNPOD_EP_VIDU", "vidu-q3-i2v"), durations: [5, 10], resolutions: ["720p", "1080p"], sound: "optional", sound_default: true, usd: (d) => 0.15 * d,
     input: ({ image, prompt, duration, resolution, sound }) => ({ prompt, image, duration, resolution, movement_amplitude: "auto", generate_audio: sound, bgm: sound, seed: -1 }) },
   { id: "seedance", name: "Seedance 2.5", badge: "Best quality", blurb: "The most cinematic motion, with sound and music made for the clip. Up to 1080p.",
-    endpoint: () => ep("RUNPOD_EP_SEEDANCE", "16jsvx5ncmm24x"), durations: [5, 10], resolutions: ["720p", "1080p"], sound: "optional", usd: (d, r) => (r === "1080p" ? 0.9 : 0.36) * d,
+    endpoint: () => ep("RUNPOD_EP_SEEDANCE", "16jsvx5ncmm24x"), durations: [5, 10], resolutions: ["720p", "1080p"], sound: "optional", sound_default: true, usd: (d, r) => (r === "1080p" ? 0.9 : 0.36) * d,
     input: ({ image, prompt, duration, resolution, sound }) => ({ prompt, image, duration, resolution, aspect_ratio: "9:16", generate_audio: sound, seed: -1 }) },
-  { id: "sora", name: "Sora 2 Pro", badge: "Most lifelike", blurb: "OpenAI's top model. The most natural acting, with ambient sound. Keeps your photo's framing.",
-    endpoint: () => ep("RUNPOD_EP_SORA", "sora-2-pro-i2v"), durations: [4, 8, 12], resolutions: ["720p", "1080p"], sound: "always", usd: (d, r) => (r === "1080p" ? 0.5 : 0.3) * d,
+  { id: "sora", name: "Sora 2 Pro", badge: "Most lifelike", blurb: "OpenAI's top model. The most natural acting. Keeps your photo's framing.",
+    // Sora can't be told to stay quiet, so "sound off" means we remove its audio track afterwards.
+    endpoint: () => ep("RUNPOD_EP_SORA", "sora-2-pro-i2v"), durations: [4, 8, 12], resolutions: ["720p", "1080p"], sound: "strip", sound_default: false, usd: (d, r) => (r === "1080p" ? 0.5 : 0.3) * d,
     input: ({ image, prompt, duration, resolution }) => ({ prompt, image, duration, size: resolution }) },
 ];
 // Retired models still name their old videos.
@@ -75,8 +78,8 @@ const OLD_NAMES = { kling: "Kling O1" };
 /** About how many characters of voiceover fit a video of this length (Kokoro speaks ~15 a second). */
 export const voiceoverChars = (seconds) => Math.max(40, Math.floor(seconds * 15));
 export const TALK = { id: "talk", name: "InfiniteTalk", endpoint: () => ep("RUNPOD_EP_TALK", "infinitetalk"), resolutions: ["480p", "720p"], usd: (r) => (r === "720p" ? 0.5 : 0.25), max_chars: 450 };
-// Styles with a face that can lip-sync. The others are faceless by design.
-const TALKING_STYLES = new Set(["soft3d", "illustrated", "mascot"]);
+// Styles with a face that can lip-sync (including avatars from real photos). The others are faceless by design.
+const TALKING_STYLES = new Set(["soft3d", "illustrated", "mascot", "photo", "blend"]);
 export const MOTIONS = [
   { id: "showcase", name: "Show it off", prompt: "the character slowly turns the product toward the camera to show it off, then gives a confident nod" },
   { id: "unbox", name: "Unboxing", prompt: "the character opens the packaging and lifts the product out with a delighted reaction" },
@@ -99,7 +102,7 @@ export async function options(account) {
     enabled: aimedia.enabled(),
     balance: credits.balance(account.id),
     free: credits.isOwner(account),
-    models: MODELS.map((m) => ({ id: m.id, name: m.name, badge: m.badge, blurb: m.blurb, durations: m.durations, resolutions: m.resolutions, sound: m.sound,
+    models: MODELS.map((m) => ({ id: m.id, name: m.name, badge: m.badge, blurb: m.blurb, durations: m.durations, resolutions: m.resolutions, sound: m.sound, sound_default: m.sound_default,
       prices: Object.fromEntries(m.durations.flatMap((d) => m.resolutions.map((r) => [`${d}|${r}`, priceOf(m, d, r)]))) })),
     talk: { resolutions: TALK.resolutions, prices: Object.fromEntries(TALK.resolutions.map((r) => [r, talkPrice(r)])), max_chars: TALK.max_chars,
       styles: [...TALKING_STYLES], voices },
@@ -169,7 +172,7 @@ async function startMotion(account, seller, b) {
   const { voice, extra } = voiceover ? await pickVoice(b.voice, voiceover) : { voice: null, extra: 0 };
   busy(seller);
   const style = STYLES.find((s) => s.id === src.avatar.style) || STYLES[0];
-  const sound = model.sound === "always" ? true : model.sound === "optional" ? b.sound !== false : false;
+  const sound = b.sound === undefined || b.sound === null ? model.sound_default : Boolean(b.sound);
   const prompt = `${motion ? motion.prompt : custom}. Keep the character exactly as in the reference image (same design, outfit and colors) and the product exactly as it is (same shape, colors, label and text). ${style.keep} `
     + `Smooth, natural motion for a vertical social media video. Nobody speaks: no dialogue, no voices, no narration, no singing. `
     + `${sound ? "Only background music and natural ambient sound. " : ""}${NO_TEXT}`;
@@ -191,7 +194,7 @@ async function startTalk(account, seller, b) {
   const resolution = b.resolution || "720p";
   if (!TALK.resolutions.includes(resolution)) throw httpError(400, "Pick 480p or 720p.");
   const src = source(seller, b);
-  if (!TALKING_STYLES.has(src.avatar.style)) throw httpError(400, "This avatar is faceless by design, so it can't lip-sync. Talking works with Soft 3D, Illustrated and Mascot avatars.");
+  if (!TALKING_STYLES.has(src.avatar.style)) throw httpError(400, "This avatar is faceless by design, so it can't lip-sync. Talking works with Soft 3D, Illustrated, Mascot and photo avatars.");
   const script = clean(b.script, TALK.max_chars);
   if (script.length < 8) throw httpError(400, "Write what your avatar should say.");
   if (asksForLikeness(script)) throw httpError(400, "Write the script in your avatar's own voice, not as a real person.");
@@ -271,6 +274,15 @@ export async function mixVoiceover(videoPath, voicePath, voiceSeconds, outPath) 
     "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", outPath]);
   if (r.code !== 0) throw new Error(`mix failed: ${r.err.slice(-300)}`);
 }
+/** Remove a video's audio track in place (the picture is copied, not re-encoded). Keeps the original if it fails. */
+export async function stripAudio(file) {
+  const tmp = `${file}.quiet.mp4`;
+  try {
+    const r = await ffmpeg(["-y", "-hide_banner", "-loglevel", "error", "-i", file, "-map", "0:v", "-c:v", "copy", "-an", "-movflags", "+faststart", tmp], 60_000);
+    if (r.code === 0) fs.renameSync(tmp, file); else console.warn("[avatar-videos] strip audio", r.err.slice(-200));
+  } catch (e) { console.warn("[avatar-videos] strip audio", e.message); }
+  finally { fs.rmSync(tmp, { force: true }); }
+}
 async function addVoiceover(row) {
   const raw = path.join(dirs.media, row.raw_file);
   const voicePath = path.join(dirs.media, `${crypto.randomUUID()}.wav`);
@@ -329,6 +341,7 @@ export async function poll(id = null) {
         if (!res.ok) throw new Error(`download ${res.status}`);
         const name = `${crypto.randomUUID()}.mp4`;
         fs.writeFileSync(path.join(dirs.media, name), Buffer.from(await res.arrayBuffer()));
+        if (row.kind === "motion" && !row.sound && MODELS.find((m) => m.id === row.model)?.sound === "strip") await stripAudio(path.join(dirs.media, name));
         if (row.kind === "motion" && row.script) {
           db.prepare("UPDATE avatar_videos SET stage='voice', raw_file=?, updated_at=datetime('now') WHERE id=? AND status='running'").run(name, row.id);
           kick();

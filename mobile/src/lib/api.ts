@@ -173,15 +173,15 @@ export type SocialPublishInput = { render_id: string; caption: string; account_i
 /** AI video clips and lifestyle photos (Runpod) */
 export type AiPresets = { enabled: boolean; motions: { id: string; name: string }[]; scenes: { id: string; name: string }[] };
 export type AiJob = { id: string; kind: "video" | "scene"; status: "queued" | "running" | "done" | "failed"; error: string | null; created_at: string; url?: string; file?: string; image_file?: string };
-/** Faceless avatars: an original AI character for posts and stories, and shots of it with a product. */
+/** Avatars: an original AI character, your own photo or a blend of two, and shots of it with a product. */
 export type AvatarJobStatus = "queued" | "running" | "done" | "failed";
-export type Avatar = { id: string; name: string; style: string; look: string; status: AvatarJobStatus; error: string | null; image_url: string | null; created_at: string };
+export type Avatar = { id: string; name: string; style: string; source?: "ai" | "photo" | "blend"; look: string; status: AvatarJobStatus; error: string | null; image_url: string | null; created_at: string };
 export type AvatarShot = { id: string; avatar_id: string; product_id: string | null; pose: string; status: AvatarJobStatus; error: string | null; image_url: string | null; created_at: string };
 /** Credits: bought in packs on the website, spent on avatar videos and talking avatars. */
 export type CreditPack = { id: string; name: string; credits: number; bonus: number; total: number; cents: number; price: string; per_credit: string; badge?: string };
 export type CreditEntry = { id: string; delta: number; kind: "purchase" | "spend" | "refund" | "grant" | "reversal"; note: string; created_at: string };
 export type CreditsView = { enabled: boolean; balance: number; terms: string; packs: CreditPack[]; history: CreditEntry[]; added?: number; free?: boolean };
-export type VideoModel = { id: "vidu" | "seedance" | "sora"; name: string; badge: string; blurb: string; durations: number[]; resolutions: string[]; sound: "none" | "optional" | "always"; prices: Record<string, number> };
+export type VideoModel = { id: "vidu" | "seedance" | "sora"; name: string; badge: string; blurb: string; durations: number[]; resolutions: string[]; sound: "none" | "optional" | "always" | "strip"; sound_default?: boolean; prices: Record<string, number> };
 export type AvatarVideo = { id: string; kind: "motion" | "talk"; model: string; model_name: string; avatar_id: string | null; shot_id: string | null; duration: number | null; resolution: string;
   sound: boolean; script: string | null; voiceover?: boolean; premium_voice?: boolean; credits: number; status: AvatarJobStatus; stage?: "voice" | null; error: string | null; note?: string | null; url: string | null; created_at: string };
 /** A voice for voiceovers and talking avatars: free (Snapfront's own) or premium (ElevenLabs, extra credits). */
@@ -190,7 +190,11 @@ export type AvatarVideoStudio = { enabled: boolean; balance: number; free?: bool
   voiceover?: { chars_per_second: number; voices: VideoVoice[] };
   premium_voice?: { name: string; per_1k_chars: number; min: number; step: number } | null;
   talk: { resolutions: string[]; prices: Record<string, number>; max_chars: number; styles: string[]; voices: VideoVoice[] }; videos: AvatarVideo[] };
-export type AvatarStudio = { enabled: boolean; max_avatars: number; styles: { id: string; name: string; blurb: string }[]; poses: { id: string; name: string }[]; avatars: Avatar[]; shots: AvatarShot[] };
+export type AvatarStudio = { enabled: boolean; max_avatars: number; styles: { id: string; name: string; blurb: string }[]; poses: { id: string; name: string }[]; avatars: Avatar[]; shots: AvatarShot[];
+  /** "Use my photo" and "Blend two photos" are switched on. */
+  from_photos?: boolean; mixes?: { id: string; name: string }[] };
+/** A checked photo of a person, staged for "Use my photo" or "Blend". */
+export type AvatarPhoto = { id: string; image_url: string };
 /** Store insights (Pro) */
 export type Insights = { days: number; visitors: number; views: number; orders: number; sales: number; conversion: number;
   daily: { day: string; visitors: number; orders: number; sales: number }[]; top_products: { id: string; title: string; visitors: number; sold: number }[]; sources: { source: string; visitors: number }[] };
@@ -474,6 +478,9 @@ export const api = {
   aiJob: (id: string) => request<AiJob>("GET", `/api/ai-media/${id}`),
   avatars: () => request<AvatarStudio>("GET", "/api/avatars"),
   createAvatar: (input: { style: string; name?: string; look?: string }) => request<Avatar>("POST", "/api/avatars", input),
+  stageAvatarPhoto: (imageBase64: string, mediaType: string) => request<AvatarPhoto>("POST", "/api/avatar-photos", { imageBase64, mediaType }),
+  avatarFromPhoto: (input: { photo: string; name?: string; consent: boolean }) => request<Avatar>("POST", "/api/avatars", { source: "photo", ...input }),
+  blendAvatar: (input: { photos: [string, string]; mix: string; name?: string; look?: string; consent: boolean }) => request<Avatar>("POST", "/api/avatars", { source: "blend", ...input }),
   avatar: (id: string) => request<Avatar>("GET", `/api/avatars/${id}`),
   deleteAvatar: (id: string) => request<null>("DELETE", `/api/avatars/${id}`),
   avatarShot: (input: { avatar_id: string; product_id: string; pose?: string; prompt?: string }) => request<AvatarShot>("POST", "/api/avatar-shots", input),

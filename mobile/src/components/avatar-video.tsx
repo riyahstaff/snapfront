@@ -35,7 +35,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
   const model = studio.models.find((m) => m.id === modelId) ?? studio.models[0];
   const [duration, setDuration] = useState(model?.durations[0] ?? 5);
   const [resolution, setResolution] = useState(mode === "talk" ? "720p" : model?.resolutions[0] ?? "720p");
-  const [sound, setSound] = useState(true);
+  const [sound, setSound] = useState(model?.sound_default ?? true);
   const [motion, setMotion] = useState<string | null>(studio.motions[0]?.id ?? null);
   const [prompt, setPrompt] = useState("");
   const [script, setScript] = useState("");
@@ -48,6 +48,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
     setModelId(m.id as typeof modelId);
     if (!m.durations.includes(duration)) setDuration(m.durations[0]);
     if (!m.resolutions.includes(resolution)) setResolution(m.resolutions[0]);
+    setSound(m.sound_default ?? true);
   };
   const base = mode === "talk" ? studio.talk.prices[resolution] : model?.prices[`${duration}|${resolution}`];
   // A premium (ElevenLabs) voice adds credits by script length, priced exactly like the server.
@@ -101,12 +102,13 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
             {model.resolutions.length > 1 ? model.resolutions.map((r) => <Chip key={r} label={r} on={r === resolution} onPress={() => setResolution(r)} />) : null}
           </View>
           {model.sound === "optional" ? <Toggle label="Background music" sub="Made for the clip by the AI" value={sound} onChange={setSound} /> : null}
-          {model.sound === "always" ? <Text style={[type.small, { color: c.muted }]}>Sora adds its own ambient sound.</Text> : null}
+          {model.sound === "strip" ? <Toggle label={`Keep ${model.name}'s own sound`} sub="It often adds music or singing, so it's off unless you want it." value={sound} onChange={setSound} /> : null}
+          {model.sound === "always" ? <Text style={[type.small, { color: c.muted }]}>{model.name} adds its own sound.</Text> : null}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
             {studio.motions.map((m) => <Chip key={m.id} label={m.name} on={motion === m.id} onPress={() => setMotion(motion === m.id ? null : m.id)} />)}
           </View>
           {!motion ? <Field label="Or describe what happens" value={prompt} onChangeText={setPrompt} maxLength={300} multiline placeholder="he spins around and holds the phone up to the camera" /> : null}
-          <Field label="Voiceover (optional)" hint={`An AI voice reads this over the video. Up to ${voMax} characters for ${duration} seconds. To make the avatar's lips move, use Make it talk.`}
+          <Field label="Voiceover (optional)" hint={`The models don't speak, so this is how words get into the video: an AI voice reads it over the top. Up to ${voMax} characters for ${duration} seconds. To make the avatar's lips move, use Make it talk.`}
             value={voiceover} onChangeText={setVoiceover} maxLength={voMax} multiline placeholder="Plan your week in two minutes. Link in bio." />
           <Text style={[type.label, { color: c.ink }]}>Voiceover voice</Text>
           <VoicePicker voices={studio.voiceover?.voices ?? studio.talk.voices} value={voice} onChange={setVoice} premiumName={pv?.name} />

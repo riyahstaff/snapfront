@@ -1,11 +1,13 @@
-// Faceless avatars: make an original AI character once, then drop it into photos with your
-// products. Each finished shot goes straight to Marketing as a post, story, carousel or reel.
+// Avatars: make an original AI character once (or use your own photo, or blend two photos), then
+// drop it into photos with your products. Each finished shot goes straight to Marketing as a post,
+// story, carousel or reel.
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { Body, Button, Field, H2, Notice, Pill } from "@/components/ui";
+import { Body, Button, Field, H2, Notice, Pill, Segmented } from "@/components/ui";
+import { PhotoAvatarMaker } from "@/components/avatar-from-photos";
 import { api, ApiError, type Avatar, type AvatarShot, type AvatarStudio, type AvatarVideo, type AvatarVideoStudio, type Product } from "@/lib/api";
 import { VideoCard, VideoPanel } from "@/components/avatar-video";
 import { account, useMe } from "@/lib/account-store";
@@ -23,7 +25,8 @@ export default function AvatarsScreen() {
   const [studio, setStudio] = useState<AvatarStudio | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [msg, setMsg] = useState<Msg>(null);
-  // Making an avatar
+  // Making an avatar: an original character, your own photo, or a blend of two photos
+  const [makeMode, setMakeMode] = useState<"ai" | "photo" | "blend">("ai");
   const [style, setStyle] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [look, setLook] = useState("");
@@ -94,7 +97,7 @@ export default function AvatarsScreen() {
   }, [studio]);
 
   if (!studio) return <View style={{ flex: 1, backgroundColor: c.bg, alignItems: "center", justifyContent: "center" }}>{msg ? <Notice text={msg.text} tone="error" /> : <ActivityIndicator color={c.accent} />}</View>;
-  if (!studio.enabled) return <View style={{ flex: 1, backgroundColor: c.bg, padding: space.lg }}><Notice text="Faceless avatars are being switched on. Check back soon." tone="info" /></View>;
+  if (!studio.enabled) return <View style={{ flex: 1, backgroundColor: c.bg, padding: space.lg }}><Notice text="AI avatars are being switched on. Check back soon." tone="info" /></View>;
 
   const a = me?.account;
   const left = a ? Math.max(0, a.limits.scene - a.usage.scene) : null;
@@ -131,13 +134,16 @@ export default function AvatarsScreen() {
       try { await api.deleteAvatar(av.id); setStudio((s) => s && ({ ...s, avatars: s.avatars.filter((x) => x.id !== av.id), shots: s.shots.filter((x) => x.avatar_id !== av.id) })); if (avatarId === av.id) setAvatarId(null); }
       catch (e) { setMsg({ text: errText(e, "Couldn’t delete it."), tone: "error" }); }
     };
-    if (Platform.OS === "web") { if (globalThis.confirm?.(`Delete ${av.name} and its photos here? Posts you already made keep their pictures.`)) void go(); return; }
-    Alert.alert(`Delete ${av.name}?`, "Its photos are removed from this list. Posts you already made keep their pictures.", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => void go() }]);
+    const ownPhoto = av.source === "photo" ? " Your uploaded photo is deleted too." : "";
+    if (Platform.OS === "web") { if (globalThis.confirm?.(`Delete ${av.name} and its photos here? Posts you already made keep their pictures.${ownPhoto}`)) void go(); return; }
+    Alert.alert(`Delete ${av.name}?`, `Its photos are removed from this list. Posts you already made keep their pictures.${ownPhoto}`, [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => void go() }]);
   }
 
   return (
     <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
-      <Body muted>Post without being on camera. Make an original character once, put it in photos with your products, then turn those into videos.</Body>
+      <Body muted>{studio.from_photos
+        ? "Post without being on camera, or as yourself. Make an original character, use your own photo or blend two photos, then put it in photos with your products and turn those into videos."
+        : "Post without being on camera. Make an original character once, put it in photos with your products, then turn those into videos."}</Body>
       {vstudio ? (
         <Pressable onPress={() => router.push("/credits")} accessibilityRole="button" accessibilityLabel={`${vstudio.balance} credits. Top up`}
           style={{ flexDirection: "row", alignItems: "center", gap: space.sm, alignSelf: "flex-start", paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }}>
@@ -203,6 +209,17 @@ export default function AvatarsScreen() {
       {/* ---------- make an avatar ---------- */}
       <View style={{ gap: space.sm }}>
         <H2>{studio.avatars.length ? "Make another avatar" : "Make your avatar"}</H2>
+        {studio.from_photos ? (
+          <Segmented value={makeMode} onChange={setMakeMode} options={[{ value: "ai", label: "Character" }, { value: "photo", label: "My photo" }, { value: "blend", label: "Blend two" }]} />
+        ) : null}
+        {makeMode !== "ai" && studio.from_photos ? (
+          <PhotoAvatarMaker key={makeMode} mode={makeMode} studio={studio} full={studio.avatars.filter((x) => x.status !== "failed").length >= studio.max_avatars}
+            onMsg={setMsg} onMade={(made) => {
+              setStudio((s) => s && ({ ...s, avatars: [made, ...s.avatars] }));
+              if (made.status === "done") setAvatarId(made.id);
+              account.refresh().catch(() => {});
+            }} />
+        ) : (<>
         <View style={{ gap: space.sm }}>
           {studio.styles.map((s) => (
             <Pressable key={s.id} onPress={() => setStyle(s.id)} accessibilityRole="radio" accessibilityState={{ selected: style === s.id }}
@@ -217,6 +234,7 @@ export default function AvatarsScreen() {
           placeholder="lilac hoodie, silver sneakers, calm and confident" />
         <Button label="Make my avatar" icon={<Ionicons name="person-circle-outline" size={18} color={c.onAccent} />} loading={creating}
           disabled={!style || studio.avatars.filter((x) => x.status !== "failed").length >= studio.max_avatars} onPress={createAvatar} />
+        </>)}
         {left != null ? <Text style={[type.small, { color: c.muted }]}>Avatars and avatar photos use your AI photo allowance: {left} left{a?.plan === "free" ? "" : " this month"}.</Text> : null}
       </View>
 
