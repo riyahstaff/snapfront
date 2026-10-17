@@ -734,13 +734,24 @@ export async function uploadRaw<T>(path: string, body: Blob, contentType: string
 
 /* ---------- Snapfront Academy, today's post, community ---------- */
 export type AcademyLessonRow = { id: string; title: string; summary: string; done: boolean; locked: boolean; minutes: number };
-export type AcademyCatalog = { member: boolean; done: number; total: number; modules: { id: string; title: string; free: boolean; lessons: AcademyLessonRow[] }[] };
+export type AcademyCatalog = { member: boolean; done: number; total: number; owner?: boolean; modules: { id: string; title: string; free: boolean; lessons: AcademyLessonRow[] }[] };
 export type AcademyLesson = { id: string; title: string; summary: string; module: string; action: { label: string; route: string } | null; video: string | null; video_status: "ready" | "making";
   guide: { heading: string; points: string[] }[]; transcript: string; done: boolean; next: { id: string; title: string } | null };
 export type DailyPrompt = { day: string; kind: string; kind_name: string; hook: string; film: string[]; on_screen: string; caption: string; hashtags: string[]; cta: string;
   product: { id: string; title: string; image_url: string | null; url: string } | null; more_left: number };
 export type Community = { member: boolean; discord: string | null; has_discord: boolean; whop: string | null; live_schedule: string | null };
+/** Academy lessons taught by an avatar (owner only). */
+export type AcademyPresenter = {
+  presenter: { avatar_id: string; voice: string; lessons: string[] | "all" } | null; active: boolean;
+  avatars: { id: string; name: string; style: string; source: string; image_url: string }[];
+  voices: VideoVoice[]; lessons: { id: string; title: string; slides: number }[];
+  screens: { lesson: string; slide: number; heading: string; recorded: boolean }[]; cost_per_slide_usd: number;
+  building: { lesson: string | null; step: string | null } | null;
+  presenter_lessons?: { id: string; ready: boolean }[]; last_error?: string | null;
+};
 export const academy = {
+  presenter: () => request<AcademyPresenter>("GET", "/api/academy-presenter"),
+  setPresenter: (b: { avatar_id?: string; voice?: string; lessons?: string[] | "all" }) => request<AcademyPresenter>("PUT", "/api/academy-presenter", b),
   catalog: () => request<AcademyCatalog>("GET", "/api/academy"),
   lesson: (id: string) => request<AcademyLesson>("GET", `/api/academy/${encodeURIComponent(id)}`),
   setDone: (id: string, done: boolean) => request<AcademyCatalog>("POST", `/api/academy/${encodeURIComponent(id)}/done`, { done }),

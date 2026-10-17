@@ -1,0 +1,8 @@
+{
+  "name": "snapfront-academy-screens",
+  "private": true,
+  "type": "module",
+  "description": "Records the app demos shown in Academy lessons (with demo data) and uploads them. Not part of the server build.",
+  "scripts": { "record": "node record.mjs" },
+  "dependencies": { "playwright-core": "1.56.1" }
+}
