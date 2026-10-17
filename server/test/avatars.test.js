@@ -305,6 +305,37 @@ test("a failed blend deletes its photos and gives the allowance back; other stor
   for (const x of [a, b]) assert.ok(!fs.existsSync(path.join(tmp, "images", x.image_url.split("/").pop())));
 });
 
+test("a new outfit: the same person in new clothes, as a new avatar; the original and its photo stay", async () => {
+  status = "IN_PROGRESS";
+  assert.equal((await call("POST", `/api/avatars/${mine.id}/outfit`, { look: "x" })).status, 400);
+  assert.equal((await call("POST", `/api/avatars/${mine.id}/outfit`, { look: "dressed like Rihanna" })).status, 400);
+  const r = await call("POST", `/api/avatars/${mine.id}/outfit`, { look: "a fitted cream blazer over a black silk top" });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.equal(r.body.status, "running");
+  assert.equal(r.body.style, "photo");
+  assert.match(r.body.name, /\(new look\)$/);
+  const job = rp.at(-1);
+  assert.match(job.url, /nano-banana-pro-edit\/run$/);
+  assert.deepEqual(job.body.input.images, [mine.image_url]);
+  assert.match(job.body.input.prompt, /exact same person/);
+  assert.match(job.body.input.prompt, /fitted cream blazer over a black silk top/);
+  assert.match(job.body.input.prompt, /covers the torso/);
+  // The first model fails: the backup gets the same avatar photo; the original photo is never deleted.
+  status = "FAILED";
+  assert.equal((await call("GET", `/api/avatars/${r.body.id}`)).body.status, "running");
+  assert.deepEqual(rp.filter((x) => x.url.endsWith("/run")).at(-1).body.input.images, [mine.image_url]);
+  status = "COMPLETED";
+  const done = (await call("GET", `/api/avatars/${r.body.id}`)).body;
+  assert.equal(done.status, "done");
+  assert.notEqual(done.image_url, mine.image_url);
+  assert.ok(fs.existsSync(path.join(tmp, "images", mine.image_url.split("/").pop())));
+  assert.equal((await call("GET", `/api/avatars/${mine.id}`)).body.status, "done");
+  // Faceless styles that show no outfit can't be restyled; other stores can't restyle mine.
+  const other = (await call("POST", "/api/sellers", { store_name: "Nope" }, null)).body;
+  assert.equal((await call("POST", `/api/avatars/${mine.id}/outfit`, { look: "a red dress" }, other.token)).status, 404);
+  await call("DELETE", `/api/avatars/${done.id}`);
+});
+
 test("unused uploads go after a day; deleting a photo avatar deletes the photo", async () => {
   const p = (await call("POST", "/api/avatar-photos", { imageBase64: await face() })).body;
   const file = path.join(tmp, "images", p.image_url.split("/").pop());

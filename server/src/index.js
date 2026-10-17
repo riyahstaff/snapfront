@@ -836,6 +836,14 @@ app.post("/api/academy-presenter/build", ownerOrStudio, wrap(async (_req, res) =
   academy.buildPresenterLessons();
   res.json(await academyPresenter.view(academy.buildStatus()));
 }));
+app.get("/api/academy-presenter/voice-library", ownerOrStudio, wrap(async (req, res) => res.json(await academyPresenter.searchVoices(req.query || {}))));
+app.post("/api/academy-presenter/voices", ownerOrStudio, wrap(async (req, res) => res.status(201).json(await academyPresenter.addVoice(req.body || {}))));
+app.post("/api/academy-presenter/voice-sample", ownerOrStudio, wrap(async (req, res) => res.json(await academyPresenter.voiceSample(req.body?.voice, req.body?.text))));
+// A new outfit for one of the owner's avatars (a new avatar; the original stays).
+app.post("/api/academy-presenter/outfit", ownerOrStudio, wrap(async (req, res) => {
+  const { seller, account } = academyPresenter.ownerAvatar(req.body?.avatar_id);
+  res.status(201).json(await avatars.restyle(account, seller, req.body.avatar_id, req.body || {}));
+}));
 app.put("/api/academy-presenter/screens/:lesson/:slide", ownerOrStudio, express.raw({ type: ["video/*", "application/octet-stream"], limit: "80mb" }),
   wrap(async (req, res) => res.json(await academyPresenter.saveScreen(req.params.lesson, req.params.slide, req.body))));
 app.post("/api/admin/academy/build", adminOnly, (req, res) => { academy.buildMissing({ voice: req.body?.voice }).catch((e) => console.error("[academy]", e.message)); res.json(academy.buildStatus()); });
@@ -873,6 +881,7 @@ app.post("/api/avatars", auth, aiLimit, wrap(async (req, res) => {
 app.post("/api/avatar-photos", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatars.stagePhoto(req.account, req.seller, req.body || {}))));
 app.get("/api/avatars/:id", auth, wrap(async (req, res) => res.json(await avatars.avatar(req.seller, req.params.id))));
 app.delete("/api/avatars/:id", auth, (req, res) => { avatars.remove(req.seller, req.params.id); res.status(204).end(); });
+app.post("/api/avatars/:id/outfit", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatars.restyle(req.account, req.seller, req.params.id, req.body || {}))));
 app.post("/api/avatar-shots", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatars.shoot(req.account, req.seller, req.body || {}))));
 app.get("/api/avatar-shots/:id", auth, wrap(async (req, res) => res.json(await avatars.shot(req.seller, req.params.id))));
 /* ---------- avatar videos and talking avatars, paid with credits ---------- */

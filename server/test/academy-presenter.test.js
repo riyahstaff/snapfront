@@ -10,7 +10,7 @@ import { execFileSync } from "node:child_process";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "snapfront-presenter-"));
 const STUDIO = "studio_token_for_tests_0123456789";
-Object.assign(process.env, { DATA_DIR: tmp, PUBLIC_URL: "https://presenter.test", STORE_DOMAIN: "presenter.test", OWNER_EMAILS: "owner@example.com", ACADEMY_STUDIO_TOKEN: STUDIO, ACADEMY_AUTOBUILD: "false" });
+Object.assign(process.env, { DATA_DIR: tmp, PUBLIC_URL: "https://presenter.test", STORE_DOMAIN: "presenter.test", OWNER_EMAILS: "owner@example.com", ACADEMY_STUDIO_TOKEN: STUDIO, ACADEMY_AUTOBUILD: "false", RUNPOD_API_KEY: "rp_test" });
 
 const { app } = await import("../src/index.js");
 const { db } = await import("../src/db.js");
@@ -129,6 +129,54 @@ test("a lesson that opts in is rebuilt with the avatar on every slide and the ph
   const now = fs.readdirSync(path.join(tmp, "academy")).filter((f) => f.startsWith("partner-") && f.endsWith(".mp4"));
   assert.equal(now.length, 1);
   assert.notEqual(now[0], lessonFiles[0]);
+});
+
+test("voice library: search, add a voice to the account, use it (owner only), hear a sample", async () => {
+  const eleven = await import("../src/elevenlabs.js");
+  process.env.ELEVENLABS_API_KEY = "el_test_key";
+  const seen = [];
+  eleven.setElevenFetch(async (url, init = {}) => {
+    seen.push({ url, method: init.method || "GET", body: init.body });
+    const ok = (j) => ({ ok: true, status: 200, json: async () => j, text: async () => JSON.stringify(j) });
+    if (url.includes("/v1/shared-voices")) return ok({ voices: [{ voice_id: "LibVoice12345", public_owner_id: "owner123456", name: "Velvet", accent: "african-american", gender: "female", age: "young", descriptive: "seductive", use_case: "narrative_story", cloned_by_count: 900, description: "Smooth and warm", preview_url: "https://x/p.mp3" }] });
+    if (url.includes("/v1/voices/add/owner123456/LibVoice12345")) return ok({ voice_id: "AddedVoice123" });
+    if (url.includes("/v2/voices?page_size=100")) return ok({ voices: [{ voice_id: "AddedVoice123", name: "Velvet", category: "professional", labels: { accent: "african-american", gender: "female" } }] });
+    if (url.includes("/v2/voices")) return ok({ voices: [] });
+    throw new Error(`unexpected ${url}`);
+  });
+  assert.equal((await call("GET", "/api/academy-presenter/voice-library?search=sultry", null, other.token)).status, 403);
+  const lib = await call("GET", "/api/academy-presenter/voice-library?search=sultry&gender=female&accent=african-american", null, STUDIO);
+  assert.equal(lib.status, 200, JSON.stringify(lib.body));
+  assert.equal(lib.body.voices[0].name, "Velvet");
+  const q = new URL(seen.find((x) => x.url.includes("shared-voices")).url).searchParams;
+  assert.deepEqual([q.get("search"), q.get("gender"), q.get("accent")], ["sultry", "female", "african-american"]);
+  const added = await call("POST", "/api/academy-presenter/voices", { public_owner_id: "owner123456", voice_id: "LibVoice12345", name: "Velvet" }, STUDIO);
+  assert.deepEqual([added.status, added.body.id], [201, "el:AddedVoice123"]);
+  // The added voice shows for the owner and can be chosen for the presenter (it isn't sold to sellers).
+  const v = (await call("GET", "/api/academy-presenter", null, STUDIO)).body;
+  assert.ok(v.voices.some((x) => x.id === "el:AddedVoice123" && x.added));
+  assert.equal((await eleven.isOnSale("el:AddedVoice123")), false);
+  assert.equal((await call("PUT", "/api/academy-presenter", { voice: "el:AddedVoice123" }, STUDIO)).status, 200);
+  const sample = await call("POST", "/api/academy-presenter/voice-sample", { voice: "el:AddedVoice123", text: "Hi there" }, STUDIO);
+  assert.equal(sample.status, 200, JSON.stringify(sample.body));
+  assert.match(sample.body.url, /^https:\/\/presenter\.test\/media\/[\w-]+\.wav$/);
+  assert.equal((await call("POST", "/api/academy-presenter/voice-sample", { voice: "el:Unknown12345" }, STUDIO)).status, 400);
+  await call("PUT", "/api/academy-presenter", { voice: "af_bella" }, STUDIO);
+  delete process.env.ELEVENLABS_API_KEY;
+});
+
+test("the studio token can give the owner's avatar a new outfit; not someone else's avatar", async () => {
+  const aimedia = await import("../src/aimedia.js");
+  const runs = [];
+  aimedia.setRunpodFetch(async (url, init = {}) => { runs.push({ url, body: init.body ? JSON.parse(init.body) : null }); return { ok: true, status: 200, json: async () => ({ id: "rpo1", status: "IN_QUEUE" }) }; });
+  db.prepare("UPDATE accounts SET plan = 'pro' WHERE email = 'owner@example.com'").run();
+  const r = await call("POST", "/api/academy-presenter/outfit", { avatar_id: avatarId, look: "a tailored emerald wrap dress" }, STUDIO);
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.match(runs.at(-1).url, /nano-banana-pro-edit\/run$/);
+  assert.match(runs.at(-1).body.input.prompt, /tailored emerald wrap dress/);
+  const otherSeller = db.prepare("SELECT * FROM sellers WHERE account_id = ?").get(plans.accountForToken(other.token).id);
+  db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, status, image_file) VALUES ('avt_theirs',?,?,?,?,?,?)").run(otherSeller.id, otherSeller.account_id, "Theirs", "soft3d", "done", "coach.jpg");
+  assert.equal((await call("POST", "/api/academy-presenter/outfit", { avatar_id: "avt_theirs", look: "a red dress" }, STUDIO)).status, 404);
 });
 
 test("the presenter slide pictures leave room for the avatar and the phone", () => {

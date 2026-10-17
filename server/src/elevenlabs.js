@@ -61,6 +61,47 @@ export async function voices() {
 }
 export async function isOnSale(id) { return (await voices()).some((v) => v.id === id); }
 
+/* ---------- the owner's own voice choices (Academy presenter; never sold to sellers) ---------- */
+const get = (url) => fetchImpl(`${API}${url}`, { headers: { "xi-api-key": key() }, signal: AbortSignal.timeout(20_000) });
+/** Search ElevenLabs' public voice library. */
+export async function searchLibrary(q = {}) {
+  if (!enabled()) throw new Error("ElevenLabs isn't connected");
+  const p = new URLSearchParams({ page_size: String(Math.min(50, Math.max(1, Number(q.page_size) || 30))), sort: ["trending", "cloned_by_count", "usage_character_count_1y", "created_date"].includes(q.sort) ? q.sort : "cloned_by_count" });
+  for (const k of ["search", "gender", "age", "accent", "language"]) if (q[k]) p.set(k, String(q[k]).slice(0, 60));
+  for (const k of ["descriptives", "use_cases"]) for (const v of [].concat(q[k] || []).slice(0, 5)) p.append(k, String(v).slice(0, 40));
+  const r = await get(`/v1/shared-voices?${p}`);
+  if (!r.ok) throw new Error(`library ${r.status} ${(await r.text().catch(() => "")).slice(0, 200)}`);
+  const data = await r.json();
+  return (data.voices || []).map((v) => ({ voice_id: v.voice_id, public_owner_id: v.public_owner_id, name: String(v.name || "").slice(0, 60), accent: v.accent || "", gender: v.gender || "", age: v.age || "",
+    descriptive: v.descriptive || "", use_case: v.use_case || "", description: String(v.description || "").slice(0, 300), preview_url: v.preview_url || null, uses: v.cloned_by_count || 0 }));
+}
+/** Add a library voice to Snapfront's ElevenLabs account; returns its id ("el:..."). */
+export async function addFromLibrary(publicOwnerId, voiceId, name) {
+  if (!enabled()) throw new Error("ElevenLabs isn't connected");
+  if (!/^[A-Za-z0-9]{6,80}$/.test(String(publicOwnerId)) || !/^[A-Za-z0-9]{8,40}$/.test(String(voiceId))) throw new Error("bad voice");
+  const r = await fetchImpl(`${API}/v1/voices/add/${publicOwnerId}/${voiceId}`, { method: "POST", headers: { "xi-api-key": key(), "Content-Type": "application/json" },
+    body: JSON.stringify({ new_name: String(name || "Academy voice").slice(0, 60) }), signal: AbortSignal.timeout(20_000) });
+  if (!r.ok) throw new Error(`add voice ${r.status} ${(await r.text().catch(() => "")).slice(0, 200)}`);
+  const d = await r.json();
+  accountCache = null;
+  return `${PREFIX}${d.voice_id}`;
+}
+let accountCache = null;   // { at, list }
+/** Every voice in Snapfront's ElevenLabs account, for the owner's own use. */
+export async function accountVoices() {
+  if (!enabled()) return [];
+  if (accountCache && Date.now() - accountCache.at < 10 * 60e3) return accountCache.list;
+  try {
+    const r = await get("/v2/voices?page_size=100");
+    if (!r.ok) throw new Error(`voices ${r.status}`);
+    const data = await r.json();
+    const list = (data.voices || []).filter((v) => v?.voice_id).map((v) => ({ id: `${PREFIX}${v.voice_id}`, name: String(v.name || "Voice").slice(0, 40),
+      accent: String(v.labels?.accent || "").replace(/^\w/, (c) => c.toUpperCase()).slice(0, 24), gender: v.labels?.gender || "", premium: true, category: v.category || "" }));
+    accountCache = { at: Date.now(), list };
+    return list;
+  } catch (e) { console.warn("[elevenlabs] account voices", e.message); return accountCache?.list || []; }
+}
+
 /* ---------- speaking ---------- */
 function toWav(input, output) {
   return new Promise((resolve, reject) => {

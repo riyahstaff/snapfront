@@ -57,7 +57,8 @@ export function appliesTo(lessonId) {
   return Boolean(p && (p.lessons === "all" || (Array.isArray(p.lessons) && p.lessons.includes(lessonId))));
 }
 async function voiceOk(id) {
-  if (elevenlabs.isPremium(id)) return elevenlabs.isOnSale(id);
+  // The owner can use any voice in Snapfront's ElevenLabs account, including ones added from the library.
+  if (elevenlabs.isPremium(id)) return (await elevenlabs.isOnSale(id)) || (await elevenlabs.accountVoices()).some((v) => v.id === id);
   return VOICES.some((v) => v.id === id);
 }
 export async function setSettings(b = {}) {
@@ -269,11 +270,42 @@ export async function buildLesson(l, { svgFor, out }) {
   }
 }
 
+/* ---------- choosing her look and her voice ---------- */
+/** A short sample of a voice, as a link the owner can play (kept for two hours). */
+export async function voiceSample(voice, text) {
+  if (!(await voiceOk(String(voice)))) throw httpError(400, "That voice isn't available.");
+  const words = String(text || "Hi, I'm your Snapfront coach. In this lesson I'll show you exactly where everything is, so you can set it up in two minutes.").replace(/\s+/g, " ").trim().slice(0, 300);
+  const file = `${crypto.randomUUID()}.wav`;
+  const out = path.join(dirs.media, file);
+  if (voiceImpl) await voiceImpl(words, voice, out);
+  else if (elevenlabs.isPremium(voice)) await elevenlabs.speakToWav(words, voice, out);
+  else fs.writeFileSync(out, wav(await speak(words, voice)));
+  setTimeout(() => fs.rmSync(out, { force: true }), 2 * 3600e3).unref();
+  return { voice, url: `${config.publicUrl}/media/${file}` };
+}
+export async function searchVoices(q) {
+  if (!elevenlabs.enabled()) throw httpError(503, "Add ELEVENLABS_API_KEY to search the voice library.");
+  try { return { voices: await elevenlabs.searchLibrary(q) }; } catch (e) { throw httpError(502, `The voice library didn't answer: ${e.message}`); }
+}
+export async function addVoice(b = {}) {
+  if (!elevenlabs.enabled()) throw httpError(503, "Add ELEVENLABS_API_KEY to add voices.");
+  try { return { id: await elevenlabs.addFromLibrary(b.public_owner_id, b.voice_id, b.name) }; } catch (e) { throw httpError(400, `Couldn't add that voice: ${e.message}`); }
+}
+/** The owner's avatar row and store, for changing its outfit. */
+export function ownerAvatar(id) {
+  const a = ownerAvatars().find((x) => x.id === id) || db.prepare("SELECT * FROM avatars WHERE id = ?").get(String(id || ""));
+  if (!a || !ownerAccountIds().includes(a.account_id)) throw httpError(404, "That isn't one of your avatars.");
+  return { avatar: a, seller: db.prepare("SELECT * FROM sellers WHERE id = ?").get(a.seller_id), account: db.prepare("SELECT * FROM accounts WHERE id = ?").get(a.account_id) };
+}
+
 /* ---------- what the owner sees ---------- */
 const img = (f) => `${config.publicUrl}/img/${f}`;
 export async function view(status = {}) {
   const s = settings() || {};
-  const premium = elevenlabs.enabled() ? await elevenlabs.voices() : [];
+  // Stock voices plus any voice the owner added to the ElevenLabs account (shown only to the owner).
+  const stock = elevenlabs.enabled() ? await elevenlabs.voices() : [];
+  const added = elevenlabs.enabled() ? (await elevenlabs.accountVoices()).filter((v) => !stock.some((x) => x.id === v.id)) : [];
+  const premium = [...added.map(({ id, name, accent, gender }) => ({ id, name, accent, gender, premium: true, added: true })), ...stock];
   return {
     presenter: s.avatar_id ? { avatar_id: s.avatar_id, voice: s.voice || "af_heart", lessons: s.lessons ?? [] } : null,
     active: Boolean(presenter()),
