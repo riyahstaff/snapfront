@@ -106,13 +106,11 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
             {studio.motions.map((m) => <Chip key={m.id} label={m.name} on={motion === m.id} onPress={() => setMotion(motion === m.id ? null : m.id)} />)}
           </View>
           {!motion ? <Field label="Or describe what happens" value={prompt} onChangeText={setPrompt} maxLength={300} multiline placeholder="he spins around and holds the phone up to the camera" /> : null}
-          <Field label="Voiceover (optional, free)" hint={`Snapfront's AI voice reads this over the video. Up to ${voMax} characters for ${duration} seconds. To make the avatar's lips move, use Make it talk.`}
+          <Field label="Voiceover (optional)" hint={`An AI voice reads this over the video. Up to ${voMax} characters for ${duration} seconds. To make the avatar's lips move, use Make it talk.`}
             value={voiceover} onChangeText={setVoiceover} maxLength={voMax} multiline placeholder="Plan your week in two minutes. Link in bio." />
-          {voiceover.trim() ? (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-              <VoicePicker voices={studio.voiceover?.voices ?? studio.talk.voices} value={voice} onChange={setVoice} premiumName={pv?.name} />
-            </View>
-          ) : null}
+          <Text style={[type.label, { color: c.ink }]}>Voiceover voice</Text>
+          <VoicePicker voices={studio.voiceover?.voices ?? studio.talk.voices} value={voice} onChange={setVoice} premiumName={pv?.name} />
+          {!voiceover.trim() && voice.startsWith("el:") ? <Text style={[type.small, { color: c.muted }]}>Write a voiceover above to hear this voice. No voiceover, no extra credits.</Text> : null}
         </>
       ) : (
         <>
