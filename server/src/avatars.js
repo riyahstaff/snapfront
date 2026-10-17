@@ -10,7 +10,10 @@
 //
 // Two avatars come from real photos instead, and both need the seller to confirm consent:
 //   - "Your photo": the seller's own photo becomes the avatar (no AI step, so it's free).
-//   - "Blend": two photos of two adults become one new, believable person (Qwen Image Edit 2511).
+//   - "Blend": two photos of two adults become one new, believable person. Claude first studies both
+//     photos and writes one consistent description of the new person (a single skin tone, face, eyes,
+//     hair), then Nano Banana Pro makes the portrait from both photos plus that description. If it
+//     refuses or fails, Seedream 4 tries once with the same instructions.
 // Every uploaded photo is checked by Claude first: exactly one real person, clearly an adult, no
 // nudity. Photos are re-saved without their metadata (no location), photos staged but never used
 // are deleted after a day, and a blend's two source photos are deleted as soon as it's finished.
@@ -70,7 +73,7 @@ CREATE TABLE IF NOT EXISTS avatar_photos (
 CREATE INDEX IF NOT EXISTS avatar_photos_seller ON avatar_photos (seller_id, created_at);
 `);
 // Where an avatar came from: "ai" (a described character), "photo" (the seller's photo) or "blend".
-for (const [col, def] of [["source", "TEXT NOT NULL DEFAULT 'ai'"], ["consent_at", "TEXT"], ["src_files", "TEXT"]]) {
+for (const [col, def] of [["source", "TEXT NOT NULL DEFAULT 'ai'"], ["consent_at", "TEXT"], ["src_files", "TEXT"], ["engine", "TEXT"], ["gen_prompt", "TEXT"]]) {
   if (!db.prepare("PRAGMA table_info(avatars)").all().some((c) => c.name === col)) db.exec(`ALTER TABLE avatars ADD COLUMN ${col} ${def}`);
 }
 
@@ -154,9 +157,17 @@ export async function create(account, seller, b = {}) {
 const STAGED_KEEP_HOURS = 24, MAX_STAGED = 10;
 const CONSENT = { photo: "Confirm this is you, or that the person agreed to be your avatar.", blend: "Confirm both people are adults who agreed to have their photos blended." };
 export const MIXES = [
-  { id: "even", name: "Even mix", prompt: "an even mix of both people" },
-  { id: "1", name: "More like photo 1", prompt: "mostly like the person in image 1, with clear features from the person in image 2" },
-  { id: "2", name: "More like photo 2", prompt: "mostly like the person in image 2, with clear features from the person in image 1" },
+  { id: "even", name: "Even mix", prompt: "about half from each of them" },
+  { id: "1", name: "More like photo 1", prompt: "about 70% like the person in image 1 and 30% like the person in image 2" },
+  { id: "2", name: "More like photo 2", prompt: "about 70% like the person in image 2 and 30% like the person in image 1" },
+];
+// Who makes the blend: the best multi-photo model first, a second model if it refuses or fails.
+const ep = (env, fallback) => (process.env[env] || fallback).trim();
+const BLENDERS = [
+  { id: () => ep("RUNPOD_EP_BLEND", "nano-banana-pro-edit"),
+    input: (images, prompt) => ({ prompt, images, resolution: "2k", aspect_ratio: "4:5", output_format: "jpeg", enable_safety_checker: true }) },
+  { id: () => ep("RUNPOD_EP_BLEND_BACKUP", "seedream-v4-edit"),
+    input: (images, prompt) => ({ prompt, images, size: "1024*1280", enable_safety_checker: true }) },
 ];
 const SCREEN_PROMPT = `You check photos that people upload to make an AI avatar of a person for their online store. Do not say who anyone is. Answer with this JSON object:
 {"people": the number of real people visible in the photo,
@@ -226,10 +237,53 @@ export function fromPhoto(account, seller, b = {}) {
   dropPhoto(photo, true);
   return avatarView(getAvatar(seller, id));
 }
-function blendPrompt(mix, look) {
-  return `Image 1 and image 2 each show a real adult person. Create a photorealistic portrait of one new adult person whose face is ${mix.prompt}. `
-    + "Blend the face shape, eyes, nose, mouth, skin tone and hair of both so the result looks like one believable new person: not a copy of either, not a collage or split face. "
-    + `${look ? `Styling: ${look}. ` : ""}Half-body, centered, facing the camera with a relaxed natural expression, soft even light, plain soft gradient background, sharp focus, shot on a modern camera. One person only. ${NO_TEXT}`;
+/* ---------- blends: plan the new face with Claude, then make it ---------- */
+// Image models asked to "mix" two faces tend to paste half of each (a split face, two skin tones).
+// So Claude first decides what the one new person looks like, feature by feature, with a single
+// skin tone, and the image model is given that exact description along with both photos.
+const PLAN_PROMPT = (mix) => `Photo 1 and photo 2 show two different adults. An image AI will create ONE new, believable person who is a natural blend of both, ${mix.prompt}. Decide what that one new person looks like, so the image AI draws a single consistent face instead of pasting the two together. Judge each person's true skin color, not shadows, filters or lighting. Do not name or identify anyone.
+Answer with this JSON object (each value one short phrase):
+{"subject": "woman", "man" or "person",
+ "skin_tone": ONE specific, even skin tone for the new person, between the two people's tones according to the mix (for example "warm light golden-brown with neutral undertones"),
+ "face": face shape, cheekbones, jawline and chin,
+ "eyes": eye shape, size and color, and eyebrows,
+ "nose": nose shape,
+ "lips": lip shape and fullness,
+ "hair": hair color, texture, length and style,
+ "age": apparent adult age range, like "late 20s",
+ "extras": makeup and any jewelry worth keeping, or ""}`;
+let plannerImpl = null;
+/** Tests: replace Claude's blend plan. */
+export function setBlendPlanner(f) { plannerImpl = f; }
+async function planBlend(files, mix) {
+  const content = files.map((f) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: fs.readFileSync(path.join(dirs.images, f)).toString("base64") } }));
+  content.push({ type: "text", text: PLAN_PROMPT(mix) });
+  try {
+    const r = plannerImpl ? await plannerImpl(content) : await askJson(content, 700);
+    const out = {};
+    for (const k of ["subject", "skin_tone", "face", "eyes", "nose", "lips", "hair", "age", "extras"]) out[k] = clean(r?.[k], 160);
+    if (!["woman", "man", "person"].includes(out.subject)) out.subject = "person";
+    return out.skin_tone ? out : null;
+  } catch (e) { console.warn("[avatars] blend plan", e.message); return null; }
+}
+function blendPrompt(mix, look, plan) {
+  const who = plan?.subject || "person";
+  const looks = plan ? [
+    `Skin: ${plan.skin_tone}, one even, uniform tone across the whole face, neck, shoulders and arms.`,
+    plan.face && `Face: ${plan.face}.`, plan.eyes && `Eyes: ${plan.eyes}.`, plan.nose && `Nose: ${plan.nose}.`, plan.lips && `Lips: ${plan.lips}.`,
+    plan.hair && `Hair: ${plan.hair}.`, plan.age && `Apparent age: ${plan.age}.`, plan.extras && `Also: ${plan.extras}.`,
+  ].filter(Boolean).join(" ") : "Skin: one even, uniform tone across the whole face, neck, shoulders and arms, in between the two people's skin tones.";
+  return `Create a brand-new photorealistic portrait photo of one adult ${who}. This ${who} is a natural blend of the two people in the reference images, ${mix.prompt}: like a sibling who shares features of both, but clearly their own person and not a copy of either. `
+    + `${looks} ${look ? `Styling: ${look}. ` : ""}`
+    + "Head and shoulders to half-body, centered, facing the camera with a relaxed, natural expression. Soft, even studio light from the front so both sides of the face match. Plain light background, sharp focus, true-to-life skin texture. "
+    + `Never split or halve the face: no two-tone skin, no seam or color change down the middle, no mirroring, no collage, no two faces side by side. One person only. ${NO_TEXT}`;
+}
+async function submitBlend(id, step) {
+  const row = db.prepare("SELECT * FROM avatars WHERE id = ?").get(id);
+  const engine = BLENDERS[step];
+  const images = JSON.parse(row.src_files).map(img);
+  const r = await aimedia.runpod(`${engine.id()}/run`, { input: engine.input(images, row.gen_prompt) });
+  db.prepare("UPDATE avatars SET status='running', runpod_id=?, engine=?, updated_at=datetime('now') WHERE id=?").run(r.id, engine.id(), id);
 }
 /** "Blend": two photos of two adults become one new person. Uses the AI photo allowance, like other avatars. */
 export async function blend(account, seller, b = {}) {
@@ -251,8 +305,9 @@ export async function blend(account, seller, b = {}) {
   dropPhoto(p1, true); dropPhoto(p2, true);   // the files now belong to this job and go when it ends
   plans.recordUsage(account, KIND);
   try {
-    const r = await aimedia.runpod(`${EDIT}/run`, { input: { images: [img(p1.image_file), img(p2.image_file)], prompt: blendPrompt(mix, look), size: "1024*1280", output_format: "jpeg", seed: -1 } });
-    db.prepare("UPDATE avatars SET status='running', runpod_id=?, updated_at=datetime('now') WHERE id=?").run(r.id, id);
+    const plan = await planBlend([p1.image_file, p2.image_file], mix);
+    db.prepare("UPDATE avatars SET gen_prompt = ? WHERE id = ?").run(blendPrompt(mix, look, plan), id);
+    await submitBlend(id, 0);
   } catch (e) { fail("avatars", id, e.message); throw e; }
   return avatarView(getAvatar(seller, id));
 }
@@ -323,20 +378,30 @@ export async function poll({ table = null, id = null } = {}) {
     for (const row of rows) {
       try {
         // A blend is made by the photo editor, not text-to-image, so it's checked there.
-        const r = await aimedia.runpod(`${t === "avatars" && row.source === "blend" ? EDIT : endpoint}/status/${row.runpod_id}`);
+        // Blends run on the photo models (older ones on Qwen Image Edit), not text-to-image.
+        const blending = t === "avatars" && row.source === "blend";
+        const r = await aimedia.runpod(`${blending ? row.engine || EDIT : endpoint}/status/${row.runpod_id}`);
         if (r.status === "COMPLETED") {
           const url = aimedia.resultUrl(r.output, "scene");
           if (!url) { console.warn("[avatars]", row.id, "finished without an image:", JSON.stringify(r).slice(0, 400)); fail(t, row.id, "The AI finished but didn't send the image back. Try again."); continue; }
           const res = await aimedia.download(url);
           if (!res.ok) throw new Error(`download ${res.status}`);
           const name = `${crypto.randomUUID()}.jpg`;
-          fs.writeFileSync(path.join(dirs.images, name), Buffer.from(await res.arrayBuffer()));
+          let bytes = Buffer.from(await res.arrayBuffer());
+          // Some models send PNG; files here are saved as JPEG.
+          if (sniffImage(bytes) !== "image/jpeg") bytes = await sharp(bytes).flatten({ background: "#ffffff" }).jpeg({ quality: 92 }).toBuffer();
+          fs.writeFileSync(path.join(dirs.images, name), bytes);
           aimedia.markAi(name);
           db.prepare("INSERT OR IGNORE INTO seller_media (image_file, seller_id) VALUES (?,?)").run(name, row.seller_id);
           db.prepare(`UPDATE ${t} SET status='done', image_file=?, updated_at=datetime('now') WHERE id=? AND status='running'`).run(name, row.id);
           if (t === "avatars") dropSources(row.id);
         } else if (["FAILED", "CANCELLED", "TIMED_OUT"].includes(r.status)) {
           console.warn("[avatars]", row.id, r.status, JSON.stringify(r.error || r.output || "").slice(0, 400));
+          // A blend the first model refused or failed gets one more try on the backup model.
+          const step = blending ? BLENDERS.findIndex((b) => b.id() === row.engine) : -1;
+          if (step >= 0 && step + 1 < BLENDERS.length && row.src_files && row.gen_prompt) {
+            try { await submitBlend(row.id, step + 1); continue; } catch (e) { console.warn("[avatars] blend backup", row.id, e.message); }
+          }
           fail(t, row.id, t === "avatars" ? (row.source === "blend" ? "The AI couldn't blend these photos. Try two clear, front-facing photos." : "The AI couldn't make this avatar. Try a different description.") : "The AI couldn't make this shot. Try another pose or product photo.");
         } else if (tooOld(row)) fail(t, row.id, "This took too long. Try again.");
       } catch (e) {

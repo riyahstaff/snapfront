@@ -153,6 +153,10 @@ test("deleting an avatar removes it and its shots", async () => {
 let screenReply = { people: 1, face_visible: true, photo: true, adult: true, nudity: false };
 const screened = [];
 avatars.setPhotoScreen(async (buf) => { screened.push(buf); return screenReply; });
+const plans = [];
+let planReply = { subject: "woman", skin_tone: "warm light golden-brown with neutral undertones", face: "soft oval face, high cheekbones", eyes: "almond-shaped hazel eyes, groomed arched brows",
+  nose: "straight, narrow nose", lips: "full lips", hair: "honey-blonde shoulder-length soft waves", age: "late 20s", extras: "gold hoop earrings" };
+avatars.setBlendPlanner(async (content) => { plans.push(content); if (planReply instanceof Error) throw planReply; return planReply; });
 const face = async (color = "#c99a7a") => (await sharp({ create: { width: 900, height: 1200, channels: 3, background: color } })
   .withExif({ IFD0: { Copyright: "secret-location-test" } }).jpeg().toBuffer()).toString("base64");
 const staged = () => db.prepare("SELECT COUNT(*) AS n FROM avatar_photos").get().n;
@@ -233,20 +237,57 @@ test("blend two photos: two checked photos and consent, one AI job, sources dele
   assert.equal(r.body.status, "running");
   assert.equal(r.body.source, "blend");
   const job = rp.at(-1);
-  assert.match(job.url, /qwen-image-edit-2511\/run$/);
+  // Claude planned the face from both photos first.
+  const plan = plans.at(-1);
+  assert.equal(plan.filter((c) => c.type === "image").length, 2);
+  assert.match(plan.at(-1).text, /ONE specific, even skin tone/);
+  assert.match(plan.at(-1).text, /70% like the person in image 1/);
+  // Then Nano Banana Pro made it, from both photos plus that one description.
+  assert.match(job.url, /nano-banana-pro-edit\/run$/);
   assert.deepEqual(job.body.input.images, [a.image_url, b.image_url]);
-  assert.match(job.body.input.prompt, /one new adult person/);
-  assert.match(job.body.input.prompt, /mostly like the person in image 1/);
-  assert.match(job.body.input.prompt, /denim jacket/);
+  assert.deepEqual({ aspect_ratio: job.body.input.aspect_ratio, output_format: job.body.input.output_format }, { aspect_ratio: "4:5", output_format: "jpeg" });
+  const prompt = job.body.input.prompt;
+  assert.match(prompt, /one adult woman/);
+  assert.match(prompt, /Skin: warm light golden-brown with neutral undertones, one even, uniform tone/);
+  assert.match(prompt, /honey-blonde shoulder-length soft waves/);
+  assert.match(prompt, /70% like the person in image 1/);
+  assert.match(prompt, /Never split or halve the face: no two-tone skin/);
+  assert.match(prompt, /denim jacket/);
   assert.ok(files.every((f) => fs.existsSync(f)));             // kept while the AI works
   status = "COMPLETED";
   const done = (await call("GET", `/api/avatars/${r.body.id}`)).body;
   assert.equal(done.status, "done");
   const jobId = `rp${rp.indexOf(job) + 1}`;
-  assert.ok(rp.some((x) => x.url.endsWith(`qwen-image-edit-2511/status/${jobId}`)));   // checked on the editor, where it runs
+  assert.ok(rp.some((x) => x.url.endsWith(`nano-banana-pro-edit/status/${jobId}`)));   // checked where it runs
   assert.ok(!rp.some((x) => x.url.endsWith(`qwen-image-t2i/status/${jobId}`)));
   assert.equal(done.ai_generated, true);
   assert.ok(files.every((f) => !fs.existsSync(f)));            // then deleted
+});
+
+test("a blend the first model refuses is tried once on Seedream; without Claude's plan it still forbids a split face", async () => {
+  planReply = new Error("claude down");
+  const a = (await call("POST", "/api/avatar-photos", { imageBase64: await face("#b07a5a") })).body;
+  const b = (await call("POST", "/api/avatar-photos", { imageBase64: await face("#c89a7a") })).body;
+  status = "IN_PROGRESS";
+  const r = await call("POST", "/api/avatars", { source: "blend", photos: [a.id, b.id], consent: true });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  const first = rp.at(-1);
+  assert.match(first.url, /nano-banana-pro-edit\/run$/);
+  assert.match(first.body.input.prompt, /one even, uniform tone/);
+  assert.match(first.body.input.prompt, /no two-tone skin/);
+  status = "FAILED";
+  let v = (await call("GET", `/api/avatars/${r.body.id}`)).body;
+  assert.equal(v.status, "running");                              // not failed: handed to the backup
+  const second = rp.filter((x) => x.url.endsWith("/run")).at(-1);
+  assert.match(second.url, /seedream-v4-edit\/run$/);
+  assert.deepEqual(second.body.input.images, first.body.input.images);
+  assert.equal(second.body.input.prompt, first.body.input.prompt);
+  assert.equal(second.body.input.size, "1024*1280");
+  status = "COMPLETED";
+  v = (await call("GET", `/api/avatars/${r.body.id}`)).body;
+  assert.equal(v.status, "done");
+  assert.ok(rp.some((x) => x.url.includes("seedream-v4-edit/status/")));
+  planReply = { subject: "woman", skin_tone: "warm light golden-brown" };
 });
 
 test("a failed blend deletes its photos and gives the allowance back; other stores can't use my photos", async () => {
@@ -257,7 +298,8 @@ test("a failed blend deletes its photos and gives the allowance back; other stor
   status = "IN_PROGRESS";
   const r = (await call("POST", "/api/avatars", { source: "blend", photos: [a.id, b.id], consent: true })).body;
   status = "FAILED";
-  const failed = (await call("GET", `/api/avatars/${r.id}`)).body;
+  assert.equal((await call("GET", `/api/avatars/${r.id}`)).body.status, "running");   // first model failed: backup tries
+  const failed = (await call("GET", `/api/avatars/${r.id}`)).body;                     // backup failed too
   assert.equal(failed.status, "failed");
   assert.match(failed.error, /couldn't blend/);
   for (const x of [a, b]) assert.ok(!fs.existsSync(path.join(tmp, "images", x.image_url.split("/").pop())));
