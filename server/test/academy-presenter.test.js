@@ -56,6 +56,7 @@ test("only the owner or the studio token can see and set the presenter", async (
   assert.equal((await call("GET", "/api/academy-presenter", null, "wrong-token-wrong-token-wrong")).status, 401);
   const v = (await call("GET", "/api/academy-presenter", null, owner.token)).body;
   assert.equal(v.active, false);
+  assert.equal(v.building, null);                                         // an object with the step while building, else null
   assert.deepEqual(v.avatars.map((a) => a.id), [avatarId]);              // faceless avatars can't present
   assert.ok(v.screens.some((s) => s.lesson === "partner" && s.slide === 3 && !s.recorded));
   assert.equal((await call("PUT", "/api/academy-presenter", { avatar_id: "avt_visor" }, owner.token)).status, 400);

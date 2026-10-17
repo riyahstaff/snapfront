@@ -282,7 +282,8 @@ export async function view(status = {}) {
     lessons: LESSONS.map((l) => ({ id: l.id, title: l.title, slides: l.slides.length })),
     screens: screenList(),
     cost_per_slide_usd: TALK.usd("480p"),
-    building: progress.lesson ? { ...progress } : null,
     ...status,
+    // Which lesson is being made and how far along (the build status only says yes or no).
+    building: progress.lesson ? { ...progress } : null,
   };
 }
