@@ -19,14 +19,16 @@ const errText = (e: unknown, fallback: string) => (e instanceof ApiError ? e.mes
 /** Make an Instagram, Facebook, or TikTok post from a seller-owned product photo. Rendering never publishes by itself. */
 export default function MarketingScreen() {
   const me = useMe();
-  const params = useLocalSearchParams<{ product_id?: string; image_url?: string }>();
+  const params = useLocalSearchParams<{ product_id?: string; image_url?: string; format?: string }>();
+  // Avatar photos open Marketing already set to a story when the seller asked for one.
+  const initialFormat: PostFormat | undefined = params.format === "story" || params.format === "square" || params.format === "post" ? params.format : undefined;
   const storeId = me?.id ?? null;
   const storeRevision = api.storeRevision();
   // A seller switch gets a fresh screen instance rather than synchronously clearing state in an effect.
-  return <MarketingContent key={`${storeId ?? "none"}:${storeRevision}:${params.product_id ?? ""}`} me={me} storeId={storeId} storeRevision={storeRevision} initialProductId={params.product_id} imageUrl={params.image_url} />;
+  return <MarketingContent key={`${storeId ?? "none"}:${storeRevision}:${params.product_id ?? ""}:${params.image_url ?? ""}:${params.format ?? ""}`} me={me} storeId={storeId} storeRevision={storeRevision} initialProductId={params.product_id} imageUrl={params.image_url} initialFormat={initialFormat} />;
 }
 
-function MarketingContent({ me, storeId, storeRevision, initialProductId, imageUrl }: { me: Me | null; storeId: string | null; storeRevision: number; initialProductId?: string; imageUrl?: string }) {
+function MarketingContent({ me, storeId, storeRevision, initialProductId, imageUrl, initialFormat }: { me: Me | null; storeId: string | null; storeRevision: number; initialProductId?: string; imageUrl?: string; initialFormat?: PostFormat }) {
   const c = useColors();
   const [opts, setOpts] = useState<MarketingOptions | null>(null);
   const [products, setProducts] = useState<Product[] | null>(null);
@@ -35,7 +37,7 @@ function MarketingContent({ me, storeId, storeRevision, initialProductId, imageU
   const [offer, setOffer] = useState("");
   const [copy, setCopy] = useState<PostCopy | null>(null);
   const [kind, setKind] = useState<PostKind>("image");
-  const [format, setFormat] = useState<PostFormat>("post");
+  const [format, setFormat] = useState<PostFormat>(initialFormat ?? "post");
   const [template, setTemplate] = useState("spotlight");
   const [result, setResult] = useState<RenderedPost | null>(null);
   const [busy, setBusy] = useState<string | null>(null);

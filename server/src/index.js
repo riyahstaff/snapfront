@@ -41,6 +41,7 @@ import * as daily from "./daily.js";
 import * as community from "./community.js";
 import * as ugc from "./ugc.js";
 import * as faceless from "./faceless.js";
+import * as avatars from "./avatars.js";
 import * as social from "./social.js";
 import * as digitalDesigns from "./digital-designs.js";
 import * as imageAssistant from "./image-assistant.js";
@@ -839,6 +840,13 @@ app.post("/api/faceless/script", auth, aiLimit, wrap(async (req, res) => res.jso
 app.post("/api/faceless/videos", auth, (req, res) => res.status(201).json(faceless.start(req.seller, req.body || {})));
 app.get("/api/faceless/videos/:id", auth, (req, res) => res.json(faceless.job(req.seller, req.params.id)));
 app.delete("/api/faceless/videos/:id", auth, (req, res) => { faceless.remove(req.seller, req.params.id); res.status(204).end(); });
+/* ---------- faceless avatars: an original AI character for posts and stories ---------- */
+app.get("/api/avatars", auth, (req, res) => res.json(avatars.overview(req.seller)));
+app.post("/api/avatars", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatars.create(req.account, req.seller, req.body || {}))));
+app.get("/api/avatars/:id", auth, wrap(async (req, res) => res.json(await avatars.avatar(req.seller, req.params.id))));
+app.delete("/api/avatars/:id", auth, (req, res) => { avatars.remove(req.seller, req.params.id); res.status(204).end(); });
+app.post("/api/avatar-shots", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await avatars.shoot(req.account, req.seller, req.body || {}))));
+app.get("/api/avatar-shots/:id", auth, wrap(async (req, res) => res.json(await avatars.shot(req.seller, req.params.id))));
 
 /* ---------- email opens, clicks and unsubscribes (links in sent emails) ---------- */
 app.get("/e/o/:file", (req, res) => {
@@ -1307,6 +1315,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   if (aimedia.enabled()) {
     aimedia.check().then((st) => console.log(`[runpod] key ${st === 200 ? "ok" : `check returned ${st}`}`)).catch((e) => console.error("[runpod] check", e.message));
     setInterval(() => aimedia.poll().catch((e) => console.error("[runpod] poll", e.message)), 8_000).unref();
+    setInterval(() => avatars.poll().catch((e) => console.error("[avatars] poll", e.message)), 8_000).unref();
   }
   // Email broadcasts and automatic emails go out from a queue.
   audience.startWorker();

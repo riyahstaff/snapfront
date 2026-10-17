@@ -35,6 +35,7 @@ const TOOLS: { title: string; detail: string; icon: Icon; href: Href }[] = [
   { title: "Earn with Snapfront", detail: "Share your link: 40% of every Lifetime sale and $19 a month for every Monthly member.", icon: "cash-outline", href: "/earn" },
   { title: "Snapfront Academy", detail: "Short video lessons: your store, content, going LIVE on TikTok and the top 10 ways to market.", icon: "school-outline", href: "/academy" },
   { title: "Faceless videos", detail: "Your product photos, big captions and a natural voiceover, ready for TikTok and Reels.", icon: "videocam-outline", href: "/faceless" },
+  { title: "Faceless avatars", detail: "An original AI character that shows off your products in posts and stories, so you never have to be on camera.", icon: "person-circle-outline", href: "/avatars" },
   { title: "UGC creator kit", detail: "A portfolio page, rates, scripts and pitches to get paid by brands for short videos.", icon: "aperture-outline", href: "/ugc" },
   { title: "Community", detail: "The members' Discord, Whop and live coaching.", icon: "chatbubbles-outline", href: "/community" },
 ];

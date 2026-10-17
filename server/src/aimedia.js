@@ -69,6 +69,10 @@ async function rp(pathname, body) {
   return data;
 }
 
+/** Runpod calls and result downloads for other AI tools (faceless avatars), sharing the key, errors and test stand-in. */
+export const runpod = (pathname, body) => rp(pathname, body);
+export const download = (url, ms = 120_000) => fetchImpl(url, { signal: AbortSignal.timeout(ms) });
+
 /** Whether the key works (logged at startup). */
 export async function check() {
   const k = config.runpodKey;
