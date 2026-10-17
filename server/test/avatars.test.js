@@ -242,6 +242,9 @@ test("blend two photos: two checked photos and consent, one AI job, sources dele
   status = "COMPLETED";
   const done = (await call("GET", `/api/avatars/${r.body.id}`)).body;
   assert.equal(done.status, "done");
+  const jobId = `rp${rp.indexOf(job) + 1}`;
+  assert.ok(rp.some((x) => x.url.endsWith(`qwen-image-edit-2511/status/${jobId}`)));   // checked on the editor, where it runs
+  assert.ok(!rp.some((x) => x.url.endsWith(`qwen-image-t2i/status/${jobId}`)));
   assert.equal(done.ai_generated, true);
   assert.ok(files.every((f) => !fs.existsSync(f)));            // then deleted
 });
