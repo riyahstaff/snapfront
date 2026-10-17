@@ -872,6 +872,15 @@ app.post("/api/academy-presenter/outfit", ownerOrStudio, wrap(async (req, res) =
 }));
 app.put("/api/academy-presenter/screens/:lesson/:slide", ownerOrStudio, express.raw({ type: ["video/*", "application/octet-stream"], limit: "80mb" }),
   wrap(async (req, res) => res.json(await academyPresenter.saveScreen(req.params.lesson, req.params.slide, req.body))));
+/* ---------- Studio: Runpod jobs for Snapfront's own site artwork (the home page's tool cards). Owner or studio token only. ---------- */
+const STUDIO_EPS = () => new Set(["qwen-image-t2i", "qwen-image-edit-2511", "nano-banana-pro-edit", "seedream-v4-edit", "seedream-v4-t2i", "nano-banana-pro-t2i",
+  ...avatarVideos.MODELS.map((m) => m.endpoint())]);
+const studioEp = (req) => { if (!STUDIO_EPS().has(req.params.ep)) throw httpError(404, "Unknown studio model."); return req.params.ep; };
+app.post("/api/studio/runpod/:ep/run", ownerOrStudio, wrap(async (req, res) => res.json(await aimedia.runpod(`${studioEp(req)}/run`, { input: req.body?.input || {} }))));
+app.get("/api/studio/runpod/:ep/status/:id", ownerOrStudio, wrap(async (req, res) => {
+  if (!/^[\w-]{6,80}$/.test(req.params.id)) throw httpError(400, "Bad job id.");
+  res.json(await aimedia.runpod(`${studioEp(req)}/status/${req.params.id}`));
+}));
 app.post("/api/admin/academy/build", adminOnly, (req, res) => { academy.buildMissing({ voice: req.body?.voice }).catch((e) => console.error("[academy]", e.message)); res.json(academy.buildStatus()); });
 app.get("/api/daily-prompt", auth, wrap(async (req, res) => res.json(await daily.today(req.seller, { fresh: req.query.fresh === "1" }))));
 app.get("/api/community", auth, (req, res) => res.json(community.view(req.account)));
