@@ -69,3 +69,13 @@ Credits = provider cost × `CREDIT_MARKUP` (2.5) ÷ `CREDIT_VALUE_USD` ($0.04), 
 - Up to 3 videos in progress per store. Jobs that fail, time out (40 minutes) or never start get their credits back.
 - Admin: `POST /api/admin/credits/:account {amount, note}` with `ADMIN_TOKEN` adds or removes credits (promos, support, testers).
 - API: `GET /api/credits`, `POST /api/credits/checkout {pack}`, `POST /api/credits/confirm {session_id}`, `GET/POST /api/avatar-videos`, `GET/DELETE /api/avatar-videos/:id`.
+
+### Premium voices (ElevenLabs)
+
+Voiceovers and talking avatars can use a **premium voice** read by ElevenLabs on Snapfront's own ElevenLabs account, charged to the seller in credits on top of the video. Free Snapfront voices stay free.
+
+- Turn it on by adding `ELEVENLABS_API_KEY` on Railway. Without it, only the free voices show.
+- Only ElevenLabs' stock ("premade") voices are offered, never the account owner's own or cloned voices. To sell exactly the voices you choose instead, set `ELEVENLABS_VOICES` to a comma-separated list of voice ids.
+- Price: `ELEVENLABS_USD_PER_1K_CHARS` (default $0.30) × the credit markup, at least 5 credits. About 5 credits for a short voiceover and 10 for a 450-character talking script.
+- Model: `ELEVENLABS_MODEL` (default `eleven_multilingual_v2`).
+- If ElevenLabs fails (quota, outage), the free voice reads it instead, the premium credits come back, and the video says so. Owner accounts aren't charged.

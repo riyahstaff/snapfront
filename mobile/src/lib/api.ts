@@ -183,10 +183,13 @@ export type CreditEntry = { id: string; delta: number; kind: "purchase" | "spend
 export type CreditsView = { enabled: boolean; balance: number; terms: string; packs: CreditPack[]; history: CreditEntry[]; added?: number; free?: boolean };
 export type VideoModel = { id: "vidu" | "seedance" | "sora"; name: string; badge: string; blurb: string; durations: number[]; resolutions: string[]; sound: "none" | "optional" | "always"; prices: Record<string, number> };
 export type AvatarVideo = { id: string; kind: "motion" | "talk"; model: string; model_name: string; avatar_id: string | null; shot_id: string | null; duration: number | null; resolution: string;
-  sound: boolean; script: string | null; voiceover?: boolean; credits: number; status: AvatarJobStatus; stage?: "voice" | null; error: string | null; note?: string | null; url: string | null; created_at: string };
+  sound: boolean; script: string | null; voiceover?: boolean; premium_voice?: boolean; credits: number; status: AvatarJobStatus; stage?: "voice" | null; error: string | null; note?: string | null; url: string | null; created_at: string };
+/** A voice for voiceovers and talking avatars: free (Snapfront's own) or premium (ElevenLabs, extra credits). */
+export type VideoVoice = { id: string; name: string; accent: string; gender?: string; premium?: boolean };
 export type AvatarVideoStudio = { enabled: boolean; balance: number; free?: boolean; models: VideoModel[]; motions: { id: string; name: string }[];
-  voiceover?: { chars_per_second: number; voices: { id: string; name: string; accent: string }[] };
-  talk: { resolutions: string[]; prices: Record<string, number>; max_chars: number; styles: string[]; voices: { id: string; name: string; accent: string }[] }; videos: AvatarVideo[] };
+  voiceover?: { chars_per_second: number; voices: VideoVoice[] };
+  premium_voice?: { name: string; per_1k_chars: number; min: number; step: number } | null;
+  talk: { resolutions: string[]; prices: Record<string, number>; max_chars: number; styles: string[]; voices: VideoVoice[] }; videos: AvatarVideo[] };
 export type AvatarStudio = { enabled: boolean; max_avatars: number; styles: { id: string; name: string; blurb: string }[]; poses: { id: string; name: string }[]; avatars: Avatar[]; shots: AvatarShot[] };
 /** Store insights (Pro) */
 export type Insights = { days: number; visitors: number; views: number; orders: number; sales: number; conversion: number;

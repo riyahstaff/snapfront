@@ -24,6 +24,7 @@ import { STYLES, asksForLikeness } from "./avatars.js";
 import { spawn } from "node:child_process";
 import ffmpegPath from "ffmpeg-static";
 import { speak, wav, VOICES } from "./narrated.js";
+import * as elevenlabs from "./elevenlabs.js";
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS avatar_videos (
@@ -52,7 +53,7 @@ CREATE TABLE IF NOT EXISTS avatar_videos (
 CREATE INDEX IF NOT EXISTS avatar_videos_seller ON avatar_videos (seller_id, created_at);
 `);
 // Motion videos with a voiceover: "ai" while the model works, then "voice" while our voice is mixed in.
-for (const [col, def] of [["stage", "TEXT NOT NULL DEFAULT 'ai'"], ["raw_file", "TEXT"], ["note", "TEXT"]]) {
+for (const [col, def] of [["stage", "TEXT NOT NULL DEFAULT 'ai'"], ["raw_file", "TEXT"], ["note", "TEXT"], ["voice_credits", "INTEGER NOT NULL DEFAULT 0"]]) {
   if (!db.prepare("PRAGMA table_info(avatar_videos)").all().some((c) => c.name === col)) db.exec(`ALTER TABLE avatar_videos ADD COLUMN ${col} ${def}`);
 }
 
@@ -90,7 +91,10 @@ const MAX_RUNNING = 3;
 const clean = (s, n) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
 const img = (file) => `${config.publicUrl}/img/${file}`;
 
-export function options(account) {
+const freeVoices = () => VOICES.map(({ id, name, accent }) => ({ id, name, accent, premium: false }));
+export async function options(account) {
+  const premium = elevenlabs.enabled() ? await elevenlabs.voices() : [];
+  const voices = [...freeVoices(), ...premium];
   return {
     enabled: aimedia.enabled(),
     balance: credits.balance(account.id),
@@ -98,10 +102,20 @@ export function options(account) {
     models: MODELS.map((m) => ({ id: m.id, name: m.name, badge: m.badge, blurb: m.blurb, durations: m.durations, resolutions: m.resolutions, sound: m.sound,
       prices: Object.fromEntries(m.durations.flatMap((d) => m.resolutions.map((r) => [`${d}|${r}`, priceOf(m, d, r)]))) })),
     talk: { resolutions: TALK.resolutions, prices: Object.fromEntries(TALK.resolutions.map((r) => [r, talkPrice(r)])), max_chars: TALK.max_chars,
-      styles: [...TALKING_STYLES], voices: VOICES.map(({ id, name, accent }) => ({ id, name, accent })) },
+      styles: [...TALKING_STYLES], voices },
     motions: MOTIONS.map(({ id, name }) => ({ id, name })),
-    voiceover: { chars_per_second: 15, voices: VOICES.map(({ id, name, accent }) => ({ id, name, accent })) },
+    voiceover: { chars_per_second: 15, voices },
+    // Premium (ElevenLabs) voices cost extra: this many credits for a given script length.
+    premium_voice: premium.length ? { name: "ElevenLabs", per_1k_chars: elevenlabs.ratePer1k(), min: 5, step: 5 } : null,
   };
+}
+/** Check a chosen voice: a free one, or a premium voice that's on sale. Returns { voice, extra }. */
+async function pickVoice(id, text) {
+  if (elevenlabs.isPremium(id)) {
+    if (!(await elevenlabs.isOnSale(id))) throw httpError(400, "That premium voice isn't available. Pick another voice.");
+    return { voice: id, extra: elevenlabs.priceFor(text.length) };
+  }
+  return { voice: VOICES.some((v) => v.id === id) ? id : "af_heart", extra: 0 };
 }
 
 /* ---------- starting a video ---------- */
@@ -152,18 +166,18 @@ async function startMotion(account, seller, b) {
   const voiceover = clean(b.voiceover, voiceoverChars(duration));
   if (voiceover && voiceover.length < 4) throw httpError(400, "Write a little more for the voiceover, or leave it empty.");
   if (asksForLikeness(voiceover)) throw httpError(400, "Write the voiceover in your own words, not as a real person.");
-  const voice = VOICES.some((v) => v.id === b.voice) ? b.voice : "af_heart";
+  const { voice, extra } = voiceover ? await pickVoice(b.voice, voiceover) : { voice: null, extra: 0 };
   busy(seller);
   const style = STYLES.find((s) => s.id === src.avatar.style) || STYLES[0];
   const sound = model.sound === "always" ? true : model.sound === "optional" ? b.sound !== false : false;
   const prompt = `${motion ? motion.prompt : custom}. Keep the character exactly as in the reference image (same design, outfit and colors) and the product exactly as it is (same shape, colors, label and text). ${style.keep} `
     + `Smooth, natural motion for a vertical social media video. Nobody speaks: no dialogue, no voices, no narration, no singing. `
     + `${sound ? "Only background music and natural ambient sound. " : ""}${NO_TEXT}`;
-  const price = priceOf(model, duration, resolution);
+  const price = priceOf(model, duration, resolution) + extra;
   const id = newId("vid");
-  db.prepare(`INSERT INTO avatar_videos (id, seller_id, account_id, avatar_id, shot_id, kind, model, duration, resolution, sound, prompt, script, voice, credits)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, seller.id, account.id, src.avatar.id, src.shot.id, "motion", model.id, duration, resolution, sound ? 1 : 0, prompt, voiceover || null, voiceover ? voice : null, price);
-  try { credits.spend(account, price, id, `${model.name} video, ${duration}s ${resolution}`); }
+  db.prepare(`INSERT INTO avatar_videos (id, seller_id, account_id, avatar_id, shot_id, kind, model, duration, resolution, sound, prompt, script, voice, credits, voice_credits)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, seller.id, account.id, src.avatar.id, src.shot.id, "motion", model.id, duration, resolution, sound ? 1 : 0, prompt, voiceover || null, voice, price, extra);
+  try { credits.spend(account, price, id, `${model.name} video, ${duration}s ${resolution}${extra ? " + premium voice" : ""}`); }
   catch (e) { db.prepare("DELETE FROM avatar_videos WHERE id = ?").run(id); throw e; }
   const images = [img(src.image), img(src.avatar.image_file), ...(src.product ? [img(src.product)] : [])];
   try {
@@ -181,14 +195,14 @@ async function startTalk(account, seller, b) {
   const script = clean(b.script, TALK.max_chars);
   if (script.length < 8) throw httpError(400, "Write what your avatar should say.");
   if (asksForLikeness(script)) throw httpError(400, "Write the script in your avatar's own voice, not as a real person.");
-  const voice = VOICES.some((v) => v.id === b.voice) ? b.voice : "af_heart";
+  const { voice, extra } = await pickVoice(b.voice, script);
   busy(seller);
-  const price = talkPrice(resolution);
+  const price = talkPrice(resolution) + extra;
   const id = newId("vid");
   const prompt = "The character speaks naturally to the camera with lively expressions and small, natural gestures, matching the voice. Keep the character exactly as in the image. " + NO_TEXT;
-  db.prepare(`INSERT INTO avatar_videos (id, seller_id, account_id, avatar_id, shot_id, kind, model, resolution, sound, prompt, script, voice, credits)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, seller.id, account.id, src.avatar.id, src.shot?.id || null, "talk", "talk", resolution, 1, prompt, script, voice, price);
-  try { credits.spend(account, price, id, `Talking avatar, ${resolution}`); }
+  db.prepare(`INSERT INTO avatar_videos (id, seller_id, account_id, avatar_id, shot_id, kind, model, resolution, sound, prompt, script, voice, credits, voice_credits)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, seller.id, account.id, src.avatar.id, src.shot?.id || null, "talk", "talk", resolution, 1, prompt, script, voice, price, extra);
+  try { credits.spend(account, price, id, `Talking avatar, ${resolution}${extra ? " + premium voice" : ""}`); }
   catch (e) { db.prepare("DELETE FROM avatar_videos WHERE id = ?").run(id); throw e; }
   kick();
   return view(get(seller, id));
@@ -210,6 +224,25 @@ export function kick() {
       }
     } finally { working = false; }
   })().catch((e) => console.warn("[avatar-videos] voice worker", e.message));
+}
+
+/* ---------- the voice: premium (ElevenLabs) or free (Kokoro), written as a WAV ---------- */
+/**
+ * Read `row.script` into `outPath`. A premium voice that fails falls back to the free voice; its
+ * extra credits come back and the video says so. Returns the voice length in seconds.
+ */
+async function makeVoice(row, outPath) {
+  if (elevenlabs.isPremium(row.voice)) {
+    try { return await elevenlabs.speakToWav(row.script, row.voice, outPath); }
+    catch (e) {
+      console.warn("[avatar-videos] premium voice", row.id, e.message);
+      if (row.voice_credits) credits.refundPart(row.id, row.voice_credits, "Premium voice unavailable, so the free voice was used");
+      db.prepare("UPDATE avatar_videos SET note = ? WHERE id = ?").run("The premium voice was unavailable, so Snapfront's free voice read it and the extra credits came back.", row.id);
+    }
+  }
+  const spoken = await speak(row.script, elevenlabs.isPremium(row.voice) ? "af_heart" : (row.voice || "af_heart"));
+  fs.writeFileSync(outPath, wav(spoken));
+  return spoken.samples.length / spoken.rate;
 }
 
 /* ---------- voiceovers: our voice over the model's video ---------- */
@@ -243,14 +276,14 @@ async function addVoiceover(row) {
   const voicePath = path.join(dirs.media, `${crypto.randomUUID()}.wav`);
   const out = `${crypto.randomUUID()}.mp4`;
   try {
-    const spoken = await speak(row.script, row.voice || "af_heart");
-    fs.writeFileSync(voicePath, wav(spoken));
-    await mixVoiceover(raw, voicePath, spoken.samples.length / spoken.rate, path.join(dirs.media, out));
+    const seconds = await makeVoice(row, voicePath);
+    await mixVoiceover(raw, voicePath, seconds, path.join(dirs.media, out));
     db.prepare("UPDATE avatar_videos SET status='done', stage='done', file=?, updated_at=datetime('now') WHERE id=? AND status='running'").run(out, row.id);
     fs.rmSync(raw, { force: true });
   } catch (e) {
     // The video itself is fine: deliver it without the voiceover rather than lose it.
     console.warn("[avatar-videos] voiceover", row.id, e.message);
+    if (row.voice_credits && elevenlabs.isPremium(row.voice)) credits.refundPart(row.id, row.voice_credits, "Voiceover couldn't be added");
     db.prepare("UPDATE avatar_videos SET status='done', stage='done', file=raw_file, note=?, updated_at=datetime('now') WHERE id=? AND status='running'")
       .run("The voiceover couldn't be added, so this is the video without it.", row.id);
   } finally { fs.rmSync(voicePath, { force: true }); }
@@ -258,7 +291,7 @@ async function addVoiceover(row) {
 async function voiceAndSubmit(row) {
   try {
     const name = `${crypto.randomUUID()}.wav`;
-    fs.writeFileSync(path.join(dirs.media, name), wav(await speak(row.script, row.voice)));
+    await makeVoice(row, path.join(dirs.media, name));
     const src = row.shot_id ? db.prepare("SELECT image_file FROM avatar_shots WHERE id = ?").get(row.shot_id)?.image_file
       : db.prepare("SELECT image_file FROM avatars WHERE id = ?").get(row.avatar_id)?.image_file;
     if (!src) throw new Error("The avatar photo is gone.");
@@ -322,11 +355,11 @@ function get(seller, id) {
 }
 const nameOf = (row) => (row.kind === "talk" ? TALK.name : MODELS.find((m) => m.id === row.model)?.name || OLD_NAMES[row.model] || row.model);
 export const view = (v) => ({ id: v.id, kind: v.kind, model: v.model, model_name: nameOf(v), avatar_id: v.avatar_id, shot_id: v.shot_id, duration: v.duration, resolution: v.resolution,
-  sound: Boolean(v.sound), script: v.script, voiceover: v.kind === "motion" && Boolean(v.script), credits: v.credits, status: v.status,
+  sound: Boolean(v.sound), script: v.script, voiceover: v.kind === "motion" && Boolean(v.script), premium_voice: elevenlabs.isPremium(v.voice), credits: v.credits, status: v.status,
   stage: v.status === "running" && v.stage === "voice" ? "voice" : null, error: v.status === "failed" ? v.error : null, note: v.note || null,
   url: v.file ? `${config.publicUrl}/media/${v.file}` : null, created_at: v.created_at, ai_generated: true });
-export function list(account, seller) {
-  return { ...options(account), videos: db.prepare("SELECT * FROM avatar_videos WHERE seller_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 40").all(seller.id).map(view) };
+export async function list(account, seller) {
+  return { ...(await options(account)), videos: db.prepare("SELECT * FROM avatar_videos WHERE seller_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 40").all(seller.id).map(view) };
 }
 export async function one(seller, id) {
   get(seller, id);

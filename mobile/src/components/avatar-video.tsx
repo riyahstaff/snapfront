@@ -7,7 +7,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { Ionicons } from "@expo/vector-icons";
 import { Button, Field, Notice, Pill } from "@/components/ui";
 import { Toggle } from "@/components/panel";
-import { api, ApiError, type AvatarVideo, type AvatarVideoStudio } from "@/lib/api";
+import { api, ApiError, type AvatarVideo, type AvatarVideoStudio, type VideoVoice } from "@/lib/api";
 import { saveToPhone, shareFile } from "@/lib/media";
 import { radius, space, type, useColors } from "@/lib/theme";
 
@@ -49,7 +49,13 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
     if (!m.durations.includes(duration)) setDuration(m.durations[0]);
     if (!m.resolutions.includes(resolution)) setResolution(m.resolutions[0]);
   };
-  const price = mode === "talk" ? studio.talk.prices[resolution] : model?.prices[`${duration}|${resolution}`];
+  const base = mode === "talk" ? studio.talk.prices[resolution] : model?.prices[`${duration}|${resolution}`];
+  // A premium (ElevenLabs) voice adds credits by script length, priced exactly like the server.
+  const spoken = (mode === "talk" ? script : voiceover).trim();
+  const pv = studio.premium_voice;
+  const premiumChosen = !!spoken && voice.startsWith("el:") && !!pv;
+  const extra = premiumChosen && pv ? Math.max(pv.min, Math.ceil(((spoken.length || 1) / 1000) * pv.per_1k_chars / pv.step) * pv.step) : 0;
+  const price = base != null ? base + extra : undefined;
   const short = !studio.free && price != null && studio.balance < price;
   const voMax = Math.max(40, Math.floor(duration * (studio.voiceover?.chars_per_second ?? 15)));
   const ready = mode === "talk" ? script.trim().length >= 8 : (!!motion || prompt.trim().length >= 3) && (voiceover.trim().length === 0 || voiceover.trim().length >= 4);
@@ -104,7 +110,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
             value={voiceover} onChangeText={setVoiceover} maxLength={voMax} multiline placeholder="Plan your week in two minutes. Link in bio." />
           {voiceover.trim() ? (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-              {(studio.voiceover?.voices ?? studio.talk.voices).map((v) => <Chip key={v.id} label={v.name} sub={v.accent === "British" ? "UK" : undefined} on={voice === v.id} onPress={() => setVoice(v.id)} />)}
+              <VoicePicker voices={studio.voiceover?.voices ?? studio.talk.voices} value={voice} onChange={setVoice} premiumName={pv?.name} />
             </View>
           ) : null}
         </>
@@ -114,7 +120,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
             placeholder="Hey! This is the serum I use every single morning. Link's in my bio." />
           <Text style={[type.label, { color: c.ink }]}>Voice</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-            {studio.talk.voices.map((v) => <Chip key={v.id} label={v.name} sub={v.accent === "British" ? "UK" : undefined} on={voice === v.id} onPress={() => setVoice(v.id)} />)}
+            <VoicePicker voices={studio.talk.voices} value={voice} onChange={setVoice} premiumName={pv?.name} />
           </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
             {studio.talk.resolutions.map((r) => <Chip key={r} label={r} sub={`${studio.talk.prices[r]} cr`} on={r === resolution} onPress={() => setResolution(r)} />)}
@@ -123,7 +129,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
       )}
 
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md, flexWrap: "wrap" }}>
-        <Text style={[type.body, { color: c.ink }]}><Text style={{ fontWeight: "700" }}>{price ?? "–"} credits</Text><Text style={{ color: c.muted }}>{studio.free ? "  ·  free for you (owner account)" : `  ·  you have ${studio.balance.toLocaleString()}`}</Text></Text>
+        <Text style={[type.body, { color: c.ink }]}><Text style={{ fontWeight: "700" }}>{price ?? "–"} credits</Text>{extra ? <Text style={{ color: c.muted }}>{`  (includes ${extra} for the premium voice)`}</Text> : null}<Text style={{ color: c.muted }}>{studio.free ? "  ·  free for you (owner account)" : `  ·  you have ${studio.balance.toLocaleString()}`}</Text></Text>
       </View>
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
       {short ? (
@@ -136,11 +142,33 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
   );
 }
 
+/** Free voices first, then premium ones (ElevenLabs, extra credits), in their own labelled group. */
+function VoicePicker({ voices, value, onChange, premiumName }: { voices: VideoVoice[]; value: string; onChange: (id: string) => void; premiumName?: string }) {
+  const c = useColors();
+  const free = voices.filter((v) => !v.premium), premium = voices.filter((v) => v.premium);
+  const chip = (v: VideoVoice) => <Chip key={v.id} label={v.name} sub={v.premium ? [v.accent, v.gender].filter(Boolean).join(" ") || undefined : v.accent === "British" ? "UK" : undefined} on={value === v.id} onPress={() => onChange(v.id)} />;
+  return (
+    <View style={{ gap: space.sm }}>
+      <Text style={[type.small, { color: c.muted }]}>Free voices</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>{free.map(chip)}</View>
+      {premium.length ? (
+        <>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Ionicons name="star" size={13} color={c.accent} />
+            <Text style={[type.small, { color: c.ink }]}>Premium voices{premiumName ? ` by ${premiumName}` : ""} · a few extra credits</Text>
+          </View>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>{premium.map(chip)}</View>
+        </>
+      ) : null}
+    </View>
+  );
+}
+
 /** A finished (or in-progress) avatar video. */
 export function VideoCard({ video, width, onDelete, onMsg }: { video: AvatarVideo; width: number; onDelete: (id: string) => void; onMsg: (m: Msg) => void }) {
   const c = useColors();
   const [saving, setSaving] = useState(false);
-  const label = video.kind === "talk" ? "Talking avatar" : `${video.model_name} · ${video.duration}s ${video.resolution}${video.voiceover ? " · voiceover" : ""}`;
+  const label = video.kind === "talk" ? `Talking avatar${video.premium_voice ? " · premium voice" : ""}` : `${video.model_name} · ${video.duration}s ${video.resolution}${video.voiceover ? (video.premium_voice ? " · premium voiceover" : " · voiceover") : ""}`;
   return (
     <View style={{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.md, gap: space.md }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>

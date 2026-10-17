@@ -69,6 +69,8 @@ const num = (env, fallback, min, max) => { const v = Number(process.env[env]); r
 const CREDIT_VALUE = () => num("CREDIT_VALUE_USD", 0.04, 0.001, 10);
 const MARKUP = () => num("CREDIT_MARKUP", 2.5, 1, 20);
 /** Credits for something that costs `usd` at the provider, rounded up to a multiple of 5. */
+/** Credits per US dollar of provider cost, before rounding (so the app can price things the same way). */
+export const perDollar = () => MARKUP() / CREDIT_VALUE();
 export const creditsFor = (usd) => Math.max(5, Math.ceil((usd * MARKUP()) / CREDIT_VALUE() / 5) * 5);
 
 export const enabled = () => Boolean(config.stripeKey);
@@ -104,6 +106,13 @@ export function refund(ref, note = "Didn't work, so the credits came back") {
   const s = db.prepare("SELECT * FROM credit_ledger WHERE kind = 'spend' AND ref = ?").get(String(ref));
   if (!s || !s.delta) return false;   // nothing was charged (the owner's free videos)
   return insert(s.account_id, -s.delta, "refund", ref, note);
+}
+/** Give back part of a job's credits (once), e.g. a premium voice that fell back to the free one. */
+export function refundPart(ref, amount, note) {
+  const s = db.prepare("SELECT * FROM credit_ledger WHERE kind = 'spend' AND ref = ?").get(String(ref));
+  amount = Math.round(amount);
+  if (!s || !s.delta || !(amount > 0) || amount > -s.delta) return false;
+  return insert(s.account_id, amount, "refund", `${ref}:part`, note);
 }
 /** Snapfront adds (or removes) credits by hand: promos, support, testers. */
 export function grant(accountId, amount, note = "") {
