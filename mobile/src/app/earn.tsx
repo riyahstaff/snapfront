@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, Share, Text, View, useWindowD
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
+import * as WebBrowser from "expo-web-browser";
 import { Button, Field, Notice, Pill } from "@/components/ui";
 import { Card, CopyLink, Tile, Toggle, count, money, when } from "@/components/panel";
 import { ApiError, partners, type PartnerView } from "@/lib/api";
@@ -107,6 +108,7 @@ function Dashboard({ data, onChange }: { data: PartnerView; onChange: (v: Partne
         </View>
         {data.status === "suspended" ? <Notice text="Your partner link is paused. Email support@snapfront.app." tone="error" /> : null}
       </Card>
+      {data.sales_link ? <SalesPage data={data} onChange={onChange} /> : null}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.md }}>
         <Tile label="Clicks" value={count(s.clicks)} sub={`${count(s.signups)} signed up`} wide={wide} />
         <Tile label="Sales" value={count(s.sales)} sub="Lifetime sales and paid months" wide={wide} />
@@ -135,7 +137,7 @@ function Dashboard({ data, onChange }: { data: PartnerView; onChange: (v: Partne
         )) : <Text style={[type.body, { color: c.muted }]}>Your sales show up here the moment someone buys through your link.</Text>}
       </Card>
 
-      <Kit link={data.link!} rate={data.program.rate} />
+      <Kit link={data.sales_link ?? data.link!} rate={data.program.rate} />
 
       <Card title="Your code" sub="Changing it keeps your clicks; links with your old code stop working.">
         <View style={{ flexDirection: "row", gap: space.md, alignItems: "flex-end", flexWrap: "wrap" }}>
@@ -144,6 +146,34 @@ function Dashboard({ data, onChange }: { data: PartnerView; onChange: (v: Partne
         </View>
       </Card>
     </>
+  );
+}
+
+/* ---------------- The membership sales page and the link-in-bio card ---------------- */
+function SalesPage({ data, onChange }: { data: PartnerView; onChange: (v: PartnerView) => void }) {
+  const c = useColors();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const url = data.sales_link!;
+  const card = data.bio_card;
+  async function setCard(on: boolean) {
+    setBusy(true); setError(null);
+    try { onChange(await partners.setBioCard(on)); } catch (e) { setError(errText(e, "Couldn't change the card.")); } finally { setBusy(false); }
+  }
+  return (
+    <Card title="Your sales page" sub="A full page that sells Snapfront for you: why courses stall, what the AI does, the plans and the FAQ. Put it in your bio instead of the plain link.">
+      <CopyLink url={url} />
+      <View style={{ flexDirection: "row", gap: space.md, flexWrap: "wrap" }}>
+        <Button label="Preview" variant="secondary" icon={<Ionicons name="open-outline" size={18} color={c.ink} />} onPress={() => WebBrowser.openBrowserAsync(url).catch(() => {})} style={{ flexGrow: 1 }} />
+        <Button label="Share" variant="secondary" icon={<Ionicons name="share-outline" size={18} color={c.ink} />} onPress={() => Share.share({ message: `Skip the course, let the AI do the work. I earn a commission if you join: ${url}` }).catch(() => {})} style={{ flexGrow: 1 }} />
+      </View>
+      {card ? (
+        <View style={{ gap: space.sm, paddingTop: space.sm, borderTopWidth: 1, borderColor: c.sunk }}>
+          <Toggle label="Show it on my link-in-bio page" sub={`Adds a Snapfront membership card to ${card.store_name}'s links page, with a line saying you earn a commission.`} value={card.on} onChange={setCard} disabled={busy || data.status !== "active"} />
+          <Notice text={error} tone="error" />
+        </View>
+      ) : null}
+    </Card>
   );
 }
 

@@ -173,6 +173,11 @@ export type SocialPublishInput = { render_id: string; caption: string; account_i
 /** AI video clips and lifestyle photos (Runpod) */
 export type AiPresets = { enabled: boolean; motions: { id: string; name: string }[]; scenes: { id: string; name: string }[] };
 export type AiJob = { id: string; kind: "video" | "scene"; status: "queued" | "running" | "done" | "failed"; error: string | null; created_at: string; url?: string; file?: string; image_file?: string };
+/** Faceless avatars: an original AI character for posts and stories, and shots of it with a product. */
+export type AvatarJobStatus = "queued" | "running" | "done" | "failed";
+export type Avatar = { id: string; name: string; style: string; look: string; status: AvatarJobStatus; error: string | null; image_url: string | null; created_at: string };
+export type AvatarShot = { id: string; avatar_id: string; product_id: string | null; pose: string; status: AvatarJobStatus; error: string | null; image_url: string | null; created_at: string };
+export type AvatarStudio = { enabled: boolean; max_avatars: number; styles: { id: string; name: string; blurb: string }[]; poses: { id: string; name: string }[]; avatars: Avatar[]; shots: AvatarShot[] };
 /** Store insights (Pro) */
 export type Insights = { days: number; visitors: number; views: number; orders: number; sales: number; conversion: number;
   daily: { day: string; visitors: number; orders: number; sales: number }[]; top_products: { id: string; title: string; visitors: number; sold: number }[]; sources: { source: string; visitors: number }[] };
@@ -454,6 +459,12 @@ export const api = {
   aiMedia: () => request<AiPresets & { jobs: AiJob[] }>("GET", "/api/ai-media"),
   startAiMedia: (input: { kind: "video" | "scene"; image_file: string; preset?: string; prompt?: string }) => request<AiJob>("POST", "/api/ai-media", input),
   aiJob: (id: string) => request<AiJob>("GET", `/api/ai-media/${id}`),
+  avatars: () => request<AvatarStudio>("GET", "/api/avatars"),
+  createAvatar: (input: { style: string; name?: string; look?: string }) => request<Avatar>("POST", "/api/avatars", input),
+  avatar: (id: string) => request<Avatar>("GET", `/api/avatars/${id}`),
+  deleteAvatar: (id: string) => request<null>("DELETE", `/api/avatars/${id}`),
+  avatarShot: (input: { avatar_id: string; product_id: string; pose?: string; prompt?: string }) => request<AvatarShot>("POST", "/api/avatar-shots", input),
+  avatarShotStatus: (id: string) => request<AvatarShot>("GET", `/api/avatar-shots/${id}`),
   insights: (days: 7 | 30 | 90) => request<Insights>("GET", `/api/insights?days=${days}`),
   reviews: () => request<Review[]>("GET", "/api/reviews"),
   setReview: (id: string, status: "published" | "hidden") => request<Review[]>("PATCH", `/api/reviews/${id}`, { status }),
@@ -667,6 +678,10 @@ export type PartnerCommission = { id: string; created_at: string; plan: string; 
 export type PartnerView = {
   joined: boolean; has_email?: boolean; program: PartnerProgram;
   code?: string; status?: "active" | "suspended"; link?: string; home_link?: string;
+  /** The partner's own membership sales page (snapfront.app/join/CODE). */
+  sales_link?: string;
+  /** The Snapfront membership card on the current store's link-in-bio page. */
+  bio_card?: { on: boolean; store_name: string } | null;
   stats?: { clicks: number; signups: number; sales: number; pending: number; ready: number; paid: number };
   payout?: { method: "stripe" | "paypal" | "none"; detail: string; paypal_email: string | null };
   commissions?: PartnerCommission[];
@@ -675,6 +690,7 @@ export const partners = {
   me: () => request<PartnerView>("GET", "/api/partners/me"),
   join: (b: { agree: boolean; paypal_email?: string; code?: string }) => request<PartnerView>("POST", "/api/partners/join", b),
   update: (b: { paypal_email?: string | null; code?: string }) => request<PartnerView>("PATCH", "/api/partners/me", b),
+  setBioCard: (on: boolean) => request<PartnerView>("PUT", "/api/partners/bio-card", { on }),
 };
 
 /** Send a file's bytes as the request body (videos and other large uploads). */

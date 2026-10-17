@@ -34,6 +34,7 @@ const autoPayouts = () => String(process.env.PARTNER_AUTO_PAYOUTS || "true").toL
 const addCol = (t, name, def) => { if (!db.prepare(`PRAGMA table_info(${t})`).all().some((c) => c.name === name)) db.exec(`ALTER TABLE ${t} ADD COLUMN ${name} ${def}`); };
 addCol("accounts", "referred_by", "TEXT");     // the partner's account id
 addCol("accounts", "referred_at", "TEXT");
+addCol("sellers", "partner_card", "INTEGER NOT NULL DEFAULT 0");   // show the Snapfront membership card on this store's link-in-bio page
 db.exec(`
 CREATE TABLE IF NOT EXISTS partners (
   account_id TEXT PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
@@ -74,6 +75,8 @@ const money = (c) => `$${(c / 100).toFixed(2)}`;
 export const normCode = (c) => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20);
 const partnerByCode = (code) => (code ? db.prepare("SELECT * FROM partners WHERE code = ? AND status = 'active'").get(normCode(code)) : null);
 export const shareLink = (code) => `${config.publicUrl}/r/${code}`;
+/** The partner's own copy of the membership sales page (snapfront.app/join/CODE). */
+export const salesLink = (code) => `${config.publicUrl}/join/${code}`;
 const homeUrl = () => config.publicUrl;
 
 /* ---------- joining and the partner's own page ---------- */
@@ -128,7 +131,27 @@ function payoutMethod(accountId, paypal) {
   if (paypal) return { method: "paypal", detail: `Paid by PayPal to ${paypal}.` };
   return { method: "none", detail: "Connect Stripe on your store, or add a PayPal email, so we can pay you." };
 }
-export function view(account) {
+/**
+ * Turn the Snapfront membership card on or off on this store's link-in-bio page. The card sends
+ * visitors to the partner's sales page, so only an active partner can show it.
+ */
+export function setBioCard(account, seller, on) {
+  const p = db.prepare("SELECT * FROM partners WHERE account_id = ?").get(account.id);
+  if (on && !p) throw httpError(404, "Join the partner program first.");
+  if (on && p.status !== "active") throw httpError(403, "Your partner link is paused, so the card can't be shown.");
+  if (!seller || seller.account_id !== account.id) throw httpError(404, "Pick one of your stores.");
+  db.prepare("UPDATE sellers SET partner_card = ? WHERE id = ?").run(on ? 1 : 0, seller.id);
+  return view(account, { ...seller, partner_card: on ? 1 : 0 });
+}
+/** What the store's link-in-bio page shows for the membership card, or null when it's off. */
+export function bioCard(seller) {
+  if (!seller?.partner_card || !seller.account_id) return null;
+  const p = db.prepare("SELECT * FROM partners WHERE account_id = ? AND status = 'active'").get(seller.account_id);
+  if (!p) return null;
+  return { code: p.code, url: salesLink(p.code), lifetime: dollars(webbilling.PLANS.lifetime.cents), monthly: dollars(webbilling.PLANS.pro.cents) };
+}
+
+export function view(account, seller = null) {
   const p = db.prepare("SELECT * FROM partners WHERE account_id = ?").get(account.id);
   const program = { rate: RATE(), monthly_per_month: dollars(MONTHLY_CENTS()), monthly_price: dollars(webbilling.PLANS.pro.cents), hold_days: HOLD_DAYS(), play_hold_days: HOLD.play(), window_days: WINDOW_DAYS(), lifetime_price: dollars(webbilling.PLANS.lifetime.cents),
     per_sale: dollars(Math.round(webbilling.PLANS.lifetime.cents * RATE() / 100)), terms: TERMS };
@@ -137,6 +160,7 @@ export function view(account) {
   const commissions = db.prepare("SELECT * FROM partner_commissions WHERE partner_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 100").all(account.id);
   return {
     joined: true, program, code: p.code, status: p.status, link: shareLink(p.code), home_link: `${homeUrl()}/?via=${p.code}`,
+    sales_link: salesLink(p.code), bio_card: seller ? { on: Boolean(seller.partner_card), store_name: seller.store_name } : null,
     stats: {
       clicks: db.prepare("SELECT COUNT(*) AS n FROM partner_clicks WHERE code = ?").get(p.code).n,
       signups: db.prepare("SELECT COUNT(*) AS n FROM accounts WHERE referred_by = ?").get(account.id).n,
