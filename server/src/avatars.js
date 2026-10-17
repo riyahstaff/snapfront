@@ -322,7 +322,8 @@ export async function poll({ table = null, id = null } = {}) {
       : db.prepare(`SELECT * FROM ${t} WHERE status = 'running' ORDER BY created_at LIMIT 20`).all();
     for (const row of rows) {
       try {
-        const r = await aimedia.runpod(`${endpoint}/status/${row.runpod_id}`);
+        // A blend is made by the photo editor, not text-to-image, so it's checked there.
+        const r = await aimedia.runpod(`${t === "avatars" && row.source === "blend" ? EDIT : endpoint}/status/${row.runpod_id}`);
         if (r.status === "COMPLETED") {
           const url = aimedia.resultUrl(r.output, "scene");
           if (!url) { console.warn("[avatars]", row.id, "finished without an image:", JSON.stringify(r).slice(0, 400)); fail(t, row.id, "The AI finished but didn't send the image back. Try again."); continue; }
