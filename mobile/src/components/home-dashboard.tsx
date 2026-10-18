@@ -6,6 +6,7 @@ import { Button, Notice } from "./ui";
 import { ChromeHero } from "./chrome-hero";
 import { ThemeCarousel } from "./theme-carousel";
 import { ReleaseInfo } from "./release-info";
+import { StartHereCard } from "./start-here";
 import { featuredThemes } from "@/lib/home-discovery";
 import { carouselInViewport, homePrimaryAction } from "@/lib/home-carousel";
 import type { Me, StoreTheme } from "@/lib/api";
@@ -32,6 +33,7 @@ export function HomeDashboard({ me, themes, draftStep, hasProducts = null, viewp
         <Text accessibilityRole="header" style={[type.hero, { color: c.ink, fontSize: width > 500 ? 48 : 38, lineHeight: width > 500 ? 53 : 42 }]}>Your vision.{"\n"}Beautifully built.</Text>
         <Text style={[type.body, { color: c.muted, maxWidth: 450 }]}>Start with a product photo. Turn it into a page, then give your brand a storefront worth discovering.</Text>
       </View>
+      <StartHereCard />
       <View style={{ gap: space.sm }}>
         <Button label={determining ? "Opening your workspace…" : undetermined ? "Open my store" : primary.label} loading={determining} icon={<Ionicons name={primary.returning || undetermined ? "arrow-forward" : "camera-outline"} color={c.onAccent} size={20} />} onPress={() => router.push(undetermined ? "/store" : primary.route)} />
         {draftStep ? <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Saved on this phone · Step {draftStep} of 5</Text> : primary.returning ? <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Your products and applied look stay yours. Review your next changes.</Text> : <Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Take or choose a photo → review your product page → style your store.</Text>}

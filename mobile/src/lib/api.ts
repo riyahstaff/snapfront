@@ -743,6 +743,17 @@ export type AcademyLesson = { id: string; title: string; summary: string; module
 export type DailyPrompt = { day: string; kind: string; kind_name: string; hook: string; film: string[]; on_screen: string; caption: string; hashtags: string[]; cta: string;
   product: { id: string; title: string; image_url: string | null; url: string } | null; more_left: number };
 export type Community = { member: boolean; discord: string | null; has_discord: boolean; whop: string | null; live_schedule: string | null };
+/** "Start here": the quiz and the personal plan it makes. */
+export type StartQuestion = { id: string; title: string; options: { id: string; label: string; hint: string }[] };
+export type StartStep = { id: string; title: string; why: string; route: string; lesson: string | null; action: string; done?: boolean };
+export type StartPlan = { title: string; summary: string; steps: StartStep[]; answers?: Record<string, string>; done_count?: number };
+export const startPlanApi = {
+  questions: () => request<{ questions: StartQuestion[] }>("GET", "/api/start-plan/questions"),
+  get: () => request<{ questions: StartQuestion[]; plan: StartPlan | null }>("GET", "/api/start-plan"),
+  save: (answers: Record<string, string>) => request<{ plan: StartPlan }>("POST", "/api/start-plan", { answers }),
+  step: (id: string, done: boolean) => request<{ plan: StartPlan }>("PUT", `/api/start-plan/steps/${encodeURIComponent(id)}`, { done }),
+  reset: () => request<{ plan: null }>("DELETE", "/api/start-plan"),
+};
 /** The members' community (Skool-style). */
 export type CommunityPerson = { id: string; name: string; initials: string; bio: string; level: number; level_name: string; points: number; admin: boolean; store_url: string | null; joined_at: string };
 export type CommunityLevel = { level: number; name: string; points: number };

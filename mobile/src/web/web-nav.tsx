@@ -66,7 +66,7 @@ export function WebNav() {
 
   return (
     <View style={{ zIndex: 50, backgroundColor: alpha(c.bg, 0.94), borderBottomWidth: 1, borderColor: c.sunk }}>
-      <View role="navigation" style={{ height: 68, width: "100%", maxWidth: CONTENT + 48, alignSelf: "center", paddingHorizontal: 24, flexDirection: "row", alignItems: "center", gap: 28 }}>
+      <View role="navigation" style={{ height: 68, width: "100%", maxWidth: CONTENT + 48, alignSelf: "center", paddingHorizontal: wide ? 24 : 16, flexDirection: "row", alignItems: "center", gap: wide ? 28 : 12 }}>
         <Pressable accessibilityRole="link" accessibilityLabel="Snapfront home" onPress={() => go("/")} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <Image source={require("../../assets/brand-mark.png")} contentFit="contain" style={{ width: 30, height: 33 }} />
           <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, letterSpacing: -0.3, color: c.ink }}>snapfront</Text>
@@ -76,10 +76,10 @@ export function WebNav() {
             {(signedIn ? NAV : [{ label: "Explore features", href: "/" as Href, match: (p: string) => p === "/" }, { label: "Pricing", href: "/plans" as Href, match: (p: string) => p.startsWith("/plans") }]).map((n) => <NavLink key={n.label} label={n.label} href={n.href} active={n.match(path)} />)}
           </View>
         ) : <View style={{ flex: 1 }} />}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: wide ? 10 : 4 }}>
           {plan === "free" ? (
-            <Pressable accessibilityRole="link" onPress={() => go(signedIn ? "/plans" : "/sign-in")} style={(s: Hover): ViewStyle => ({ backgroundColor: s.hovered ? c.accentHover : c.accent, borderRadius: 999, paddingHorizontal: 18, height: 38, justifyContent: "center" })}>
-              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.onAccent }}>{signedIn ? "Unlock full access" : "Get started free"}</Text>
+            <Pressable accessibilityRole="link" onPress={() => go(signedIn ? "/plans" : "/sign-in")} style={(s: Hover): ViewStyle => ({ backgroundColor: s.hovered ? c.accentHover : c.accent, borderRadius: 999, paddingHorizontal: wide ? 18 : 14, height: 38, justifyContent: "center" })}>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.onAccent }}>{signedIn ? (wide ? "Unlock full access" : "Upgrade") : (wide ? "Get started free" : "Join free")}</Text>
             </Pressable>
           ) : (
             <Pressable accessibilityRole="link" onPress={() => go("/plans")} style={{ borderWidth: 1, borderColor: c.line, borderRadius: 999, paddingHorizontal: 12, height: 32, justifyContent: "center" }}>
@@ -87,7 +87,7 @@ export function WebNav() {
             </Pressable>
           )}
           <ThemeToggle />
-          {signedIn ? <Pressable accessibilityRole="link" accessibilityLabel="Account and store settings" onPress={() => go("/settings")}
+          {signedIn && wide ? <Pressable accessibilityRole="link" accessibilityLabel="Account and store settings" onPress={() => go("/settings")}
             style={(s: Hover): ViewStyle => ({ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: s.hovered || path.startsWith("/settings") ? c.sunk : "transparent" })}>
             <Ionicons name="person-circle-outline" size={26} color={c.muted} />
           </Pressable> : null}

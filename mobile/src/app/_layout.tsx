@@ -80,6 +80,7 @@ export default function RootLayout() {
         <Stack.Screen name="earn" options={{ title: "Earn with Snapfront" }} />
         <Stack.Screen name="academy" options={{ title: "Snapfront Academy" }} />
         <Stack.Screen name="lesson/[id]" options={{ title: "Lesson" }} />
+        <Stack.Screen name="start" options={{ title: "Start here" }} />
         <Stack.Screen name="community" options={{ title: "Community" }} />
         <Stack.Screen name="community-post/[id]" options={{ title: "Post" }} />
         <Stack.Screen name="faceless" options={{ title: "Faceless videos" }} />
