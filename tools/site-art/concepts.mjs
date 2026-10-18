@@ -47,7 +47,7 @@ export const CARDS = [
     motion: "the miniature glowing shops rise up one by one out of the light from the tablet, she leans in, amazed, and touches one" },
   { key: "faceless", title: "Faceless videos", model: "vidu",
     still: "A smartphone on a small tripod on a pastel pink desk, its screen playing a vertical video of a skincare bottle with one huge bold caption word GLOW across the middle. A curving stream of small printed product photos is flowing off the desk into the phone like a ribbon of light, and glowing sound waves ripple out from the phone. No people.",
-    motion: "the product photos stream into the phone, the vertical video plays with bold captions popping in, glowing sound waves pulse outward to the beat" },
+    motion: "the ribbon of product photos flows smoothly into the phone, glowing sound waves pulse outward to a beat, slow camera push-in; the phone screen and its caption GLOW stay exactly the same, no new text or letters appear anywhere" },
   { key: "avatars", title: "AI avatars", model: "seedance",
     still: "A woman stands in front of a large ornate mirror in a softly lit studio. Her reflection is a stylish animated 3D-character version of her, holding up a lipstick and grinning.",
     motion: "the 3D-character reflection waves and shows off the lipstick while the real woman laughs in surprise, the reflection winks" },
