@@ -204,3 +204,32 @@ test("the studio can run Runpod jobs for site artwork, on known models only", as
   assert.equal((await call("POST", "/api/studio/runpod/qwen-image-t2i/run", { input: {} }, other.token)).status, 403);
   assert.equal(seen.length, 2);
 });
+
+test("one lesson at a time: changing one lesson's avatar or voice never takes the avatar off other lessons", async () => {
+  const ownerSeller = db.prepare("SELECT * FROM sellers WHERE account_id = ?").get(plans.accountForToken(owner.token).id);
+  fs.writeFileSync(path.join(tmp, "images", "coach2.jpg"), await sharp({ create: { width: 480, height: 600, channels: 3, background: "#6a4b3a" } }).jpeg().toBuffer());
+  db.prepare("INSERT OR IGNORE INTO avatars (id, seller_id, account_id, name, style, source, status, image_file) VALUES (?,?,?,?,?,?,?,?)").run("avt_coach2", ownerSeller.id, ownerSeller.account_id, "Coach 2", "blend", "blend", "done", "coach2.jpg");
+  const { LESSONS } = await import("../src/academy-content.js");
+  const [a, b, c] = LESSONS;
+  await presenter.setSettings({ avatar_id: avatarId, voice: "af_heart", lessons: "all" });
+  const before = Object.fromEntries(LESSONS.map((l) => [l.id, presenter.versionOf(l)]));
+  // Switch lesson a, then lesson b, to a new look and voice, one at a time (like changing the voice lesson by lesson).
+  await presenter.setSettings({ lesson: a.id, avatar_id: "avt_coach2", voice: "af_bella" });
+  await presenter.setSettings({ lesson: b.id, avatar_id: "avt_coach2", voice: "af_bella" });
+  assert.ok(LESSONS.every((l) => presenter.appliesTo(l.id)), "every lesson still has the avatar");
+  assert.notEqual(presenter.versionOf(a), before[a.id]);
+  assert.notEqual(presenter.versionOf(b), before[b.id]);
+  assert.equal(presenter.versionOf(c), before[c.id]);   // untouched lessons keep their existing videos
+  assert.equal(presenter.presenter(a.id).voice, "af_bella");
+  assert.equal(presenter.presenter(c.id).voice, "af_heart");
+  const v = await presenter.view({});
+  assert.equal(v.lessons.find((l) => l.id === a.id).own, true);
+  assert.equal(v.lessons.find((l) => l.id === c.id).voice, "af_heart");
+  // Undo one lesson's own choice; then "every lesson" replaces all one-lesson choices.
+  await presenter.setSettings({ lesson: a.id, clear: true });
+  assert.equal(presenter.versionOf(a), before[a.id]);
+  await presenter.setSettings({ avatar_id: avatarId, voice: "af_heart", lessons: "all" });
+  assert.equal(presenter.versionOf(b), before[b.id]);
+  await assert.rejects(presenter.setSettings({ lesson: "no-such-lesson", avatar_id: avatarId }), /doesn't exist/);
+  await assert.rejects(presenter.setSettings({ lesson: a.id, avatar_id: "avt_visor" }), /avatars that has a face/);
+});

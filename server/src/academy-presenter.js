@@ -45,16 +45,26 @@ export function ownerAvatars() {
   return db.prepare(`SELECT * FROM avatars WHERE account_id IN (${ids.map(() => "?").join(",")}) AND status = 'done' AND image_file IS NOT NULL ORDER BY created_at DESC`).all(...ids)
     .filter((a) => TALKERS.has(a.style) && fs.existsSync(path.join(dirs.images, a.image_file)));
 }
-/** The presenter avatar, if one is set and still exists. */
-export function presenter() {
+/**
+ * Who teaches a lesson. A lesson can have its own avatar and voice (set one lesson at a time); the
+ * rest use the main presenter when it covers them ("lessons": "all" or a list).
+ */
+export function presenter(lessonId = null) {
   const s = settings();
-  if (!s?.avatar_id) return null;
-  const avatar = ownerAvatars().find((a) => a.id === s.avatar_id);
+  if (!s) return null;
+  const own = lessonId ? s.per_lesson?.[lessonId] : null;
+  const avatars = ownerAvatars();
+  if (own?.avatar_id) {
+    const avatar = avatars.find((a) => a.id === own.avatar_id);
+    if (avatar) return { avatar, voice: own.voice || s.voice || "af_heart", lessons: [lessonId], own: true };
+  }
+  if (!s.avatar_id) return null;
+  const avatar = avatars.find((a) => a.id === s.avatar_id);
   return avatar ? { avatar, voice: s.voice || "af_heart", lessons: s.lessons ?? [] } : null;
 }
 export function appliesTo(lessonId) {
-  const p = presenter();
-  return Boolean(p && (p.lessons === "all" || (Array.isArray(p.lessons) && p.lessons.includes(lessonId))));
+  const p = presenter(lessonId);
+  return Boolean(p && (p.own || p.lessons === "all" || (Array.isArray(p.lessons) && p.lessons.includes(lessonId))));
 }
 async function voiceOk(id) {
   // The owner can use any voice in Snapfront's ElevenLabs account, including ones added from the library.
@@ -63,7 +73,22 @@ async function voiceOk(id) {
 }
 export async function setSettings(b = {}) {
   const cur = settings() || {};
-  const next = { ...cur };
+  const next = { ...cur, per_lesson: { ...(cur.per_lesson || {}) } };
+  // One lesson at a time: give just that lesson its own avatar and voice; every other lesson stays as it is.
+  if (b.lesson !== undefined) {
+    const id = String(b.lesson);
+    if (!LESSONS.some((l) => l.id === id)) throw httpError(400, "That lesson doesn't exist.");
+    if (b.clear) delete next.per_lesson[id];
+    else {
+      const avatarId = b.avatar_id ?? next.per_lesson[id]?.avatar_id ?? cur.avatar_id;
+      const voice = String(b.voice ?? next.per_lesson[id]?.voice ?? cur.voice ?? "");
+      if (!avatarId || !ownerAvatars().some((a) => a.id === avatarId)) throw httpError(400, "Pick one of your avatars that has a face (Soft 3D, Illustrated, Mascot, your photo or a blend).");
+      if (!(await voiceOk(voice))) throw httpError(400, "That voice isn't available.");
+      next.per_lesson[id] = { avatar_id: avatarId, voice };
+    }
+    db.prepare("INSERT INTO app_settings (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')").run(KEY, JSON.stringify(next));
+    return next;
+  }
   if (b.avatar_id !== undefined) {
     if (b.avatar_id && !ownerAvatars().some((a) => a.id === b.avatar_id)) throw httpError(400, "Pick one of your avatars that has a face (Soft 3D, Illustrated, Mascot, your photo or a blend).");
     next.avatar_id = b.avatar_id || null;
@@ -73,7 +98,8 @@ export async function setSettings(b = {}) {
     next.voice = String(b.voice);
   }
   if (b.lessons !== undefined) {
-    if (b.lessons === "all") next.lessons = "all";
+    // "Every lesson" means every lesson: one-lesson choices are replaced by the main presenter.
+    if (b.lessons === "all") { next.lessons = "all"; next.per_lesson = {}; }
     else if (Array.isArray(b.lessons)) {
       const ids = [...new Set(b.lessons.map(String))];
       if (ids.some((id) => !LESSONS.some((l) => l.id === id))) throw httpError(400, "One of those lessons doesn't exist.");
@@ -225,7 +251,7 @@ async function composeSlide({ png, screen, head, voice, seconds, out }) {
 export const progress = { lesson: null, step: null };
 /** What the lesson's video depends on, so it's rebuilt when any of it changes. */
 export function versionOf(l) {
-  const p = presenter();
+  const p = presenter(l.id);
   return hash("presenter-v1", p?.avatar.image_file, p?.voice, l.slides.map((s, i) => [s.heading, s.points, s.say, s.screen ? screenVersion(l.id, i) : null]));
 }
 /**
@@ -233,7 +259,7 @@ export function versionOf(l) {
  * with room for the avatar (layout "slide") or for the phone and the avatar (layout "screen").
  */
 export async function buildLesson(l, { svgFor, out }) {
-  const p = presenter();
+  const p = presenter(l.id);
   if (!p) throw new Error("no presenter set");
   const work = fs.mkdtempSync(path.join(root(), `.p-${l.id}-`));
   try {
@@ -308,10 +334,12 @@ export async function view(status = {}) {
   const premium = [...added.map(({ id, name, accent, gender }) => ({ id, name, accent, gender, premium: true, added: true })), ...stock];
   return {
     presenter: s.avatar_id ? { avatar_id: s.avatar_id, voice: s.voice || "af_heart", lessons: s.lessons ?? [] } : null,
-    active: Boolean(presenter()),
+    // Lessons with their own avatar and voice.
+    per_lesson: s.per_lesson || {},
+    active: Boolean(presenter()) || LESSONS.some((l) => appliesTo(l.id)),
     avatars: ownerAvatars().map((a) => ({ id: a.id, name: a.name, style: a.style, source: a.source || "ai", image_url: img(a.image_file) })),
     voices: [...VOICES.map(({ id, name, accent }) => ({ id, name, accent, premium: false })), ...premium],
-    lessons: LESSONS.map((l) => ({ id: l.id, title: l.title, slides: l.slides.length })),
+    lessons: LESSONS.map((l) => { const p = presenter(l.id); const on = appliesTo(l.id); return { id: l.id, title: l.title, slides: l.slides.length, avatar_id: on ? p.avatar.id : null, voice: on ? p.voice : null, own: Boolean(on && p.own) }; }),
     screens: screenList(),
     cost_per_slide_usd: TALK.usd("480p"),
     ...status,

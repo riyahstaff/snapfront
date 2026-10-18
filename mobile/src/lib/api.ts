@@ -792,14 +792,15 @@ export type LibraryVoice = { voice_id: string; public_owner_id: string; name: st
 export type AcademyPresenter = {
   presenter: { avatar_id: string; voice: string; lessons: string[] | "all" } | null; active: boolean;
   avatars: { id: string; name: string; style: string; source: string; image_url: string }[];
-  voices: VideoVoice[]; lessons: { id: string; title: string; slides: number }[];
+  voices: VideoVoice[]; lessons: { id: string; title: string; slides: number; avatar_id: string | null; voice: string | null; own: boolean }[];
+  per_lesson?: Record<string, { avatar_id: string; voice: string }>;
   screens: { lesson: string; slide: number; heading: string; recorded: boolean }[]; cost_per_slide_usd: number;
   building: { lesson: string | null; step: string | null } | null;
   presenter_lessons?: { id: string; ready: boolean }[]; last_error?: string | null;
 };
 export const academy = {
   presenter: () => request<AcademyPresenter>("GET", "/api/academy-presenter"),
-  setPresenter: (b: { avatar_id?: string; voice?: string; lessons?: string[] | "all" }) => request<AcademyPresenter>("PUT", "/api/academy-presenter", b),
+  setPresenter: (b: { avatar_id?: string; voice?: string; lessons?: string[] | "all"; lesson?: string; clear?: boolean }) => request<AcademyPresenter>("PUT", "/api/academy-presenter", b),
   voiceLibrary: (q: { search?: string; gender?: string; accent?: string }) => request<{ voices: LibraryVoice[] }>("GET", `/api/academy-presenter/voice-library?${new URLSearchParams(Object.entries(q).filter(([, v]) => v) as [string, string][]).toString()}`),
   addLibraryVoice: (v: { public_owner_id: string; voice_id: string; name: string }) => request<{ id: string }>("POST", "/api/academy-presenter/voices", v),
   catalog: () => request<AcademyCatalog>("GET", "/api/academy"),
