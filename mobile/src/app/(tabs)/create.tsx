@@ -1,3 +1,4 @@
+import { DigitalIdeaPicker } from "@/components/digital-idea-picker";
 import React, { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -68,11 +69,12 @@ export default function CreateScreen() {
     <Screen>
       <View style={{ gap: space.sm }}>
         <H1>{templateId ? "Write into your chosen design." : <>Make something{"\n"}people already buy.</>}</H1>
-        <Body muted>{templateId ? `AI will create a private ${typeForGeneration} product using your selected editable design template. You will review the full source, renderer preview, and export before any buyer file changes.` : "Pick a best-selling format and a niche. Snapfront writes the product, designs the cover, builds the PDF and drafts the listing. Prices are what buyers usually pay; you set your own and keep the sales."}</Body>
+        <Body muted>{templateId ? `AI will create a private ${typeForGeneration} product using your selected editable design template. You will review the full source, renderer preview, and export before any buyer file changes.` : "Choose an idea below, or start with a format and audience of your own. Snapfront helps you write, design and prepare a digital product. Review the finished work and set your own price before publishing."}</Body>
         <Button label={templateId ? "Back to design library" : "Browse 50 editable designs"} variant={templateId ? "secondary" : "primary"} onPress={() => router.push("/digital-designs")} />
         {!templateId ? <Body muted>10 e-book designs · 10 checklists · 10 content packs · 10 quote prints · 10 planners. Pick a pictured design, then make it yours.</Body> : null}
         {!templateId ? <Button label="See which formats sell best" variant="ghost" style={{ alignSelf: "flex-start", paddingHorizontal: 0, minHeight: 36 }} onPress={() => router.push("/trends")} /> : null}
       </View>
+      {!templateId ? <DigitalIdeaPicker key={me?.id ?? "loading"} /> : null}
       <View style={{ gap: space.sm }} accessibilityRole="radiogroup">
         {types.map((t) => {
           const on = t.id === typeForGeneration;

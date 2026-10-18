@@ -11,7 +11,7 @@ const pages = [
   ["Orders", "/orders", "View and manage customer orders", "purchases customers shipping fulfillment tracking"],
   ["Sales & profit", "/business", "Track your store’s performance", "revenue earnings expenses money reports tax"],
   ["Create a product", "/snap", "Start a new product listing", "upload photo snap add product sell"],
-  ["Digital products", "/create", "Create digital products to sell", "ebook download course planner printable"],
+  ["Digital products", "/create", "Create digital products to sell", "ebook download course planner printable ideas cooking finance tutorials 500"],
   ["Find products", "/find", "Discover products for your store", "sourcing search products dropshipping"],
   ["Marketing posts", "/marketing", "Create and publish promotional posts", "social media facebook instagram advertising schedule content"],
   ["Instagram AutoDM", "/autodm", "Automate Instagram messages", "automatic dm direct messages comments replies"],

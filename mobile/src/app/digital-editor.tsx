@@ -1,3 +1,4 @@
+import { DigitalDesignerAssistant } from "@/components/digital-designer-assistant";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -556,6 +557,7 @@ export default function DigitalEditorScreen() {
           <Notice text={preview && !previewCurrent ? "This frame is from an earlier source revision. It remains visible for reference only; update it before export or attach." : null} tone="info" />
           <DigitalPreview preview={preview} pageIndex={previewPage} loading={previewLoading} error={previewError} onPageIndex={setPreviewPage} onSelect={setSelection} onRetry={() => { void renderPreview(); }} />
           <Button label="Update actual preview" variant="secondary" loading={busy === "preview"} disabled={busy !== null} onPress={() => { void renderPreview(); }} />
+          <DigitalDesignerAssistant key={`${routeStoreId}:${productId}`} storeId={routeStoreId!} productId={productId!} document={document} disabled={busy !== null} onApply={commitDocument} />
           <DigitalDocumentControls document={document} selection={selection} undoCount={undoCount} busy={busy !== null} onChange={commitDocument} onUndo={undo} onAddPage={addPage} onDuplicatePage={duplicatePage} onMovePage={movePage} onDeletePage={confirmDeletePage} onAddBlock={addBlock} onMoveBlock={moveBlock} onDeleteBlock={confirmDeleteBlock} onUploadImage={uploadImage} onOpenDigitalPhotoStudio={openDigitalPhotoStudio} />
           <Button label="Save private draft" loading={busy === "save"} disabled={busy !== null} onPress={saveDraft} />
           <Button label="Choose another visual template" variant="ghost" disabled={busy !== null} onPress={() => router.push({ pathname: "/digital-designs", params: { edit_product_id: productId, storeId: routeStoreId } })} />
