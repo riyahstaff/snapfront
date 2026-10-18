@@ -31,13 +31,13 @@ const classicIds = ["classic", "atelier", "noir", "citrus", "bloom", "studio", "
 const p = { id: "", slug: "real-piece", title: 'Real <product> & "piece"', image_url: "https://seller.test/real-photo.jpg", alt_text: "Real product photo", price_cents: 4321, currency: "usd", variants: [], in_stock: true, status: "live", kind: "physical", tagline: "", category: "Real category", bullets: [], tags: [], faq: [], description: "Real product description" };
 const store = { store_name: 'My <store> & "name"', store_slug: "real-store", _base: "/s/real-store", stripe_ready: true, tagline: "Real seller tagline", about: "The real seller story.", hero_title: 'Editable <headline> & "words"', hero_subtitle: "Only my actual words", hero_motion: "pan" };
 
-test("catalog contains unchanged original IDs and exactly 85 complete category modules", () => {
-  assert.equal(THEMES.length, 105);
-  assert.equal(new Set(THEMES.map((t) => t.id)).size, 105);
+test("catalog contains unchanged original IDs and exactly 110 complete category modules", () => {
+  assert.equal(THEMES.length, 130);
+  assert.equal(new Set(THEMES.map((t) => t.id)).size, 130);
   assert.deepEqual(THEMES.slice(0, 20).map((t) => t.id), classicIds);
-  assert.equal(CATEGORY_MODULES.length, 85);
-  assert.equal(CATEGORY_REGISTRY.size, 85);
-  assert.equal(new Set(CATEGORY_MODULES.map((m) => m.theme.family)).size, 85);
+  assert.equal(CATEGORY_MODULES.length, 110);
+  assert.equal(CATEGORY_REGISTRY.size, 110);
+  assert.equal(new Set(CATEGORY_MODULES.map((m) => m.theme.family)).size, 110);
   for (const module of CATEGORY_MODULES) {
     assert.equal(typeof module.hero, "function", module.theme.id);
     assert.equal(typeof module.discovery, "function", module.theme.id);
@@ -96,7 +96,7 @@ test("gallery and demo routes never write store data and work on seller subdomai
   const beforeCounts = ["accounts", "sellers", "products", "orders"].map((table) => db.prepare(`SELECT COUNT(*) n FROM ${table}`).get().n);
   const gallery = await request("/themes");
   assert.equal(gallery.status, 200);
-  assert.match(gallery.text, /105 editable storefront themes/);
+  assert.match(gallery.text, /130 editable storefront themes/);
   for (const host of ["category.test", "any-store.category.test"]) {
     const demo = await request(`/theme-demo/${THEMES[20].id}`, host);
     assert.equal(demo.status, 200);

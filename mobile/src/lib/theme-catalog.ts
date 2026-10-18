@@ -6,6 +6,7 @@ export type ThemeBrowseState = { query: string; group: ThemeGroupFilter; collect
 export const THEME_PAGE_SIZE = 12;
 export const EMPTY_THEME_BROWSE: ThemeBrowseState = { query: "", group: "all", collection: "all", page: 0 };
 export const THEME_GROUPS: { value: ThemeGroup; label: string }[] = [
+  { value: "digital", label: "Digital products" },
   { value: "fashion", label: "Fashion" }, { value: "beauty", label: "Beauty" },
   { value: "home", label: "Home" }, { value: "technology", label: "Technology" },
   { value: "outdoor", label: "Outdoor" }, { value: "lifestyle", label: "Lifestyle" },

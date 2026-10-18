@@ -1,6 +1,6 @@
 # Snapfront theme catalog
 
-**105 selectable storefront themes:** 20 unchanged classic themes, 25 approved product-category designs and 60 additional product-specialty designs.
+**130 selectable storefront themes:** 20 unchanged classic themes, 25 approved product-category designs and 60 additional product-specialty designs and 25 digital-product designs.
 
 The new themes are editable responsive storefront templates, not static website screenshots or five layouts multiplied by color changes. Demo photos and products are illustrative; seller stores use their own photos and inventory.
 
@@ -141,3 +141,33 @@ Browse the deployed catalog at [Snapfront themes](https://snapfront.app/themes).
 5. **Review:** preview the private draft, then Apply when ready. Preview and suggestions do not apply themselves.
 
 The new phone browsing/wizard UI requires the corresponding native app update. Backend theme availability and app-store release are separate.
+
+## Digital products
+
+- **Supper School** — Cooking & recipe ebooks. `/theme-demo/p-digital-cooking`
+- **Butter & Fold** — Baking tutorials. `/theme-demo/p-digital-baking`
+- **NEXT / LESSON** — Tutorials & online learning. `/theme-demo/p-digital-tutorials`
+- **SOURCE SCHOOL** — Coding & technology courses. `/theme-demo/p-digital-coding`
+- **The Money Edit** — Personal finance & budgeting. `/theme-demo/p-digital-finance`
+- **LONG VIEW** — Investing education. `/theme-demo/p-digital-investing`
+- **FOUNDER NOTES** — Business & entrepreneurship. `/theme-demo/p-digital-business`
+- **The Sunday Edit** — Lifestyle guides. `/theme-demo/p-digital-lifestyle`
+- **STILL PRACTICE** — Wellness & mindfulness. `/theme-demo/p-digital-wellness`
+- **FORM / METHOD** — Fitness & training plans. `/theme-demo/p-digital-fitness`
+- **ELSEWHERE ATLAS** — Travel & destination guides. `/theme-demo/p-digital-travel`
+- **AFTER / LIGHT** — Photography & presets. `/theme-demo/p-digital-photography`
+- **SHAPE LIBRARY** — Design assets & templates. `/theme-demo/p-digital-design`
+- **SOUND / STUDIES** — Music & audio resources. `/theme-demo/p-digital-music`
+- **The Open Draft** — Writing & publishing. `/theme-demo/p-digital-writing`
+- **BRIGHT NOTES** — Education & study resources. `/theme-demo/p-digital-education`
+- **Little Chapters** — Parenting & family guides. `/theme-demo/p-digital-parenting`
+- **ROOM / THEORY** — Home & interior tutorials. `/theme-demo/p-digital-home-guides`
+- **GROW JOURNAL** — Gardening & nature guides. `/theme-demo/p-digital-gardening`
+- **HAND / MADE** — Crafts & DIY patterns. `/theme-demo/p-digital-crafts`
+- **RITUAL NOTES** — Beauty & styling tutorials. `/theme-demo/p-digital-beauty-guides`
+- **ROOTED PAGES** — Faith & spiritual study. `/theme-demo/p-digital-spirituality`
+- **PROPERTY / FIELD** — Real estate education. `/theme-demo/p-digital-real-estate`
+- **DAY / SYSTEM** — Productivity & digital planners. `/theme-demo/p-digital-productivity`
+- **LEVEL / LAB** — Gaming guides & creator resources. `/theme-demo/p-digital-gaming-guides`
+
+Each theme uses existing editable hero title, subtitle, eyebrow, CTA, photo slots and product fields. Pan/drift is opt-in for seller stores; demos start with motion. Headline entrance finishes within one second and honors reduced-motion. Demo photos reuse bundled illustrative category photography; no photo is inserted into a live seller store.
