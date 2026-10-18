@@ -1,12 +1,12 @@
 // The website's home page (app.snapfront.app): a full-width hero, the seller's store at a glance,
 // the creative tools, storefront themes and the Android app. Web-only: metro.config.js uses it in
 // place of src/app/(tabs)/index.tsx (the phone's Home) when building the website.
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions, type PressableStateCallbackType } from "react-native";
 import { router, useFocusEffect, type Href } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { api, ApiError, type Product, type StoreTheme } from "@/lib/api";
+import { api, API_URL, ApiError, type Product, type StoreTheme } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
 import { featuredThemes } from "@/lib/home-discovery";
 import { DEFAULT_STORE_NAME } from "@/lib/store-address";
@@ -19,26 +19,27 @@ import { CONTENT, WebFooter } from "./web-nav";
 type Hover = PressableStateCallbackType & { hovered?: boolean };
 type Icon = React.ComponentProps<typeof Ionicons>["name"];
 
-const TOOLS: { title: string; detail: string; icon: Icon; href: Href }[] = [
-  { title: "Snap a product", detail: "A photo becomes a full product page with a price and checkout.", icon: "camera-outline", href: "/snap" },
-  { title: "Digital products", detail: "E-books, checklists, planners and prints, written and designed for you.", icon: "document-text-outline", href: "/create" },
-  { title: "Marketing posts", detail: "Ready-to-post images and carousels with your price and link.", icon: "megaphone-outline", href: "/marketing" },
-  { title: "AI photos & video", detail: "Lifestyle shots and short clips of your product.", icon: "film-outline", href: "/ai-media" },
-  { title: "Photo cleanup", detail: "Keep the product exactly as it is and change only the background.", icon: "color-wand-outline", href: "/studio" },
-  { title: "Find products", detail: "Source your next collection from trusted suppliers.", icon: "search-outline", href: "/find" },
-  { title: "Store assistant", detail: "Ask for ideas, copy and next steps for your shop.", icon: "chatbubbles-outline", href: "/assistant" },
-  { title: "Get more buyers", detail: "Link in bio, QR codes and Google Shopping.", icon: "people-outline", href: "/channels" },
-  { title: "Email marketing", detail: "Grow a list from your store, send emails and let welcome and win-back emails run themselves.", icon: "mail-outline", href: "/email" },
-  { title: "Instagram AutoDM", detail: "Someone comments a keyword; your Instagram DMs them the link.", icon: "chatbubble-ellipses-outline", href: "/autodm" },
-  { title: "Affiliates", detail: "Fans and creators share their own link and earn on each sale.", icon: "ribbon-outline", href: "/affiliates" },
-  { title: "Ad pixels", detail: "Meta, TikTok, Google and Pinterest see your sales, so ads find buyers.", icon: "pulse-outline", href: "/pixels" },
-  { title: "Earn with Snapfront", detail: "Share your link: 40% of every Lifetime sale and $19 a month for every Monthly member.", icon: "cash-outline", href: "/earn" },
-  { title: "Snapfront Academy", detail: "Short video lessons: your store, content, going LIVE on TikTok and the top 10 ways to market.", icon: "school-outline", href: "/academy" },
-  { title: "Faceless videos", detail: "Your product photos, big captions and a natural voiceover, ready for TikTok and Reels.", icon: "videocam-outline", href: "/faceless" },
-  { title: "AI avatars", detail: "An original AI character, your own photo or a blend of two that shows off your products in posts, stories and videos.", icon: "person-circle-outline", href: "/avatars" },
-  { title: "Credits", detail: "Top up credits for avatar videos made with Vidu Q3, Seedance 2.5 and Sora 2 Pro, plus voiceovers and talking avatars.", icon: "sparkles-outline", href: "/credits" },
-  { title: "UGC creator kit", detail: "A portfolio page, rates, scripts and pitches to get paid by brands for short videos.", icon: "aperture-outline", href: "/ugc" },
-  { title: "Community", detail: "The members' Discord, Whop and live coaching.", icon: "chatbubbles-outline", href: "/community" },
+// `art` names a short looping animation in server/assets/site/tools/ (made with tools/site-art).
+const TOOLS: { title: string; art: string; detail: string; icon: Icon; href: Href }[] = [
+  { title: "Snap a product", art: "snap", detail: "A photo becomes a full product page with a price and checkout.", icon: "camera-outline", href: "/snap" },
+  { title: "Digital products", art: "digital", detail: "E-books, checklists, planners and prints, written and designed for you.", icon: "document-text-outline", href: "/create" },
+  { title: "Marketing posts", art: "marketing", detail: "Ready-to-post images and carousels with your price and link.", icon: "megaphone-outline", href: "/marketing" },
+  { title: "AI photos & video", art: "ai-media", detail: "Lifestyle shots and short clips of your product.", icon: "film-outline", href: "/ai-media" },
+  { title: "Photo cleanup", art: "cleanup", detail: "Keep the product exactly as it is and change only the background.", icon: "color-wand-outline", href: "/studio" },
+  { title: "Find products", art: "find", detail: "Source your next collection from trusted suppliers.", icon: "search-outline", href: "/find" },
+  { title: "Store assistant", art: "assistant", detail: "Ask for ideas, copy and next steps for your shop.", icon: "chatbubbles-outline", href: "/assistant" },
+  { title: "Get more buyers", art: "buyers", detail: "Link in bio, QR codes and Google Shopping.", icon: "people-outline", href: "/channels" },
+  { title: "Email marketing", art: "email", detail: "Grow a list from your store, send emails and let welcome and win-back emails run themselves.", icon: "mail-outline", href: "/email" },
+  { title: "Instagram AutoDM", art: "autodm", detail: "Someone comments a keyword; your Instagram DMs them the link.", icon: "chatbubble-ellipses-outline", href: "/autodm" },
+  { title: "Affiliates", art: "affiliates", detail: "Fans and creators share their own link and earn on each sale.", icon: "ribbon-outline", href: "/affiliates" },
+  { title: "Ad pixels", art: "pixels", detail: "Meta, TikTok, Google and Pinterest see your sales, so ads find buyers.", icon: "pulse-outline", href: "/pixels" },
+  { title: "Earn with Snapfront", art: "earn", detail: "Share your link: 40% of every Lifetime sale and $19 a month for every Monthly member.", icon: "cash-outline", href: "/earn" },
+  { title: "Snapfront Academy", art: "academy", detail: "Short video lessons: your store, content, going LIVE on TikTok and the top 10 ways to market.", icon: "school-outline", href: "/academy" },
+  { title: "Faceless videos", art: "faceless", detail: "Your product photos, big captions and a natural voiceover, ready for TikTok and Reels.", icon: "videocam-outline", href: "/faceless" },
+  { title: "AI avatars", art: "avatars", detail: "An original AI character, your own photo or a blend of two that shows off your products in posts, stories and videos.", icon: "person-circle-outline", href: "/avatars" },
+  { title: "Credits", art: "credits", detail: "Top up credits for avatar videos made with Vidu Q3, Seedance 2.5 and Sora 2 Pro, plus voiceovers and talking avatars.", icon: "sparkles-outline", href: "/credits" },
+  { title: "UGC creator kit", art: "ugc", detail: "A portfolio page, rates, scripts and pitches to get paid by brands for short videos.", icon: "aperture-outline", href: "/ugc" },
+  { title: "Community", art: "community", detail: "The members' Discord, Whop and live coaching.", icon: "chatbubbles-outline", href: "/community" },
 ];
 
 export default function WebHome() {
@@ -174,19 +175,56 @@ function CTA({ label, href, url, icon, primary, small }: { label: string; href?:
   return <Pressable accessibilityRole="link" onPress={() => router.push(href!)} style={body}>{inner}</Pressable>;
 }
 
-function ToolCard({ title, detail, icon, href, columns }: { title: string; detail: string; icon: Icon; href: Href; columns: number }) {
+const ART_VERSION = 1;   // bump when the animations are remade, so browsers fetch the new ones
+const artUrl = (key: string, ext: "webm" | "mp4" | "webp") => `${API_URL}/site/tools/${key}.${ext}?v=${ART_VERSION}`;
+
+function ToolCard({ title, art, detail, icon, href, columns }: { title: string; art: string; detail: string; icon: Icon; href: Href; columns: number }) {
   const c = useColors();
   return (
-    <Pressable accessibilityRole="link" onPress={() => router.push(href)} style={(s: Hover) => ({ flexBasis: columns === 4 ? "23%" : columns === 2 ? "47%" : "100%", flexGrow: 1, minHeight: 170, backgroundColor: s.hovered ? c.sunk : c.surface, borderWidth: 1, borderColor: s.hovered ? "#4A515D" : c.line, borderRadius: radius.lg, padding: 22, gap: 14 })}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <View style={{ width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: c.sunk }}><Ionicons name={icon} size={22} color={c.accent} /></View>
-          <Ionicons name="arrow-forward" size={18} color={c.muted} />
-        </View>
-        <View style={{ gap: 6 }}>
-          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: c.ink }}>{title}</Text>
-          <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 21, color: c.muted }}>{detail}</Text>
-        </View>
-      </Pressable>
+    <Pressable accessibilityRole="link" accessibilityLabel={`${title}: ${detail}`} onPress={() => router.push(href)}
+      style={(s: Hover) => ({ flexBasis: columns === 4 ? "23%" : columns === 2 ? "47%" : "100%", flexGrow: 1, backgroundColor: c.surface, borderWidth: 1, borderColor: s.hovered ? "#5A6270" : c.line, borderRadius: radius.lg, overflow: "hidden",
+        transform: [{ translateY: s.hovered ? -4 : 0 }], boxShadow: s.hovered ? "0 24px 60px rgba(0,0,0,0.55)" : "0 0 0 rgba(0,0,0,0)", transitionDuration: "300ms", transitionProperty: "transform, box-shadow, border-color" } as object)}>
+      {(s: Hover) => (
+        <>
+          <CardArt art={art} hovered={!!s.hovered} />
+          <View style={{ position: "absolute", top: 12, left: 12, width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(9,11,14,0.62)", backdropFilter: "blur(10px)" } as object}>
+            <Ionicons name={icon} size={18} color={c.ink} />
+          </View>
+          <View style={{ padding: 18, paddingTop: 16, gap: 6, flexGrow: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: c.ink, flexShrink: 1 }}>{title}</Text>
+              <Ionicons name="arrow-forward" size={18} color={s.hovered ? c.ink : c.muted} style={{ transform: [{ translateX: s.hovered ? 3 : 0 }], transitionDuration: "300ms" } as object} />
+            </View>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 21, color: c.muted }}>{detail}</Text>
+          </View>
+        </>
+      )}
+    </Pressable>
+  );
+}
+
+/** A short silent loop that plays while the card is on screen (a still frame for people who prefer less motion). */
+function CardArt({ art, hovered }: { art: string; hovered: boolean }) {
+  const c = useColors();
+  const ref = useRef<HTMLVideoElement | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.muted = true;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) el.play().catch(() => {}); else el.pause(); }, { rootMargin: "200px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <View style={{ width: "100%", aspectRatio: 4 / 3, overflow: "hidden", backgroundColor: c.sunk }}>
+      <video ref={ref} poster={artUrl(art, "webp")} muted loop playsInline preload="none" aria-hidden="true" disablePictureInPicture
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transform: hovered ? "scale(1.06)" : "scale(1)", transition: "transform 700ms cubic-bezier(.2,.7,.2,1)" }}>
+        <source src={artUrl(art, "webm")} type="video/webm" />
+        <source src={artUrl(art, "mp4")} type="video/mp4" />
+      </video>
+      <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "38%", backgroundImage: `linear-gradient(180deg, rgba(20,23,28,0) 0%, ${c.surface} 100%)` } as object} />
+    </View>
   );
 }
 

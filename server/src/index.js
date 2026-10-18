@@ -93,7 +93,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (!isWebAppHost(req)) return next();
   // The API, photos and files are shared with the phone app; everything else is the web app.
-  if (/^\/(api|img|media|d|health|builds|digital-design-assets|digital-design-exports|storefront-preview|theme-assets)(\/|$)/.test(req.path)) return next();
+  if (/^\/(api|img|media|d|health|builds|digital-design-assets|digital-design-exports|storefront-preview|theme-assets|site)(\/|$)/.test(req.path)) return next();
   serveWebApp(req, res, next);
 });
 // Without a store domain (local runs), the web app lives at /app.
