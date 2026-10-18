@@ -53,6 +53,7 @@ import * as credits from "./credits.js";
 import * as avatarVideos from "./avatar-videos.js";
 import * as social from "./social.js";
 import * as digitalDesigns from "./digital-designs.js";
+import * as digitalIdeas from "./digital-ideas.js";
 import * as imageAssistant from "./image-assistant.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, affiliateJoinPage, affiliatePortalPage, ugcPage, esc } from "./render.js";
@@ -1126,6 +1127,12 @@ app.get("/digital-design-exports/:token", (req, res, next) => {
     return res.type("png").sendFile(file.path);
   } catch (error) { next(error); }
 });
+app.get("/api/digital-ideas", (_req, res) => res.json(digitalIdeas.ideaCatalog));
+app.post("/api/digital-ideas/start", auth, (req, res) => res.status(201).json(digitalIdeas.startIdea(req.seller, req.body || {})));
+app.get("/api/products/:id/digital-idea", auth, (req, res) => res.json(digitalIdeas.productIdea(req.seller, req.params.id)));
+app.post("/api/products/:id/digital-designer", auth, aiLimit, wrap(async (req, res) => {
+  res.json(await plans.withAllowance(req.account, "agent", () => digitalIdeas.designerProposal(req.seller, req.params.id, req.body || {})));
+}));
 app.post("/api/digital-designs/create", auth, wrap(async (req, res) => res.status(201).json(await digitalDesigns.createDraft(req.seller, req.body || {}))));
 app.get("/api/products/:id/digital-design", auth, (req, res) => res.json(digitalDesigns.getDesign(req.seller, req.params.id)));
 app.put("/api/products/:id/digital-design", auth, wrap(async (req, res) => res.json(await digitalDesigns.saveDesign(req.seller, req.params.id, req.body || {}))));
