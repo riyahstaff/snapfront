@@ -77,7 +77,8 @@ export const MODELS = [
     input: ({ image, prompt, duration }) => ({ prompt, image, duration }) },
   { id: "wan", name: "Wan 2.6", badge: "Best value", blurb: "Smooth, realistic motion at the lowest price, with clips up to 15 seconds. Up to 1080p.",
     endpoint: () => ep("RUNPOD_EP_WAN26", "wan-2-6-i2v"), durations: [5, 10, 15], resolutions: ["720p", "1080p"], sound: "strip", sound_default: false, usd: (d, r) => (r === "1080p" ? 0.15 : 0.1) * d,
-    input: ({ image, prompt, duration, resolution }) => ({ prompt, image, duration, size: resolution === "1080p" ? "1920*1080" : "1280*720", shot_type: "single", seed: -1, enable_prompt_expansion: false, enable_safety_checker: true }) },
+    // Runpod wants resolution "720p"/"1080p" here (its docs say size "1280*720", which it rejects); it keeps the photo's shape.
+    input: ({ image, prompt, duration, resolution }) => ({ prompt, image, duration, resolution: resolution === "1080p" ? "1080p" : "720p", shot_type: "single", seed: -1, enable_prompt_expansion: false, enable_safety_checker: true }) },
 ];
 // Retired models still name their old videos.
 const OLD_NAMES = { kling: "Kling O1" };
