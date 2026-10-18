@@ -133,3 +133,38 @@ test("members list and profiles: a chosen name, no emails, no staff titles", asy
   assert.ok(!list.members.some((m) => m.name === "Just Looking"));   // free accounts aren't members
   assert.ok(!JSON.stringify(list).includes("@example.com"));
 });
+
+test("emails: replies are emailed once (not likes, not already read), with a working unsubscribe link; announcements can go to every member", async () => {
+  const feedMod = await import("../src/community-feed.js");
+  const sent = [], batches = [];
+  feedMod.setMailer({ one: async (m) => { sent.push(m); return true; }, many: async (list) => { batches.push(list); return true; } });
+  const p = (await call("POST", "/api/community/posts", { title: "Pricing question", body: "How do you price candles?" }, ben.token)).body;
+  await call("POST", `/api/community/posts/${p.id}/comments`, { body: "I charge $28 for 8oz" }, ana.token);
+  await call("PUT", `/api/community/likes/post/${p.id}`, { liked: true }, ana.token);
+  assert.equal(await feedMod.emailDigests(), 0);   // too fresh: they may be reading in the app
+  db.prepare("UPDATE community_notifications SET created_at = datetime('now', '-10 minutes')").run();
+  assert.ok((await feedMod.emailDigests()) >= 1);   // Ben, plus anyone else with unread replies
+  const mail = sent.find((m) => m.to === "benprints@example.com");
+  assert.match(mail.subject, /commented on your post/);
+  assert.match(mail.html, /I charge \$28 for 8oz/);
+  assert.match(mail.html, /community-post\//);
+  assert.equal(await feedMod.emailDigests(), 0);   // each comment is emailed once
+  // Unsubscribe without signing in; a forged link does nothing.
+  const link = mail.html.match(/href="([^"]*community\/unsubscribe[^"]*)"/)[1].replace(/&amp;/g, "&");
+  const u = new URL(link);
+  assert.equal((await fetch(`${base}/community/unsubscribe?a=${u.searchParams.get("a")}&t=${"0".repeat(32)}`)).status, 400);
+  assert.equal((await fetch(`${base}${u.pathname}${u.search}`)).status, 200);
+  assert.equal((await call("GET", "/api/community/home", null, ben.token)).body.me.email_notes, false);
+  await call("PUT", "/api/community/profile", { email_notes: true }, ben.token);
+  assert.equal((await call("GET", "/api/community/home", null, ben.token)).body.me.email_notes, true);
+  // Announcements: only the owner, only when asked, once, to members only.
+  await call("POST", "/api/community/posts", { category: "announcements", title: "Live call Thursday", body: "See you there", email_members: true }, boss.token);
+  await new Promise((r) => setTimeout(r, 50));
+  const to = batches.flat().map((m) => m.to);
+  assert.ok(to.includes("benprints@example.com") && to.includes("anacandles@example.com"));
+  assert.ok(!to.includes("justlooking@example.com"));
+  assert.equal(batches.flat()[0].subject, "Live call Thursday");
+  await call("POST", "/api/community/posts", { category: "announcements", title: "No email this time", body: "" }, boss.token);
+  await new Promise((r) => setTimeout(r, 50));
+  assert.ok(!batches.flat().some((m) => m.subject === "No email this time"));
+});

@@ -6,7 +6,7 @@ import { router, usePathname, type Href } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useMe } from "@/lib/account-store";
-import { fonts, useColors } from "@/lib/theme";
+import { alpha, fonts, theme, useColors } from "@/lib/theme";
 
 // Keep the marketing funnel separate from the signed-in merchant workspace.
 export const NAV: { label: string; href: Href; match: (p: string) => boolean }[] = [
@@ -49,7 +49,7 @@ export function WebNav() {
   // Never expose any store, marketing, training or profile navigation on /plans.
   if (path === "/plans") {
     return (
-      <View style={{ backgroundColor: "rgba(9,11,14,0.94)", borderBottomWidth: 1, borderColor: c.sunk }}>
+      <View style={{ backgroundColor: alpha(c.bg, 0.94), borderBottomWidth: 1, borderColor: c.sunk }}>
         <View style={{ height: 68, width: "100%", maxWidth: CONTENT + 48, alignSelf: "center", paddingHorizontal: 24, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <Image source={require("../../assets/brand-mark.png")} contentFit="contain" style={{ width: 30, height: 33 }} />
@@ -65,7 +65,7 @@ export function WebNav() {
   }
 
   return (
-    <View style={{ zIndex: 50, backgroundColor: "rgba(9,11,14,0.94)", borderBottomWidth: 1, borderColor: c.sunk }}>
+    <View style={{ zIndex: 50, backgroundColor: alpha(c.bg, 0.94), borderBottomWidth: 1, borderColor: c.sunk }}>
       <View role="navigation" style={{ height: 68, width: "100%", maxWidth: CONTENT + 48, alignSelf: "center", paddingHorizontal: 24, flexDirection: "row", alignItems: "center", gap: 28 }}>
         <Pressable accessibilityRole="link" accessibilityLabel="Snapfront home" onPress={() => go("/")} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <Image source={require("../../assets/brand-mark.png")} contentFit="contain" style={{ width: 30, height: 33 }} />
@@ -78,7 +78,7 @@ export function WebNav() {
         ) : <View style={{ flex: 1 }} />}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           {plan === "free" ? (
-            <Pressable accessibilityRole="link" onPress={() => go(signedIn ? "/plans" : "/sign-in")} style={(s: Hover): ViewStyle => ({ backgroundColor: s.hovered ? "#FFFFFF" : c.accent, borderRadius: 999, paddingHorizontal: 18, height: 38, justifyContent: "center" })}>
+            <Pressable accessibilityRole="link" onPress={() => go(signedIn ? "/plans" : "/sign-in")} style={(s: Hover): ViewStyle => ({ backgroundColor: s.hovered ? c.accentHover : c.accent, borderRadius: 999, paddingHorizontal: 18, height: 38, justifyContent: "center" })}>
               <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.onAccent }}>{signedIn ? "Unlock full access" : "Get started free"}</Text>
             </Pressable>
           ) : (
@@ -86,6 +86,7 @@ export function WebNav() {
               <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.good }}>{plan === "pro" ? (me?.account.lifetime ? "Lifetime" : "Pro") : "Launch"}</Text>
             </Pressable>
           )}
+          <ThemeToggle />
           {signedIn ? <Pressable accessibilityRole="link" accessibilityLabel="Account and store settings" onPress={() => go("/settings")}
             style={(s: Hover): ViewStyle => ({ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: s.hovered || path.startsWith("/settings") ? c.sunk : "transparent" })}>
             <Ionicons name="person-circle-outline" size={26} color={c.muted} />
@@ -98,9 +99,9 @@ export function WebNav() {
           ) : null}
         </View>
       </View>
-      {!wide && open ? <Pressable accessibilityLabel="Close menu" onPress={() => setOpen(false)} style={{ position: "absolute", top: 69, left: 0, right: 0, height: 4000, backgroundColor: "rgba(5,6,8,0.72)" }} /> : null}
+      {!wide && open ? <Pressable accessibilityLabel="Close menu" onPress={() => setOpen(false)} style={{ position: "absolute", top: 69, left: 0, right: 0, height: 4000, backgroundColor: c.dark ? "rgba(5,6,8,0.72)" : "rgba(15,18,23,0.35)" }} /> : null}
       {!wide && open ? (
-        <View style={{ position: "absolute", top: 69, left: 0, right: 0, backgroundColor: c.bg, borderBottomWidth: 1, borderColor: c.line, paddingVertical: 8, paddingHorizontal: 16, boxShadow: "0 30px 60px rgba(0,0,0,0.5)" } as ViewStyle}>
+        <View style={{ position: "absolute", top: 69, left: 0, right: 0, backgroundColor: c.bg, borderBottomWidth: 1, borderColor: c.line, paddingVertical: 8, paddingHorizontal: 16, boxShadow: c.dark ? "0 30px 60px rgba(0,0,0,0.5)" : "0 30px 60px rgba(15,18,23,0.12)" } as ViewStyle}>
           {menu.map((n) => (
             <Pressable key={n.label} accessibilityRole="link" onPress={() => { setOpen(false); go(n.href); }}
               style={{ paddingVertical: 14, paddingHorizontal: 8, borderBottomWidth: 1, borderColor: c.sunk, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -118,7 +119,7 @@ function NavLink({ label, href, active }: { label: string; href: Href; active: b
   const c = useColors();
   return (
     <Pressable accessibilityRole="link" onPress={() => go(href)}
-      style={(s: Hover): ViewStyle => ({ paddingHorizontal: 12, height: 36, borderRadius: 999, justifyContent: "center", backgroundColor: active ? c.sunk : s.hovered ? "rgba(29,33,40,0.7)" : "transparent" })}>
+      style={(s: Hover): ViewStyle => ({ paddingHorizontal: 12, height: 36, borderRadius: 999, justifyContent: "center", backgroundColor: active ? c.sunk : s.hovered ? alpha(c.sunk, 0.7) : "transparent" })}>
       {(s: Hover) => <Text style={{ fontFamily: active ? fonts.bodyBold : fonts.bodyMedium, fontSize: 15, color: active || s.hovered ? c.ink : c.muted }}>{label}</Text>}
     </Pressable>
   );
@@ -160,5 +161,17 @@ export function WebFooter() {
         </View>
       </View>
     </View>
+  );
+}
+
+/** Sun/moon button: switches between the dark and light look (remembered on this device). */
+function ThemeToggle() {
+  const c = useColors();
+  const next = c.dark ? "light" : "dark";
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`Switch to the ${next} theme`} onPress={() => theme.set(next)}
+      style={(s: Hover): ViewStyle => ({ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: s.hovered ? c.sunk : "transparent" })}>
+      <Ionicons name={c.dark ? "sunny-outline" : "moon-outline"} size={21} color={c.muted} />
+    </Pressable>
   );
 }

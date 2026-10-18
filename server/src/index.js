@@ -886,6 +886,10 @@ app.post("/api/admin/academy/build", adminOnly, (req, res) => { academy.buildMis
 app.get("/api/daily-prompt", auth, wrap(async (req, res) => res.json(await daily.today(req.seller, { fresh: req.query.fresh === "1" }))));
 app.get("/api/community", auth, (req, res) => res.json(community.view(req.account)));
 /* ---------- the members' community (Skool-style): feed, comments, likes/points, leaderboard, members, calendar ---------- */
+app.get("/community/unsubscribe", (req, res) => {
+  const ok = feed.unsubscribe(req.query.a, req.query.t);
+  res.status(ok ? 200 : 400).type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:system-ui,sans-serif;max-width:480px;margin:60px auto;padding:0 20px;color:#11151B"><h1 style="font-size:22px">${ok ? "Community emails are off" : "That link didn't work"}</h1><p>${ok ? "You won't get emails about replies or announcements. You can turn them back on in the Community, under Members, Your profile." : "Open the Community in Snapfront and change it under Members, Your profile."}</p></body>`);
+});
 app.get("/api/community/home", auth, (req, res) => res.json({ ...feed.home(req.account, req.query), links: community.view(req.account) }));
 app.get("/api/community/posts", auth, (req, res) => res.json(feed.feed(req.account, req.query)));
 app.post("/api/community/posts", auth, (req, res) => res.status(201).json(feed.create(req.account, req.seller, req.body || {})));
@@ -1451,6 +1455,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   setInterval(() => credits.sweep().catch((e) => console.error("[credits] sweep", e.message)), 10 * 60e3).unref();
   setTimeout(() => reconcileStripe().catch((e) => console.error("[reconcile]", e.message)), 45e3).unref();
   setInterval(() => reconcileStripe().catch((e) => console.error("[reconcile]", e.message)), 15 * 60e3).unref();
+  setInterval(() => feed.emailDigests().catch((e) => console.error("[community email]", e.message)), 10 * 60e3).unref();
   // Create the Lifetime and Pro products in Play (retries hourly until Google allows it).
   const products = () => playbilling.ensureProducts().catch((e) => console.error("[play] products", e.message));
   setTimeout(products, 15e3).unref();

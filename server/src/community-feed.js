@@ -4,6 +4,7 @@
 //   Who can do what: every signed-in account can read; members (a paid plan) and the owner can post,
 //   comment and like; only the owner posts announcements, pins, removes anything, mutes people and
 //   runs the calendar. Emails are never shown, only a display name (the store's name by default).
+import crypto from "node:crypto";
 import { db, newId } from "./db.js";
 import { config } from "./config.js";
 import { httpError } from "./claude.js";
@@ -50,6 +51,85 @@ CREATE TABLE IF NOT EXISTS community_reports (
   resolved INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE (account_id, kind, target_id)
 );
 `);
+
+// Email: replies and comments are emailed (at most one email every few hours, after 5 minutes so
+// people reading in the app don't also get an email); announcements can be emailed to every member.
+for (const [table, col, def] of [["community_notifications", "emailed", "INTEGER NOT NULL DEFAULT 0"], ["community_profiles", "email_notes", "INTEGER NOT NULL DEFAULT 1"], ["community_profiles", "emailed_at", "TEXT"], ["community_posts", "emailed_at", "TEXT"]]) {
+  if (!db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+}
+async function resend(path, body) {
+  if (!config.resendKey) return false;
+  const res = await fetch(`https://api.resend.com/${path}`, { method: "POST", headers: { Authorization: `Bearer ${config.resendKey}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!res.ok) console.warn("[community email]", res.status, (await res.text().catch(() => "")).slice(0, 200));
+  return res.ok;
+}
+let mailer = { one: (m) => resend("emails", m), many: (list) => resend("emails/batch", list) };
+export function setMailer(m) { mailer = m; }   // tests
+const webApp = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+export const unsubscribeToken = (accountId) => crypto.createHmac("sha256", config.downloadSecret).update(`community-unsub:${accountId}`).digest("hex").slice(0, 32);
+const unsubscribeLink = (accountId) => `${config.publicUrl}/community/unsubscribe?a=${encodeURIComponent(accountId)}&t=${unsubscribeToken(accountId)}`;
+function emailShell(accountId, title, inner) {
+  return `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:540px;margin:0 auto;padding:24px;color:#11151B">
+<p style="font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#A85C2E;font-weight:700;margin:0 0 6px">Snapfront Community</p>
+<h1 style="font-size:22px;margin:0 0 16px">${esc(title)}</h1>${inner}
+<p style="color:#777;font-size:12px;margin-top:32px">You're getting this because you're a Snapfront member. <a href="${esc(unsubscribeLink(accountId))}" style="color:#777">Stop community emails</a>.</p></div>`;
+}
+const button = (href, label) => `<p style="margin:26px 0"><a href="${esc(href)}" style="background:#15191F;color:#fff;padding:13px 24px;border-radius:999px;text-decoration:none;font-weight:600">${esc(label)}</a></p>`;
+
+/** Email people about new comments and replies they haven't seen in the app. Runs on a timer. */
+export async function emailDigests() {
+  const due = db.prepare(`SELECT n.account_id FROM community_notifications n JOIN community_profiles p ON p.account_id = n.account_id
+    WHERE n.read = 0 AND n.emailed = 0 AND n.kind IN ('comment', 'reply') AND n.created_at <= datetime('now', '-5 minutes')
+      AND p.email_notes = 1 AND (p.emailed_at IS NULL OR p.emailed_at <= datetime('now', '-3 hours'))
+    GROUP BY n.account_id LIMIT 100`).all();
+  let sent = 0;
+  for (const { account_id } of due) {
+    const items = db.prepare("SELECT * FROM community_notifications WHERE account_id = ? AND read = 0 AND emailed = 0 AND kind IN ('comment', 'reply') ORDER BY created_at DESC LIMIT 20").all(account_id);
+    db.prepare("UPDATE community_notifications SET emailed = 1 WHERE account_id = ? AND emailed = 0 AND kind IN ('comment', 'reply')").run(account_id);
+    const a = db.prepare("SELECT email FROM accounts WHERE id = ?").get(account_id);
+    if (!a?.email || !items.length) continue;
+    const cache = new Map();
+    const rows = items.slice(0, 5).map((n) => {
+      const post = db.prepare("SELECT title FROM community_posts WHERE id = ? AND deleted = 0").get(n.post_id);
+      const cm = n.comment_id ? db.prepare("SELECT body FROM community_comments WHERE id = ? AND deleted = 0").get(n.comment_id) : null;
+      if (!post || !cm) return "";
+      return `<div style="border-left:3px solid #D5DAE1;padding:2px 0 2px 12px;margin:14px 0"><p style="margin:0;font-size:14px;color:#596170"><b style="color:#11151B">${esc(person(n.actor_id, cache).name)}</b> ${n.kind === "reply" ? "replied to you on" : "commented on"} “${esc(post.title)}”</p><p style="margin:6px 0 0;font-size:15px">${esc(cm.body.slice(0, 220))}${cm.body.length > 220 ? "…" : ""}</p></div>`;
+    }).filter(Boolean);
+    if (!rows.length) continue;
+    const more = items.length > 5 ? `<p style="color:#596170;font-size:14px">and ${items.length - 5} more.</p>` : "";
+    const title = items.length === 1 ? `${person(items[0].actor_id, cache).name} ${items[0].kind === "reply" ? "replied to you" : "commented on your post"}` : `${items.length} new replies in the community`;
+    const ok = await mailer.one({ from: config.emailFrom, to: a.email, subject: title, html: emailShell(account_id, title, rows.join("") + more + button(`${webApp()}/community-post/${items[0].post_id}`, "Open the conversation")) }).catch(() => false);
+    if (ok) { db.prepare("UPDATE community_profiles SET emailed_at = datetime('now') WHERE account_id = ?").run(account_id); sent++; }
+  }
+  return sent;
+}
+
+/** Email an announcement to every member who hasn't turned community emails off (once per post). */
+export async function emailAnnouncement(postId) {
+  const p = db.prepare("SELECT * FROM community_posts WHERE id = ? AND deleted = 0 AND category = 'announcements' AND emailed_at IS NULL").get(String(postId));
+  if (!p) return 0;
+  db.prepare("UPDATE community_posts SET emailed_at = datetime('now') WHERE id = ?").run(p.id);
+  const rows = db.prepare(`SELECT a.id, a.email FROM accounts a LEFT JOIN community_profiles cp ON cp.account_id = a.id
+    WHERE a.email IS NOT NULL AND a.email != '' AND (a.plan != 'free' OR COALESCE(a.comp_plan, 'free') != 'free') AND COALESCE(cp.email_notes, 1) = 1`).all();
+  const body = `<p style="font-size:16px;line-height:1.55;white-space:pre-wrap;margin:0">${esc(p.body.slice(0, 2000))}</p>${p.image_file ? `<p><img src="${esc(imgUrl(p.image_file))}" alt="" style="max-width:100%;border-radius:12px"></p>` : ""}`;
+  let sent = 0;
+  for (let i = 0; i < rows.length; i += 100) {
+    const chunk = rows.slice(i, i + 100).map((r) => ({ from: config.emailFrom, to: r.email, subject: p.title, html: emailShell(r.id, p.title, body + button(`${webApp()}/community-post/${p.id}`, "Open in the community")) }));
+    if (await mailer.many(chunk).catch(() => false)) sent += chunk.length;
+  }
+  return sent;
+}
+/** The link in every community email: turns them off without signing in. */
+export function unsubscribe(accountId, token) {
+  const want = unsubscribeToken(String(accountId || ""));
+  const got = String(token || "");
+  if (!accountId || got.length !== want.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want))) return false;
+  if (!db.prepare("SELECT 1 FROM accounts WHERE id = ?").get(String(accountId))) return false;
+  profile(String(accountId));
+  db.prepare("UPDATE community_profiles SET email_notes = 0 WHERE account_id = ?").run(String(accountId));
+  return true;
+}
 
 export const CATEGORIES = [
   { id: "announcements", name: "Announcements", emoji: "📣", owner_only: true },
@@ -107,7 +187,7 @@ export function me(account) {
   const p = profile(account.id);
   const lv = levelFor(pointsOf(account.id));
   return {
-    ...person(account.id, new Map()), level_info: lv, display_name: p.display_name || "",
+    ...person(account.id, new Map()), level_info: lv, display_name: p.display_name || "", email_notes: Boolean(p.email_notes),
     can_post: isMember(account) && !p.muted, member: isMember(account), muted: Boolean(p.muted), owner: isOwner(account),
     unread: db.prepare("SELECT COUNT(*) AS n FROM community_notifications WHERE account_id = ? AND read = 0").get(account.id).n,
   };
@@ -117,6 +197,7 @@ export function updateProfile(account, b = {}) {
   const name = one(b.display_name, 40), bio = clean(b.bio, 280);
   if (b.display_name !== undefined && name && name.length < 2) throw httpError(400, "Use at least 2 letters for your name.");
   if (/snapfront\s*(team|staff|admin|support)|^admin$|moderator/i.test(name) && !isOwner(account)) throw httpError(400, "Choose a name that isn't a staff title.");
+  if (b.email_notes !== undefined) db.prepare("UPDATE community_profiles SET email_notes = ? WHERE account_id = ?").run(b.email_notes ? 1 : 0, account.id);
   db.prepare("UPDATE community_profiles SET display_name = COALESCE(?, display_name), bio = COALESCE(?, bio) WHERE account_id = ?")
     .run(b.display_name !== undefined ? name || null : null, b.bio !== undefined ? bio : null, account.id);
   return me(account);
@@ -178,6 +259,7 @@ export function create(account, seller, b = {}) {
   rate("community_posts", account, LIMITS.posts_per_day, "posts");
   const id = newId("cp");
   db.prepare("INSERT INTO community_posts (id, account_id, seller_id, category, title, body, image_file) VALUES (?,?,?,?,?,?,?)").run(id, account.id, seller.id, category, title, body, image);
+  if (category === "announcements" && b.email_members) emailAnnouncement(id).catch((e) => console.warn("[community email]", e.message));
   return postView(getPost(id), account);
 }
 export function edit(account, id, b = {}) {

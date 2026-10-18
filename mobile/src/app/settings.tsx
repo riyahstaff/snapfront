@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Switch, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
-import { Body, Button, Field, H2, Notice, Screen } from "@/components/ui";
+import { Body, Button, Field, H2, Notice, Screen, Segmented } from "@/components/ui";
 import { api, ApiError, type Me } from "@/lib/api";
 import { account } from "@/lib/account-store";
 import { AccountSection } from "@/components/account-section";
@@ -10,7 +10,7 @@ import { ReleaseInfo } from "@/components/release-info";
 import { displayAddress } from "@/lib/store-address";
 import { SupplierSection } from "@/components/supplier-section";
 import { DomainSection } from "@/components/domain-section";
-import { space, type, useColors } from "@/lib/theme";
+import { space, theme, type, useColors, useThemeChoice, type ThemeChoice } from "@/lib/theme";
 
 export default function SettingsScreen() {
   const [seller, setSellerState] = useState<Me | null>(null);
@@ -86,6 +86,7 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <AccountSection />
+      <Appearance />
       <View style={{ height: space.md }} />
       <H2>{seller && seller.account.stores.length > 1 ? `This store: ${seller.store_name}` : "Your store"}</H2>
       <Field label="Store name" value={name} onChangeText={setName} />
@@ -166,5 +167,18 @@ export default function SettingsScreen() {
         ) : <Button label="Delete this store only" variant="ghost" onPress={() => setConfirmStore(true)} />) : null}
       </View>
     </Screen>
+  );
+}
+
+/** Dark (Snapfront's signature look), light, or whatever this device uses. Remembered on this device. */
+function Appearance() {
+  const c = useColors();
+  const pick = useThemeChoice();
+  return (
+    <View style={{ gap: space.sm }}>
+      <H2>Appearance</H2>
+      <Segmented<ThemeChoice> value={pick} onChange={(v) => theme.set(v)} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }, { value: "system", label: "Match device" }]} />
+      <Text style={[type.small, { color: c.muted }]}>Changes the look of Snapfront on this device. Your storefront keeps its own theme.</Text>
+    </View>
   );
 }

@@ -56,7 +56,7 @@ export default function RootLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <StatusBar style="light" />
+      <StatusBar style={c.dark ? "light" : "dark"} />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: c.bg },
