@@ -41,6 +41,7 @@ import * as academyPresenter from "./academy-presenter.js";
 import * as daily from "./daily.js";
 import * as community from "./community.js";
 import * as feed from "./community-feed.js";
+import * as startPlan from "./start-plan.js";
 import * as ugc from "./ugc.js";
 import * as faceless from "./faceless.js";
 import * as avatars from "./avatars.js";
@@ -886,6 +887,13 @@ app.post("/api/admin/academy/build", adminOnly, (req, res) => { academy.buildMis
 app.get("/api/daily-prompt", auth, wrap(async (req, res) => res.json(await daily.today(req.seller, { fresh: req.query.fresh === "1" }))));
 app.get("/api/community", auth, (req, res) => res.json(community.view(req.account)));
 /* ---------- the members' community (Skool-style): feed, comments, likes/points, leaderboard, members, calendar ---------- */
+/* ---------- "Start here": a short quiz becomes a personal plan (visitors can preview before signing up) ---------- */
+app.get("/api/start-plan/questions", (_req, res) => res.json({ questions: startPlan.QUESTIONS }));
+app.post("/api/start-plan/preview", (req, res) => res.json(startPlan.buildPlan(req.body?.answers || {})));
+app.get("/api/start-plan", auth, (req, res) => res.json({ questions: startPlan.QUESTIONS, plan: startPlan.get(req.account) }));
+app.post("/api/start-plan", auth, (req, res) => res.json({ plan: startPlan.save(req.account, req.body?.answers || {}) }));
+app.put("/api/start-plan/steps/:id", auth, (req, res) => res.json({ plan: startPlan.setDone(req.account, req.params.id, req.body?.done !== false) }));
+app.delete("/api/start-plan", auth, (req, res) => res.json({ plan: startPlan.reset(req.account) }));
 app.get("/community/unsubscribe", (req, res) => {
   const ok = feed.unsubscribe(req.query.a, req.query.t);
   res.status(ok ? 200 : 400).type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:system-ui,sans-serif;max-width:480px;margin:60px auto;padding:0 20px;color:#11151B"><h1 style="font-size:22px">${ok ? "Community emails are off" : "That link didn't work"}</h1><p>${ok ? "You won't get emails about replies or announcements. You can turn them back on in the Community, under Members, Your profile." : "Open the Community in Snapfront and change it under Members, Your profile."}</p></body>`);

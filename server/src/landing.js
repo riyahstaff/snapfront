@@ -4,6 +4,7 @@ import { PLANS } from "./plans.js";
 import { PLANS as PRICES } from "./webbilling.js";
 import { THEMES, publicThemes } from "./themes.js";
 import { config } from "./config.js";
+import { QUESTIONS } from "./start-plan.js";
 
 const webAppUrl = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
 
@@ -100,6 +101,17 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
 @media(max-width:1050px){.carousel-below .theme-slide,.carousel-below .theme-slide.active{flex-basis:calc((100% - var(--deck-gap))/2)}.featured-heading{align-items:start;flex-direction:column}.carousel-below .theme-slide img{height:290px}}
 @media(max-width:600px){.carousel-below .theme-slide,.carousel-below .theme-slide.active{flex-basis:85%}.carousel-below .theme-slide img{height:340px}}
 @media(prefers-reduced-motion:reduce){.carousel-below .theme-stage{scroll-behavior:auto}.carousel-below .theme-slide:hover img{transform:none}}
+.quiz{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px);border:1px solid var(--line);border-radius:22px;background:var(--surface);color:var(--ink);padding:0;box-shadow:0 40px 120px rgba(0,0,0,.6)}
+.quiz::backdrop{background:rgba(5,6,8,.72);backdrop-filter:blur(4px)}
+.quiz .in{padding:24px;display:grid;gap:16px}.quiz .top{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-size:14px}
+.quiz .x,.quiz .back{background:none;border:0;color:var(--muted);font:inherit;cursor:pointer;padding:6px;min-height:40px}.quiz .x{font-size:22px;line-height:1}
+.quiz .bar{height:6px;border-radius:6px;background:var(--sunk);overflow:hidden}.quiz .bar i{display:block;height:100%;background:var(--copper);transition:width .25s ease}
+.quiz h2{margin:0;font-size:clamp(23px,4.5vw,29px);line-height:1.15;letter-spacing:-.02em}
+.quiz .opt{display:grid;gap:2px;text-align:left;width:100%;padding:16px 18px;border-radius:16px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+.quiz .opt:hover,.quiz .opt:focus-visible{border-color:var(--platinum);outline:none}.quiz .opt b{font-size:17px}.quiz .opt span{color:var(--muted);font-size:14px}
+.quiz ol{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:s}.quiz li{counter-increment:s;display:grid;grid-template-columns:30px 1fr;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+.quiz li:before{content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--sunk);display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--muted)}
+.quiz li b{display:block}.quiz li span{color:var(--muted);font-size:14px}.quiz .sum{color:var(--muted);margin:0}.quiz .eyebrow{margin:0}
 </style></head><body>
 <header><div class="wrap"><a class="brand" href="/"><img src="/site/mark.png" alt="" width="32" height="32">snapfront</a>
 <nav><a href="#features">Features</a><a href="#themes">Themes</a><a href="#learn">Learn &amp; earn</a><a href="#pricing">Pricing</a><a href="${web}/sign-in">Sign in</a><a class="btn small" href="#pricing">Unlock Snapfront</a></nav></div></header>
@@ -109,7 +121,7 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
     <p class="eyebrow">Creative commerce studio</p>
     <h1><span>Snap a photo.</span><br>Open a store.</h1>
     <p class="lede">Point your phone at a product, or upload a photo from your computer. Snapfront helps build a product page, design a storefront, create marketing, and learn how to grow — all in one place.</p>
-    <div class="ctas"><a class="btn" href="${web}/sign-in">Start free — create account <span aria-hidden="true">↗</span></a><a class="btn ghost" href="#pricing">See what unlocks</a></div>
+    <div class="ctas"><button class="btn" type="button" id="start-here">Start here: find your first step <span aria-hidden="true">→</span></button><a class="btn ghost" href="${web}/sign-in">Start free — create account <span aria-hidden="true">↗</span></a></div>
     <p class="note">Explore the showcase without an account. Verify your email to use the free tools. Upgrade when you are ready to launch.</p>
   </div>
   <figure class="art" style="margin:0"><img src="/site/chrome-hero.webp" alt="The original Snapfront chrome gateway with jewelry and furniture showcases" width="1200" height="900" fetchpriority="high"><figcaption>Concept artwork</figcaption></figure>
@@ -202,6 +214,43 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
  document.addEventListener('visibilitychange',()=>document.hidden?stop():play());
  window.addEventListener('resize',()=>{show(Math.min(index,maxStart()));play();});
  show(0);play();
+})();
+</script>
+<dialog class="quiz" id="quiz" aria-labelledby="quiz-title"><div class="in" id="quiz-body"></div></dialog>
+<script>
+(function(){
+ const Q=${JSON.stringify(QUESTIONS).replace(/</g, "\\u003c")}, WEB=${JSON.stringify(web)};
+ const dlg=document.getElementById('quiz'), body=document.getElementById('quiz-body'), open=document.getElementById('start-here');
+ if(!dlg||!open||!dlg.showModal)return;
+ let i=0, answers={};
+ const el=(tag,attrs,...kids)=>{const n=document.createElement(tag);for(const k in attrs||{}){if(k==='text')n.textContent=attrs[k];else if(k.startsWith('on'))n.addEventListener(k.slice(2),attrs[k]);else n.setAttribute(k,attrs[k]);}kids.forEach(c=>n.append(c));return n;};
+ const close=()=>dlg.close();
+ function top(left){return el('div',{class:'top'},left||el('span'),el('button',{class:'x',type:'button','aria-label':'Close',onclick:close,text:'×'}));}
+ function question(){
+  const q=Q[i];
+  body.replaceChildren(
+   top(i>0?el('button',{class:'back',type:'button',onclick:()=>{i--;question();},text:'← Back'}):el('span',{text:'Question '+(i+1)+' of '+Q.length})),
+   el('div',{class:'bar','aria-hidden':'true'},el('i',{style:'width:'+Math.round(i/Q.length*100)+'%'})),
+   el('h2',{id:'quiz-title',text:q.title}),
+   ...q.options.map(o=>el('button',{class:'opt',type:'button',onclick:()=>{answers[q.id]=o.id;if(i<Q.length-1){i++;question();}else plan();}},el('b',{text:o.label}),el('span',{text:o.hint})))
+  );
+  const first=body.querySelector('.opt'); if(first)first.focus();
+ }
+ async function plan(){
+  body.replaceChildren(top(),el('h2',{id:'quiz-title',text:'Making your plan…'}));
+  try{
+   const r=await fetch('/api/start-plan/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({answers})});
+   const p=await r.json(); if(!r.ok)throw new Error(p.error||'failed');
+   const a=Q.map(q=>answers[q.id]).join(',');
+   body.replaceChildren(top(el('p',{class:'eyebrow',text:'Your plan'})),
+    el('h2',{id:'quiz-title',text:p.title}), el('p',{class:'sum',text:p.summary}),
+    el('ol',{},...p.steps.map(s=>el('li',{},el('div',{},el('b',{text:s.title}),el('span',{text:s.why}))))),
+    el('a',{class:'btn',href:WEB+'/start?a='+encodeURIComponent(a),text:'Save my plan and start free →'}),
+    el('button',{class:'back',type:'button',onclick:()=>{i=0;answers={};question();},text:'Start over'}));
+  }catch(e){body.replaceChildren(top(),el('h2',{id:'quiz-title',text:"Couldn't make your plan"}),el('p',{class:'sum',text:'Check your connection and try again.'}),el('button',{class:'btn',type:'button',onclick:plan,text:'Try again'}));}
+ }
+ open.addEventListener('click',()=>{i=0;answers={};question();dlg.showModal();});
+ dlg.addEventListener('click',e=>{if(e.target===dlg)close();});
 })();
 </script></body></html>`;
 }

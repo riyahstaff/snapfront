@@ -13,6 +13,7 @@ import { DEFAULT_STORE_NAME } from "@/lib/store-address";
 import { getAppInfo } from "@/lib/billing.web";
 import { ThemePreview } from "@/components/theme-preview";
 import { DailyPromptCard } from "@/components/daily-prompt";
+import { StartHereCard } from "@/components/start-here";
 import { alpha, fonts, radius, useColors } from "@/lib/theme";
 import { CONTENT, WebFooter } from "./web-nav";
 
@@ -77,10 +78,11 @@ export default function WebHome() {
               Upload a product photo and Snapfront writes the page, sets the price and takes payments through Stripe. Then give your brand a storefront worth discovering.
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 6 }}>
-              <CTA label="Snap a product" icon="camera-outline" href="/snap" primary />
+              <CTA label="Start here" icon="compass-outline" href="/start" primary />
+              <CTA label="Snap a product" icon="camera-outline" href="/snap" />
               <CTA label="Choose my storefront look" href="/storefront-setup" />
             </View>
-            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: c.muted }}>Free to try. No fees on your sales.</Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: c.muted }}>Not sure where to begin? Start here: 5 quick questions, a plan made for you.</Text>
           </View>
           <View style={{ flex: wide ? 1 : undefined, borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: c.line, aspectRatio: 4 / 3, boxShadow: c.dark ? "0 40px 120px rgba(0,0,0,0.6)" : "0 40px 100px rgba(15,18,23,0.18)" } as object}>
             <Image source={require("../../assets/chrome-hero.jpg")} contentFit="cover" style={{ width: "100%", height: "100%" }} accessibilityLabel="A brushed-chrome doorway with storefront examples" />
@@ -93,6 +95,7 @@ export default function WebHome() {
 
       {/* Your store */}
       <Section title="Your store" pad={pad}>
+        <View style={{ marginBottom: 16 }}><StartHereCard /></View>
         <StorePanel products={products} wide={wide} />
         <View style={{ marginTop: 16 }}><DailyPromptCard /></View>
       </Section>
