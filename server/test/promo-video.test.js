@@ -44,3 +44,11 @@ test("the home page plays it muted on arrival, with every control and a Start he
     await r.arrayBuffer();
   }
 });
+
+test("the web app's home page gets the film's files from /api/promo", async () => {
+  const { promo } = await (await fetch(`${base}/api/promo`)).json();
+  for (const k of ["hd", "sd", "poster", "captions"]) assert.match(promo[k], /^\/site\/promo\/promo[-.\w]+\?v=[a-z0-9]+$/, k);
+  assert.ok(promo.duration > 70);
+  const r = await fetch(base + promo.sd, { headers: { Range: "bytes=0-99" } });
+  assert.equal(r.status, 206); await r.arrayBuffer();
+});
