@@ -62,12 +62,16 @@ export function PresenterCard() {
   const slides = lessons.reduce((t, l) => t + l.slides, 0);
   const cost = (slides * data.cost_per_slide_usd).toFixed(2);
   const title = (id: string) => data.lessons.find((l) => l.id === id)?.title ?? id;
+  const voiceName = (id: string) => data.voices.find((v) => v.id === id)?.name ?? "Voice";
+  const avatarName = (id: string | null) => data.avatars.find((a) => a.id === id)?.name ?? "Avatar";
+  const ownCount = data.lessons.filter((l) => l.own).length;
   const demos = data.screens.filter((s) => lessons.some((l) => l.id === s.lesson));
   const save = async () => {
     if (!avatarId) return;
     setBusy(true); setMsg(null);
     try {
-      apply(await academy.setPresenter({ avatar_id: avatarId, voice, lessons: scope === "all" ? "all" : [pilot] }));
+      // One lesson changes only that lesson; every other lesson keeps its avatar, voice and video.
+      apply(await academy.setPresenter(scope === "all" ? { avatar_id: avatarId, voice, lessons: "all" } : { lesson: pilot, avatar_id: avatarId, voice }));
       setMsg({ text: `Saved. Making ${lessons.length === 1 ? "the lesson video" : `${lessons.length} lesson videos`} now. Each takes a few minutes; the old video stays up until the new one is ready.`, tone: "ok" });
     } catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't save.", tone: "error" }); }
     finally { setBusy(false); }
@@ -133,15 +137,15 @@ export function PresenterCard() {
           )) : <Text style={[type.small, { color: c.muted }]}>No voices found. Try other words.</Text>) : null}
           <Text style={[type.label, { color: c.ink }]}>Which lessons</Text>
           <Segmented value={scope} onChange={setScope} options={[{ value: "all", label: "Every lesson" }, { value: "pilot", label: "Only one lesson" }]} />
-          {scope === "pilot" && data.presenter?.lessons === "all" ? (
-            <Notice text="Careful: saving with one lesson takes your avatar off the other lessons, and they go back to their original videos. To change her voice or look everywhere, choose Every lesson." tone="error" />
-          ) : null}
+          {scope === "pilot" ? <Text style={[type.small, { color: c.muted }]}>Only the lesson you pick changes. Every other lesson keeps its avatar, voice and video.</Text> : null}
+          {scope === "all" && ownCount ? <Notice text={`Every lesson will use this avatar and voice, replacing the ${ownCount} lesson${ownCount === 1 ? "" : "s"} you set one at a time.`} tone="info" /> : null}
           {scope === "pilot" ? (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
               {data.lessons.map((l) => (
                 <Pressable key={l.id} onPress={() => setPilot(l.id)} accessibilityRole="radio" accessibilityState={{ selected: l.id === pilot }}
-                  style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.pill, borderWidth: l.id === pilot ? 2 : 1, borderColor: l.id === pilot ? c.accent : c.line, backgroundColor: c.bg }}>
+                  style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.md, borderWidth: l.id === pilot ? 2 : 1, borderColor: l.id === pilot ? c.accent : c.line, backgroundColor: c.bg, gap: 2 }}>
                   <Text style={[type.small, { color: c.ink }]}>{l.title}</Text>
+                  <Text style={{ fontSize: 11, color: c.muted }}>{l.voice ? `${voiceName(l.voice)} · ${avatarName(l.avatar_id)}` : "Original video"}</Text>
                 </Pressable>
               ))}
             </View>
