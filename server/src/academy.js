@@ -31,10 +31,24 @@ const fileOf = (l) => path.join(dir(), `${l.id}-${hashOf(l)}.mp4`);
 function currentFile(l) {
   if (fs.existsSync(fileOf(l))) return fileOf(l);
   try {
-    const older = fs.readdirSync(dir()).filter((f) => f.startsWith(`${l.id}-`) && f.endsWith(".mp4") && !f.includes(".part"))
-      .map((f) => path.join(dir(), f)).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
-    return older[0] || null;
+    const all = versionsOf(l);
+    // While the avatar teaches this lesson, show her last finished version (never the plain original)
+    // until the new one is ready, even if the new one can't be made yet.
+    if (presenter.appliesTo(l.id)) { const hers = all.find(isPresenterFile); if (hers) return hers; }
+    return all[0] || null;
   } catch { return null; }
+}
+/** Every finished video of a lesson, newest first. Avatar versions are named <lesson>-p<hash>.mp4. */
+function versionsOf(l) {
+  return fs.readdirSync(dir()).filter((f) => f.startsWith(`${l.id}-`) && f.endsWith(".mp4") && !f.includes(".part"))
+    .map((f) => path.join(dir(), f)).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+}
+const isPresenterFile = (f) => /-p[0-9a-f]+\.mp4$/.test(path.basename(f));
+/** Keep the current video, the last few avatar versions (switching back is instant) and the newest plain one. */
+function prune(l) {
+  const all = versionsOf(l);
+  const keep = new Set([fileOf(l), ...all.filter(isPresenterFile).slice(0, 4), ...all.filter((f) => !isPresenterFile(f)).slice(0, 1)]);
+  for (const f of all) if (!keep.has(f)) { fs.rmSync(f, { force: true }); fs.rmSync(`${f}.json`, { force: true }); }
 }
 const lessonById = (id) => LESSONS.find((l) => l.id === id);
 const isMember = (account) => plans.effectivePlan(account) !== "free";
@@ -214,8 +228,7 @@ export function buildMissing({ voice = "af_heart", only = null } = {}) {
           : await makeVideo(l.slides.map((s, i) => ({ png: pngFromSvg(slideSvg(l, s, i)), say: s.say })), { out: target, width: W, height: H, voice, workDir: dir() });
         if (target !== fileOf(l)) { fs.rmSync(target, { force: true }); continue; }   // settings changed meanwhile: the next build makes it
         fs.writeFileSync(`${target}.json`, JSON.stringify({ seconds, made_at: new Date().toISOString(), presenter: presenter.appliesTo(l.id) }));
-        // Older versions of this lesson's video aren't needed any more.
-        for (const f of fs.readdirSync(dir())) if (f.startsWith(`${l.id}-`) && !f.startsWith(path.basename(fileOf(l)))) fs.rmSync(path.join(dir(), f), { force: true });
+        prune(l);
         console.log(`[academy] made ${l.id} (${seconds}s) in ${Math.round((Date.now() - t0) / 1000)}s`);
         made++;
       } catch (e) { lastError = `${l.id}: ${e.message}`.slice(0, 300); console.error("[academy]", l.id, e.message); }

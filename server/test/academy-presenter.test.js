@@ -126,9 +126,9 @@ test("a lesson that opts in is rebuilt with the avatar on every slide and the ph
   assert.equal(during.video_status, "ready");                           // still the previous video
   await academy.buildMissing({ only: ["partner"] });
   assert.equal(heads.length, before);                                   // same words: no new talking heads
-  const now = fs.readdirSync(path.join(tmp, "academy")).filter((f) => f.startsWith("partner-") && f.endsWith(".mp4"));
-  assert.equal(now.length, 1);
-  assert.notEqual(now[0], lessonFiles[0]);
+  const now = fs.readdirSync(path.join(tmp, "academy")).filter((f) => f.startsWith("partner-p") && f.endsWith(".mp4"));
+  assert.equal(now.length, 2);                                          // the new version, and the previous one kept
+  assert.ok(now.includes(lessonFiles[0]));
 });
 
 test("voice library: search, add a voice to the account, use it (owner only), hear a sample", async () => {
@@ -232,4 +232,25 @@ test("one lesson at a time: changing one lesson's avatar or voice never takes th
   assert.equal(presenter.versionOf(b), before[b.id]);
   await assert.rejects(presenter.setSettings({ lesson: "no-such-lesson", avatar_id: avatarId }), /doesn't exist/);
   await assert.rejects(presenter.setSettings({ lesson: a.id, avatar_id: "avt_visor" }), /avatars that has a face/);
+});
+
+test("the Academy never falls back to the original video while the avatar teaches a lesson, and her avatar can't be deleted", async () => {
+  const dirA = path.join(tmp, "academy");
+  await presenter.setSettings({ avatar_id: avatarId, voice: "af_heart", lessons: "all" });
+  await academy.buildMissing({ only: ["partner"] });
+  const link = new URL((await call("GET", "/api/academy/partner", null, owner.token)).body.video);
+  const e = link.searchParams.get("e"), sg = link.searchParams.get("s");
+  const hers = academy.videoFile("partner", e, sg);
+  assert.match(path.basename(hers), /^partner-p/);
+  // A plain original that is newer than her video, then a voice change whose new video can't be made yet.
+  const plain = path.join(dirA, "partner-0123456789ab.mp4");
+  fs.copyFileSync(hers, plain);
+  await presenter.setSettings({ lesson: "partner", voice: "af_bella" });
+  assert.equal(academy.videoFile("partner", e, sg), hers);              // still her last version, never the original
+  // Deleting an avatar that teaches lessons is refused (it would take her off them).
+  const del = await call("DELETE", `/api/avatars/${avatarId}`, null, owner.token);
+  assert.equal(del.status, 409);
+  assert.match(del.body.error, /teaches Academy lessons/);
+  await presenter.setSettings({ lesson: "partner", clear: true });
+  fs.rmSync(plain, { force: true });
 });
