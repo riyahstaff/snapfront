@@ -11,7 +11,7 @@
 import { PLANS } from "./plans.js";
 import { PLANS as PRICES } from "./webbilling.js";
 import * as partners from "./partners.js";
-import { THEMES, publicThemes } from "./themes.js";
+import { publicThemes } from "./themes.js";
 import { config } from "./config.js";
 
 const webAppUrl = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
@@ -49,7 +49,7 @@ export function salesPage({ code = null } = {}) {
   const year = new Date().getFullYear();
   const compare = [
     ["Your product page", "A video on how to write one", "Snap a photo. The AI writes the page and checks your price against the big retailers."],
-    ["Your storefront", "“Buy a theme and set it up”", `${THEMES.length} designs, filled in with your own photos and words.`],
+    ["Your storefront", "“Buy a theme and set it up”", "Over 100 designs, filled in with your own photos and words."],
     ["Your content", "A list of hook ideas", "Posts, stories, faceless videos and faceless avatars made for your actual products."],
     ["Your DMs", "“Reply to every comment”", "Instagram AutoDM answers comments with your link for you."],
     ["Learning", "Hours of video, then you're on your own", "Academy lessons inside the same app you build in."],

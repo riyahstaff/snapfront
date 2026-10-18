@@ -96,7 +96,7 @@ test("gallery and demo routes never write store data and work on seller subdomai
   const beforeCounts = ["accounts", "sellers", "products", "orders"].map((table) => db.prepare(`SELECT COUNT(*) n FROM ${table}`).get().n);
   const gallery = await request("/themes");
   assert.equal(gallery.status, 200);
-  assert.match(gallery.text, /130 editable storefront themes/);
+  assert.match(gallery.text, /Over 100 editable storefront themes/);
   for (const host of ["category.test", "any-store.category.test"]) {
     const demo = await request(`/theme-demo/${THEMES[20].id}`, host);
     assert.equal(demo.status, 200);

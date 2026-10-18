@@ -4,7 +4,7 @@ Open **My store → Build your storefront** (or **Store look → Open guided set
 
 ## 1. Look — browse all themes
 
-The picker includes the full **105-theme catalog: 20 classic and 85 premium themes**, when returned by the connected backend. Counts always reflect the catalog actually available.
+The picker includes the full catalog of **over 100 themes** (the 20 classic looks plus the premium ones), when returned by the connected backend. Counts always reflect the catalog actually available.
 
 - Search by theme name, product type, category, family or mood. Multiple words can appear in any order; search ignores capitalization, punctuation and accents.
 - Use **All**, **Classic** or **Premium**, then narrow by available collection categories.
