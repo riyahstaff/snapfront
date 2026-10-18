@@ -171,7 +171,9 @@ export type SocialPost = {
 export type SocialPosts = { posts: SocialPost[] };
 export type SocialPublishInput = { render_id: string; caption: string; account_ids: string[]; publish_at?: string | null; idempotency_key: string };
 /** AI video clips and lifestyle photos (Runpod) */
-export type AiPresets = { enabled: boolean; motions: { id: string; name: string }[]; scenes: { id: string; name: string }[] };
+/** A photo AI: Standard (included) or a premium Nano Banana model (credits). */
+export type PhotoEngine = { id: string; name: string; blurb: string; credits: number };
+export type AiPresets = { enabled: boolean; motions: { id: string; name: string }[]; scenes: { id: string; name: string }[]; engines?: PhotoEngine[] };
 export type AiJob = { id: string; kind: "video" | "scene"; status: "queued" | "running" | "done" | "failed"; error: string | null; created_at: string; url?: string; file?: string; image_file?: string };
 /** Avatars: an original AI character, your own photo or a blend of two, and shots of it with a product. */
 export type AvatarJobStatus = "queued" | "running" | "done" | "failed";
@@ -181,7 +183,7 @@ export type AvatarShot = { id: string; avatar_id: string; product_id: string | n
 export type CreditPack = { id: string; name: string; credits: number; bonus: number; total: number; cents: number; price: string; per_credit: string; badge?: string };
 export type CreditEntry = { id: string; delta: number; kind: "purchase" | "spend" | "refund" | "grant" | "reversal"; note: string; created_at: string };
 export type CreditsView = { enabled: boolean; balance: number; terms: string; packs: CreditPack[]; history: CreditEntry[]; added?: number; free?: boolean };
-export type VideoModel = { id: "vidu" | "seedance" | "sora"; name: string; badge: string; blurb: string; durations: number[]; resolutions: string[]; sound: "none" | "optional" | "always" | "strip"; sound_default?: boolean; prices: Record<string, number> };
+export type VideoModel = { id: "vidu" | "seedance" | "sora" | "sora2" | "wan"; name: string; badge: string; blurb: string; durations: number[]; resolutions: string[]; sound: "none" | "optional" | "always" | "strip"; sound_default?: boolean; prices: Record<string, number> };
 export type AvatarVideo = { id: string; kind: "motion" | "talk"; model: string; model_name: string; avatar_id: string | null; shot_id: string | null; duration: number | null; resolution: string;
   sound: boolean; script: string | null; voiceover?: boolean; premium_voice?: boolean; credits: number; status: AvatarJobStatus; stage?: "voice" | null; error: string | null; note?: string | null; url: string | null; created_at: string };
 /** A voice for voiceovers and talking avatars: free (Snapfront's own) or premium (ElevenLabs, extra credits). */
@@ -190,7 +192,7 @@ export type AvatarVideoStudio = { enabled: boolean; balance: number; free?: bool
   voiceover?: { chars_per_second: number; voices: VideoVoice[] };
   premium_voice?: { name: string; per_1k_chars: number; min: number; step: number } | null;
   talk: { resolutions: string[]; prices: Record<string, number>; max_chars: number; styles: string[]; voices: VideoVoice[] }; videos: AvatarVideo[] };
-export type AvatarStudio = { enabled: boolean; max_avatars: number; styles: { id: string; name: string; blurb: string }[]; poses: { id: string; name: string }[]; avatars: Avatar[]; shots: AvatarShot[];
+export type AvatarStudio = { enabled: boolean; max_avatars: number; engines?: PhotoEngine[]; styles: { id: string; name: string; blurb: string }[]; poses: { id: string; name: string }[]; avatars: Avatar[]; shots: AvatarShot[];
   /** "Use my photo" and "Blend two photos" are switched on. */
   from_photos?: boolean; mixes?: { id: string; name: string }[] };
 /** A checked photo of a person, staged for "Use my photo" or "Blend". */
@@ -474,7 +476,7 @@ export const api = {
   cancelSocialPost: (id: string, storeId?: string) => request<SocialPosts>("POST", `/api/social/posts/${encodeURIComponent(id)}/cancel`, undefined, storeId),
   retrySocialPost: (id: string, storeId?: string) => request<SocialPosts>("POST", `/api/social/posts/${encodeURIComponent(id)}/retry`, undefined, storeId),
   aiMedia: () => request<AiPresets & { jobs: AiJob[] }>("GET", "/api/ai-media"),
-  startAiMedia: (input: { kind: "video" | "scene"; image_file: string; preset?: string; prompt?: string }) => request<AiJob>("POST", "/api/ai-media", input),
+  startAiMedia: (input: { kind: "video" | "scene"; image_file: string; preset?: string; prompt?: string; engine?: string }) => request<AiJob>("POST", "/api/ai-media", input),
   aiJob: (id: string) => request<AiJob>("GET", `/api/ai-media/${id}`),
   avatars: () => request<AvatarStudio>("GET", "/api/avatars"),
   createAvatar: (input: { style: string; name?: string; look?: string }) => request<Avatar>("POST", "/api/avatars", input),
@@ -484,7 +486,7 @@ export const api = {
   avatar: (id: string) => request<Avatar>("GET", `/api/avatars/${id}`),
   deleteAvatar: (id: string) => request<null>("DELETE", `/api/avatars/${id}`),
   avatarOutfit: (id: string, look: string) => request<Avatar>("POST", `/api/avatars/${id}/outfit`, { look }),
-  avatarShot: (input: { avatar_id: string; product_id: string; pose?: string; prompt?: string }) => request<AvatarShot>("POST", "/api/avatar-shots", input),
+  avatarShot: (input: { avatar_id: string; product_id: string; pose?: string; prompt?: string; engine?: string }) => request<AvatarShot>("POST", "/api/avatar-shots", input),
   avatarShotStatus: (id: string) => request<AvatarShot>("GET", `/api/avatar-shots/${id}`),
   avatarVideos: () => request<AvatarVideoStudio>("GET", "/api/avatar-videos"),
   startAvatarVideo: (input: { kind?: "motion" | "talk"; shot_id?: string; avatar_id?: string; model?: string; duration?: number; resolution?: string; sound?: boolean; motion?: string; prompt?: string; script?: string; voice?: string; voiceover?: string }) =>
@@ -741,6 +743,49 @@ export type AcademyLesson = { id: string; title: string; summary: string; module
 export type DailyPrompt = { day: string; kind: string; kind_name: string; hook: string; film: string[]; on_screen: string; caption: string; hashtags: string[]; cta: string;
   product: { id: string; title: string; image_url: string | null; url: string } | null; more_left: number };
 export type Community = { member: boolean; discord: string | null; has_discord: boolean; whop: string | null; live_schedule: string | null };
+/** The members' community (Skool-style). */
+export type CommunityPerson = { id: string; name: string; initials: string; bio: string; level: number; level_name: string; points: number; admin: boolean; store_url: string | null; joined_at: string };
+export type CommunityLevel = { level: number; name: string; points: number };
+export type CommunityMe = CommunityPerson & {
+  level_info: { level: number; name: string; points: number; next_at: number | null; next_name: string | null };
+  display_name: string; can_post: boolean; member: boolean; muted: boolean; owner: boolean; unread: number;
+};
+export type CommunityCategory = { id: string; name: string; emoji: string; owner_only?: boolean };
+export type CommunityPost = {
+  id: string; category: string; title: string; body: string; image_url: string | null; pinned: boolean; likes: number; comments: number;
+  created_at: string; edited_at: string | null; activity_at: string; author: CommunityPerson; liked: boolean; mine: boolean; can_edit: boolean; can_remove: boolean;
+};
+export type CommunityComment = { id: string; parent_id: string | null; body: string; removed: boolean; likes: number; created_at: string; author: CommunityPerson; liked: boolean; can_remove: boolean; replies?: CommunityComment[] };
+export type CommunityEvent = { id: string; title: string; details: string; starts_at: string; minutes: number; link: string | null };
+export type CommunityHome = { me: CommunityMe; categories: CommunityCategory[]; posts: CommunityPost[]; next: string | null; events: CommunityEvent[]; levels: CommunityLevel[]; links: Community };
+export type CommunityNotification = { id: string; kind: "comment" | "reply" | "like_post" | "like_comment"; read: boolean; created_at: string; post_id: string; post_title: string; actor: CommunityPerson };
+export type CommunityReport = { kind: "post" | "comment"; id: string; post_id: string; text: string; removed: boolean; reports: number; reasons: string; author: CommunityPerson };
+const qs = (q: Record<string, string | undefined>) => new URLSearchParams(Object.entries(q).filter(([, v]) => v) as [string, string][]).toString();
+export const communityApi = {
+  home: (q: { category?: string; sort?: string } = {}) => request<CommunityHome>("GET", `/api/community/home?${qs(q)}`),
+  posts: (q: { category?: string; sort?: string; q?: string; before?: string }) => request<{ posts: CommunityPost[]; next: string | null }>("GET", `/api/community/posts?${qs(q)}`),
+  create: (b: { category: string; title: string; body: string; image_file?: string }) => request<CommunityPost>("POST", "/api/community/posts", b),
+  thread: (id: string) => request<{ post: CommunityPost; comments: CommunityComment[] }>("GET", `/api/community/posts/${encodeURIComponent(id)}`),
+  edit: (id: string, b: { title?: string; body?: string }) => request<CommunityPost>("PATCH", `/api/community/posts/${encodeURIComponent(id)}`, b),
+  remove: (id: string) => request<{ removed: boolean }>("DELETE", `/api/community/posts/${encodeURIComponent(id)}`),
+  pin: (id: string, pinned: boolean) => request<CommunityPost>("PUT", `/api/community/posts/${encodeURIComponent(id)}/pin`, { pinned }),
+  comment: (id: string, body: string, parent_id?: string) => request<{ post: CommunityPost; comments: CommunityComment[] }>("POST", `/api/community/posts/${encodeURIComponent(id)}/comments`, { body, parent_id }),
+  removeComment: (id: string) => request<{ post: CommunityPost; comments: CommunityComment[] }>("DELETE", `/api/community/comments/${encodeURIComponent(id)}`),
+  like: (kind: "post" | "comment", id: string, liked: boolean) => request<{ liked: boolean; likes: number }>("PUT", `/api/community/likes/${kind}/${encodeURIComponent(id)}`, { liked }),
+  report: (kind: "post" | "comment", id: string, reason: string) => request<{ reported: boolean }>("POST", "/api/community/reports", { kind, id, reason }),
+  reports: () => request<CommunityReport[]>("GET", "/api/community/reports"),
+  resolveReport: (kind: string, id: string) => request<CommunityReport[]>("PUT", `/api/community/reports/${kind}/${encodeURIComponent(id)}`),
+  mute: (id: string, muted: boolean) => request<{ muted: boolean }>("PUT", `/api/community/members/${encodeURIComponent(id)}/mute`, { muted }),
+  leaderboard: (period: "7d" | "30d" | "all") => request<{ period: string; leaders: { rank: number; points: number; person: CommunityPerson }[]; my_points: number; levels: CommunityLevel[] }>("GET", `/api/community/leaderboard?period=${period}`),
+  members: (q = "") => request<{ total: number; members: CommunityPerson[] }>("GET", `/api/community/members?${qs({ q })}`),
+  notifications: () => request<CommunityNotification[]>("GET", "/api/community/notifications"),
+  markRead: () => request<{ unread: number }>("POST", "/api/community/notifications/read"),
+  events: () => request<CommunityEvent[]>("GET", "/api/community/events"),
+  addEvent: (b: { title: string; details?: string; starts_at: string; minutes?: number; link?: string }) => request<CommunityEvent[]>("POST", "/api/community/events", b),
+  removeEvent: (id: string) => request<CommunityEvent[]>("DELETE", `/api/community/events/${encodeURIComponent(id)}`),
+  profile: (b: { display_name?: string; bio?: string }) => request<CommunityMe>("PUT", "/api/community/profile", b),
+  photo: (imageBase64: string, mediaType: string) => request<{ image_file: string; image_url: string }>("POST", "/api/community/photos", { imageBase64, mediaType }),
+};
 /** A voice in ElevenLabs' public library (owner's presenter search). */
 export type LibraryVoice = { voice_id: string; public_owner_id: string; name: string; accent: string; gender: string; age: string; descriptive: string; use_case: string; description: string; preview_url: string | null; uses: number };
 /** Academy lessons taught by an avatar (owner only). */

@@ -26,6 +26,7 @@ import { httpError, askJson, sniffImage } from "./claude.js";
 import sharp from "sharp";
 import * as plans from "./plans.js";
 import * as aimedia from "./aimedia.js";
+import * as credits from "./credits.js";
 import { ownsSellerImage } from "./media-ownership.js";
 
 const T2I = "qwen-image-t2i", EDIT = "qwen-image-edit-2511";
@@ -76,6 +77,10 @@ CREATE INDEX IF NOT EXISTS avatar_photos_seller ON avatar_photos (seller_id, cre
 for (const [col, def] of [["source", "TEXT NOT NULL DEFAULT 'ai'"], ["consent_at", "TEXT"], ["src_files", "TEXT"], ["engine", "TEXT"], ["gen_prompt", "TEXT"], ["ref_files", "TEXT"]]) {
   if (!db.prepare("PRAGMA table_info(avatars)").all().some((c) => c.name === col)) db.exec(`ALTER TABLE avatars ADD COLUMN ${col} ${def}`);
 }
+// A shot made with a premium photo engine records the endpoint it ran on (paid with credits).
+if (!db.prepare("PRAGMA table_info(avatar_shots)").all().some((c) => c.name === "engine")) {
+  db.exec("ALTER TABLE avatar_shots ADD COLUMN engine TEXT");
+}
 
 /* ---------- what sellers can pick ---------- */
 // "keep" is repeated in every shot so the avatar stays faceless in the way the seller chose.
@@ -123,6 +128,7 @@ export const asksForLikeness = (text) => LIKENESS_WORDS.test(text) || LIKENESS_N
 const clean = (s, n) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
 export const presets = () => ({
   enabled: aimedia.enabled(), max_avatars: MAX_AVATARS,
+  engines: aimedia.presets().engines,   // photo engines for posts and stories (premium ones use credits)
   styles: STYLES.filter((s) => !s.hidden).map(({ id, name, blurb }) => ({ id, name, blurb })),
   // Avatars from real photos need the photo check (Claude) as well as the image AI.
   from_photos: aimedia.enabled() && (Boolean(config.anthropicKey) || Boolean(screenImpl)),
@@ -378,15 +384,20 @@ export async function shoot(account, seller, b = {}) {
   if (!pose && custom.length < 3) throw httpError(400, "Pick a pose or describe the shot.");
   if (asksForLikeness(custom)) throw httpError(400, "Describe the scene, not a real person.");
   if (!aimedia.enabled()) throw httpError(503, "AI avatars aren't switched on yet.");
-  plans.assertAllowance(account, KIND);
+  const eng = aimedia.PHOTO_ENGINES.find((e) => e.id === (b.engine || "standard"));
+  if (!eng) throw httpError(400, "That photo engine isn't available.");
+  const premium = Boolean(eng.usd);
+  if (!premium) plans.assertAllowance(account, KIND);   // premium engines are paid with credits instead
   const prompt = shotPrompt(style, pose, custom);
   const id = newId("shot");
-  db.prepare("INSERT INTO avatar_shots (id, seller_id, account_id, avatar_id, product_id, pose, prompt) VALUES (?,?,?,?,?,?,?)")
-    .run(id, seller.id, account.id, avatar.id, product.id, pose?.id || "custom", prompt);
-  plans.recordUsage(account, KIND);
+  if (premium) credits.spend(account, aimedia.photoEnginePrice(eng), id, `${eng.name} avatar photo`);
+  db.prepare("INSERT INTO avatar_shots (id, seller_id, account_id, avatar_id, product_id, pose, prompt, engine) VALUES (?,?,?,?,?,?,?,?)")
+    .run(id, seller.id, account.id, avatar.id, product.id, pose?.id || "custom", prompt, premium ? eng.endpoint() : null);
+  if (!premium) plans.recordUsage(account, KIND);
   try {
     const images = [`${config.publicUrl}/img/${avatar.image_file}`, `${config.publicUrl}/img/${row.image_file}`];
-    const r = await aimedia.runpod(`${EDIT}/run`, { input: { images, prompt, size: "1024*1280", output_format: "jpeg", seed: -1 } });
+    const r = premium ? await aimedia.runpod(`${eng.endpoint()}/run`, { input: { ...eng.input(images[0], prompt), images } })
+      : await aimedia.runpod(`${EDIT}/run`, { input: { images, prompt, size: "1024*1280", output_format: "jpeg", seed: -1 } });
     db.prepare("UPDATE avatar_shots SET status='running', runpod_id=?, updated_at=datetime('now') WHERE id=?").run(r.id, id);
   } catch (e) { fail("avatar_shots", id, e.message); throw e; }
   return shotView(db.prepare("SELECT * FROM avatar_shots WHERE id = ?").get(id));
@@ -398,7 +409,9 @@ function fail(table, id, message) {
   const row = db.prepare(`SELECT * FROM ${table} WHERE id = ?`).get(id);
   if (!row || row.status === "failed") return;
   db.prepare(`UPDATE ${table} SET status='failed', error=?, updated_at=datetime('now') WHERE id=?`).run(String(message).slice(0, 300), id);
-  plans.refundUsage(plans.getAccount(row.account_id), KIND);
+  // Shots on a premium engine were paid with credits; everything else used the plan's allowance.
+  if (table === "avatar_shots" && row.engine) credits.refund(id);
+  else plans.refundUsage(plans.getAccount(row.account_id), KIND);
   if (table === "avatars") dropSources(id);
 }
 const tooOld = (row) => Date.now() - Date.parse(`${String(row.created_at).replace(" ", "T")}Z`) > 15 * 60_000;
@@ -416,7 +429,7 @@ export async function poll({ table = null, id = null } = {}) {
         // Blends run on the photo models (older ones on Qwen Image Edit), not text-to-image.
         // New outfits run on the photo models too (they record which one).
         const blending = t === "avatars" && (row.source === "blend" || Boolean(row.engine));
-        const r = await aimedia.runpod(`${t === "avatars" && row.engine ? row.engine : blending ? EDIT : endpoint}/status/${row.runpod_id}`);
+        const r = await aimedia.runpod(`${row.engine ? row.engine : blending ? EDIT : endpoint}/status/${row.runpod_id}`);
         if (r.status === "COMPLETED") {
           const url = aimedia.resultUrl(r.output, "scene");
           if (!url) { console.warn("[avatars]", row.id, "finished without an image:", JSON.stringify(r).slice(0, 400)); fail(t, row.id, "The AI finished but didn't send the image back. Try again."); continue; }

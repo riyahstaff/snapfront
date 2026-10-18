@@ -72,6 +72,12 @@ export const MODELS = [
     // Sora can't be told to stay quiet, so "sound off" means we remove its audio track afterwards.
     endpoint: () => ep("RUNPOD_EP_SORA", "sora-2-pro-i2v"), durations: [4, 8, 12], resolutions: ["720p", "1080p"], sound: "strip", sound_default: false, usd: (d, r) => (r === "1080p" ? 0.5 : 0.3) * d,
     input: ({ image, prompt, duration, resolution }) => ({ prompt, image, duration, size: resolution }) },
+  { id: "sora2", name: "Sora 2", badge: "Lifelike for less", blurb: "OpenAI's Sora at a lower price than Pro. Natural acting and motion at 720p.",
+    endpoint: () => ep("RUNPOD_EP_SORA2", "sora-2-i2v"), durations: [4, 8, 12], resolutions: ["720p"], sound: "strip", sound_default: false, usd: (d) => 0.1 * d,
+    input: ({ image, prompt, duration }) => ({ prompt, image, duration }) },
+  { id: "wan", name: "Wan 2.6", badge: "Best value", blurb: "Smooth, realistic motion at the lowest price, with clips up to 15 seconds. Up to 1080p.",
+    endpoint: () => ep("RUNPOD_EP_WAN26", "wan-2-6-i2v"), durations: [5, 10, 15], resolutions: ["720p", "1080p"], sound: "strip", sound_default: false, usd: (d, r) => (r === "1080p" ? 0.15 : 0.1) * d,
+    input: ({ image, prompt, duration, resolution }) => ({ prompt, image, duration, size: resolution === "1080p" ? "1920*1080" : "1280*720", shot_type: "single", seed: -1, enable_prompt_expansion: false, enable_safety_checker: true }) },
 ];
 // Retired models still name their old videos.
 const OLD_NAMES = { kling: "Kling O1" };

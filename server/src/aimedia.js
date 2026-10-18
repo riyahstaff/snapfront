@@ -8,8 +8,10 @@ import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
 import { ownsSellerImage as sellerOwnsImage } from "./media-ownership.js";
 import { db, newId } from "./db.js";
-import { httpError } from "./claude.js";
+import { httpError, sniffImage } from "./claude.js";
+import sharp from "sharp";
 import * as plans from "./plans.js";
+import * as credits from "./credits.js";
 
 const API = "https://api.runpod.ai/v2";
 const EP = { video: "wan-2-2-i2v-720", scene: "qwen-image-edit-2511" };
@@ -30,6 +32,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS media_jobs (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 )`);
+// Which Runpod endpoint a job ran on (AI photos can use a premium engine).
+if (!db.prepare("PRAGMA table_info(media_jobs)").all().some((c) => c.name === "endpoint")) db.exec("ALTER TABLE media_jobs ADD COLUMN endpoint TEXT");
 // Photos made by AI, so the storefront can say so when one is used as a product photo.
 db.exec("CREATE TABLE IF NOT EXISTS ai_images (file TEXT PRIMARY KEY, created_at TEXT NOT NULL DEFAULT (datetime('now')))");
 export const markAi = (file) => db.prepare("INSERT OR IGNORE INTO ai_images (file) VALUES (?)").run(file);
@@ -52,7 +56,21 @@ export const SCENES = [
   { id: "kitchen", name: "Kitchen counter", prompt: "this product on a bright kitchen counter in the morning" },
 ];
 const KEEP = "Use the product from the image exactly as it is: keep its shape, colors, logo, label and any text unchanged and clearly visible. Photorealistic, natural light, realistic hands and skin, shot on a modern phone camera. No added text, captions or watermarks.";
-export const presets = () => ({ enabled: enabled(), motions: MOTIONS.map(({ id, name }) => ({ id, name })), scenes: SCENES.map(({ id, name }) => ({ id, name })) });
+// Engines for AI lifestyle photos. Standard is included with the plan; Google's Nano Banana models
+// are sharper with people, hands and small print, and use credits (failed photos refund them).
+const ep = (env, dflt) => String(process.env[env] || dflt).trim();
+export const PHOTO_ENGINES = [
+  { id: "standard", name: "Standard", blurb: "Included with your plan. Fast and good for most products.", usd: 0 },
+  { id: "nano-banana-pro", name: "Nano Banana Pro", blurb: "Google's best image model: the most lifelike people, hands and labels.", usd: 0.14,
+    endpoint: () => ep("RUNPOD_EP_NANO_PRO", "nano-banana-pro-edit"),
+    input: (image, prompt) => ({ images: [image], prompt, resolution: "2k", aspect_ratio: "4:5", output_format: "jpeg", enable_safety_checker: true }) },
+  { id: "nano-banana-2", name: "Nano Banana 2", blurb: "Google's newest model: fast, sharp and natural.", usd: 0.13,
+    endpoint: () => ep("RUNPOD_EP_NANO_2", "google-nano-banana-2-edit"),
+    input: (image, prompt) => ({ images: [image], prompt, resolution: "2k", aspect_ratio: "4:5", output_format: "jpeg" }) },
+];
+export const photoEnginePrice = (e) => (e.usd ? credits.creditsFor(e.usd) : 0);
+export const presets = () => ({ enabled: enabled(), motions: MOTIONS.map(({ id, name }) => ({ id, name })), scenes: SCENES.map(({ id, name }) => ({ id, name })),
+  engines: PHOTO_ENGINES.map((e) => ({ id: e.id, name: e.name, blurb: e.blurb, credits: photoEnginePrice(e) })) });
 
 async function rp(pathname, body) {
   if (!enabled()) throw httpError(503, "AI video isn't switched on yet.");
@@ -116,7 +134,7 @@ export function resultUrl(output, kind) {
 }
 
 /** Start an AI video or scene. Counts against the plan when it starts; refunded if it fails. */
-export async function start(account, seller, { kind, image_file, preset, prompt }) {
+export async function start(account, seller, { kind, image_file, preset, prompt, engine }) {
   kind = kindOf(kind);
   const list = kind === "video" ? MOTIONS : SCENES;
   const p = preset ? list.find((m) => m.id === preset) : null;
@@ -124,17 +142,23 @@ export async function start(account, seller, { kind, image_file, preset, prompt 
   const custom = String(prompt || "").replace(/\s+/g, " ").trim().slice(0, 300);
   if (!p && custom.length < 3) throw httpError(400, kind === "video" ? "Pick a motion or describe one." : "Pick a scene or describe one.");
   const image = publicImage(seller, image_file);
-  plans.assertAllowance(account, kind);
+  const eng = kind === "scene" ? PHOTO_ENGINES.find((e) => e.id === (engine || "standard")) : PHOTO_ENGINES[0];
+  if (!eng) throw httpError(400, "That photo engine isn't available.");
+  const premium = Boolean(eng.usd);
+  if (!premium) plans.assertAllowance(account, kind);   // premium engines are paid with credits instead
   const input = kind === "video"
     ? { image, prompt: `${p ? p.prompt : custom}. The product itself stays exactly the same: same shape, colors, logo and label. No text.`, negative_prompt: "text, watermark, distorted product, extra limbs, blurry", size: "720*1280", duration: 5, seed: -1,
         // Runpod's endpoint rejects the job unless these are all sent (their docs call them optional).
         num_inference_steps: 30, guidance: 5, flow_shift: 5, enable_prompt_optimization: false, enable_safety_checker: true }
+    : premium ? eng.input(image, `Create a photorealistic lifestyle photo for an online store: ${p ? p.prompt : custom}. ${KEEP}`)
     : { images: [image], prompt: `Create a photorealistic lifestyle photo for an online store: ${p ? p.prompt : custom}. ${KEEP}`, size: "1024*1280", output_format: "jpeg", seed: -1 };
+  const endpoint = premium ? eng.endpoint() : EP[kind];
   const id = newId("job");
-  db.prepare("INSERT INTO media_jobs (id, seller_id, account_id, kind, input) VALUES (?,?,?,?,?)").run(id, seller.id, account.id, kind, JSON.stringify({ ...input, preset: p?.id || null }));
-  plans.recordUsage(account, kind);
+  if (premium) credits.spend(account, photoEnginePrice(eng), id, `${eng.name} photo`);
+  db.prepare("INSERT INTO media_jobs (id, seller_id, account_id, kind, input, endpoint) VALUES (?,?,?,?,?,?)").run(id, seller.id, account.id, kind, JSON.stringify({ ...input, preset: p?.id || null, engine: eng.id }), endpoint);
+  if (!premium) plans.recordUsage(account, kind);
   try {
-    const r = await rp(`${EP[kind]}/run`, { input });
+    const r = await rp(`${endpoint}/run`, { input });
     db.prepare("UPDATE media_jobs SET status='running', runpod_id=?, updated_at=datetime('now') WHERE id=?").run(r.id, id);
   } catch (e) { fail(id, e.message); throw e; }
   return view(db.prepare("SELECT * FROM media_jobs WHERE id = ?").get(id));
@@ -144,7 +168,8 @@ function fail(id, message) {
   const job = db.prepare("SELECT * FROM media_jobs WHERE id = ?").get(id);
   if (!job || job.status === "failed") return;
   db.prepare("UPDATE media_jobs SET status='failed', error=?, updated_at=datetime('now') WHERE id=?").run(String(message).slice(0, 300), id);
-  plans.refundUsage(plans.getAccount(job.account_id), job.kind);
+  // Premium photos were paid with credits; standard ones used the plan's allowance.
+  if (!credits.refund(id) && !db.prepare("SELECT 1 FROM credit_ledger WHERE ref = ?").get(id)) plans.refundUsage(plans.getAccount(job.account_id), job.kind);
 }
 
 /** Check running jobs; copy finished files to our storage. Called on a timer and when the app asks. */
@@ -153,7 +178,7 @@ export async function poll(id = null) {
     : db.prepare("SELECT * FROM media_jobs WHERE status = 'running' ORDER BY created_at LIMIT 20").all();
   for (const job of jobs) {
     try {
-      const r = await rp(`${EP[job.kind]}/status/${job.runpod_id}`);
+      const r = await rp(`${job.endpoint || EP[job.kind]}/status/${job.runpod_id}`);
       if (r.status === "COMPLETED") {
         const url = resultUrl(r.output, job.kind);
         if (!url) {
@@ -163,7 +188,9 @@ export async function poll(id = null) {
         }
         const res = await fetchImpl(url, { signal: AbortSignal.timeout(120_000) });
         if (!res.ok) throw new Error(`download ${res.status}`);
-        const buf = Buffer.from(await res.arrayBuffer());
+        let buf = Buffer.from(await res.arrayBuffer());
+        // Some models send PNG; photos here are saved as JPEG.
+        if (job.kind !== "video" && sniffImage(buf) !== "image/jpeg") buf = await sharp(buf).flatten({ background: "#ffffff" }).jpeg({ quality: 92 }).toBuffer();
         let result;
         if (job.kind === "video") {
           const name = `${crypto.randomUUID()}.mp4`;

@@ -64,6 +64,7 @@ export function salesPage({ code = null } = {}) {
     ["Do I have to go live?", "No. The Academy covers live selling for whenever you want to try it."],
     ["Will I make money?", "That depends on your product, your price and how consistently you share it. Snapfront gives you the tools and the training; nobody can honestly promise you sales, and we won't."],
     ["Refunds?", "All sales are final. That's why there's a free account: try the tools with free credits before you pay anything."],
+    ["Is there a community?", "Yes, and it's built into Snapfront. Post wins and questions, get feedback on your store, climb the leaderboard and join live coaching calls with other members. No separate Skool or Discord subscription needed."],
     ["Does it work on my phone?", "Yes. Snapfront runs in your browser on any phone or computer, and the Android app is included free with your membership."],
   ];
   const caps = [
@@ -72,7 +73,7 @@ export function salesPage({ code = null } = {}) {
     ["⌁", "Products & suppliers", "Product ideas, retailer price checks, CJdropshipping, AliExpress, Printful or your own stock."],
     ["↗", "Content & marketing", "AI posts and stories, faceless videos and avatars, email automations, Instagram AutoDM and ad pixels."],
     ["◇", "Earn with creators", "Affiliates for your own products, a UGC creator kit, and the Snapfront partner program."],
-    ["✦", "Learn & get help", "The full Academy, daily post ideas, the store assistant and the members' community."],
+    ["✦", "Learn & get help", "The full Academy, daily post ideas, the store assistant and a private members' community with live coaching."],
   ];
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Snapfront membership: skip the course, let the AI do the work</title>
@@ -193,6 +194,18 @@ ${code ? `<div class="via">Shared by <b>${esc(code)}</b>, a Snapfront partner wh
 </div></section>
 
 <section><div class="wrap">
+  <p class="eyebrow">Included</p>
+  <h2>A private community.<br><span class="chrome">No extra subscription.</span></h2>
+  <p class="lede" style="margin-top:0">Communities like this usually come with their own monthly fee on platforms like Skool. Yours is built right into Snapfront, on the web and in the app.</p>
+  <div class="caps" style="margin-top:26px">${[
+    ["💬", "The feed", "Share wins, ask questions and post your store for feedback from people doing the same thing."],
+    ["🏆", "Leaderboard & levels", "Every like on your posts is a point. Climb nine levels from Newcomer to Icon."],
+    ["🎙", "Live coaching", "Calls on the community calendar, with the join link right there for members."],
+    ["👥", "Members", "Meet other sellers, see what they make and visit their stores."],
+  ].map(([icon, h, p]) => `<div><span aria-hidden="true">${icon}</span><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`).join("")}</div>
+</div></section>
+
+<section><div class="wrap">
   <p class="eyebrow">Optional</p>
   <h2>Earn while you build.</h2>
   <div class="earn"><div class="num">${esc(rate)}<small>%</small></div>
@@ -206,7 +219,7 @@ ${code ? `<div class="via">Shared by <b>${esc(code)}</b>, a Snapfront partner wh
   <h2>Pick how you want to pay.</h2>
   <div class="plans">
     <div class="plan best"><h3>Lifetime</h3><div class="price">${esc(life)} <small>once, for life</small></div>
-      <ul><li>Up to ${pro.liveStores} live stores, 0% Snapfront fees</li><li>${pro.photo} AI product pages and ${pro.product} AI digital products a month</li><li>AI photos, video, faceless videos and avatars</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>The full Academy and members' community</li><li>Every new feature we add</li></ul>
+      <ul><li>Up to ${pro.liveStores} live stores, 0% Snapfront fees</li><li>${pro.photo} AI product pages and ${pro.product} AI digital products a month</li><li>AI photos, video, faceless videos and avatars</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>The full Academy and the private members' community</li><li>Every new feature we add</li></ul>
       <a class="btn block" href="${buyLife}">Get Lifetime for ${esc(life)}</a>${later ? `<p class="later">${esc(later.line)}</p>` : ""}</div>
     <div class="plan"><h3>Monthly</h3><div class="price">${esc(month)} <small>a month</small></div>
       <ul><li>Everything in Lifetime</li><li>Billed monthly</li><li>Cancel any time</li><li>Switch to Lifetime whenever you like</li></ul>

@@ -39,7 +39,7 @@ const TOOLS: { title: string; art: string; detail: string; icon: Icon; href: Hre
   { title: "AI avatars", art: "avatars", detail: "An original AI character, your own photo or a blend of two that shows off your products in posts, stories and videos.", icon: "person-circle-outline", href: "/avatars" },
   { title: "Credits", art: "credits", detail: "Top up credits for avatar videos made with Vidu Q3, Seedance 2.5 and Sora 2 Pro, plus voiceovers and talking avatars.", icon: "sparkles-outline", href: "/credits" },
   { title: "UGC creator kit", art: "ugc", detail: "A portfolio page, rates, scripts and pitches to get paid by brands for short videos.", icon: "aperture-outline", href: "/ugc" },
-  { title: "Community", art: "community", detail: "The members' Discord, Whop and live coaching.", icon: "chatbubbles-outline", href: "/community" },
+  { title: "Community", art: "community", detail: "Post wins, ask questions, climb the leaderboard and join live coaching with other sellers.", icon: "chatbubbles-outline", href: "/community" },
 ];
 
 export default function WebHome() {
