@@ -68,7 +68,7 @@ function categories(products) {
 }
 const priceLabel = (p) => {
   const prices = (p.variants || []).map((v) => v.price_cents ?? p.price_cents);
-  return `${prices.length && new Set(prices).size > 1 ? "From " : ""}${money(Math.min(p.price_cents, ...prices), p.currency)}`;
+  return `${prices.length && new Set(prices).size > 1 ? "From " : ""}${money(Math.min(p.price_cents, ...prices), p.currency)}${p.billing_interval ? ` / ${p.billing_interval}` : ""}`;
 };
 const img = (source, alt, extra = "") => {
   const src = typeof source === "object" && source ? source.url : source;
@@ -211,17 +211,17 @@ export function productPage(store, p, baseUrl, others = []) {
   const qty = p.kind === "physical" ? `<div class="qty" role="group" aria-label="Quantity"><button type="button" data-q="-1" aria-label="Fewer">−</button><output id="q" aria-live="polite">1</output><button type="button" data-q="1" aria-label="More">+</button></div>` : "";
   const buy = !sellable ? `<span class="buy off">Available soon</span>`
     : !p.in_stock ? `<span class="buy off">Sold out</span>`
-    : `<div class="actions">${qty}<button class="buy" type="button" id="add">Add to cart</button></div><button class="buy alt" type="button" id="now">Buy it now</button>`;
-  const item = { product_id: p.id, title: p.title, kind: p.kind, image: p.image_url || "", unit: p.price_cents, inventory: p.inventory };
+    : `<div class="actions">${qty}<button class="buy" type="button" id="add">Add to cart</button></div><button class="buy alt" type="button" id="now">${p.billing_interval ? "Subscribe now" : "Buy it now"}</button>`;
+  const item = { product_id: p.id, title: p.title, kind: p.kind, image: p.image_url || "", unit: p.price_cents, billing_interval:p.billing_interval, inventory: p.inventory };
   const script = sellable && p.in_stock ? `<script>(function(){var P=${JSON.stringify(item).replace(/</g, "\\u003c")},OPT=${JSON.stringify(p.option_name || "Option").replace(/</g, "\\u003c")},q=1,cur=${JSON.stringify(p.currency)};
 var fmt=function(c){return new Intl.NumberFormat("en-US",{style:"currency",currency:cur.toUpperCase()}).format(c/100)};
 function sel(){return document.querySelector('input[name=variant]:checked')}
 function limit(){var v=sel();var s=v?v.dataset.stock:(P.inventory==null?"":String(P.inventory));return s===""?20:Math.min(20,Number(s))}
-function sync(){var v=sel();document.getElementById("price").textContent=fmt(v?Number(v.dataset.price):P.unit);q=Math.min(q,limit());var o=document.getElementById("q");if(o)o.textContent=q;
+function sync(){var v=sel();document.getElementById("price").textContent=fmt(v?Number(v.dataset.price):P.unit)${p.billing_interval ? '+(P.billing_interval?" / "+P.billing_interval:"")' : ""};q=Math.min(q,limit());var o=document.getElementById("q");if(o)o.textContent=q;
 var st=document.getElementById("stock"),l=v?v.dataset.stock:(P.inventory==null?"":String(P.inventory));st.textContent=l!==""&&Number(l)<=5?"Only "+l+" left":"";st.className="stock"+(l!==""&&Number(l)<=5?" low":"")}
 document.querySelectorAll("input[name=variant]").forEach(function(r){r.addEventListener("change",sync)});
 document.querySelectorAll("[data-q]").forEach(function(b){b.addEventListener("click",function(){q=Math.max(1,Math.min(limit(),q+Number(b.dataset.q)));sync()})});
-function add(){var v=sel();sfCart.add({product_id:P.id||P.product_id,variant_id:v?v.value:null,variant:v?OPT+": "+v.dataset.name:null,qty:P.kind==="digital"?1:q,title:P.title,kind:P.kind,image:P.image,unit:v?Number(v.dataset.price):P.unit})}
+function add(){var v=sel();sfCart.add({product_id:P.id||P.product_id,variant_id:v?v.value:null,variant:v?OPT+": "+v.dataset.name:null,qty:P.kind==="digital"?1:q,title:P.title,kind:P.kind,${p.billing_interval ? "billing_interval:P.billing_interval," : ""}image:P.image,unit:v?Number(v.dataset.price):P.unit})}
 document.getElementById("add").addEventListener("click",function(){add();var t=document.getElementById("toast");t.hidden=false;clearTimeout(t._h);t._h=setTimeout(function(){t.hidden=true},4000)});
 document.getElementById("now").addEventListener("click",function(){add();location.href="${esc(base(store))}/cart"});sync()})();</script>` : "";
   const rv = p.id ? reviewsFor(p.id) : { count: 0, list: [] };
@@ -240,7 +240,7 @@ document.getElementById("now").addEventListener("click",function(){add();locatio
 <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="${esc(home(store))}">Home</a><span>/</span>${p.category ? `<a href="${esc(catHref(store, p.category))}">${esc(p.category)}</a><span>/</span>` : ""}<span aria-current="page">${esc(p.title)}</span></nav>
 <article class="pd"><div class="media"><div class="pic">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" fetchpriority="high">` : ""}${p.label && p.in_stock ? `<span class="tag">${esc(p.label)}</span>` : ""}</div>${isAiImage(p.image_file) ? `<p class="fine ai">Photo created with AI. The product is shown as sold.</p>` : ""}</div>
 <div class="info"><div class="cat">${p.kind === "digital" ? "Digital download" : esc(p.category || store.store_name)}</div><h1>${esc(p.title)}</h1>${rv.count ? `<a class="rt" href="#reviews">${stars(rv.avg)} ${rv.avg} (${rv.count})</a>` : ""}
-<div class="price" id="price">${money(startPrice, p.currency)}</div>${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}${opts}${buy}<div id="stock" class="stock" aria-live="polite"></div>
+<div class="price" id="price">${money(startPrice, p.currency)}${p.billing_interval ? ` / ${esc(p.billing_interval)}` : ""}</div>${p.billing_interval ? `<p class="fine">Renews automatically ${p.billing_interval === "year" ? "yearly" : "monthly"} until canceled. Access lasts through your paid period. Manage or cancel from your order confirmation.</p>` : ""}${p.bundle_items?.length ? `<section aria-label="Included products"><h2>What's included</h2><ul>${p.bundle_items.map((item)=>`<li>${esc(item.title)}</li>`).join("")}</ul></section>` : ""}${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}${opts}${buy}<div id="stock" class="stock" aria-live="polite"></div>
 <div class="mini">${mini.map(([i, t]) => `<div>${i}<span>${esc(t)}</span></div>`).join("")}</div>
 ${p.description ? `<div class="desc">${String(p.description).split(/\n\s*\n/).filter(Boolean).map((t) => `<p>${esc(t)}</p>`).join("")}</div>` : ""}
 ${p.bullets.length ? `<ul class="b">${p.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
@@ -342,7 +342,7 @@ function quote(){fetch(S+"/cart/quote",{method:"POST",headers:{"Content-Type":"a
 document.getElementById("go").disabled=!ok;if(!ok){msg(q.error||"Something went wrong.");if(code&&/code/i.test(q.error||"")){code="";try{sessionStorage.removeItem("sf_code_${slug}")}catch(e){};setTimeout(quote,1200)}return}
 document.getElementById("sub").textContent=fmt(q.subtotal);document.getElementById("discrow").hidden=!q.discount;document.getElementById("disc").textContent="−"+fmt(q.discount);document.getElementById("disclabel").textContent=q.discount_label?"Discount ("+q.discount_label+")":"Discount";
 var ph=q.lines.some(function(l){return l.kind==="physical"});document.getElementById("shiprow").hidden=!ph;document.getElementById("ship").textContent=q.shipping?fmt(q.shipping):"Free";
-document.getElementById("tot").textContent=fmt(q.total_before_tax);var tn=document.getElementById("taxnote");tn.hidden=!q.tax_note;tn.textContent=q.tax_note||"";
+document.getElementById("tot").textContent=fmt(q.total_before_tax)${store._hasSubscriptions ? '+(q.billing_interval?" / "+q.billing_interval:"")' : ""};var tn=document.getElementById("taxnote");tn.hidden=!q.tax_note;tn.textContent=q.tax_note||"";
 var cc=sfCart.read();q.lines.forEach(function(l){var f=cc.find(function(c){return c.product_id===l.product_id&&(c.variant_id||null)===(l.variant_id||null)});if(f){f.unit=l.unit_cents;f.title=l.title}});sfCart.write(cc);
 if(code&&q.discount)msg("Code applied: "+q.discount_label,true);else if(!code)msg("")}).catch(function(){msg("Couldn't reach the store. Check your connection.")})}
 document.getElementById("codef").addEventListener("submit",function(e){e.preventDefault();code=document.getElementById("code").value.trim().toUpperCase();try{sessionStorage.setItem("sf_code_${slug}",code)}catch(x){}quote()});
@@ -363,6 +363,7 @@ export function orderPage(store, o, downloads) {
     : `<h1>${pending ? "Almost there" : "Thank you!"}</h1>
 <p>${pending ? "We're waiting for Stripe to confirm your payment. This page refreshes on its own." : `Your order is confirmed${o.email ? ` and a receipt is on its way to <strong>${esc(o.email)}</strong>` : ""}.`}</p>
 ${!pending && o.status !== "canceled" && o._reviewToken ? `<p><a href="${esc(base(store))}/review?t=${esc(o._reviewToken)}">Leave a review</a> when it arrives. It helps a small shop a lot.</p>` : ""}
+${o.subscription ? `<section class="sum"><h2>Your subscription</h2><p>Status: ${esc(o.subscription.status)}${o.subscription.period_end ? `. ${o.subscription.cancel_at_period_end ? "Access ends" : "Current period ends"} ${esc(new Date(o.subscription.period_end*1000).toLocaleDateString("en-US"))}` : ""}.</p><a class="buy alt" href="${esc(o.subscription.manage_url)}">Manage subscription / cancel</a><p class="fine">Keep this private order link to access your downloads and billing settings.</p></section>` : ""}
 ${downloads.length ? `<div class="dl">${downloads.map((d) => `<a class="buy" href="${esc(d.url)}">Download ${esc(d.title)}</a>`).join("")}<p class="fine">Download links work for 7 days. Bookmark this page to get fresh ones.</p></div>` : ""}
 ${o.items.some((l) => l.kind === "physical") && !pending ? `<p>${o.status === "fulfilled" ? "Your order has shipped." : `${esc(store.store_name)} will ship your order soon.`}${o.tracking ? ` Tracking number: <a href="${esc(o.tracking.url)}" rel="noopener">${esc(o.tracking.number)}</a>${o.tracking.carrier ? ` (${esc(o.tracking.carrier)})` : ""}.` : ""}</p>` : ""}
 <div class="sum" style="position:static">${rows}

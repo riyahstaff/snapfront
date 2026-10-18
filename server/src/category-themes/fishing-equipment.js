@@ -102,7 +102,7 @@ function bankCards(ctx, categories) {
 function hookCard(ctx, product, index) {
   const title = product?.title || 'Untitled product';
   const cents = Number(product?.price_cents);
-  const price = Number.isFinite(cents) ? ctx.money(cents, product?.currency || 'usd') : '';
+  const price = Number.isFinite(cents) ? ctx.money(cents, product?.currency || 'usd', product?.billing_interval) : '';
   const image = product?.image_url
     ? `<div class="tide-hook-card__media"><img src="${ctx.esc(product.image_url)}" alt="${ctx.esc(product.alt_text || title)}" loading="lazy" decoding="async"></div>`
     : `<div class="tide-hook-card__media tide-hook-card__empty" aria-hidden="true"><span></span><i></i></div>`;

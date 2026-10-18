@@ -73,6 +73,7 @@ export default function ProductScreen() {
           {p.page_url ? <Button label="Preview page" variant="secondary" onPress={() => WebBrowser.openBrowserAsync(`${p.page_url}?preview=1`)} /> : null}
         </View>
       )}
+      {p.bundle_product_ids?.length ? <Button label="Edit included products & billing" variant="secondary" onPress={() => router.push({pathname:"/store-offers",params:{id:p.id}})} /> : null}
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
       {p.kind === "digital" && me ? (
         <View style={{ gap: space.sm }}>

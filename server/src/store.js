@@ -14,6 +14,7 @@ import * as urls from "./urls.js";
 import { THEME_IDS } from "./themes.js";
 import * as growth from "./growth.js";
 import { snapshotProductDownloads } from "./commerce.js";
+import { validateOffer, assertProductNotIncluded } from "./store-offers.js";
 import * as digitalDesigns from "./digital-designs.js";
 export const clampStr = (v, n) => String(v ?? "").slice(0, n);
 export const strList = (v, n, len = 200) => (Array.isArray(v) ? v : []).map((x) => clampStr(x, len)).filter(Boolean).slice(0, n);
@@ -243,6 +244,7 @@ export function setVariants(productId, list) {
 
 export function deleteProduct(seller, id) {
   const row = productRow(seller, id);
+  assertProductNotIncluded(row);
   // Export/source tables cascade with the product, but their private files do not. Keep any
   // buyer-pinned delivery bytes and image sources used by another surviving editable design.
   const designCovers = digitalDesigns.cleanupProductDesign(row.id);
@@ -264,7 +266,8 @@ export async function publishProduct(sellerIn, id) {
     seller = fresh(seller.id);
   }
   if (row.price_cents < 50) throw httpError(400, "Set a price of at least $0.50.");
-  if (row.kind === "digital" && !row.delivery_file && !row.delivery_url) throw httpError(400, "Add the file buyers will download before publishing.");
+  if (JSON.parse(row.bundle_product_ids || "[]").length) validateOffer(seller, row, true);
+  if (row.kind === "digital" && !row.delivery_file && !row.delivery_url && !JSON.parse(row.bundle_product_ids || "[]").length) throw httpError(400, "Add the file buyers will download before publishing.");
   // Checkout sessions are created per cart from the live prices, so going live needs no Stripe objects.
   db.prepare("UPDATE products SET status='live' WHERE id=?").run(row.id);
   return withPage(seller, db.prepare("SELECT * FROM products WHERE id = ?").get(row.id));

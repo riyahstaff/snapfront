@@ -89,6 +89,7 @@ export default function RootLayout() {
         <Stack.Screen name="ugc" options={{ title: "UGC creator kit" }} />
         <Stack.Screen name="discounts" options={{ title: "Discount codes" }} />
         <Stack.Screen name="looks" options={{ title: "Store look" }} />
+        <Stack.Screen name="store-offers" options={{ title: "Bundles & subscriptions" }} />
         <Stack.Screen name="storefront-setup" options={{ title: "Storefront setup" }} />
         <Stack.Screen name="studio" options={{ title: "Product Photo Cleanup" }} />
         <Stack.Screen name="digital-photo-studio" options={{ title: "Digital Photo Studio" }} />

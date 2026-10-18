@@ -85,7 +85,7 @@ const productTile = (ctx, product, index) => {
   const title = product.title || 'Available piece';
   const hasPrice = product.price_cents !== undefined && product.price_cents !== null && product.price_cents !== ''
     && Number.isFinite(Number(product.price_cents));
-  const price = hasPrice ? ctx.money(Number(product.price_cents), product.currency || 'usd') : '';
+  const price = hasPrice ? ctx.money(Number(product.price_cents), product.currency || 'usd', product?.billing_interval) : '';
   const picture = product.image_url
     ? `<img src="${ctx.esc(product.image_url)}" alt="${ctx.esc(product.alt_text || title)}" loading="lazy" decoding="async">`
     : '<span class="desk-product-empty" aria-hidden="true"></span>';

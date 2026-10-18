@@ -102,7 +102,7 @@ const productPart = (ctx, product, index) => {
     : '<span class="signalbay-bench__empty" aria-hidden="true"></span>';
   const category = product.category ? `<small>${ctx.esc(product.category)}</small>` : '';
   const price = product.price_cents != null
-    ? `<em>${ctx.esc(ctx.money(product.price_cents, product.currency))}</em>`
+    ? `<em>${ctx.esc(ctx.money(product.price_cents, product.currency, product?.billing_interval))}</em>`
     : '';
 
   return `<a class="signalbay-bench__part" href="${ctx.esc(ctx.productLink(product))}">

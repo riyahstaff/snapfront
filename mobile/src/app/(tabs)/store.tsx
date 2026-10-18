@@ -96,6 +96,7 @@ export default function StoreScreen() {
           <Button label={seller.stripe_connected ? "Continue setup" : "Connect Stripe"} onPress={connectStripe} style={{ alignSelf: "flex-start" }} />
         </View>
       ) : null}
+      <Button label="Bundles & subscriptions" variant="secondary" onPress={() => router.push("/store-offers")} />
       <Button label="Add a product" icon={<Ionicons name="add-circle-outline" size={20} color={c.onAccent} />} onPress={addProduct} />
       <Button label={setupDraftStep ? `Resume storefront setup · step ${setupDraftStep}` : "Build your storefront"} variant="secondary" icon={<Ionicons name="sparkles-outline" size={20} color={c.ink} />} onPress={() => router.push("/storefront-setup")} />
       {setupDraftStep ? <Notice text="Your storefront setup is saved on this phone. Resume it here when you’re ready." /> : null}

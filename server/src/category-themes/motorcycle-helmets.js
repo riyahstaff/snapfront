@@ -107,7 +107,7 @@ export function discovery(ctx) {
   if (!products.length) return '';
 
   const entries = products.map((product, index) => {
-    const price = product?.price_cents != null ? ctx.money(product.price_cents, product.currency) : '';
+    const price = product?.price_cents != null ? ctx.money(product.price_cents, product.currency, product?.billing_interval) : '';
     const category = product?.category ? `<small>${ctx.esc(product.category)}</small>` : '';
     const pricing = price ? `<em>${ctx.esc(price)}</em>` : '';
 

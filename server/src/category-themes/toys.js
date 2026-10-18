@@ -70,7 +70,7 @@ const productTile = (ctx, product, index) => {
     : '<span class="morrow-product-empty" aria-hidden="true"><i></i><i></i></span>';
   const hasPrice = product.price_cents !== undefined && product.price_cents !== null && product.price_cents !== ''
     && Number.isFinite(Number(product.price_cents));
-  const price = hasPrice ? `<small>${ctx.money(Number(product.price_cents), product.currency || 'usd')}</small>` : '';
+  const price = hasPrice ? `<small>${ctx.money(Number(product.price_cents), product.currency || 'usd', product?.billing_interval)}</small>` : '';
   const palette = ['is-coral', 'is-gold', 'is-blue', 'is-green'];
   return `<a class="morrow-product-card ${palette[index % palette.length]}" href="${ctx.productLink(product)}">
     <span class="morrow-product-media">${image}</span>

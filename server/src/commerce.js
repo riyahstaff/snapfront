@@ -1,5 +1,7 @@
 // Cart pricing, discount codes, checkout and order finalisation.
 // Prices are always re-read from the database: the browser only sends ids and quantities.
+import { validateOffer } from "./store-offers.js";
+import * as memberships from "./store-subscriptions.js";
 import { recoveryParams } from "./growth.js";
 import { checkoutParams as listOptIn } from "./audience.js";
 import { attribute as affiliateFor } from "./affiliates.js";
@@ -79,6 +81,8 @@ export function priceCart(seller, rawItems, code) {
   for (const it of items) {
     const row = db.prepare("SELECT * FROM products WHERE id = ? AND seller_id = ? AND status = 'live'").get(String(it.product_id || ""), seller.id);
     if (!row) throw httpError(400, "Something in your cart is no longer for sale. Remove it and try again.");
+    const included = JSON.parse(row.bundle_product_ids || "[]");
+    const deliveries = included.length ? validateOffer(seller, row, true).products.map((p) => ({ product_id:p.id,title:p.title })) : null;
     const variants = db.prepare("SELECT * FROM product_variants WHERE product_id = ? ORDER BY position").all(row.id);
     let variant = null;
     if (variants.length) {
@@ -95,8 +99,11 @@ export function priceCart(seller, rawItems, code) {
     const existing = lines.find((l) => l.key === key);
     if (existing) { existing.qty = row.kind === "digital" ? 1 : Math.min(MAX_QTY, existing.qty + qty); continue; }
     lines.push({ key, product_id: row.id, variant_id: variant?.id || null, title: row.title, variant: variant?.name || null,
-      option_name: row.option_name || null, kind: row.kind, qty, unit_cents: unit, image_file: row.image_file, tax_code: row.tax_code, source: row.source || null });
+      option_name: row.option_name || null, billing_interval: row.billing_interval || null, deliveries, kind: row.kind, qty, unit_cents: unit, image_file: row.image_file, tax_code: row.tax_code, source: row.source || null });
   }
+  const recurring = lines.filter((l) => l.billing_interval);
+  if (recurring.length && lines.length !== 1) throw httpError(400, "Please check out one subscription at a time, separately from one-time purchases.");
+  if (recurring.length && code) throw httpError(400, "Discount codes apply to one-time purchases. Remove the code to subscribe.");
   const subtotal = lines.reduce((s, l) => s + l.unit_cents * l.qty, 0);
   const { discount, cents: discountCents } = applyDiscount(seller, code, subtotal);
   const physical = lines.some((l) => l.kind === "physical");
@@ -112,7 +119,7 @@ export function quote(seller, items, code) {
   const p = priceCart(seller, items, code);
   return { lines: p.lines.map(({ key, image_file, tax_code, ...l }) => l), subtotal: p.subtotal / 100, discount: p.discountCents / 100,
     discount_label: p.discount ? publicDiscount(p.discount).label : null, shipping: p.shipping / 100, total_before_tax: p.total / 100,
-    tax_note: seller.tax_enabled ? "Sales tax is added at checkout." : null };
+    billing_interval: p.lines[0]?.billing_interval || null, tax_note: seller.tax_enabled ? "Sales tax is added at checkout." : null };
 }
 
 /* ---------- checkout ---------- */
@@ -126,7 +133,7 @@ export async function startCheckout(seller, items, code, ref = null) {
       p.total, p.discount?.code || null, affiliateFor(seller, ref));
   // Pin what this checkout offers before yielding to Stripe. A later seller edit cannot
   // change the file for a payment already started. Pending orders still have no access.
-  for (const line of p.lines.filter((line) => line.kind === "digital")) {
+  for (const line of p.lines.filter((line) => line.kind === "digital").flatMap((l) => l.deliveries || [l])) {
     const product = db.prepare("SELECT * FROM products WHERE id=? AND seller_id=?").get(line.product_id, seller.id);
     if (product) db.prepare(`INSERT OR IGNORE INTO digital_order_downloads
       (order_id, product_id, delivery_file, delivery_url, download_name) VALUES (?,?,?,?,?)`)
@@ -138,17 +145,18 @@ export async function startCheckout(seller, items, code, ref = null) {
     const image = l.image_file && config.publicUrl.startsWith("https://") ? [`${config.publicUrl}/img/${l.image_file}`] : undefined;
     const price_data = {
       currency: "usd", unit_amount: l.unit_cents,
+      ...(l.billing_interval ? { recurring: { interval:l.billing_interval } } : {}),
       product_data: {
         name: l.variant ? `${l.title} (${l.variant})` : l.title, images: image,
         metadata: { snapfront_product: l.product_id, snapfront_variant: l.variant_id || "" },
-        ...(tax ? { tax_code: l.tax_code || (l.kind === "digital" ? DIGITAL_TAX_CODE : PHYSICAL_TAX_CODE) } : {}),
+        ...(tax && (l.tax_code || !l.billing_interval) ? { tax_code: l.tax_code || (l.kind === "digital" ? DIGITAL_TAX_CODE : PHYSICAL_TAX_CODE) } : {}),
       },
       ...(tax ? { tax_behavior: "exclusive" } : {}),
     };
     return { price_data, quantity: l.qty };
   });
   const params = {
-    mode: "payment",
+    mode: p.lines[0]?.billing_interval ? "subscription" : "payment",
     line_items,
     metadata: { snapfront_order: orderId },
     success_url: `${storeOrigin(seller.store_slug)}/thanks?o=${orderId}&session_id={CHECKOUT_SESSION_ID}`,
@@ -167,9 +175,10 @@ export async function startCheckout(seller, items, code, ref = null) {
     params.billing_address_collection = "required";
   }
   const fee = Math.floor(((p.subtotal - p.discountCents) * config.platformFeePercent) / 100);
-  if (fee > 0) params.payment_intent_data = { application_fee_amount: fee, metadata: { snapfront_order: orderId } };
+  if (params.mode === "subscription") params.subscription_data = { metadata: {snapfront_order:orderId}, ...(config.platformFeePercent > 0 ? {application_fee_percent:config.platformFeePercent} : {}) };
+  if (params.mode === "payment" && fee > 0) params.payment_intent_data = { application_fee_amount: fee, metadata: { snapfront_order: orderId } };
 
-  Object.assign(params, recoveryParams(seller));   // Pro: remind buyers who leave checkout
+  if (params.mode === "payment") Object.assign(params, recoveryParams(seller));   // Pro: remind buyers who leave checkout
   Object.assign(params, listOptIn(seller));        // "Email me new products and offers"
   const session = await pay.createCheckout(seller, params, p.discountCents);
   db.prepare("UPDATE orders SET checkout_session_id = ? WHERE id = ?").run(session.id, orderId);
@@ -201,8 +210,8 @@ export function finalizeOrder(orderId, session) {
 
 /** Download links for the digital items in a paid order. */
 export function downloadsFor(order) {
-  if (!order || !["paid", "fulfilled"].includes(order.status)) return [];
-  return JSON.parse(order.items).filter((l) => l.kind === "digital")
+  if (!order || !["paid", "fulfilled"].includes(order.status) || !memberships.access(order)) return [];
+  return JSON.parse(order.items).filter((l) => l.kind === "digital").flatMap((l) => l.deliveries || [l])
     .map((l) => ({ title: l.title, url: `${config.publicUrl}/d/${pay.downloadToken(l.product_id, order.id)}` }));
 }
 
@@ -231,12 +240,12 @@ export function snapshotProductDownloads(product) {
 /** Resolve a signed buyer token to its paid order's immutable snapshot, or the current attachment. */
 export function downloadFor(orderId, productId) {
   const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(String(orderId || ""));
-  if (!order || !["paid", "fulfilled"].includes(order.status)) return null;
+  if (!order || !["paid", "fulfilled"].includes(order.status) || !memberships.access(order)) return null;
   let lines;
   try { lines = JSON.parse(order.items); } catch { return null; }
-  if (!Array.isArray(lines) || !lines.some((line) => line?.kind === "digital" && line.product_id === productId)) return null;
+  if (!Array.isArray(lines) || !lines.some((line) => line?.kind === "digital" && (line.product_id === productId || line.deliveries?.some((d) => d.product_id === productId)))) return null;
   const pinned = db.prepare("SELECT * FROM digital_order_downloads WHERE order_id = ? AND product_id = ?").get(order.id, String(productId));
-  if (pinned) return { delivery_file: pinned.delivery_file, delivery_url: pinned.delivery_url, filename: pinned.download_name || "download.pdf" };
+  if (pinned && !lines.some((l) => l.billing_interval)) return { delivery_file: pinned.delivery_file, delivery_url: pinned.delivery_url, filename: pinned.download_name || "download.pdf" };
   const product = db.prepare("SELECT * FROM products WHERE id = ? AND seller_id = ?").get(String(productId), order.seller_id);
   if (!product || product.kind !== "digital") return null;
   return { delivery_file: product.delivery_file, delivery_url: product.delivery_url, filename: `${product.slug || "download"}.pdf` };
@@ -244,7 +253,7 @@ export function downloadFor(orderId, productId) {
 
 /* ---------- seller views ---------- */
 export const publicOrder = (o) => ({
-  id: o.id, status: o.status, items: JSON.parse(o.items).map((l) => ({ title: l.title, variant: l.variant, qty: l.qty, kind: l.kind, unit: l.unit_cents / 100 })),
+  id: o.id, status: o.status, subscription: memberships.publicSubscription(o.id), items: JSON.parse(o.items).map((l) => ({ title: l.title, variant: l.variant, qty: l.qty, kind: l.kind, unit: l.unit_cents / 100 })),
   subtotal: o.subtotal_cents / 100, discount: o.discount_cents / 100, shipping: o.shipping_cents / 100, tax: o.tax_cents / 100, total: o.total_cents / 100,
   discount_code: o.discount_code, email: o.email, customer_name: o.customer_name,
   shipping_address: o.shipping_address ? JSON.parse(o.shipping_address) : null, paid_at: o.paid_at, fulfilled_at: o.fulfilled_at, created_at: o.created_at,

@@ -83,7 +83,7 @@ const categoryRows = (ctx, categories) => categories.map((category, index) => {
 
 const productRows = (ctx, products) => products.map((product, index) => {
   const hasPrice = Number.isFinite(Number(product.price_cents));
-  const price = hasPrice ? `<small>${ctx.esc(ctx.money(Number(product.price_cents), product.currency || 'usd'))}</small>` : '';
+  const price = hasPrice ? `<small>${ctx.esc(ctx.money(Number(product.price_cents), product.currency || 'usd', product?.billing_interval))}</small>` : '';
   const category = product.category ? `<em>${ctx.esc(product.category)}</em>` : '';
   return `<a class="archive-product-row" href="${ctx.esc(ctx.productLink(product))}">
     <span class="archive-row-index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>

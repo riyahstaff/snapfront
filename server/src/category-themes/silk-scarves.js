@@ -114,7 +114,7 @@ export function discovery(ctx) {
   const lines = products.map((product, index) => `<a class="scarf-piece-line" href="${ctx.productLink(product)}">
     <span class="scarf-piece-number">0${index + 1}</span>
     <strong>${ctx.esc(product.title)}</strong>
-    <em>${ctx.esc(ctx.money(product.price_cents ?? 0, product.currency || 'usd'))}</em>
+    <em>${ctx.esc(ctx.money(product.price_cents ?? 0, product.currency || 'usd', product?.billing_interval))}</em>
     <span aria-hidden="true">↗</span>
   </a>`).join('');
 

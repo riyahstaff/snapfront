@@ -59,7 +59,7 @@ function categoryLanes(ctx, categories) {
 function productSignals(ctx, products) {
   return products.map((product, index) => `<a class="smartwatches-product-signal" href="${ctx.productLink(product)}">
     <span class="smartwatches-signal-index">${pad(index)}</span>
-    <span class="smartwatches-signal-copy"><strong>${ctx.esc(product.title)}</strong><small>${ctx.esc(ctx.money(product.price_cents ?? 0, product.currency || 'usd'))}</small></span>
+    <span class="smartwatches-signal-copy"><strong>${ctx.esc(product.title)}</strong><small>${ctx.esc(ctx.money(product.price_cents ?? 0, product.currency || 'usd', product?.billing_interval))}</small></span>
     <span class="smartwatches-signal-arrow" aria-hidden="true">↗</span>
   </a>`).join('');
 }

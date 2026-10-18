@@ -48,7 +48,7 @@ const padded = (number) => String(number + 1).padStart(2, '0');
 
 function priceFor(ctx, product) {
   const variantPrice = product?.variants?.find((variant) => variant?.price_cents != null)?.price_cents;
-  return ctx.money(product?.price_cents ?? variantPrice ?? 0, product?.currency || 'usd');
+  return ctx.money(product?.price_cents ?? variantPrice ?? 0, product?.currency || 'usd', product?.billing_interval);
 }
 
 export function hero(ctx) {

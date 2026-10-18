@@ -63,7 +63,7 @@ function recordRow(ctx, product, index) {
     ? `<img src="${ctx.esc(product.image_url)}" alt="${ctx.esc(product.alt_text || product.title)}" loading="lazy" decoding="async">`
     : '<span class="vinyl-record-empty" aria-hidden="true"><i></i></span>';
   const price = Number.isFinite(Number(product.price_cents))
-    ? `<small>${ctx.money(Number(product.price_cents), product.currency || 'usd')}</small>`
+    ? `<small>${ctx.money(Number(product.price_cents), product.currency || 'usd', product?.billing_interval)}</small>`
     : '';
   const category = product.category ? `<em>${ctx.esc(product.category)}</em>` : '';
   return `<a class="vinyl-record-row" href="${ctx.productLink(product)}">

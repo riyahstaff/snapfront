@@ -54,7 +54,7 @@ const productPrice = (ctx, product) => {
   const values = [product?.price_cents, ...(product?.variants || []).map((variant) => variant?.price_cents)]
     .filter((value) => Number.isFinite(Number(value)))
     .map(Number);
-  return values.length ? ctx.money(Math.min(...values), product.currency) : '';
+  return values.length ? ctx.money(Math.min(...values), product.currency, product?.billing_interval) : '';
 };
 
 const shelfLinks = (ctx, categories, className) => categories.slice(0, 4).map((category, index) => {

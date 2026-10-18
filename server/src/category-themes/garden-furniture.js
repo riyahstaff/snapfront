@@ -52,7 +52,7 @@ const countLabel = (count) => `${count} ${count === 1 ? 'piece' : 'pieces'}`;
 
 const priceFor = (ctx, product) => {
   const amount = Number(product?.price_cents);
-  return Number.isFinite(amount) ? ctx.money(amount, product.currency || 'usd') : '';
+  return Number.isFinite(amount) ? ctx.money(amount, product.currency || 'usd', product?.billing_interval) : '';
 };
 
 const livePieceNotes = (ctx) => {

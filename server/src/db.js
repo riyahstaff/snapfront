@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS products (
 const cols = (t) => new Set(db.prepare(`PRAGMA table_info(${t})`).all().map((c) => c.name));
 const addCol = (t, name, def) => { if (!cols(t).has(name)) db.exec(`ALTER TABLE ${t} ADD COLUMN ${name} ${def}`); };
 
+addCol("products", "bundle_product_ids", "TEXT NOT NULL DEFAULT '[]'");
+addCol("products", "billing_interval", "TEXT");
 // Phase 1 commerce: inventory, variants, tax codes, shipping and tax settings.
 addCol("products", "inventory", "INTEGER");               // NULL = unlimited
 addCol("products", "option_name", "TEXT NOT NULL DEFAULT ''"); // e.g. "Size"; variants hold the values
@@ -228,9 +230,12 @@ export function rowToProduct(r) {
   if (!r) return null;
   const p = { ...r };
   for (const f of JSON_FIELDS) { try { p[f] = JSON.parse(r[f]); } catch { p[f] = []; } }
+  p.bundle_product_ids = JSON.parse(r.bundle_product_ids || "[]");
+  p.bundle_items = p.bundle_product_ids.map((id) => db.prepare("SELECT id,title FROM products WHERE id=? AND seller_id=?").get(id, r.seller_id)).filter(Boolean);
+  p.billing_interval = r.billing_interval || null;
   p.price = r.price_cents / 100;
   p.image_url = r.image_file ? `${config.publicUrl}/img/${r.image_file}` : null;
-  p.has_delivery = Boolean(r.delivery_file || r.delivery_url);
+  p.has_delivery = Boolean(r.delivery_file || r.delivery_url || p.bundle_product_ids.length);
   p.cost = r.cost_cents == null ? null : r.cost_cents / 100;
   delete p.delivery_file;
   p.variants = db.prepare("SELECT id, name, price_cents, inventory, sku FROM product_variants WHERE product_id = ? ORDER BY position").all(r.id)
@@ -388,3 +393,16 @@ CREATE TABLE IF NOT EXISTS digital_order_downloads (
 );
 CREATE INDEX IF NOT EXISTS digital_order_downloads_file ON digital_order_downloads (delivery_file);
 `);
+
+// Seller customer subscriptions are separate from Snapfront membership billing.
+db.exec(`CREATE TABLE IF NOT EXISTS store_subscriptions (
+ id TEXT PRIMARY KEY, seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+ order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+ stripe_account_id TEXT NOT NULL, customer_id TEXT NOT NULL,
+ status TEXT NOT NULL DEFAULT 'incomplete', period_end INTEGER NOT NULL DEFAULT 0,
+ cancel_at_period_end INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS store_subscription_invoices (
+ id TEXT PRIMARY KEY, subscription_id TEXT NOT NULL REFERENCES store_subscriptions(id) ON DELETE CASCADE,
+ amount_paid INTEGER NOT NULL, currency TEXT NOT NULL, paid_at INTEGER NOT NULL
+);`);

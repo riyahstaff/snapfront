@@ -105,7 +105,7 @@ export function discovery(ctx) {
       ? `<img src="${ctx.esc(product.image_url)}" alt="${ctx.esc(product.alt_text || product.title)}" loading="lazy" decoding="async">`
       : '<span class="sandals-piece__empty" aria-hidden="true"></span>';
     const price = product.price_cents != null
-      ? `<em>${ctx.esc(ctx.money(product.price_cents, product.currency))}</em>`
+      ? `<em>${ctx.esc(ctx.money(product.price_cents, product.currency, product?.billing_interval))}</em>`
       : '';
     return `<a class="sandals-piece" href="${ctx.esc(ctx.productLink(product))}">
       <span class="sandals-piece__number" aria-hidden="true">0${index + 1}</span>
