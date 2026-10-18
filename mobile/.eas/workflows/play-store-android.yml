@@ -1,0 +1,16 @@
+# Google Play build: pushing to the release/android branch builds the Android app bundle (.aab)
+# with the production profile (signed with the project's EAS credentials; versionCode goes up by itself).
+# Download it from the build page on expo.dev, or use "Submit" there to send it to Google Play.
+name: Google Play build (Android)
+
+on:
+  push:
+    branches: ['release/android']
+
+jobs:
+  build_android:
+    name: Build Android for Google Play
+    type: build
+    params:
+      platform: android
+      profile: production
