@@ -27,7 +27,7 @@ const TITLES: Record<string, string> = {
 function Header({ options, route, back, navigation }: NativeStackHeaderProps) {
   const title = typeof options.title === "string" && options.title ? options.title : TITLES[route.name] ?? "";
   const right = options.headerRight?.({ canGoBack: Boolean(back), tintColor: undefined });
-  return <PageHeader title={title} canGoBack={Boolean(back)} onBack={() => (navigation.canGoBack() ? navigation.goBack() : router.replace("/"))} right={right} />;
+  return <PageHeader title={title} canGoBack={Boolean(back) || route.name === "ugc"} onBack={() => (navigation.canGoBack() ? navigation.goBack() : router.replace(route.name === "ugc" ? "/(tabs)/store" : "/"))} right={right} />;
 }
 
 export default function WebRootLayout() {
