@@ -5,6 +5,7 @@ import { Image } from "expo-image";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, H2, Notice, Pill, Segmented } from "@/components/ui";
+import { EnginePicker } from "@/components/engine-picker";
 import { api, ApiError, type AiJob, type AiPresets, type Product } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
 import { saveToPhone, shareFile } from "@/lib/media";
@@ -23,6 +24,7 @@ export default function AiMediaScreen() {
   const [productId, setProductId] = useState<string | null>(null);
   const [mode, setMode] = useState<"scene" | "video">("scene");
   const [preset, setPreset] = useState<string | null>(null);
+  const [engine, setEngine] = useState("standard");
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
@@ -51,7 +53,7 @@ export default function AiMediaScreen() {
     if (!product?.image_file) return;
     setBusy(true); setMsg(null);
     try {
-      const job = await api.startAiMedia({ kind: mode, image_file: product.image_file, preset: preset ?? undefined, prompt: preset ? undefined : prompt.trim() });
+      const job = await api.startAiMedia({ kind: mode, image_file: product.image_file, preset: preset ?? undefined, prompt: preset ? undefined : prompt.trim(), engine: mode === "scene" ? engine : undefined });
       setJobs((j) => [job, ...j]);
       account.refresh().catch(() => {});
       setMsg({ text: mode === "video" ? "Making your clip. It takes a minute or two." : "Making your photo. It takes about 20 seconds.", tone: "info" });
@@ -99,13 +101,14 @@ export default function AiMediaScreen() {
         {!preset ? <Field label="Or describe it" value={prompt} onChangeText={setPrompt} maxLength={300}
           placeholder={mode === "video" ? "steam rises slowly from the mug" : "a woman at a vanity applying this eyeliner"} /> : null}
       </View>
+      {mode === "scene" ? <EnginePicker engines={presets?.engines} value={engine} onChange={setEngine} /> : null}
       {videoLocked ? (
         <Button label="See membership" variant="flash" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
       ) : (
         <Button label={mode === "video" ? "Make the clip" : "Make the photo"} icon={<Ionicons name="sparkles" size={18} color={c.onAccent} />} loading={busy}
           disabled={!product || (!preset && prompt.trim().length < 3)} onPress={start} />
       )}
-      {left != null && !videoLocked ? <Text style={[type.small, { color: c.muted }]}>{left} {mode === "video" ? "clips" : "photos"} left{a?.plan === "free" ? "" : " this month"}.</Text> : null}
+      {left != null && !videoLocked && (mode === "video" || engine === "standard") ? <Text style={[type.small, { color: c.muted }]}>{left} {mode === "video" ? "clips" : "photos"} left{a?.plan === "free" ? "" : " this month"}.</Text> : null}
       <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start", backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.md, padding: space.md }}>
         <Ionicons name="information-circle-outline" size={18} color={c.accent} />
         <Text style={[type.small, { color: c.ink, flex: 1 }]}>AI can change small details like logos or text, so check the result before you post. Instagram and TikTok ask you to label realistic AI images and video: turn on the AI label when you post.</Text>

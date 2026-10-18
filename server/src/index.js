@@ -40,6 +40,7 @@ import * as academy from "./academy.js";
 import * as academyPresenter from "./academy-presenter.js";
 import * as daily from "./daily.js";
 import * as community from "./community.js";
+import * as feed from "./community-feed.js";
 import * as ugc from "./ugc.js";
 import * as faceless from "./faceless.js";
 import * as avatars from "./avatars.js";
@@ -873,7 +874,7 @@ app.post("/api/academy-presenter/outfit", ownerOrStudio, wrap(async (req, res) =
 app.put("/api/academy-presenter/screens/:lesson/:slide", ownerOrStudio, express.raw({ type: ["video/*", "application/octet-stream"], limit: "80mb" }),
   wrap(async (req, res) => res.json(await academyPresenter.saveScreen(req.params.lesson, req.params.slide, req.body))));
 /* ---------- Studio: Runpod jobs for Snapfront's own site artwork (the home page's tool cards). Owner or studio token only. ---------- */
-const STUDIO_EPS = () => new Set(["qwen-image-t2i", "qwen-image-edit-2511", "nano-banana-pro-edit", "seedream-v4-edit", "seedream-v4-t2i", "nano-banana-pro-t2i",
+const STUDIO_EPS = () => new Set(["qwen-image-t2i", "qwen-image-edit-2511", "nano-banana-pro-edit", "google-nano-banana-2-edit", "seedream-v4-edit", "seedream-v4-t2i",
   ...avatarVideos.MODELS.map((m) => m.endpoint())]);
 const studioEp = (req) => { if (!STUDIO_EPS().has(req.params.ep)) throw httpError(404, "Unknown studio model."); return req.params.ep; };
 app.post("/api/studio/runpod/:ep/run", ownerOrStudio, wrap(async (req, res) => res.json(await aimedia.runpod(`${studioEp(req)}/run`, { input: req.body?.input || {} }))));
@@ -884,6 +885,34 @@ app.get("/api/studio/runpod/:ep/status/:id", ownerOrStudio, wrap(async (req, res
 app.post("/api/admin/academy/build", adminOnly, (req, res) => { academy.buildMissing({ voice: req.body?.voice }).catch((e) => console.error("[academy]", e.message)); res.json(academy.buildStatus()); });
 app.get("/api/daily-prompt", auth, wrap(async (req, res) => res.json(await daily.today(req.seller, { fresh: req.query.fresh === "1" }))));
 app.get("/api/community", auth, (req, res) => res.json(community.view(req.account)));
+/* ---------- the members' community (Skool-style): feed, comments, likes/points, leaderboard, members, calendar ---------- */
+app.get("/api/community/home", auth, (req, res) => res.json({ ...feed.home(req.account, req.query), links: community.view(req.account) }));
+app.get("/api/community/posts", auth, (req, res) => res.json(feed.feed(req.account, req.query)));
+app.post("/api/community/posts", auth, (req, res) => res.status(201).json(feed.create(req.account, req.seller, req.body || {})));
+app.get("/api/community/posts/:id", auth, (req, res) => res.json(feed.thread(req.account, req.params.id)));
+app.patch("/api/community/posts/:id", auth, (req, res) => res.json(feed.edit(req.account, req.params.id, req.body || {})));
+app.delete("/api/community/posts/:id", auth, (req, res) => res.json(feed.remove(req.account, req.params.id)));
+app.put("/api/community/posts/:id/pin", auth, (req, res) => res.json(feed.pin(req.account, req.params.id, Boolean(req.body?.pinned))));
+app.post("/api/community/posts/:id/comments", auth, (req, res) => res.status(201).json(feed.comment(req.account, req.seller, req.params.id, req.body || {})));
+app.delete("/api/community/comments/:id", auth, (req, res) => res.json(feed.removeComment(req.account, req.params.id)));
+app.put("/api/community/likes/:kind/:id", auth, (req, res) => res.json(feed.like(req.account, req.params.kind, req.params.id, req.body?.liked !== false)));
+app.post("/api/community/reports", auth, (req, res) => res.status(201).json(feed.report(req.account, req.body?.kind, req.body?.id, req.body?.reason)));
+app.get("/api/community/reports", auth, (req, res) => res.json(feed.reports(req.account)));
+app.put("/api/community/reports/:kind/:id", auth, (req, res) => res.json(feed.resolveReport(req.account, req.params.kind, req.params.id)));
+app.put("/api/community/members/:id/mute", auth, (req, res) => res.json(feed.mute(req.account, req.params.id, Boolean(req.body?.muted))));
+app.get("/api/community/leaderboard", auth, (req, res) => res.json(feed.leaderboard(req.account, req.query.period)));
+app.get("/api/community/members", auth, (req, res) => res.json(feed.members(req.account, req.query)));
+app.get("/api/community/notifications", auth, (req, res) => res.json(feed.notifications(req.account)));
+app.post("/api/community/notifications/read", auth, (req, res) => res.json(feed.markRead(req.account)));
+app.get("/api/community/events", auth, (req, res) => res.json(feed.events(req.account)));
+app.post("/api/community/events", auth, (req, res) => res.status(201).json(feed.addEvent(req.account, req.body || {})));
+app.delete("/api/community/events/:id", auth, (req, res) => res.json(feed.removeEvent(req.account, req.params.id)));
+app.put("/api/community/profile", auth, (req, res) => res.json(feed.updateProfile(req.account, req.body || {})));
+app.post("/api/community/photos", auth, (req, res) => {
+  if (!sniffImage(req.body?.imageBase64)) throw httpError(400, "Use a JPG, PNG, WebP or GIF photo.");
+  const file = saveImage(req.body?.imageBase64, req.body?.mediaType || "image/jpeg", req.seller.id);
+  res.status(201).json({ image_file: file, image_url: `${config.publicUrl}/img/${file}` });
+});
 app.get("/api/admin/settings", adminOnly, (_req, res) => res.json({ settings: community.all(), help: community.SETTINGS }));
 app.put("/api/admin/settings", adminOnly, (req, res) => res.json(community.update(req.body || {})));
 

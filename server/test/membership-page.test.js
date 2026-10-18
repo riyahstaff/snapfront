@@ -44,6 +44,10 @@ test("/join sells the membership with live prices and no income claims", async (
   assert.match(r.text, /https:\/\/app\.snapfront\.test\/plans\?buy=lifetime"/);
   assert.match(r.text, /https:\/\/app\.snapfront\.test\/plans\?buy=pro"/);
   assert.match(text, /All sales are final/);
+  // The built-in community is a selling point, without naming a price for anyone else's product.
+  assert.match(text, /A private community\.\s*No extra subscription\./);
+  assert.match(text, /Leaderboard &amp; levels/);
+  assert.doesNotMatch(text, /Skool[^.]*\$\d/);
   // No partner on the plain page, and no promises of income or fake "was" prices.
   assert.doesNotMatch(text, /earns a commission if you join/);
   assert.doesNotMatch(text, /\$\d[\d,]*k?\s*(a|per)\s*month(s)?\s*(just|from)|\$[\d,]+\s*by|already made/i);

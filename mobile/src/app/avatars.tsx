@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, Notice, Pill, Segmented } from "@/components/ui";
+import { EnginePicker } from "@/components/engine-picker";
 import { PhotoAvatarMaker } from "@/components/avatar-from-photos";
 import { api, ApiError, type Avatar, type AvatarShot, type AvatarStudio, type AvatarVideo, type AvatarVideoStudio, type Product } from "@/lib/api";
 import { VideoCard, VideoPanel } from "@/components/avatar-video";
@@ -49,6 +50,7 @@ export default function AvatarsScreen() {
   const [avatarId, setAvatarId] = useState<string | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
   const [pose, setPose] = useState<string | null>("present");
+  const [shotEngine, setShotEngine] = useState("standard");
   const [prompt, setPrompt] = useState("");
   const [shooting, setShooting] = useState(false);
   const [shotId, setShotId] = useState<string | null>(null);   // the photo shown in full (step 3 happens there)
@@ -160,7 +162,7 @@ export default function AvatarsScreen() {
     if (!chosen || !product) return;
     setShooting(true); setNote(null);
     try {
-      const s = await api.avatarShot({ avatar_id: chosen.id, product_id: product.id, pose: pose ?? undefined, prompt: pose ? undefined : prompt.trim() });
+      const s = await api.avatarShot({ avatar_id: chosen.id, product_id: product.id, pose: pose ?? undefined, prompt: pose ? undefined : prompt.trim(), engine: shotEngine });
       setStudio((st) => st && ({ ...st, shots: [s, ...st.shots] }));
       setShotId(s.id); setPanel(null);
       account.refresh().catch(() => {});
@@ -322,9 +324,10 @@ export default function AvatarsScreen() {
             {studio.poses.map((p) => <Chip key={p.id} label={p.name} on={pose === p.id} onPress={() => setPose(pose === p.id ? null : p.id)} />)}
           </View>
           {!pose ? <Field label="Or describe the shot" value={prompt} onChangeText={setPrompt} maxLength={200} placeholder="sitting on a beach towel, putting the sunscreen in a tote bag" /> : null}
+          <EnginePicker engines={studio.engines} value={shotEngine} onChange={setShotEngine} />
           <Button label="Make the photo" icon={<Ionicons name="sparkles" size={18} color={c.onAccent} />} loading={shooting}
             disabled={!product || (!pose && prompt.trim().length < 3)} onPress={makeShot} />
-          {left != null ? <Text style={[type.small, { color: c.muted }]}>Avatars and photos use your AI photo allowance: {left} left{a?.plan === "free" ? "" : " this month"}.</Text> : null}
+          {left != null && shotEngine === "standard" ? <Text style={[type.small, { color: c.muted }]}>Avatars and photos use your AI photo allowance: {left} left{a?.plan === "free" ? "" : " this month"}.</Text> : null}
           {noteFor("photo")}
 
           {chosenShots.length && openShot ? (
