@@ -101,7 +101,8 @@ test("Sora 2 and Wan 2.6 are offered, priced per second, on their Runpod endpoin
   assert.equal(sora2.endpoint(), "sora-2-i2v");
   assert.equal(wan.endpoint(), "wan-2-6-i2v");
   assert.deepEqual(wan.durations, [5, 10, 15]);
-  assert.equal(wan.input({ image: "i", prompt: "p", duration: 10, resolution: "1080p" }).size, "1920*1080");
+  assert.equal(wan.input({ image: "i", prompt: "p", duration: 10, resolution: "1080p" }).resolution, "1080p");
+  assert.equal(wan.input({ image: "i", prompt: "p", duration: 5, resolution: "720p" }).size, undefined);
   assert.ok(videos.priceOf(wan, 5, "720p") < videos.priceOf(videos.MODELS.find((m) => m.id === "seedance"), 5, "720p"));
   assert.deepEqual(sora2.input({ image: "i", prompt: "p", duration: 8, resolution: "720p" }), { prompt: "p", image: "i", duration: 8 });
 });
