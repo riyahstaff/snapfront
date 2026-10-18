@@ -490,8 +490,16 @@ export async function shot(seller, id) {
   return shotView(find());
 }
 /** Delete an avatar and its shots. Photos already used in posts or products stay where they are. */
+/** Whether Snapfront's Academy lessons are taught by this avatar (it can't be deleted while they are). */
+function teachesAcademy(id) {
+  try {
+    const s = JSON.parse(db.prepare("SELECT value FROM app_settings WHERE key = 'academy_presenter'").get()?.value || "null");
+    return Boolean(s && (s.avatar_id === id || Object.values(s.per_lesson || {}).some((x) => x?.avatar_id === id)));
+  } catch { return false; }
+}
 export function remove(seller, id) {
   const a = getAvatar(seller, id);
+  if (teachesAcademy(a.id)) throw httpError(409, "This avatar teaches Academy lessons. Choose another presenter for those lessons first (Academy, Lesson presenter), then delete it.");
   dropSources(a.id);
   // A seller's own photo is theirs: deleting the avatar deletes the photo too.
   if (a.source === "photo" && a.image_file) {
