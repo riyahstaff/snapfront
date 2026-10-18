@@ -5,6 +5,7 @@ import { PLANS as PRICES } from "./webbilling.js";
 import { THEMES, publicThemes } from "./themes.js";
 import { config } from "./config.js";
 import { QUESTIONS } from "./start-plan.js";
+import { PROMO_CSS, promoSection } from "./promo-video.js";
 
 const webAppUrl = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
 
@@ -112,7 +113,7 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
 .quiz ol{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:s}.quiz li{counter-increment:s;display:grid;grid-template-columns:30px 1fr;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
 .quiz li:before{content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--sunk);display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--muted)}
 .quiz li b{display:block}.quiz li span{color:var(--muted);font-size:14px}.quiz .sum{color:var(--muted);margin:0}.quiz .eyebrow{margin:0}
-</style></head><body>
+${PROMO_CSS}</style></head><body>
 <header><div class="wrap"><a class="brand" href="/"><img src="/site/mark.png" alt="" width="32" height="32">snapfront</a>
 <nav><a href="#features">Features</a><a href="#themes">Themes</a><a href="#learn">Learn &amp; earn</a><a href="#pricing">Pricing</a><a href="${web}/sign-in">Sign in</a><a class="btn small" href="#pricing">Unlock Snapfront</a></nav></div></header>
 <main>
@@ -126,6 +127,7 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
   </div>
   <figure class="art" style="margin:0"><img src="/site/chrome-hero.webp" alt="The original Snapfront chrome gateway with jewelry and furniture showcases" width="1200" height="900" fetchpriority="high"><figcaption>Concept artwork</figcaption></figure>
 </div>
+${promoSection()}
 <section id="themes" class="featured-stores"><div class="wrap"><div class="featured-heading"><div><p class="eyebrow">Original storefront designs</p><h2>Sleek, modern, eye-catching stores. Endless possibilities</h2><p class="sub">Give your brand a stunning storefront that captures attention and turns visitors into customers.</p></div><a class="btn ghost small" href="/themes">See over 100 themes ↗</a></div><div class="hero-showcase carousel-below"><div class="stage-top"><span class="live-pulse"></span> PREMIUM STOREFRONTS <span class="stage-count">OVER 100 DESIGNS</span></div><div class="theme-stage" id="theme-stage" aria-label="Animated showcase of storefront themes">${showcaseSlides}</div><div class="stage-controls"><span>Read-only previews · use arrows to explore</span><div class="stage-actions"><button type="button" id="prev-theme" aria-label="Previous theme">←</button><div class="carousel-dots" id="carousel-dots">${themeDots}</div><button type="button" id="next-theme" aria-label="Next theme">→</button></div></div></div></div></section>
 <section><div class="wrap">
   <h2>From photo to paid in three steps</h2>
