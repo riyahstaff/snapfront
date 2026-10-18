@@ -105,8 +105,8 @@ export default function WebHome() {
       </Section>
 
       {/* Themes */}
-      <Section title="Designed to stand out" subtitle={themes ? `${themes.length} storefront themes for fashion, beauty, home, tech and more.` : undefined} pad={pad}
-        action={<CTA label={themes ? `Explore ${themes.length} themes` : "Explore themes"} href="/looks" small />}>
+      <Section title="Designed to stand out" subtitle="Over 100 storefront themes for fashion, beauty, home, tech and more." pad={pad}
+        action={<CTA label="Explore over 100 themes" href="/looks" small />}>
         {featured.length ? (
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
             {featured.map((t) => (

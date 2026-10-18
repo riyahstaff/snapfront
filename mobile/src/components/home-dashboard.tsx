@@ -42,7 +42,7 @@ export function HomeDashboard({ me, themes, draftStep, hasProducts = null, viewp
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           <Text accessibilityRole="header" style={[type.title, { color: c.ink }]}>Designed to stand out.</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Browse all storefront themes" onPress={() => router.push("/looks")} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 5 }}>
-            <Text style={[type.small, { color: c.ink }]}>Explore{themes ? ` ${themes.length}` : ""} themes</Text><Ionicons name="arrow-forward" size={17} color={c.ink} />
+            <Text style={[type.small, { color: c.ink }]}>Explore over 100 themes</Text><Ionicons name="arrow-forward" size={17} color={c.ink} />
           </Pressable>
         </View>
         {cards.length ? <ThemeCarousel key={cards.map((theme) => theme.id).join(":")} themes={cards} visible={visible}

@@ -72,8 +72,8 @@ export const LESSONS = [
     slides: [
       { heading: "Make your store look premium", points: [],
         say: "People decide in a few seconds whether your store feels trustworthy. Here's how to make it look premium." },
-      { heading: "Pick a theme for your product", points: ["Over 60 looks by product type", "Preview before you apply", "Your own cover photo"],
-        say: "Snapfront has over sixty storefront looks designed for specific products, from skincare to sneakers. Preview a few with your own products, pick the one that fits, and add your own cover photo.",
+      { heading: "Pick a theme for your product", points: ["Over 100 looks by product type", "Preview before you apply", "Your own cover photo"],
+        say: "Snapfront has over a hundred storefront looks designed for specific products, from skincare to sneakers. Preview a few with your own products, pick the one that fits, and add your own cover photo.",
         screen: { "route": "/looks", "ready": "Pick a finished design", "steps": [["wait", 1], ["scroll", "Browse store looks"], ["wait", 1], ["tap", "Beauty"], ["wait", 3]] } },
       { heading: "Photos sell", points: ["Clean background with Photo cleanup", "Lifestyle shots with AI photos", "Same style on every product"],
         say: "Photos sell. Use Photo cleanup to put your product on a clean background, then make lifestyle shots with AI photos so buyers can picture it in their life. Keep the same style across every product." },
