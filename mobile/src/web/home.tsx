@@ -13,7 +13,7 @@ import { DEFAULT_STORE_NAME } from "@/lib/store-address";
 import { getAppInfo } from "@/lib/billing.web";
 import { ThemePreview } from "@/components/theme-preview";
 import { DailyPromptCard } from "@/components/daily-prompt";
-import { fonts, radius, useColors } from "@/lib/theme";
+import { alpha, fonts, radius, useColors } from "@/lib/theme";
 import { CONTENT, WebFooter } from "./web-nav";
 
 type Hover = PressableStateCallbackType & { hovered?: boolean };
@@ -66,7 +66,7 @@ export default function WebHome() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingBottom: 0 }}>
       {/* Hero */}
-      <View style={{ borderBottomWidth: 1, borderColor: c.sunk, backgroundImage: "radial-gradient(1100px 520px at 75% 0%, #1D2128 0%, rgba(9,11,14,0) 70%)" } as object}>
+      <View style={{ borderBottomWidth: 1, borderColor: c.sunk, backgroundImage: `radial-gradient(1100px 520px at 75% 0%, ${c.sunk} 0%, ${alpha(c.bg, 0)} 70%)` } as object}>
         <View style={[pad, { paddingVertical: wide ? 88 : 48, flexDirection: wide ? "row" : "column", alignItems: wide ? "center" : "stretch", gap: wide ? 56 : 36 }]}>
           <View style={{ flex: wide ? 1.05 : undefined, gap: 22 }}>
             <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, letterSpacing: 2.4, color: c.brand }}>CREATIVE COMMERCE STUDIO</Text>
@@ -82,7 +82,7 @@ export default function WebHome() {
             </View>
             <Text style={{ fontFamily: fonts.body, fontSize: 14, color: c.muted }}>Free to try. No fees on your sales.</Text>
           </View>
-          <View style={{ flex: wide ? 1 : undefined, borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: c.line, aspectRatio: 4 / 3, boxShadow: "0 40px 120px rgba(0,0,0,0.6)" } as object}>
+          <View style={{ flex: wide ? 1 : undefined, borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: c.line, aspectRatio: 4 / 3, boxShadow: c.dark ? "0 40px 120px rgba(0,0,0,0.6)" : "0 40px 100px rgba(15,18,23,0.18)" } as object}>
             <Image source={require("../../assets/chrome-hero.jpg")} contentFit="cover" style={{ width: "100%", height: "100%" }} accessibilityLabel="A brushed-chrome doorway with storefront examples" />
             <View style={{ position: "absolute", left: 14, bottom: 12, backgroundColor: "rgba(9,11,14,0.7)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
               <Text style={{ fontFamily: fonts.body, fontSize: 12, color: c.muted }}>Concept artwork</Text>
@@ -124,7 +124,7 @@ export default function WebHome() {
 
       {/* Android app */}
       <Section pad={pad}>
-        <View style={{ borderWidth: 1, borderColor: c.line, borderRadius: 24, padding: wide ? 40 : 24, flexDirection: wide ? "row" : "column", gap: 24, alignItems: wide ? "center" : "flex-start", backgroundImage: "linear-gradient(135deg, #14171C 0%, #090B0E 100%)" } as object}>
+        <View style={{ borderWidth: 1, borderColor: c.line, borderRadius: 24, padding: wide ? 40 : 24, flexDirection: wide ? "row" : "column", gap: 24, alignItems: wide ? "center" : "flex-start", backgroundImage: `linear-gradient(135deg, ${c.surface} 0%, ${c.bg} 100%)` } as object}>
           <Image source={require("../../assets/brand-mark.png")} contentFit="contain" style={{ width: 64, height: 72 }} />
           <View style={{ flex: wide ? 1 : undefined, gap: 6 }}>
             <Text style={{ fontFamily: fonts.display, fontSize: 28, letterSpacing: -0.8, color: c.ink }}>{(me?.account.plan ?? "free") === "free" ? "Members get the app free" : "Your free Snapfront app"}</Text>
@@ -165,7 +165,7 @@ function CTA({ label, href, url, icon, primary, small }: { label: string; href?:
     flexDirection: "row" as const, alignItems: "center" as const, gap: 10, borderRadius: 999, borderWidth: 1,
     paddingHorizontal: small ? 18 : 24, height: small ? 42 : 52,
     borderColor: primary ? c.accent : c.line,
-    backgroundColor: primary ? (s.hovered ? "#FFFFFF" : c.accent) : s.hovered ? c.sunk : "transparent",
+    backgroundColor: primary ? (s.hovered ? c.accentHover : c.accent) : s.hovered ? c.sunk : "transparent",
   });
   const inner = <>
     {icon ? <Ionicons name={icon} size={19} color={primary ? c.onAccent : c.ink} /> : null}
@@ -182,8 +182,8 @@ function ToolCard({ title, art, detail, icon, href, columns }: { title: string; 
   const c = useColors();
   return (
     <Pressable accessibilityRole="link" accessibilityLabel={`${title}: ${detail}`} onPress={() => router.push(href)}
-      style={(s: Hover) => ({ flexBasis: columns === 4 ? "23%" : columns === 2 ? "47%" : "100%", flexGrow: 1, backgroundColor: c.surface, borderWidth: 1, borderColor: s.hovered ? "#5A6270" : c.line, borderRadius: radius.lg, overflow: "hidden",
-        transform: [{ translateY: s.hovered ? -4 : 0 }], boxShadow: s.hovered ? "0 24px 60px rgba(0,0,0,0.55)" : "0 0 0 rgba(0,0,0,0)", transitionDuration: "300ms", transitionProperty: "transform, box-shadow, border-color" } as object)}>
+      style={(s: Hover) => ({ flexBasis: columns === 4 ? "23%" : columns === 2 ? "47%" : "100%", flexGrow: 1, backgroundColor: c.surface, borderWidth: 1, borderColor: s.hovered ? c.muted : c.line, borderRadius: radius.lg, overflow: "hidden",
+        transform: [{ translateY: s.hovered ? -4 : 0 }], boxShadow: s.hovered ? (c.dark ? "0 24px 60px rgba(0,0,0,0.55)" : "0 24px 50px rgba(15,18,23,0.14)") : "0 0 0 rgba(0,0,0,0)", transitionDuration: "300ms", transitionProperty: "transform, box-shadow, border-color" } as object)}>
       {(s: Hover) => (
         <>
           <CardArt art={art} hovered={!!s.hovered} />
@@ -223,7 +223,7 @@ function CardArt({ art, hovered }: { art: string; hovered: boolean }) {
         <source src={artUrl(art, "webm")} type="video/webm" />
         <source src={artUrl(art, "mp4")} type="video/mp4" />
       </video>
-      <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "38%", backgroundImage: `linear-gradient(180deg, rgba(20,23,28,0) 0%, ${c.surface} 100%)` } as object} />
+      <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "38%", backgroundImage: `linear-gradient(180deg, ${alpha(c.surface, 0)} 0%, ${c.surface} 100%)` } as object} />
     </View>
   );
 }

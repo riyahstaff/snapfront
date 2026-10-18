@@ -2,7 +2,7 @@
 // levels earned from likes, the members and a calendar of live calls. Free accounts can read; members
 // post, comment and like. Snapfront's owner pins, removes, pauses posting and runs the calendar.
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Linking, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Linking, Pressable, ScrollView, Switch, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -24,6 +24,8 @@ export default function CommunityScreen() {
   const [tab, setTab] = useState<Tab>("feed");
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState<"activity" | "new" | "top">("activity");
+  const [q, setQ] = useState("");
+  const [found, setFound] = useState<CommunityPost[] | null>(null);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [next, setNext] = useState<string | null>(null);
   const [more, setMore] = useState(false);
@@ -40,6 +42,14 @@ export default function CommunityScreen() {
     const t = setInterval(load, 30_000);   // new posts and comments show up without a refresh
     return () => clearInterval(t);
   }, [load]));
+  // Searching shows matching posts in place of the feed.
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) return;
+    const t = setTimeout(() => communityApi.posts({ q: term }).then((r) => setFound(r.posts)).catch(() => {}), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+  const shown = q.trim().length >= 2 ? found : null;   // search results, while searching
   const loadMore = async () => {
     if (!next) return;
     setMore(true);
@@ -126,8 +136,20 @@ export default function CommunityScreen() {
                     </Pressable>
                   ))}
                 </ScrollView>
-                <Segmented value={sort} onChange={setSort} options={[{ value: "activity", label: "Latest activity" }, { value: "new", label: "New" }, { value: "top", label: "Top" }]} />
-                {posts.length ? posts.map((p) => (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.pill, paddingHorizontal: space.md }}>
+                  <Ionicons name="search" size={17} color={c.muted} />
+                  <TextInput value={q} onChangeText={setQ} placeholder="Search posts" placeholderTextColor={c.muted} accessibilityLabel="Search posts"
+                    style={{ flex: 1, height: 42, fontFamily: fonts.body, fontSize: 15, color: c.ink }} />
+                  {q ? <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQ("")} hitSlop={8}><Ionicons name="close-circle" size={18} color={c.muted} /></Pressable> : null}
+                </View>
+                {shown ? (
+                  <>
+                    <Text style={[type.small, { color: c.muted }]}>{shown.length ? `${shown.length} post${shown.length === 1 ? "" : "s"} found` : "No posts match that search."}</Text>
+                    {shown.map((p) => <PostCard key={p.id} post={p} category={catOf(p.category)} canLike={false} onLike={() => {}} onOpen={() => router.push({ pathname: "/community-post/[id]", params: { id: p.id } })} />)}
+                  </>
+                ) : null}
+                {!shown ? <Segmented value={sort} onChange={setSort} options={[{ value: "activity", label: "Latest activity" }, { value: "new", label: "New" }, { value: "top", label: "Top" }]} /> : null}
+                {shown ? null : posts.length ? posts.map((p) => (
                   <PostCard key={p.id} post={p} category={catOf(p.category)} canLike={me.can_post && !p.mine} onLike={() => like(p)}
                     onOpen={() => router.push({ pathname: "/community-post/[id]", params: { id: p.id } })} />
                 )) : (
@@ -137,7 +159,7 @@ export default function CommunityScreen() {
                     <Text style={[type.body, { color: c.muted, textAlign: "center" }]}>Introduce yourself, share your store or ask a question.</Text>
                   </View>
                 )}
-                {next ? <Button label="Show more posts" variant="secondary" loading={more} onPress={loadMore} /> : null}
+                {next && !shown ? <Button label="Show more posts" variant="secondary" loading={more} onPress={loadMore} /> : null}
               </>
             ) : tab === "calendar" ? <Calendar owner={me.owner} member={me.member} />
               : tab === "members" ? <Members me={home.me} onSaved={load} />
@@ -161,6 +183,7 @@ function Composer({ home, onPosted }: { home: CommunityHome; onPosted: (p: Commu
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [emailAll, setEmailAll] = useState(false);
   const cats = home.categories.filter((x) => !x.owner_only || home.me.owner);
   const pick = async () => {
     const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8, base64: true });
@@ -172,7 +195,7 @@ function Composer({ home, onPosted }: { home: CommunityHome; onPosted: (p: Commu
   const post = async () => {
     setBusy(true); setMsg(null);
     try {
-      const p = await communityApi.create({ category, title: title.trim(), body: body.trim(), image_file: photo?.file });
+      const p = await communityApi.create({ category, title: title.trim(), body: body.trim(), image_file: photo?.file, email_members: category === "announcements" && emailAll });
       onPosted(p); setTitle(""); setBody(""); setPhoto(null); setOpen(false);
     } catch (e) { setMsg(errText(e, "Couldn't post. Try again.")); } finally { setBusy(false); }
   };
@@ -212,6 +235,12 @@ function Composer({ home, onPosted }: { home: CommunityHome; onPosted: (p: Commu
           </Pressable>
         ))}
       </View>
+      {category === "announcements" ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+          <Switch value={emailAll} onValueChange={setEmailAll} accessibilityLabel="Email this to all members" />
+          <Text style={[type.small, { color: c.ink, flex: 1 }]}>Also email this to every member (people who turned community emails off are skipped)</Text>
+        </View>
+      ) : null}
       <Notice text={msg} tone="error" />
       <View style={{ flexDirection: "row", gap: space.sm, alignItems: "center" }}>
         <Button label={photo ? "Change photo" : "Add photo"} variant="secondary" loading={uploading} onPress={pick} icon={<Ionicons name="image-outline" size={18} color={c.ink} />} />
@@ -344,6 +373,7 @@ function Members({ me, onSaved }: { me: CommunityHome["me"]; onSaved: () => void
   const [data, setData] = useState<{ total: number; members: CommunityPerson[] } | null>(null);
   const [name, setName] = useState(me.display_name || me.name);
   const [bio, setBio] = useState(me.bio);
+  const [emails, setEmails] = useState(me.email_notes);
   const [msg, setMsg] = useState<{ text: string; tone: "ok" | "error" } | null>(null);
   const [muted, setMuted] = useState<Record<string, boolean>>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -363,6 +393,11 @@ function Members({ me, onSaved }: { me: CommunityHome["me"]; onSaved: () => void
           <Text style={[type.heading, { color: c.ink }]}>Your profile</Text>
           <Field label="Name people see" value={name} onChangeText={setName} maxLength={40} />
           <Field label="About you (optional)" value={bio} onChangeText={setBio} maxLength={280} placeholder="What you sell and what you're working on" />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+            <Switch value={emails} accessibilityLabel="Email me about replies and announcements"
+              onValueChange={(v) => { setEmails(v); communityApi.profile({ email_notes: v }).catch(() => setEmails(!v)); }} />
+            <Text style={[type.small, { color: c.ink, flex: 1 }]}>Email me when someone replies to me, and for Snapfront announcements</Text>
+          </View>
           {msg ? <Notice text={msg.text} tone={msg.tone} /> : null}
           <Button label="Save profile" variant="secondary" onPress={save} style={{ alignSelf: "flex-start" }} />
         </View>

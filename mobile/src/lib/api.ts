@@ -748,7 +748,7 @@ export type CommunityPerson = { id: string; name: string; initials: string; bio:
 export type CommunityLevel = { level: number; name: string; points: number };
 export type CommunityMe = CommunityPerson & {
   level_info: { level: number; name: string; points: number; next_at: number | null; next_name: string | null };
-  display_name: string; can_post: boolean; member: boolean; muted: boolean; owner: boolean; unread: number;
+  display_name: string; email_notes: boolean; can_post: boolean; member: boolean; muted: boolean; owner: boolean; unread: number;
 };
 export type CommunityCategory = { id: string; name: string; emoji: string; owner_only?: boolean };
 export type CommunityPost = {
@@ -764,7 +764,7 @@ const qs = (q: Record<string, string | undefined>) => new URLSearchParams(Object
 export const communityApi = {
   home: (q: { category?: string; sort?: string } = {}) => request<CommunityHome>("GET", `/api/community/home?${qs(q)}`),
   posts: (q: { category?: string; sort?: string; q?: string; before?: string }) => request<{ posts: CommunityPost[]; next: string | null }>("GET", `/api/community/posts?${qs(q)}`),
-  create: (b: { category: string; title: string; body: string; image_file?: string }) => request<CommunityPost>("POST", "/api/community/posts", b),
+  create: (b: { category: string; title: string; body: string; image_file?: string; email_members?: boolean }) => request<CommunityPost>("POST", "/api/community/posts", b),
   thread: (id: string) => request<{ post: CommunityPost; comments: CommunityComment[] }>("GET", `/api/community/posts/${encodeURIComponent(id)}`),
   edit: (id: string, b: { title?: string; body?: string }) => request<CommunityPost>("PATCH", `/api/community/posts/${encodeURIComponent(id)}`, b),
   remove: (id: string) => request<{ removed: boolean }>("DELETE", `/api/community/posts/${encodeURIComponent(id)}`),
@@ -783,7 +783,7 @@ export const communityApi = {
   events: () => request<CommunityEvent[]>("GET", "/api/community/events"),
   addEvent: (b: { title: string; details?: string; starts_at: string; minutes?: number; link?: string }) => request<CommunityEvent[]>("POST", "/api/community/events", b),
   removeEvent: (id: string) => request<CommunityEvent[]>("DELETE", `/api/community/events/${encodeURIComponent(id)}`),
-  profile: (b: { display_name?: string; bio?: string }) => request<CommunityMe>("PUT", "/api/community/profile", b),
+  profile: (b: { display_name?: string; bio?: string; email_notes?: boolean }) => request<CommunityMe>("PUT", "/api/community/profile", b),
   photo: (imageBase64: string, mediaType: string) => request<{ image_file: string; image_url: string }>("POST", "/api/community/photos", { imageBase64, mediaType }),
 };
 /** A voice in ElevenLabs' public library (owner's presenter search). */

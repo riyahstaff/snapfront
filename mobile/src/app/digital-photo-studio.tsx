@@ -7,7 +7,7 @@ import { Body, Button, Field, H1, H2, Notice, Pill, Screen, Segmented } from "@/
 import { account, useMe } from "@/lib/account-store";
 import { API_URL, api, ApiError, type Product } from "@/lib/api";
 import { imageAssistant, imageJobRunning, imageRequestKey, mergeImageJob, rememberDigitalArtwork, usableImageJob, type ImageAssistantInput, type ImageAssistantOptions, type ImageJob } from "@/lib/image-assistant";
-import { radius, space, type, useColors } from "@/lib/theme";
+import { radius, space, type, useColors, type Colors } from "@/lib/theme";
 
 type Tab = "artwork" | "mockups";
 type ArtMode = "art" | "edit";
@@ -419,7 +419,7 @@ export default function DigitalPhotoStudioScreen() {
       <QuotaStatus options={options} providerReady={providerReady} artAllowance={artAllowance} mockupAllowance={mockupAllowance} />
       {tab === "artwork" ? (
         <View style={{ gap: space.lg }}>
-          <View style={panelStyle}>
+          <View style={panelStyleFor(c)}>
             <Pill text="ARTWORK YOU CONTROL" tone="flash" />
             <H2>Direct the artwork.</H2>
             <Body muted>Describe the picture you want. You will review the result before adding it to your design or store.</Body>
@@ -443,7 +443,7 @@ export default function DigitalPhotoStudioScreen() {
         </View>
       ) : (
         <View style={{ gap: space.lg }}>
-          <View style={panelStyle}>
+          <View style={panelStyleFor(c)}>
             <Pill text="YOUR REAL COVER" tone="neutral" />
             <H2>Present the real cover.</H2>
             <Body muted>Mockups use this product&apos;s fetched, saved cover on a device or print scene. They do not rewrite the cover or touch the buyer delivery file.</Body>
@@ -468,10 +468,11 @@ export default function DigitalPhotoStudioScreen() {
 }
 
 function StudioHero({ product }: { product: Product }) {
-  return <View style={{ backgroundColor: "#17191F", borderRadius: radius.lg, padding: space.xl, gap: space.sm, borderWidth: 1, borderColor: "#3E424A" }}><Text style={{ color: "#C8CBD2", fontSize: 12, letterSpacing: 1.5, fontWeight: "700" }}>DIGITAL PHOTO STUDIO</Text><H1>{product.title}</H1><Text style={{ color: "#D7D9DE", fontSize: 15, lineHeight: 22 }}>Create original artwork or stylish product presentations for this digital product. Each result needs your review before it is used.</Text></View>;
+  const c = useColors();
+  return <View style={{ backgroundColor: c.surface, borderRadius: radius.lg, padding: space.xl, gap: space.sm, borderWidth: 1, borderColor: c.line }}><Text style={{ color: c.muted, fontSize: 12, letterSpacing: 1.5, fontWeight: "700" }}>DIGITAL PHOTO STUDIO</Text><H1>{product.title}</H1><Text style={{ color: c.muted, fontSize: 15, lineHeight: 22 }}>Create original artwork or stylish product presentations for this digital product. Each result needs your review before it is used.</Text></View>;
 }
 
-const panelStyle = { gap: space.md, padding: space.lg, borderRadius: radius.lg, borderWidth: 1, borderColor: "#3E424A", backgroundColor: "#202329" } as const;
+const panelStyleFor = (c: Colors) => ({ gap: space.md, padding: space.lg, borderRadius: radius.lg, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }) as const;
 
 function QuotaStatus({ options, providerReady, artAllowance, mockupAllowance }: { options: AssistantOptions | null; providerReady: boolean; artAllowance: AssistantOptions["allowance"]["ai"] | undefined; mockupAllowance: AssistantOptions["allowance"]["mockup"] | undefined }) {
   const c = useColors();

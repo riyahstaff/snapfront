@@ -53,7 +53,7 @@ export function PostCard({ post, category, onOpen, onLike, canLike }: { post: Co
   const c = useColors();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${post.title}, by ${post.author.name}`} onPress={onOpen}
-      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => ({ backgroundColor: hovered ? c.sunk : c.surface, borderWidth: 1, borderColor: post.pinned ? "#5A6270" : c.line, borderRadius: radius.lg, padding: space.lg, gap: space.md, opacity: pressed ? 0.9 : 1 })}>
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => ({ backgroundColor: hovered ? c.sunk : c.surface, borderWidth: 1, borderColor: post.pinned ? c.muted : c.line, borderRadius: radius.lg, padding: space.lg, gap: space.md, opacity: pressed ? 0.9 : 1 })}>
       {post.pinned ? (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <Ionicons name="pin" size={14} color={c.brand} />

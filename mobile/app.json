@@ -3,10 +3,10 @@
     "name": "Snapfront",
     "slug": "snapfront",
     "scheme": "snapfront",
-    "version": "1.3.2",
+    "version": "1.4.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#090B0E",
     "description": "Snap a photo of a product and get a full product page with Stripe checkout, or generate best-selling digital products and sell them from your own storefront.",
     "ios": {

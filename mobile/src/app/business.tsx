@@ -218,7 +218,7 @@ function TrendChart({ points, bucket }: { points: BizSummary["series"]["points"]
                 accessibilityLabel={`${label(p.period)}: ${fmt(v)}`} style={{ flex: 1, height: H, position: "relative" }}>
                 <View style={{ position: "absolute", left: 0, right: 0, top: v >= 0 ? zeroY - h : zeroY, height: h,
                   borderTopLeftRadius: v >= 0 ? 4 : 0, borderTopRightRadius: v >= 0 ? 4 : 0, borderBottomLeftRadius: v < 0 ? 4 : 0, borderBottomRightRadius: v < 0 ? 4 : 0,
-                  backgroundColor: v < 0 ? c.bad : active === i ? "#FFFFFF" : c.accent, opacity: active == null || active === i ? 1 : 0.55 }} />
+                  backgroundColor: v < 0 ? c.bad : active === i ? c.accentHover : c.accent, opacity: active == null || active === i ? 1 : 0.55 }} />
               </Pressable>
             );
           })}

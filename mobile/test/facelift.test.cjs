@@ -62,17 +62,22 @@ test("home discovery uses only the actual catalog, is bounded and never changes 
   assert.equal(m.featuredThemes([themes[0]]).length, 1);
 });
 test("chrome text and semantic colors have accessible contrast against operational surfaces", () => {
-  const { chrome } = moduleUnderTest("theme");
+  const stubs = { react: { useSyncExternalStore: () => "dark" }, "react-native": { Platform: { OS: "ios" }, useColorScheme: () => "dark" }, "expo-secure-store": { getItemAsync: async () => null, setItemAsync: async () => {} } };
+  const { chrome, porcelain } = moduleUnderTest("theme", stubs);
   function luminance(hex) { const channels = hex.slice(1).match(/../g).map((x) => parseInt(x, 16) / 255).map((v) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4); return channels[0]*0.2126+channels[1]*0.7152+channels[2]*0.0722; }
   function ratio(a, b) { const x=luminance(a), y=luminance(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); }
-  for (const foreground of ["ink", "muted", "brand", "good", "bad"]) for (const background of ["bg", "surface", "sunk"]) assert.ok(ratio(chrome[foreground], chrome[background]) >= 4.5, `${foreground}/${background}`);
-  assert.ok(ratio(chrome.accent, chrome.onAccent) >= 4.5); assert.ok(ratio(chrome.flash, chrome.onFlash) >= 4.5);
+  // The dark signature palette and the light (porcelain) one meet the same bar.
+  for (const [name, pal] of [["dark", chrome], ["light", porcelain]]) {
+    for (const foreground of ["ink", "muted", "brand", "good", "bad"]) for (const background of ["bg", "surface", "sunk"]) assert.ok(ratio(pal[foreground], pal[background]) >= 4.5, `${name} ${foreground}/${background}`);
+    assert.ok(ratio(pal.accent, pal.onAccent) >= 4.5, `${name} accent`); assert.ok(ratio(pal.flash, pal.onFlash) >= 4.5, `${name} flash`);
+    assert.ok(ratio(pal.accentHover, pal.onAccent) >= 4.5, `${name} accent hover`);
+  }
 });
 test("native app identity, permissions and canonical backend remain unchanged after branding", () => {
   const { expo } = JSON.parse(fs.readFileSync(path.join(root, "app.json"), "utf8"));
   assert.equal(expo.ios.bundleIdentifier, "com.sidebanc.snapfront"); assert.equal(expo.android.package, "com.sidebanc.snapfront");
   assert.equal(expo.extra.eas.projectId, "d9ef2157-0771-455a-b3c4-867036f70222"); assert.equal(expo.extra.apiUrl, "https://snapfront.app");
-  assert.equal(expo.userInterfaceStyle, "dark"); assert.ok(expo.plugins.includes("expo-system-ui"));
+  assert.equal(expo.userInterfaceStyle, "automatic");   // dark by default; people can choose light or follow the device assert.ok(expo.plugins.includes("expo-system-ui"));
   assert.ok(expo.android.blockedPermissions.includes("android.permission.READ_MEDIA_IMAGES"));
   const picker = expo.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === "expo-image-picker"); assert.equal(picker[1].microphonePermission, false);
   for (const image of [expo.icon, expo.web.favicon, ...Object.entries(expo.android.adaptiveIcon).filter(([key]) => key.endsWith("Image")).map(([, value]) => value)]) assert.ok(fs.existsSync(path.join(root, image)));
