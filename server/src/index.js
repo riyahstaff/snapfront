@@ -42,6 +42,7 @@ import * as daily from "./daily.js";
 import * as community from "./community.js";
 import * as feed from "./community-feed.js";
 import * as startPlan from "./start-plan.js";
+import { promoFiles } from "./promo-video.js";
 import * as ugc from "./ugc.js";
 import * as faceless from "./faceless.js";
 import * as avatars from "./avatars.js";
@@ -888,6 +889,7 @@ app.get("/api/daily-prompt", auth, wrap(async (req, res) => res.json(await daily
 app.get("/api/community", auth, (req, res) => res.json(community.view(req.account)));
 /* ---------- the members' community (Skool-style): feed, comments, likes/points, leaderboard, members, calendar ---------- */
 /* ---------- "Start here": a short quiz becomes a personal plan (visitors can preview before signing up) ---------- */
+app.get("/api/promo", (_req, res) => res.set("Cache-Control", "public, max-age=300").json({ promo: promoFiles() }));
 app.get("/api/start-plan/questions", (_req, res) => res.json({ questions: startPlan.QUESTIONS }));
 app.post("/api/start-plan/preview", (req, res) => res.json(startPlan.buildPlan(req.body?.answers || {})));
 app.get("/api/start-plan", auth, (req, res) => res.json({ questions: startPlan.QUESTIONS, plan: startPlan.get(req.account) }));

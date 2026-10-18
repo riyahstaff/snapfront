@@ -14,6 +14,7 @@ import { getAppInfo } from "@/lib/billing.web";
 import { ThemePreview } from "@/components/theme-preview";
 import { DailyPromptCard } from "@/components/daily-prompt";
 import { StartHereCard } from "@/components/start-here";
+import { PromoFilm } from "./promo-film";
 import { alpha, fonts, radius, useColors } from "@/lib/theme";
 import { CONTENT, WebFooter } from "./web-nav";
 
@@ -92,6 +93,9 @@ export default function WebHome() {
           </View>
         </View>
       </View>
+
+      {/* The 90-second film */}
+      <View style={[pad, { paddingTop: 56 }]}><PromoFilm /></View>
 
       {/* Your store */}
       <Section title="Your store" pad={pad}>

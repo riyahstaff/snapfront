@@ -64,6 +64,16 @@ const icon = {
   full: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
 };
 
+/** The film's file paths (on this host) for the web app's home page, or null if it hasn't been made. */
+export function promoFiles() {
+  const v = version();
+  if (!v) return null;
+  let duration = null;
+  try { duration = JSON.parse(fs.readFileSync(path.join(DIR, "promo.json"), "utf8")).duration ?? null; } catch { /* optional */ }
+  const src = (f) => `/site/promo/${f}?v=${v}`;
+  return { hd: src("promo-1080.mp4"), sd: src("promo-720.mp4"), webm: hasWebm() ? src("promo-720.webm") : null, poster: src("promo.jpg"), captions: src("promo.vtt"), duration };
+}
+
 /** The promo section, or nothing if the video hasn't been made yet. */
 export function promoSection() {
   const v = version();
