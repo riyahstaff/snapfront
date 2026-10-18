@@ -175,7 +175,7 @@ function CTA({ label, href, url, icon, primary, small }: { label: string; href?:
   return <Pressable accessibilityRole="link" onPress={() => router.push(href!)} style={body}>{inner}</Pressable>;
 }
 
-const ART_VERSION = 1;   // bump when the animations are remade, so browsers fetch the new ones
+const ART_VERSION = 2;   // bump when the animations are remade, so browsers fetch the new ones
 const artUrl = (key: string, ext: "webm" | "mp4" | "webp") => `${API_URL}/site/tools/${key}.${ext}?v=${ART_VERSION}`;
 
 function ToolCard({ title, art, detail, icon, href, columns }: { title: string; art: string; detail: string; icon: Icon; href: Href; columns: number }) {
