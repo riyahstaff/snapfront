@@ -132,7 +132,10 @@ export function PresenterCard() {
             </View>
           )) : <Text style={[type.small, { color: c.muted }]}>No voices found. Try other words.</Text>) : null}
           <Text style={[type.label, { color: c.ink }]}>Which lessons</Text>
-          <Segmented value={scope} onChange={setScope} options={[{ value: "pilot", label: "Try one lesson" }, { value: "all", label: "Every lesson" }]} />
+          <Segmented value={scope} onChange={setScope} options={[{ value: "all", label: "Every lesson" }, { value: "pilot", label: "Only one lesson" }]} />
+          {scope === "pilot" && data.presenter?.lessons === "all" ? (
+            <Notice text="Careful: saving with one lesson takes your avatar off the other lessons, and they go back to their original videos. To change her voice or look everywhere, choose Every lesson." tone="error" />
+          ) : null}
           {scope === "pilot" ? (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
               {data.lessons.map((l) => (
@@ -147,7 +150,7 @@ export function PresenterCard() {
             {slides} slides, about ${cost} on Runpod for the talking avatar. {demos.length ? `${demos.filter((d) => d.recorded).length} of ${demos.length} app demos recorded; slides without one show the lesson slide next to her.` : "These lessons show the slides next to her."}
           </Text>
           <Notice text={msg?.text ?? null} tone={msg?.tone} />
-          <Button label={data.active ? "Save and remake videos" : "Save and make videos"} loading={busy} disabled={!avatarId} onPress={save} />
+          <Button label={scope === "all" ? (data.active ? "Save and remake every lesson" : "Save and make every lesson") : `Save and remake “${title(pilot)}” only`} loading={busy} disabled={!avatarId} onPress={save} />
         </>
       ) : null}
     </View>
