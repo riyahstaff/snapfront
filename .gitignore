@@ -17,3 +17,6 @@ __pycache__/
 !server/webapp/assets/node_modules/
 tools/academy-screens/out/
 tools/site-art/out/
+tools/promo/out/
+tools/promo/*.log
+server/assets/site/promo/*.webm

@@ -1,0 +1,45 @@
+{
+ "duration": 83.3,
+ "scenes": [
+  {
+   "key": "hook",
+   "start": 0.0
+  },
+  {
+   "key": "snap",
+   "start": 5.88
+  },
+  {
+   "key": "looks",
+   "start": 14.78
+  },
+  {
+   "key": "digital",
+   "start": 21.73
+  },
+  {
+   "key": "faceless",
+   "start": 30.99
+  },
+  {
+   "key": "buyers",
+   "start": 38.27
+  },
+  {
+   "key": "partner",
+   "start": 48.74
+  },
+  {
+   "key": "together",
+   "start": 55.83
+  },
+  {
+   "key": "start",
+   "start": 65.19
+  },
+  {
+   "key": "end",
+   "start": 73.95
+  }
+ ]
+}
