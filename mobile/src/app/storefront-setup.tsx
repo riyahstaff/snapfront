@@ -9,6 +9,7 @@ import { Body, Button, Field, H1, Notice, Pill, Screen, Segmented } from "@/comp
 import { TemplatePreview } from "@/components/template-preview";
 import { PhotoSwapPanel } from "@/components/photo-swap-panel";
 import { seedThemeDraft, editTemplateDraft } from "@/lib/template-setup";
+import { MiraPanel } from "@/components/mira-panel";
 import { ThemePicker } from "@/components/theme-picker";
 import { clearStorefrontSuggestions, loadStorefrontSuggestions, saveStorefrontSuggestions } from "@/lib/storefront-suggestions";
 import { isPremiumTheme } from "@/lib/theme-catalog";
@@ -406,6 +407,12 @@ export default function StorefrontSetupScreen() {
   return (
     <Screen key={`${draftStoreId}-${draft.step}`}>
       <WizardProgress step={draft.step} maxStep={draft.max_step} saveState={saveState} disabled={interactionLocked} onStep={go} />
+      <MiraPanel key={draftStoreId} storeId={draftStoreId!} draft={draft} disabled={interactionLocked} onUse={(proposal) => {
+        if (!ownsDraft() || busy) return;
+        const theme = themes.find((t)=>t.id === proposal.theme);
+        const seeded = theme ? seedThemeDraft(draftRef.current!,theme) : draftRef.current!;
+        void patch(editTemplateDraft(seeded,proposal), false);
+      }} />
       {draft.step === 1 ? <View style={{ gap: space.md }}>
         <H1>Pick a finished design</H1>
         <Body muted>Choose the look you like. We’ll keep its layout and show the example photos and words while you make it yours. You do not have to design a page.</Body>
@@ -433,6 +440,7 @@ export default function StorefrontSetupScreen() {
         {previewElement}
       </View> : null}
       {draft.step === 4 ? <View style={{ gap: space.md }}>
+        <Button label="Create bundles & subscriptions" variant="secondary" disabled={interactionLocked} onPress={() => router.push("/store-offers")} />
         <ProductsStep products={products} busy={interactionLocked} onAddPhoto={() => { void leaveForProduct("/snap"); }} onCreateDigital={() => { void leaveForProduct("/create"); }} onReviewProduct={(id) => { void leaveForProduct({ pathname: "/product/[id]", params: { id } }); }} />
         {previewElement}
       </View> : null}

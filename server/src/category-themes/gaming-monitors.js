@@ -56,7 +56,7 @@ const productPrice = (ctx, product) => {
   const prices = [product.price_cents, ...(product.variants || []).map((variant) => variant.price_cents ?? product.price_cents)]
     .filter((value) => Number.isFinite(Number(value)))
     .map(Number);
-  return prices.length ? ctx.money(Math.min(...prices), product.currency) : '';
+  return prices.length ? ctx.money(Math.min(...prices), product.currency, product?.billing_interval) : '';
 };
 
 const channelLink = (ctx, category, index) => `<a class="phase-hero__channel" href="${ctx.esc(ctx.categoryLink(category.name))}">

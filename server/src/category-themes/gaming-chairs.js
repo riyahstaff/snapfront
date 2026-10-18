@@ -52,7 +52,7 @@ const productPrice = (ctx, product) => {
   const rawAmount = product?.price_cents;
   if (rawAmount === undefined || rawAmount === null || rawAmount === '') return '';
   const amount = Number(rawAmount);
-  return Number.isFinite(amount) ? ctx.money(amount, product.currency || 'usd') : '';
+  return Number.isFinite(amount) ? ctx.money(amount, product.currency || 'usd', product?.billing_interval) : '';
 };
 
 const heroChannels = (ctx, categories) => {

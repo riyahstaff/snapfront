@@ -130,7 +130,7 @@ export function discovery(ctx) {
           ${products.slice(0, 4).map((product, index) => `
             <a href="${ctx.productLink(product)}">
               <span class="mw-product-number">${itemNumber(index)}</span>
-              <span class="mw-product-name"><strong>${ctx.esc(product.title)}</strong><small>${ctx.esc(ctx.money(product.price_cents ?? 0, product.currency || 'usd'))}</small></span>
+              <span class="mw-product-name"><strong>${ctx.esc(product.title)}</strong><small>${ctx.esc(ctx.money(product.price_cents ?? 0, product.currency || 'usd', product?.billing_interval))}</small></span>
               <span class="mw-product-arrow" aria-hidden="true">↗</span>
             </a>
           `).join('')}

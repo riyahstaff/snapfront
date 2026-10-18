@@ -98,7 +98,7 @@ const productEntry = (ctx, product, index) => {
   const image = productImage(product);
   const alt = product?.alt_text || product?.title || 'Tea product';
   const price = Number.isFinite(Number(product?.price_cents))
-    ? `<small class="tea-product-price">${ctx.esc(ctx.money(Number(product.price_cents), product.currency || 'usd'))}</small>`
+    ? `<small class="tea-product-price">${ctx.esc(ctx.money(Number(product.price_cents), product.currency || 'usd', product?.billing_interval))}</small>`
     : '';
   const category = product?.category
     ? `<em>${ctx.esc(product.category)}</em>`

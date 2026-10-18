@@ -70,7 +70,7 @@ export function categoryContext(store, t, products, cats, productCard) {
     heroAttrs: hasMotion ? ` data-hero-motion="${motion}"` : "",
     heroClass: hasMotion ? " has-hero-motion" : "",
     controls: hasMotion ? '<button class="motion-toggle" type="button" data-hero-motion-control aria-pressed="false" aria-label="Pause hero motion">Pause motion</button>' : "",
-    money: (cents, currency = "usd") => new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(cents / 100),
+    money: (cents, currency = "usd", interval = null) => new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(cents / 100) + (["month", "year"].includes(interval) ? ` / ${interval}` : ""),
     productLink: (p) => `${root}/${encodeURIComponent(p.slug)}`,
     categoryLink: (name) => `${root}/?c=${encodeURIComponent(name)}#shop`,
     productCard: (p) => productCard(store, p),

@@ -97,7 +97,7 @@ export function discovery(ctx) {
   const pieces = ctx.products.slice(0, 3).map((product, index) => `<a class="belts-piece" href="${ctx.esc(ctx.productLink(product))}">
     <span class="belts-piece-number" aria-hidden="true">0${index + 1}</span>
     <span class="belts-piece-media">${product.image_url ? `<img src="${ctx.esc(product.image_url)}" alt="${ctx.esc(product.alt_text || product.title)}" loading="lazy" decoding="async">` : '<i aria-hidden="true"></i>'}</span>
-    <span class="belts-piece-copy"><b>${ctx.esc(product.title)}</b>${product.category ? `<small>${ctx.esc(product.category)}</small>` : ''}${product.price_cents != null ? `<em>${ctx.esc(ctx.money(product.price_cents, product.currency))}</em>` : ''}</span>
+    <span class="belts-piece-copy"><b>${ctx.esc(product.title)}</b>${product.category ? `<small>${ctx.esc(product.category)}</small>` : ''}${product.price_cents != null ? `<em>${ctx.esc(ctx.money(product.price_cents, product.currency, product?.billing_interval))}</em>` : ''}</span>
   </a>`).join('');
 
   return `<section class="theme-discovery belts-discovery belts-piece-discovery" aria-labelledby="belts-pieces-title">

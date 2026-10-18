@@ -97,7 +97,7 @@ const categoryTile = (ctx, category, index) => {
 
 const productTile = (ctx, product, index) => {
   const title = ctx.esc(product.title || 'Untitled product');
-  const price = typeof product.price_cents === 'number' ? ctx.money(product.price_cents, product.currency) : '';
+  const price = typeof product.price_cents === 'number' ? ctx.money(product.price_cents, product.currency, product?.billing_interval) : '';
   const image = product.image_url
     ? `<div class="wheels-tile-media"><img src="${ctx.esc(product.image_url)}" alt="${ctx.esc(product.alt_text || product.title || '')}" loading="lazy" decoding="async"></div>`
     : `<div class="wheels-tile-media wheels-tile-empty" aria-hidden="true"><span></span></div>`;

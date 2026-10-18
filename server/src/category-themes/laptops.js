@@ -54,7 +54,7 @@ const countText = (count) => {
 
 const productPrice = (ctx, product) => {
   const price = Number(product?.price_cents);
-  return Number.isFinite(price) ? ctx.money(price, product.currency) : '';
+  return Number.isFinite(price) ? ctx.money(price, product.currency, product?.billing_interval) : '';
 };
 
 const heroRoute = (ctx, category, index) => {

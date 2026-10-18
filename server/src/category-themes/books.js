@@ -168,7 +168,7 @@ export function discovery(ctx) {
         <div class="books-product-ledger">
           ${products.map((product, index) => {
             const price = Number.isFinite(Number(product.price_cents))
-              ? `<em>${ctx.esc(ctx.money(Number(product.price_cents), product.currency || 'usd'))}</em>`
+              ? `<em>${ctx.esc(ctx.money(Number(product.price_cents), product.currency || 'usd', product?.billing_interval))}</em>`
               : '';
             const category = product.category ? `<small>${ctx.esc(product.category)}</small>` : '';
             return `

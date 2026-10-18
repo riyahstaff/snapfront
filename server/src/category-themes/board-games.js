@@ -63,7 +63,7 @@ const productTile = (ctx, product, index) => {
     ? `<img src="${ctx.esc(product.image_url)}" alt="${ctx.esc(product.alt_text || product.title)}" loading="lazy" decoding="async">`
     : '<span class="table-product-empty" aria-hidden="true">◒</span>';
   const price = Number.isFinite(Number(product.price_cents))
-    ? `<small>${ctx.money(Number(product.price_cents), product.currency || 'usd')}</small>`
+    ? `<small>${ctx.money(Number(product.price_cents), product.currency || 'usd', product?.billing_interval)}</small>`
     : '';
   return `<a class="table-product-tile" href="${ctx.productLink(product)}">
     <span class="table-product-index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>

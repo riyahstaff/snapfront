@@ -9,6 +9,9 @@ import { db, newId, hashToken, slugify, uniqueSlug, rowToProduct } from "./db.js
 import { productFromPhoto, httpError, PRODUCT_TYPES, sniffImage } from "./claude.js";
 import { writeFileSafe } from "./artwork.js";
 import * as store from "./store.js";
+import * as storeOffers from "./store-offers.js";
+import * as memberships from "./store-subscriptions.js";
+import { miraProposal } from "./mira.js";
 import * as agent from "./agent.js";
 import * as pay from "./payments.js";
 import * as commerce from "./commerce.js";
@@ -61,7 +64,7 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 /* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
-const SHARED_PATHS = /^\/(api|img|media|d|thanks|stripe|suppliers|social|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview|digital-design-assets|digital-design-exports)(\/|$)/;
+const SHARED_PATHS = /^\/(api|img|media|d|thanks|membership|stripe|suppliers|social|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview|digital-design-assets|digital-design-exports)(\/|$)/;
 const sameSecret = (a, b) => { const x = Buffer.from(String(a || "")), y = Buffer.from(String(b || "")); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 /* ---------- the web version of the app: app.snapfront.app (built from mobile/ with `npm run build:web`) ---------- */
 export const WEBAPP_DIR = path.resolve(new URL("../webapp/", import.meta.url).pathname);
@@ -137,12 +140,13 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   catch (e) { console.error("[webhook] rejected:", e.message); return res.status(400).send(`Webhook error: ${e.message}`); }
   try {
     const obj = event.data.object;
+    await memberships.handleEvent(event);
     // Only the checkout session we opened for an order can change it: a session with a copied
     // order id in its metadata (from any other Stripe account) is ignored.
     let orderId = obj.object === "checkout.session" ? obj.metadata?.snapfront_order : null;
     if (orderId) {
-      const o = db.prepare("SELECT checkout_session_id FROM orders WHERE id = ?").get(String(orderId));
-      if (!o || o.checkout_session_id !== obj.id) { console.warn("[webhook] session doesn't match order", orderId, obj.id); orderId = null; }
+      const o = db.prepare("SELECT o.checkout_session_id,s.stripe_account_id FROM orders o JOIN sellers s ON s.id=o.seller_id WHERE o.id = ?").get(String(orderId));
+      if (!o || o.checkout_session_id !== obj.id || (event.account && event.account !== o.stripe_account_id)) { console.warn("[webhook] session doesn't match order", orderId, obj.id); orderId = null; }
     }
     if (orderId && (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")) {
       await completeOrder(orderId, obj);
@@ -155,7 +159,7 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
       const a = event.data.object;
       db.prepare("UPDATE sellers SET stripe_ready = ? WHERE stripe_account_id = ?").run(a.charges_enabled ? 1 : 0, a.id);
     }
-  } catch (e) { console.error("[webhook]", e); }
+  } catch (e) { console.error("[webhook]", e); return res.status(500).json({ error: "Webhook processing failed; retry." }); }
   res.json({ received: true });
 });
 
@@ -201,10 +205,13 @@ export async function reconcileStripe() {
       if (a?.charges_enabled) { db.prepare("UPDATE sellers SET stripe_ready = 1 WHERE id = ?").run(s.id); sellers++; console.log("[reconcile] seller can take payments", s.id); }
     } catch (e) { console.warn("[reconcile] seller", s.id, e.message); }
   }
+  await memberships.reconcile();
   return { orders, sellers };
 }
 async function completeOrder(orderId, session) {
   const before = db.prepare("SELECT status FROM orders WHERE id = ?").get(orderId);
+  const pendingOrder = db.prepare("SELECT * FROM orders WHERE id=?").get(orderId);
+  if (pendingOrder) await memberships.registerCheckout(pendingOrder, session);
   const order = commerce.finalizeOrder(orderId, session);
   if (order && ["paid", "fulfilled"].includes(order.status)) {
     business.snapshotCost(order.id);
@@ -1072,6 +1079,16 @@ app.get("/api/agent/runs/:id", auth, (req, res) => res.json(agent.getRun(req.sel
 // slot, listing, or editable document remains an explicit client action.
 imageAssistant.routes(app, { auth, wrap });
 
+app.post("/api/store-offers", auth, (req,res) => res.status(201).json(storeOffers.saveOffer(req.seller,req.body || {})));
+app.put("/api/store-offers/:id", auth, (req,res) => res.json(storeOffers.saveOffer(req.seller,req.body || {},req.params.id)));
+app.get("/api/store-subscriptions", auth, (req,res) => res.json(memberships.list(req.seller)));
+app.post("/api/storefront/mira", auth, aiLimit, wrap(async (req,res) => {
+  res.json(await plans.withAllowance(req.account,"agent",() => miraProposal(req.seller,req.body || {})));
+}));
+app.get("/membership/manage", wrap(async (req,res) => {
+  res.set({"Cache-Control":"no-store","Referrer-Policy":"no-referrer","X-Robots-Tag":"noindex"});
+  res.redirect(303,await memberships.portal(req.query.t));
+}));
 /* ---------- products ---------- */
 // The template catalogue is intentionally public so native can browse it before a seller starts a
 // draft. Thumbnail files are packaged assets only; the route accepts no filesystem path.
@@ -1255,7 +1272,7 @@ app.get("/s/:store", (req, res) => {
 });
 app.get("/s/:store/cart", (req, res) => {
   const store = storeBySlug(req.params.store);
-  res.send(cartPage(view(req, store), config.publicUrl));
+  res.send(cartPage({ ...view(req, store), _hasSubscriptions: Boolean(db.prepare("SELECT 1 FROM products WHERE seller_id=? AND billing_interval IS NOT NULL LIMIT 1").get(store.id)) }, config.publicUrl));
 });
 // Buyers' carts live in their browser; the server prices them from the database every time.
 const buyerHits = new Map();
@@ -1366,17 +1383,21 @@ app.get("/thanks", wrap(async (req, res) => {
     if (session && session.payment_status !== "paid") console.log("[thanks] session not paid yet", order.id, session.status, session.payment_status);
     if (session?.payment_status === "paid") order = await completeOrder(order.id, session);
   }
+  await memberships.refreshOrder(order);
+  res.set({"Cache-Control":"no-store","Referrer-Policy":"no-referrer","X-Robots-Tag":"noindex"});
   res.send(orderPage(view(req, store), { ...commerce.publicOrder(order), _reviewToken: ["paid", "fulfilled"].includes(order.status) ? growth.reviewToken(order.id) : null }, commerce.downloadsFor(order)));
 }));
-app.get("/d/:token", (req, res) => {
+app.get("/d/:token", wrap(async (req, res) => {
   const t = pay.readDownloadToken(req.params.token);
   if (!t?.p) return res.status(410).send("This download link has expired. Open your order confirmation page for a fresh one.");
+  const order = db.prepare("SELECT * FROM orders WHERE id=?").get(t.s);
+  if (order) await memberships.refreshOrder(order);
   const delivery = commerce.downloadFor(t.s, t.p);
   if (!delivery) return res.status(410).send("This download is no longer available. Open your order confirmation page for a fresh link.");
   if (delivery.delivery_url) return res.redirect(delivery.delivery_url);
   if (!delivery.delivery_file || !/^[\w-]+\.pdf$/.test(delivery.delivery_file)) return res.status(404).send("The seller hasn't attached a file yet.");
   res.download(path.join(dirs.files, delivery.delivery_file), /^[\w.-]+$/.test(delivery.filename) ? delivery.filename : "download.pdf");
-});
+}));
 
 /* ---------- legal pages the app stores require (edit before launch) ---------- */
 const legal = (title, body) => (_req, res) => res.send(`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>${title} · Snapfront</title>

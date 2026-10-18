@@ -52,7 +52,7 @@ const countLabel = (ctx, value) => {
 
 const productPrice = (ctx, product) => {
   const cents = Number(product?.price_cents);
-  return Number.isFinite(cents) ? `<b>${ctx.money(cents, product.currency || 'usd')}</b>` : '';
+  return Number.isFinite(cents) ? `<b>${ctx.money(cents, product.currency || 'usd', product?.billing_interval)}</b>` : '';
 };
 
 const heroLane = (ctx, category, index) => `<a class="keys-hero__lane" href="${ctx.categoryLink(category.name)}">

@@ -55,7 +55,7 @@ const productPrice = (ctx, product) => {
   const values = [product.price_cents, ...(product.variants || []).map((variant) => variant.price_cents ?? product.price_cents)]
     .filter((value) => Number.isFinite(Number(value)))
     .map(Number);
-  return values.length ? ctx.money(Math.min(...values), product.currency) : '';
+  return values.length ? ctx.money(Math.min(...values), product.currency, product?.billing_interval) : '';
 };
 
 export function hero(ctx) {

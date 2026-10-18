@@ -41,7 +41,13 @@ export type Draft = {
 export type Variant = { id: string; name: string; price_cents: number | null; price: number; inventory: number | null; sku: string };
 /** What the app sends when editing variants: keep `id` to update one, omit it to add one. */
 export type VariantInput = { id?: string; name: string; price?: number | null; inventory?: number | null };
+export type StoreOfferInput = { title: string; description: string; price: number; product_ids: string[]; billing_interval: "month" | "year" | null };
+export type StoreSubscription = { id:string; title:string; email:string; status:string; period_end:number; cancel_at_period_end:number; revenue_cents:number };
+export type MiraProposal = { reply:string; photo_tip:string; patch: Partial<Pick<Seller,"theme"|"hero_motion"|"hero_title"|"hero_subtitle"|"hero_eyebrow"|"hero_cta"|"tagline"|"about"|"announcement">> };
 export type Product = Draft & {
+  bundle_product_ids?: string[];
+  bundle_items?: {id:string;title:string}[];
+  billing_interval?: "month" | "year" | null;
   id: string;
   slug: string;
   status: "draft" | "live";
@@ -553,6 +559,9 @@ export const api = {
   generate: (input: { type: string; niche: string; color: string; price?: number; template_id?: string; design_revision?: 1 | 2 }) => request<Product>("POST", "/api/ai/generate", input),
   productTypes: () => request<ProductType[]>("GET", "/api/product-types"),
   trends: () => request<Trend[]>("GET", "/api/trends"),
+  saveStoreOffer: (input: StoreOfferInput, storeId:string, id?:string) => request<Product>(id ? "PUT":"POST", id ? `/api/store-offers/${encodeURIComponent(id)}`:"/api/store-offers", input, storeId),
+  storeSubscriptions: (storeId:string) => request<StoreSubscription[]>("GET","/api/store-subscriptions",undefined,storeId),
+  mira: (input:{message:string;draft:unknown;history:{role:string;text:string}[]},storeId:string) => request<MiraProposal>("POST","/api/storefront/mira",input,storeId,90000),
   products: (storeId?: string) => request<Product[]>("GET", "/api/products", undefined, storeId),
   product: (id: string, storeId?: string) => request<Product>("GET", `/api/products/${id}`, undefined, storeId),
   createProduct: (d: Draft) => request<Product>("POST", "/api/products", d),

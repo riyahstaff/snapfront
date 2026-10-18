@@ -115,7 +115,7 @@ export function discovery(ctx) {
       ${products.map((product, index) => `<a class="tailored-piece-entry" href="${ctx.esc(ctx.productLink(product))}">
         <span class="tailored-piece-index" aria-hidden="true">${twoDigits(index)}</span>
         <span class="tailored-piece-media">${product.image_url ? `<img src="${ctx.esc(product.image_url)}" alt="${ctx.esc(product.alt_text || product.title)}" loading="lazy" decoding="async">` : '<i aria-hidden="true"></i>'}</span>
-        <span class="tailored-piece-copy"><b>${ctx.esc(product.title)}</b>${product.category ? `<small>${ctx.esc(product.category)}</small>` : ''}${product.price_cents != null ? `<em>${ctx.esc(ctx.money(product.price_cents, product.currency || 'usd'))}</em>` : ''}</span>
+        <span class="tailored-piece-copy"><b>${ctx.esc(product.title)}</b>${product.category ? `<small>${ctx.esc(product.category)}</small>` : ''}${product.price_cents != null ? `<em>${ctx.esc(ctx.money(product.price_cents, product.currency || 'usd', product?.billing_interval))}</em>` : ''}</span>
       </a>`).join('')}
     </div>
   </section>`;
