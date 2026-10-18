@@ -1,3 +1,29 @@
+// Digital-product collection: 25 new editorial storefronts.
+import * as digital0 from './category-themes/digital-cooking.js';
+import * as digital1 from './category-themes/digital-baking.js';
+import * as digital2 from './category-themes/digital-tutorials.js';
+import * as digital3 from './category-themes/digital-coding.js';
+import * as digital4 from './category-themes/digital-finance.js';
+import * as digital5 from './category-themes/digital-investing.js';
+import * as digital6 from './category-themes/digital-business.js';
+import * as digital7 from './category-themes/digital-lifestyle.js';
+import * as digital8 from './category-themes/digital-wellness.js';
+import * as digital9 from './category-themes/digital-fitness.js';
+import * as digital10 from './category-themes/digital-travel.js';
+import * as digital11 from './category-themes/digital-photography.js';
+import * as digital12 from './category-themes/digital-design.js';
+import * as digital13 from './category-themes/digital-music.js';
+import * as digital14 from './category-themes/digital-writing.js';
+import * as digital15 from './category-themes/digital-education.js';
+import * as digital16 from './category-themes/digital-parenting.js';
+import * as digital17 from './category-themes/digital-home-guides.js';
+import * as digital18 from './category-themes/digital-gardening.js';
+import * as digital19 from './category-themes/digital-crafts.js';
+import * as digital20 from './category-themes/digital-beauty-guides.js';
+import * as digital21 from './category-themes/digital-spirituality.js';
+import * as digital22 from './category-themes/digital-real-estate.js';
+import * as digital23 from './category-themes/digital-productivity.js';
+import * as digital24 from './category-themes/digital-gaming-guides.js';
 // 85 independently composed category themes: 25 approved concepts + 60 new product specialties.
 import * as module0 from './category-themes/womenswear.js';
 import * as module1 from './category-themes/streetwear.js';
@@ -171,6 +197,32 @@ export const CATEGORY_MODULES = [
   module82,
   module83,
   module84,
+  digital0,
+  digital1,
+  digital2,
+  digital3,
+  digital4,
+  digital5,
+  digital6,
+  digital7,
+  digital8,
+  digital9,
+  digital10,
+  digital11,
+  digital12,
+  digital13,
+  digital14,
+  digital15,
+  digital16,
+  digital17,
+  digital18,
+  digital19,
+  digital20,
+  digital21,
+  digital22,
+  digital23,
+  digital24,
+
 ];
 
 export const CATEGORY_REGISTRY = new Map(CATEGORY_MODULES.map((module) => [module.theme.id, module]));

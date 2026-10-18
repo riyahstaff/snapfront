@@ -29,14 +29,14 @@ function req(host, method, url, { body, token } = {}) {
   });
 }
 
-test("there are 20 preserved classic and 85 complete independent product-specific themes", () => {
-  assert.equal(THEMES.length, 105);
-  assert.equal(new Set(THEMES.map((t) => t.id)).size, 105);
+test("there are 20 preserved classic and 110 complete independent product-specific themes", () => {
+  assert.equal(THEMES.length, 130);
+  assert.equal(new Set(THEMES.map((t) => t.id)).size, 130);
   assert.equal(THEMES.filter((t) => !t.collection || t.collection === "classic").length, 20);
   const premium = THEMES.filter((t) => t.collection === "premium");
-  assert.equal(premium.length, 85);
-  assert.equal(new Set(premium.map((t) => t.id)).size, 85);
-  assert.equal(new Set(premium.map((t) => t.family)).size, 85);
+  assert.equal(premium.length, 110);
+  assert.equal(new Set(premium.map((t) => t.id)).size, 110);
+  assert.equal(new Set(premium.map((t) => t.family)).size, 110);
   assert.ok(premium.some((t) => t.id === "p-audio"));
   assert.ok(premium.some((t) => t.id === "p-skincare"));
   assert.ok(premium.some((t) => t.id === "p-tires"));
@@ -74,7 +74,7 @@ test("every theme renders the store, product and cart pages", () => {
 
 test("sellers choose a look; buyers see it; ?theme= previews another without saving", async () => {
   const list = (await req("themes.test", "GET", "/api/themes")).json().themes;
-  assert.equal(list.length, 105);
+  assert.equal(list.length, 130);
   assert.deepEqual(Object.keys(list[1]).sort(), ["category", "collection", "colors", "copy", "dark", "family", "fonts", "for", "id", "motion", "name", "shape", "vibe"]);
   assert.equal(new Set(list.map((t) => t.shape.hero)).size, 6);
   const skin = list.find((t) => t.id === "p-skincare");

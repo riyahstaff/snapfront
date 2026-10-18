@@ -41,15 +41,15 @@ async function catalog() {
 const seller = (id = "store-a") => ({ id, theme: "classic", store_name: "My shop", hero_motion: "still", hero_title: "", hero_subtitle: "", hero_eyebrow: "", hero_cta: "", tagline: "Real seller tagline", about: "Real story.", announcement: "", stripe_ready: false,
   account: { stores: [{ id, live_allowed: false }] } });
 
-test("all 105 real themes are searchable and paginated in the native picker", async () => {
+test("all 130 real themes are searchable and paginated in the native picker", async () => {
   const m = loadNativeModules(), themes = await catalog();
   const result = m.browseThemes(themes, m.EMPTY_THEME_BROWSE);
-  assert.equal(result.matches.length, 105); assert.equal(result.pages, 9); assert.equal(result.visible.length, 12);
+  assert.equal(result.matches.length, 130); assert.equal(result.pages, 11); assert.equal(result.visible.length, 12);
   assert.equal(m.browseThemes(themes, { ...m.EMPTY_THEME_BROWSE, collection: "classic" }).matches.length, 20);
-  assert.equal(m.browseThemes(themes, { ...m.EMPTY_THEME_BROWSE, collection: "premium" }).matches.length, 85);
+  assert.equal(m.browseThemes(themes, { ...m.EMPTY_THEME_BROWSE, collection: "premium" }).matches.length, 110);
   const ids = Array.from({ length: result.pages }, (_, page) => m.browseThemes(themes, { ...m.EMPTY_THEME_BROWSE, page }).visible.map((theme) => theme.id)).flat();
-  assert.equal(new Set(ids).size, 105);
-  assert.equal(m.browseThemes(themes, { ...m.EMPTY_THEME_BROWSE, page: 8 }).visible.length, 9);
+  assert.equal(new Set(ids).size, 130);
+  assert.equal(m.browseThemes(themes, { ...m.EMPTY_THEME_BROWSE, page: 10 }).visible.length, 10);
 });
 test("multi-word searches ignore order, punctuation, accents and case", () => {
   const m = loadNativeModules();
@@ -68,7 +68,7 @@ test("search and group filters intersect and never mutate themes or draft select
 });
 test("pagination clamps stale or invalid pages and empty catalogs", async () => {
   const m = loadNativeModules(), themes = await catalog();
-  assert.equal(m.browseThemes(themes, { ...m.EMPTY_THEME_BROWSE, page: 999 }).page, 8);
+  assert.equal(m.browseThemes(themes, { ...m.EMPTY_THEME_BROWSE, page: 999 }).page, 10);
   assert.equal(m.browseThemes(themes, { ...m.EMPTY_THEME_BROWSE, page: -1 }).page, 0);
   assert.equal(m.browseThemes([], { ...m.EMPTY_THEME_BROWSE, page: 8 }).page, 0);
   assert.equal(m.browseThemes(themes, { ...m.EMPTY_THEME_BROWSE, query: "no-such-theme", page: 8 }).visible.length, 0);

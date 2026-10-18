@@ -20,7 +20,7 @@ function load(name, mocks = {}) {
 test('every premium ID has its own genuine renderer thumbnail shipped with the app', async () => {
   const { PREMIUM_THEMES } = await import('../../server/src/premium-themes.js');
   const { bundledThemePreview } = load('bundled-theme-previews');
-  assert.equal(PREMIUM_THEMES.length, 85);
+  assert.equal(PREMIUM_THEMES.length, 110);
   const seen = new Set();
   for (const theme of PREMIUM_THEMES) {
     const asset = bundledThemePreview(theme.id);
@@ -36,7 +36,7 @@ test('every premium ID has its own genuine renderer thumbnail shipped with the a
     const bytes = fs.readFileSync(path.join(root, 'assets/theme-previews', path.basename(source)));
     assert.ok(bytes.length > 100); assert.equal(bytes.toString('ascii', 0, 4), 'RIFF'); assert.equal(bytes.toString('ascii', 8, 12), 'WEBP');
   }
-  assert.equal(fs.readdirSync(path.join(root, 'assets/theme-previews')).filter(n => n.endsWith('.webp')).length, 105);
+  assert.equal(fs.readdirSync(path.join(root, 'assets/theme-previews')).filter(n => n.endsWith('.webp')).length, 130);
   assert.equal(bundledThemePreview('p-future'), null);
   assert.equal(bundledThemePreview('__proto__'), null);
 });

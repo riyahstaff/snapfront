@@ -13,13 +13,13 @@ const product = {
 };
 const baseStore = { store_name: "Aster & Co", store_slug: "aster", _base: "", stripe_ready: true, tagline: "Old storefront heading", about: "A considered note about the collection.", announcement: "" };
 
-test("premium metadata has 85 independent category directions alongside the original 20", () => {
+test("premium metadata has 110 independent category directions alongside the original 20", () => {
   const listed = publicThemes();
-  assert.equal(listed.length, 105);
+  assert.equal(listed.length, 130);
   assert.equal(listed.filter((t) => t.collection === "classic").length, 20);
   const premium = listed.filter((t) => t.collection === "premium");
-  assert.equal(premium.length, 85);
-  assert.equal(new Set(premium.map((t) => t.family)).size, 85);
+  assert.equal(premium.length, 110);
+  assert.equal(new Set(premium.map((t) => t.family)).size, 110);
   for (const t of premium) {
     assert.match(t.id, /^p-/);
     assert.ok(t.category && t.group && t.family, t.id);

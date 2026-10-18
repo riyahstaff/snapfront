@@ -106,7 +106,7 @@ export type Seller = {
   abandoned_emails: boolean;
 };
 /** A storefront look the seller can pick (server/src/themes.js). */
-export type ThemeGroup = "fashion" | "beauty" | "home" | "technology" | "outdoor" | "lifestyle";
+export type ThemeGroup = "fashion" | "beauty" | "home" | "technology" | "outdoor" | "lifestyle" | "digital";
 export type StoreTheme = {
   id: string; name: string; for: string; vibe: string; dark: boolean;
   /** Classic looks omit these fields; premium looks provide them for the setup wizard. */
