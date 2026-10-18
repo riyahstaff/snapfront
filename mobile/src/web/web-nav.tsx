@@ -1,6 +1,7 @@
 // The website's top menu (app.snapfront.app): logo, text links, plan badge and account.
 // On narrow screens the links fold into a ☰ menu. Web-only: the phone app keeps its tab bar.
 import React, { useState } from "react";
+import { SiteSearch } from "./site-search";
 import { Pressable, Text, View, useWindowDimensions, type PressableStateCallbackType, type ViewStyle } from "react-native";
 import { router, usePathname, type Href } from "expo-router";
 import { Image } from "expo-image";
@@ -99,9 +100,10 @@ export function WebNav() {
           ) : null}
         </View>
       </View>
-      {!wide && open ? <Pressable accessibilityLabel="Close menu" onPress={() => setOpen(false)} style={{ position: "absolute", top: 69, left: 0, right: 0, height: 4000, backgroundColor: c.dark ? "rgba(5,6,8,0.72)" : "rgba(15,18,23,0.35)" }} /> : null}
+      {signedIn ? <View style={{ width: "100%", maxWidth: CONTENT + 48, alignSelf: "center", paddingHorizontal: wide ? 24 : 16, paddingBottom: 12, zIndex: 60 }}><SiteSearch key={path} /></View> : null}
+      {!wide && open ? <Pressable accessibilityLabel="Close menu" onPress={() => setOpen(false)} style={{ position: "absolute", top: signedIn ? 124 : 69, left: 0, right: 0, height: 4000, backgroundColor: c.dark ? "rgba(5,6,8,0.72)" : "rgba(15,18,23,0.35)" }} /> : null}
       {!wide && open ? (
-        <View style={{ position: "absolute", top: 69, left: 0, right: 0, backgroundColor: c.bg, borderBottomWidth: 1, borderColor: c.line, paddingVertical: 8, paddingHorizontal: 16, boxShadow: c.dark ? "0 30px 60px rgba(0,0,0,0.5)" : "0 30px 60px rgba(15,18,23,0.12)" } as ViewStyle}>
+        <View style={{ position: "absolute", top: signedIn ? 124 : 69, left: 0, right: 0, backgroundColor: c.bg, borderBottomWidth: 1, borderColor: c.line, paddingVertical: 8, paddingHorizontal: 16, boxShadow: c.dark ? "0 30px 60px rgba(0,0,0,0.5)" : "0 30px 60px rgba(15,18,23,0.12)" } as ViewStyle}>
           {menu.map((n) => (
             <Pressable key={n.label} accessibilityRole="link" onPress={() => { setOpen(false); go(n.href); }}
               style={{ paddingVertical: 14, paddingHorizontal: 8, borderBottomWidth: 1, borderColor: c.sunk, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
