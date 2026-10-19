@@ -66,6 +66,13 @@ CREATE INDEX IF NOT EXISTS image_assistant_jobs_due ON image_assistant_jobs (sta
 if (!db.prepare("PRAGMA table_info(image_assistant_jobs)").all().some((column) => column.name === "submission_started")) {
   db.exec("ALTER TABLE image_assistant_jobs ADD COLUMN submission_started INTEGER NOT NULL DEFAULT 0");
 }
+// A failed or rejected image is resubmitted automatically a couple of times before the seller sees an error.
+if (!db.prepare("PRAGMA table_info(image_assistant_jobs)").all().some((column) => column.name === "retries")) {
+  db.exec("ALTER TABLE image_assistant_jobs ADD COLUMN retries INTEGER NOT NULL DEFAULT 0");
+}
+let MAX_RETRIES = 2;
+/** Test-only: how many automatic resubmits a failed image gets. */
+export function setImageRetries(n) { MAX_RETRIES = Number.isInteger(n) && n >= 0 ? n : 2; }
 // aimedia owns this historical marker too. IF NOT EXISTS means either module may boot first.
 db.exec("CREATE TABLE IF NOT EXISTS ai_images (file TEXT PRIMARY KEY, created_at TEXT NOT NULL DEFAULT (datetime('now')))");
 
@@ -227,13 +234,23 @@ function providerInput(job) {
 async function runpod(pathname, body) {
   if (!providerEnabled()) throw httpError(503, "AI image generation is not set up yet. Deterministic mockups are still available.");
   let res;
+  const what = pathname.replace(/\/status\/.*/, "/status");
   try {
     res = await fetchImpl(`${API}/${pathname}`, { method: body ? "POST" : "GET", signal: AbortSignal.timeout(60_000), headers: { Authorization: `Bearer ${String(config.runpodKey).trim()}`, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
-  } catch { throw httpError(502, "The AI image service did not answer. Try again in a moment."); }
+  } catch (cause) {
+    console.warn("[image-assistant] runpod", what, "no answer:", cause?.name || cause?.message || "network");
+    const e = httpError(502, "The AI image service did not answer. Try again in a moment.");
+    e.transient = true;
+    throw e;
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    console.warn("[image-assistant] runpod", what, res.status, JSON.stringify(data).slice(0, 300));
     if (res.status === 401 || res.status === 403) throw httpError(503, "AI image generation is not set up yet. Deterministic mockups are still available.");
-    throw httpError(502, "The AI image service could not complete this image. Try again.");
+    const e = httpError(502, "The AI image service could not complete this image. Try again.");
+    e.providerStatus = res.status;
+    e.transient = res.status >= 500 || res.status === 429;
+    throw e;
   }
   return data;
 }
@@ -253,7 +270,11 @@ function allowedProviderUrl(value) {
   let url;
   try { url = new URL(value); } catch { return null; }
   const host = url.hostname.toLowerCase();
-  if (url.protocol !== "https:" || !(host === "runpod.ai" || host.endsWith(".runpod.ai") || host.endsWith(".runpod.net") || host.endsWith(".runpod.io"))) return null;
+  if (url.protocol !== "https:" || !(host === "runpod.ai" || host.endsWith(".runpod.ai") || host.endsWith(".runpod.net") || host.endsWith(".runpod.io"))) {
+    // Only the host, never the (often signed) link itself.
+    console.warn("[image-assistant] result link host not allowed:", url.protocol, host);
+    return null;
+  }
   return url;
 }
 
@@ -263,14 +284,19 @@ async function boundedDownload(url) {
   for (let hop = 0; hop < 4; hop++) {
     let res;
     try { res = await fetchImpl(target.href, { redirect: "manual", signal: AbortSignal.timeout(120_000) }); }
-    catch { throw httpError(502, "The AI image result could not be downloaded."); }
+    catch { const e = httpError(502, "The AI image result could not be downloaded."); e.transient = true; throw e; }
     if ([301, 302, 303, 307, 308].includes(res.status)) {
       const next = res.headers?.get?.("location");
       target = next && allowedProviderUrl(new URL(next, target).href);
       if (!target) throw httpError(502, "The AI image result was unavailable.");
       continue;
     }
-    if (!res.ok) throw httpError(502, "The AI image result could not be downloaded.");
+    if (!res.ok) {
+      console.warn("[image-assistant] download", target.hostname, res.status);
+      const e = httpError(502, "The AI image result could not be downloaded.");
+      e.transient = res.status >= 500 || res.status === 429;
+      throw e;
+    }
     const declared = Number(res.headers?.get?.("content-length") || 0);
     if (declared && (!Number.isFinite(declared) || declared > MAX_DOWNLOAD)) throw httpError(413, "The AI image result was too large.");
     if (!res.body?.getReader) {
@@ -405,6 +431,14 @@ function fail(job, message) {
   })();
 }
 
+/** Send this image to the AI service again (a new request), up to MAX_RETRIES times. False once used up. */
+function retryLater(job, why) {
+  const changed = db.prepare(`UPDATE image_assistant_jobs SET provider_job_id=NULL, submission_started=0, retries=retries+1, status='running', updated_at=datetime('now')
+    WHERE id=? AND lease_owner=? AND status IN ('queued','running') AND refunded=0 AND retries < ?`).run(job.id, job.lease_owner, MAX_RETRIES).changes;
+  if (changed) console.warn("[image-assistant] job", job.id, "retrying after", why);
+  return Boolean(changed);
+}
+
 function claim(id = null, excluded = []) {
   const now = Date.now(), worker = `ias_${crypto.randomUUID()}`;
   return db.transaction(() => {
@@ -457,7 +491,13 @@ async function process(job) {
         WHERE id=? AND lease_owner=? AND status IN ('queued','running') AND refunded=0 AND provider_job_id IS NULL AND submission_started=0`).run(job.id, job.lease_owner).changes;
       if (!fenced || !leaseActive) return;
       const { endpoint, input } = providerInput(job);
-      const started = await runpod(`${endpoint}/run`, { input });
+      let started;
+      try { started = await runpod(`${endpoint}/run`, { input }); }
+      catch (error) {
+        // Runpod answered with a temporary error, so no image was started: send it again shortly.
+        if (error?.providerStatus && error.transient && retryLater(job, `submit ${error.providerStatus}`)) return;
+        throw error;
+      }
       if (!started?.id) throw httpError(502, "The AI image service did not start this image.");
       if (!leaseActive) return;
       db.prepare(`UPDATE image_assistant_jobs SET status='running', provider_job_id=?, updated_at=datetime('now')
@@ -465,12 +505,27 @@ async function process(job) {
       return;
     }
     const endpoint = job.operation.endsWith("-art") ? ENDPOINT.art : ENDPOINT.edit;
-    const result = await runpod(`${endpoint}/status/${encodeURIComponent(job.provider_job_id)}`);
+    let result;
+    try { result = await runpod(`${endpoint}/status/${encodeURIComponent(job.provider_job_id)}`); }
+    catch (error) {
+      // A hiccup while checking doesn't mean the image failed: look again on the next pass (the
+      // 20-minute limit above still applies).
+      if (error?.transient) return;
+      throw error;
+    }
     if (!leaseActive) return;
-    if (["FAILED", "CANCELLED", "TIMED_OUT"].includes(result.status)) return fail(job, "The AI image service could not make this image. Try different wording or a clearer source.");
+    if (["FAILED", "CANCELLED", "TIMED_OUT"].includes(result.status)) {
+      console.warn("[image-assistant] job", job.id, endpoint, result.status, JSON.stringify(result.error || result.output || "").slice(0, 400));
+      if (retryLater(job, result.status)) return;
+      return fail(job, "The AI image service could not make this image. Try different wording or a clearer source.");
+    }
     if (result.status !== "COMPLETED") return;
     const url = outputUrl(result.output);
-    if (!url) return fail(job, "The AI image service finished without an image. Try again.");
+    if (!url) {
+      console.warn("[image-assistant] job", job.id, "finished without an image link:", JSON.stringify(result.output ?? null).slice(0, 400));
+      if (retryLater(job, "no image link")) return;
+      return fail(job, "The AI image service finished without an image. Try again.");
+    }
     // Check the job/account and source binding again immediately before retaining provider bytes.
     if (!ownerStillExists(job) || !leaseActive) return;
     const bytes = await safeJpeg(await boundedDownload(url));
@@ -479,6 +534,9 @@ async function process(job) {
     fs.writeFileSync(path.join(dirs.images, file), bytes, { flag: "wx" });
     if (!finish(job, file)) fs.rmSync(path.join(dirs.images, file), { force: true });
   } catch (error) {
+    console.warn("[image-assistant] job", job.id, job.operation, error?.status || "", error?.message || "failed");
+    // A download that hit a temporary problem is tried again on the next pass.
+    if (error?.transient && job.provider_job_id) return;
     fail(job, error?.status === 413 ? "The AI image result was too large." : "The AI image service could not complete this image. Try again.");
   } finally {
     clearInterval(heartbeat);

@@ -228,6 +228,7 @@ test("prompt, provider, refund, and deletion safety fences are durable and priva
     throw new Error(`unexpected provider URL ${url}`);
   });
   const count = (period) => db.prepare("SELECT count FROM usage WHERE account_id=? AND period=? AND kind='scene'").get(cora.account.id, period)?.count || 0;
+  imageAssistant.setImageRetries(0);   // these fences check a single provider answer; retries are tested below
   try {
     const acceptedPrompt = "p".repeat(1200);
     const originalPeriodJob = await call(cora.token, "POST", "/api/image-assistant/jobs", {
@@ -293,6 +294,49 @@ test("prompt, provider, refund, and deletion safety fences are durable and priva
     assert.deepEqual(await imageAssistant.poll(doomedJob.body.id), []);
     assert.equal(db.prepare("SELECT 1 FROM image_assistant_jobs WHERE id=?").get(doomedJob.body.id), undefined, "seller deletion cascades private job history");
     assert.equal(calls.length, callsBeforeDeletionPoll, "a deleted owner is never polled or downloaded for");
+  } finally {
+    imageAssistant.setImageRetries(null);
+    installDefaultProvider();
+  }
+});
+
+test("a hiccup while checking an image is retried, and a failed image is sent again before the seller sees an error", async () => {
+  const dana = await signup("Dana image retries");
+  const calls = [];
+  let runCount = 0, statusChecks = 0;
+  imageAssistant.setImageAssistantFetch(async (url, init = {}) => {
+    calls.push(url);
+    if (url.endsWith("/qwen-image-t2i/run")) return Response.json({ id: `retry-${++runCount}` });
+    // First request: the status check hiccups (503), then the image fails. The second request works.
+    if (url.includes("/status/retry-1")) return ++statusChecks === 1 ? Response.json({ error: "busy" }, { status: 503 }) : Response.json({ status: "FAILED", error: "worker crashed" });
+    if (url.includes("/status/retry-2")) return Response.json({ status: "COMPLETED", output: { image_url: "https://cdn.runpod.ai/retry.jpg" } });
+    if (url === "https://cdn.runpod.ai/retry.jpg") return new Response(providerJpeg, { status: 200, headers: { "content-type": "image/jpeg", "content-length": String(providerJpeg.length) } });
+    throw new Error(`unexpected provider URL ${url}`);
+  });
+  try {
+    const job = await call(dana.token, "POST", "/api/image-assistant/jobs", { operation: "digital-art", prompt: "Healthy recipe cover", aspect: "portrait", idempotency_key: "retry-flow-0001" });
+    assert.equal(job.status, 201, JSON.stringify(job.body));
+    const read = async () => (await call(dana.token, "GET", `/api/image-assistant/jobs/${job.body.id}`)).body;
+    assert.equal((await read()).status, "running", "a 503 while checking keeps the image going");
+    assert.equal((await read()).status, "running", "a failed image is sent again instead of failing");
+    let done;
+    for (let i = 0; i < 4; i++) { done = await read(); if (done.status !== "running") break; }
+    assert.equal(done.status, "done", JSON.stringify(done));
+    assert.equal(runCount, 2, "one automatic resubmit");
+    assert.ok(done.image_url);
+    // Retries are bounded: an image that keeps failing ends with an error and the allowance back.
+    runCount = 0; statusChecks = 0;
+    imageAssistant.setImageAssistantFetch(async (url) => {
+      if (url.endsWith("/qwen-image-t2i/run")) return Response.json({ id: `bad-${++runCount}` });
+      if (url.includes("/status/bad-")) return Response.json({ status: "FAILED", error: "always" });
+      throw new Error(`unexpected provider URL ${url}`);
+    });
+    const bad = await call(dana.token, "POST", "/api/image-assistant/jobs", { operation: "digital-art", prompt: "Keeps failing", aspect: "portrait", idempotency_key: "retry-flow-0002" });
+    let row;
+    for (let i = 0; i < 8; i++) { row = (await call(dana.token, "GET", `/api/image-assistant/jobs/${bad.body.id}`)).body; if (row.status === "failed") break; }
+    assert.equal(row.status, "failed");
+    assert.equal(runCount, 3, "the first try plus two automatic retries");
+    assert.equal(db.prepare("SELECT refunded FROM image_assistant_jobs WHERE id=?").get(bad.body.id).refunded, 1);
   } finally {
     installDefaultProvider();
   }

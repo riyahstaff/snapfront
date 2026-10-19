@@ -85,7 +85,7 @@ Reply with only one JSON object of this shape: ${PAGE_SHAPE}`;
   return askJson([
     { type: "image", source: { type: "base64", media_type: sniffImage(imageBase64) || mediaType, data: imageBase64 } },
     { type: "text", text: prompt },
-  ], 2000);
+  ], 3500);
 }
 
 export const PRODUCT_TYPES = {
