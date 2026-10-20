@@ -266,11 +266,19 @@ function outputUrl(output) {
   return null;
 }
 
-function allowedProviderUrl(value) {
+export function allowedProviderUrl(value) {
   let url;
   try { url = new URL(value); } catch { return null; }
   const host = url.hostname.toLowerCase();
-  if (url.protocol !== "https:" || !(host === "runpod.ai" || host.endsWith(".runpod.ai") || host.endsWith(".runpod.net") || host.endsWith(".runpod.io"))) {
+  // Runpod's own hosts, plus the public cloud storage Runpod delivers finished images from: Amazon
+  // CloudFront since Oct 2026, and S3 / Google Cloud Storage / Cloudflare R2 in case it moves again.
+  // All are public delivery hosts, never internal addresses; redirects are checked the same way.
+  const runpodHost = host === "runpod.ai" || host.endsWith(".runpod.ai") || host.endsWith(".runpod.net") || host.endsWith(".runpod.io");
+  const storageHost = /^[a-z0-9]+\.cloudfront\.net$/.test(host)
+    || /^([a-z0-9.-]+\.)?s3([.-][a-z0-9-]+)*\.amazonaws\.com$/.test(host)
+    || host === "storage.googleapis.com"
+    || /^[a-z0-9-]+\.r2\.(cloudflarestorage\.com|dev)$/.test(host) || /^[a-z0-9]+\.[a-z0-9-]+\.r2\.cloudflarestorage\.com$/.test(host);
+  if (url.protocol !== "https:" || !(runpodHost || storageHost)) {
     // Only the host, never the (often signed) link itself.
     console.warn("[image-assistant] result link host not allowed:", url.protocol, host);
     return null;

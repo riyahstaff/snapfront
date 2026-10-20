@@ -300,7 +300,7 @@ test("prompt, provider, refund, and deletion safety fences are durable and priva
   }
 });
 
-test("a hiccup while checking an image is retried, and a failed image is sent again before the seller sees an error", async () => {
+test("a hiccup while checking an image is retried, a failed image is sent again, and results from Runpod\u2019s CloudFront storage are accepted", async () => {
   const dana = await signup("Dana image retries");
   const calls = [];
   let runCount = 0, statusChecks = 0;
@@ -309,8 +309,8 @@ test("a hiccup while checking an image is retried, and a failed image is sent ag
     if (url.endsWith("/qwen-image-t2i/run")) return Response.json({ id: `retry-${++runCount}` });
     // First request: the status check hiccups (503), then the image fails. The second request works.
     if (url.includes("/status/retry-1")) return ++statusChecks === 1 ? Response.json({ error: "busy" }, { status: 503 }) : Response.json({ status: "FAILED", error: "worker crashed" });
-    if (url.includes("/status/retry-2")) return Response.json({ status: "COMPLETED", output: { image_url: "https://cdn.runpod.ai/retry.jpg" } });
-    if (url === "https://cdn.runpod.ai/retry.jpg") return new Response(providerJpeg, { status: 200, headers: { "content-type": "image/jpeg", "content-length": String(providerJpeg.length) } });
+    if (url.includes("/status/retry-2")) return Response.json({ status: "COMPLETED", output: { image_url: "https://d2h7xmz5gqybh9.cloudfront.net/results/retry.jpg?X-Amz-Signature=abc" } });
+    if (url === "https://d2h7xmz5gqybh9.cloudfront.net/results/retry.jpg?X-Amz-Signature=abc") return new Response(providerJpeg, { status: 200, headers: { "content-type": "image/jpeg", "content-length": String(providerJpeg.length) } });
     throw new Error(`unexpected provider URL ${url}`);
   });
   try {
@@ -340,4 +340,19 @@ test("a hiccup while checking an image is retried, and a failed image is sent ag
   } finally {
     installDefaultProvider();
   }
+});
+
+test("finished images download only from Runpod and public cloud storage, never other or internal addresses", () => {
+  const ok = (u) => Boolean(imageAssistant.allowedProviderUrl(u));
+  for (const u of [
+    "https://cdn.runpod.ai/a.jpg", "https://x.runpod.net/a.jpg",
+    "https://d2h7xmz5gqybh9.cloudfront.net/results/a.jpg?X-Amz-Signature=abc",
+    "https://my-bucket.s3.us-east-1.amazonaws.com/a.jpg", "https://s3.amazonaws.com/bucket/a.jpg", "https://s3-us-west-2.amazonaws.com/b/a.jpg",
+    "https://storage.googleapis.com/bucket/a.jpg", "https://pub-123abc.r2.dev/a.jpg", "https://bucket.acct123.r2.cloudflarestorage.com/a.jpg",
+  ]) assert.equal(ok(u), true, u);
+  for (const u of [
+    "http://d2h7xmz5gqybh9.cloudfront.net/a.jpg", "https://evil.example/a.jpg", "https://cloudfront.net.evil.example/a.jpg",
+    "https://d2h7.cloudfront.net.evil.example/a.jpg", "https://ec2-1-2-3-4.compute-1.amazonaws.com/a.jpg", "https://amazonaws.com.evil.example/a.jpg",
+    "https://169.254.169.254/latest/meta-data", "https://localhost/a.jpg", "https://127.0.0.1/a.jpg", "https://evil-r2.dev/a.jpg", "not a url",
+  ]) assert.equal(ok(u), false, u);
 });
