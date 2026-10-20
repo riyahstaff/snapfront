@@ -15,11 +15,6 @@ const FALLBACK: ProductType[] = [
   { id: "quotes", name: "Quote print set", sub: "6 printable 8×10 wall prints", price: 9 },
   { id: "planner", name: "Mini planner", sub: "Weekly, habit and goal pages", price: 10 },
 ];
-const COLORS = [
-  { id: "cobalt", hex: "#2C47F5", name: "Cobalt" }, { id: "forest", hex: "#1E8E5A", name: "Forest" },
-  { id: "brick", hex: "#C2372B", name: "Brick" }, { id: "violet", hex: "#7A3EC8", name: "Violet" },
-  { id: "ink", hex: "#16152E", name: "Ink" }, { id: "amber", hex: "#D9822B", name: "Amber" },
-];
 
 function firstParam(value: string | string[] | undefined): string | null {
   return typeof value === "string" && value ? value : null;
@@ -34,7 +29,8 @@ export default function CreateScreen() {
   const [types, setTypes] = useState(FALLBACK);
   const [type_, setType] = useState("guide");
   const [niche, setNiche] = useState("");
-  const [color, setColor] = useState("cobalt");
+  // Older servers still read a colour; the AI art director now picks the real one.
+  const color = "cobalt";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const typeForGeneration = templateId ? formatFromTemplateId(templateId) : type_;
@@ -95,16 +91,11 @@ export default function CreateScreen() {
       </View>
       <Field label="Who is it for?" hint="Be specific: the audience and the problem it solves." value={niche} onChangeText={setNiche}
         placeholder="e.g. busy parents who meal prep on a budget" />
-      {!templateId ? <View style={{ gap: space.sm }}>
-        <Text style={[type.label, { color: c.ink }]}>Cover colour</Text>
-        <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
-          {COLORS.map((k) => (
-            <Pressable key={k.id} onPress={() => setColor(k.id)} accessibilityRole="radio" accessibilityLabel={k.name} accessibilityState={{ selected: color === k.id }}
-              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: k.hex, borderWidth: 3, borderColor: color === k.id ? c.flash : "transparent" }} />
-          ))}
-        </View>
+      {!templateId ? <View style={{ gap: 4, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }}>
+        <Text style={[type.label, { color: c.ink }]}>Designed for your topic</Text>
+        <Text style={[type.small, { color: c.muted }]}>Snapfront’s AI art director reads your product and designs a cover and inside images that fit it, like a styled meal for a recipe book.</Text>
       </View> : <Body muted>Your chosen design keeps its own colors. You can change them in the editor after the writing is ready.</Body>}
-      <Notice text={busy ? "Writing and designing your product. This takes about a minute." : error} tone={busy ? "info" : "error"} />
+      <Notice text={busy ? "Writing your product and designing its cover and images. This takes about two minutes." : error} tone={busy ? "info" : "error"} />
       <Button label={busy ? "Creating…" : templateId ? "Create editable AI draft" : "Create product"} onPress={generate} loading={busy} disabled={niche.trim().length < 4} />
     </Screen>
   );

@@ -43,8 +43,11 @@ export function renderCover({ title, tagline, type, color = COVER_COLORS.cobalt 
   return new Resvg(svg, { font: { fontFiles: [F.display, F.body, F.bold], loadSystemFonts: false, defaultFontFamily: "DM Sans" } }).render().asPng();
 }
 
-/** Build the sellable PDF for a generated product. Returns a Buffer. */
-export function renderProductPdf(product, coverPng, color = COVER_COLORS.cobalt) {
+/**
+ * Build the sellable PDF for a generated product. Returns a Buffer. `design` (from ai-cover.js), when
+ * given, supplies a full-page cover and inside images keyed by section index (-1 = welcome page).
+ */
+export function renderProductPdf(product, coverPng, color = COVER_COLORS.cobalt, design = null) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "LETTER", margin: 60, info: { Title: product.title, Author: product.storeName || "Snapfront" } });
     const chunks = []; doc.on("data", (c) => chunks.push(c)); doc.on("end", () => resolve(Buffer.concat(chunks))); doc.on("error", reject);
@@ -52,9 +55,22 @@ export function renderProductPdf(product, coverPng, color = COVER_COLORS.cobalt)
     const W = doc.page.width, H = doc.page.height, M = 60;
 
     // Cover
-    doc.rect(0, 0, W, H).fill("#F4F3F0");
-    doc.image(coverPng, 0, (H - W) / 2, { width: W });
-    doc.rect(0, 0, W, (H - W) / 2).fill(color);
+    if (design?.cover) doc.image(design.cover, 0, 0, { width: W, height: H });
+    else {
+      doc.rect(0, 0, W, H).fill("#F4F3F0");
+      doc.image(coverPng, 0, (H - W) / 2, { width: W });
+      doc.rect(0, 0, W, (H - W) / 2).fill(color);
+    }
+    // An inside image at the top of a page: rounded, full text width.
+    const picture = (key, height = 230) => {
+      const img = design?.images?.get?.(key);
+      if (!img) return;
+      const y = doc.y;
+      doc.save(); doc.roundedRect(M, y, W - 2 * M, height, 14).clip();
+      doc.image(img, M, y, { cover: [W - 2 * M, height], align: "center", valign: "center" });
+      doc.restore();
+      doc.x = M; doc.y = y + height + 22;
+    };
 
     const page = () => {
       doc.addPage(); doc.rect(0, 0, W, 8).fill(color);
@@ -65,17 +81,17 @@ export function renderProductPdf(product, coverPng, color = COVER_COLORS.cobalt)
     const p = (t, size = 11) => doc.font("body").fontSize(size).fillColor("#2A2A35").text(t, { width: W - 2 * M, lineGap: 4 }).moveDown(0.6);
     const box = (t) => { const y = doc.y; doc.rect(M, y + 2, 10, 10).lineWidth(0.8).stroke("#999"); doc.font("body").fontSize(11).fillColor("#2A2A35").text(t, M + 20, y, { width: W - 2 * M - 20 }); doc.moveDown(0.4); doc.x = M; };
 
-    page(); h("Welcome", 26); p(product.description || "");
+    page(); picture(-1, 260); h("Welcome", 26); p(product.description || "");
     p("Personal use licence: thank you for your purchase. Please don't resell or share this file.", 9);
     const c = product.content || {};
     if (product.type === "guide") (c.chapters || []).forEach((ch, i) => {
-      page(); doc.font("bold").fontSize(10).fillColor(color).text(`CHAPTER ${i + 1}`).moveDown(0.4);
+      page(); picture(i); doc.font("bold").fontSize(10).fillColor(color).text(`CHAPTER ${i + 1}`).moveDown(0.4);
       h(ch.heading || ""); (ch.paragraphs || []).forEach((t) => p(String(t)));
       if (ch.tip) { doc.moveDown(0.3); const y = doc.y; const hgt = doc.heightOfString("Try this: " + ch.tip, { width: W - 2 * M - 24 }) + 20;
         doc.rect(M, y, W - 2 * M, hgt).fill("#F4F3F0"); doc.font("bold").fontSize(10.5).fillColor("#2A2A35").text("Try this: " + ch.tip, M + 12, y + 10, { width: W - 2 * M - 24 }); doc.x = M; }
     });
-    if (product.type === "checklist") (c.lists || []).forEach((ls) => { page(); h(ls.heading || ""); if (ls.intro) p(ls.intro); (ls.items || []).forEach((it) => box(String(it))); });
-    if (product.type === "hooks") (c.groups || []).forEach((g, gi) => { if (gi % 2 === 0) page(); h(g.heading || "", 16); (g.items || []).forEach((it, k) => p(`${gi * 10 + k + 1}.  ${it}`, 10.5)); });
+    if (product.type === "checklist") (c.lists || []).forEach((ls, i) => { page(); picture(i, 170); h(ls.heading || ""); if (ls.intro) p(ls.intro); (ls.items || []).forEach((it) => box(String(it))); });
+    if (product.type === "hooks") (c.groups || []).forEach((g, gi) => { if (gi % 2 === 0) page(); if (gi % 2 === 0) picture(gi, 150); h(g.heading || "", 16); (g.items || []).forEach((it, k) => p(`${gi * 10 + k + 1}.  ${it}`, 10.5)); });
     if (product.type === "quotes") (c.quotes || []).forEach((q) => {
       doc.addPage(); doc.rect(0, 0, W, H).fill("#F4F3F0"); doc.circle(W / 2, H * 0.36, 120).fill(color);
       doc.font("display").fontSize(32).fillColor("#16152E").text(String(q), M + 20, H * 0.62, { width: W - 2 * M - 40, align: "center" });

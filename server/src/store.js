@@ -8,6 +8,7 @@ import { db, newId, slugify, uniqueSlug, rowToProduct } from "./db.js";
 import { designPhotoFiles, IMAGE_FILE } from "./storefront-media.js";
 import { generateDigitalProduct, httpError, PRODUCT_TYPES } from "./claude.js";
 import { renderCover, renderProductPdf, COVER_COLORS, writeFileSafe } from "./artwork.js";
+import * as aiCover from "./ai-cover.js";
 import * as pay from "./payments.js";
 import * as plans from "./plans.js";
 import * as urls from "./urls.js";
@@ -301,10 +302,15 @@ export async function generateProduct(seller, { type = "guide", niche, color = "
     return (await digitalDesigns.renderGeneratedTemplate(seller, product.id)).product;
   }
   const hex = COVER_COLORS[color] || COVER_COLORS.cobalt;
-  const cover = renderCover({ title: r.title, tagline: r.tagline, type, color: hex });
+  // The AI art director designs the cover and inside images to fit the topic; if that whole step
+  // fails, the product still gets the simple cover rather than failing after the writing is done.
+  let design = null;
+  try { design = await aiCover.designProduct({ product: r, type, niche, storeName: seller.store_name, accent: hex }); }
+  catch (e) { console.warn("[ai-cover] design failed, using the simple cover:", e.message); }
+  const cover = design ? design.listing : renderCover({ title: r.title, tagline: r.tagline, type, color: hex });
   const image_file = writeFileSafe(dirs.images, `${crypto.randomUUID()}.png`, cover);
   db.prepare("INSERT OR IGNORE INTO seller_media (image_file,seller_id) VALUES (?,?)").run(image_file, seller.id);
-  const pdf = await renderProductPdf({ ...r, type, storeName: seller.store_name }, cover, hex);
+  const pdf = await renderProductPdf({ ...r, type, storeName: seller.store_name }, cover, design ? design.accent : hex, design);
   const delivery_file = writeFileSafe(dirs.files, `${crypto.randomUUID()}.pdf`, pdf);
   const product = createProduct(seller, { ...listing, image_file }, delivery_file);
   // Keep all original structured AI content, including long paragraphs and list items, in source.

@@ -653,3 +653,42 @@ export function routes(app, { auth, wrap }) {
   app.post("/api/image-assistant/jobs", auth, wrap(async (req, res) => res.status(201).json(await start(req.account, req.seller, req.body || {}))));
   app.get("/api/image-assistant/jobs/:id", auth, wrap(async (req, res) => res.json(await get(req.account, req.seller, req.params.id))));
 }
+
+/**
+ * One original artwork, made and downloaded now (used for AI-designed digital product covers and
+ * their inside images). Same provider, download allowlist and image checks as studio jobs; no
+ * seller allowance is used. Returns JPEG bytes, or throws after `timeoutMs`.
+ */
+let artPollMs = 3000;
+export function setArtPollMs(ms) { artPollMs = ms; }   // tests
+export async function generateArtwork(prompt, { aspect = "portrait", timeoutMs = 150_000 } = {}) {
+  if (!providerEnabled()) throw httpError(503, "AI image generation is not set up yet.");
+  const size = ASPECTS.get(aspect) || ASPECTS.get("portrait");
+  const input = {
+    prompt: `${cleanPrompt(prompt)}. Original artwork, no text, no letters, no logos.`,
+    negative_prompt: "text, letters, words, typography, watermark, logo, signature, caption, frame, border, low quality, blurry, distorted hands, extra fingers",
+    size, seed: -1, enable_safety_checker: true,
+  };
+  const deadline = Date.now() + timeoutMs;
+  let started;
+  for (let attempt = 0; ; attempt++) {
+    try { started = await runpod(`${ENDPOINT.art}/run`, { input }); break; }
+    catch (error) { if (!error?.transient || attempt >= 1 || Date.now() > deadline) throw error; await new Promise((r) => setTimeout(r, artPollMs)); }
+  }
+  if (!started?.id) throw httpError(502, "The AI image service did not start this image.");
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, artPollMs));
+    let result;
+    try { result = await runpod(`${ENDPOINT.art}/status/${encodeURIComponent(started.id)}`); }
+    catch (error) { if (error?.transient) continue; throw error; }
+    if (["FAILED", "CANCELLED", "TIMED_OUT"].includes(result.status)) {
+      console.warn("[image-assistant] artwork", result.status, JSON.stringify(result.error || "").slice(0, 300));
+      throw httpError(502, "The AI image service could not make this image.");
+    }
+    if (result.status !== "COMPLETED") continue;
+    const url = outputUrl(result.output);
+    if (!url) throw httpError(502, "The AI image service finished without an image.");
+    return safeJpeg(await boundedDownload(url));
+  }
+  throw httpError(504, "The AI image took too long.");
+}
