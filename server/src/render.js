@@ -70,6 +70,25 @@ const priceLabel = (p) => {
   const prices = (p.variants || []).map((v) => v.price_cents ?? p.price_cents);
   return `${prices.length && new Set(prices).size > 1 ? "From " : ""}${money(Math.min(p.price_cents, ...prices), p.currency)}${p.billing_interval ? ` / ${p.billing_interval}` : ""}`;
 };
+/** The crossed-out original price and "Save N%", when the seller set one above what's charged now. */
+const savePct = (was, now) => Math.floor((1 - now / was) * 100);
+const wasPrice = (p, now, keep = false) => {
+  const was = Number(p.compare_at_cents) || 0;
+  if (!was || (!keep && !(was > now))) return "";
+  const pct = savePct(was, now);
+  return ` <s class="pwas"><span class="vh">Original price </span>${money(was, p.currency)}</s>${pct >= 1 || keep ? ` <span class="psave"${pct >= 1 ? "" : " hidden"}>Save ${pct}%</span>` : ""}`;
+};
+// Added only to pages that show a sale, so every theme's stylesheet gets it and others are unchanged.
+const SALE_CSS = `
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pwas{font-family:var(--body,inherit);font-size:.62em;font-weight:400;letter-spacing:0;color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px;margin-left:.35em;white-space:nowrap}
+.pc .pwas{font-size:.9em}
+.psave{display:inline-block;vertical-align:middle;font-family:var(--body,inherit);font-size:12px;font-weight:600;letter-spacing:.01em;line-height:1;padding:4px 7px;border-radius:999px;background:var(--accent);color:var(--on-accent,#fff);margin-left:.4em;white-space:nowrap}
+`;
+const cardPrice = (p) => {
+  const prices = (p.variants || []).map((v) => v.price_cents ?? p.price_cents);
+  return priceLabel(p) + wasPrice(p, Math.min(p.price_cents, ...prices));
+};
 const img = (source, alt, extra = "") => {
   const src = typeof source === "object" && source ? source.url : source;
   const slot = typeof source === "object" && source && source.preview && Number.isInteger(source.index) && source.index >= 0 && source.index <= 2
@@ -97,7 +116,7 @@ function shell({ title, description, store, image, body, canonical, cats = [], f
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}">${image ? `<meta property="og:image" content="${esc(image)}">` : ""}
 ${canonical ? `<link rel="canonical" href="${esc(canonical)}">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="${t.c.bg}">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${esc(fontsUrl(t))}">
-<style>${themeCss(t)}${module ? CATEGORY_CSS + CATEGORY_BASE_CSS + module.css : CSS}${store.id ? SIGNUP_CSS : ""}</style>${pixelTags(store)}</head><body class="${bodyClass(t)}">
+<style>${themeCss(t)}${module ? CATEGORY_CSS + CATEGORY_BASE_CSS + module.css : CSS}${store.id ? SIGNUP_CSS : ""}${String(body).includes('class="pwas"') ? SALE_CSS : ""}</style>${pixelTags(store)}</head><body class="${bodyClass(t)}">
 ${demo ? `<div class="pv" role="note">Illustrative ${esc(t.name)} theme demo — photos, products and prices are examples, not a live seller store. <a href="/themes" style="color:inherit">Browse all themes</a></div>` : ""}${preview ? `<div class="pv" role="note">${store._draftPreview ? "Private draft preview — your cover, words and motion are not live. Product links open your currently applied store." : `Previewing the ${esc(t.name)} look. Buyers still see your current look until you choose this one in the app.`}</div>` : ""}${ann}
 <header class="hd"><div class="wrap"><a class="brand" href="${esc(home(store))}">${esc(store.store_name)}</a><nav class="nav" aria-label="Shop">${nav}</nav>
 <div class="acts"><a class="cart" href="${esc(base(store))}/cart" aria-label="Cart">${ICON.bag}<b data-cart-count></b></a></div></div></header>
@@ -122,7 +141,7 @@ function card(store, p) {
   const photo = p._sfPhotoSlot == null ? p.image_url : { url: p.image_url, index: p._sfPhotoSlot, preview: Boolean(store._templatePreview) };
   return `<a class="pc${category ? " product-card" : ""}" href="${esc(base(store))}/${esc(p.slug)}"><div class="im${category ? " product-image" : ""}">${img(photo, p.alt_text || p.title, ' loading="lazy"')}
 ${!p.in_stock ? `<span class="tag out">Sold out</span>` : p.label ? `<span class="tag">${esc(p.label)}</span>` : p.kind === "digital" ? `<span class="tag">Digital</span>` : ""}<span class="go" aria-hidden="true">View product</span></div>
-<div class="bd"><h3>${esc(p.title)}</h3><span class="pr">${priceLabel(p)}</span>${r ? `<span class="rt">${stars(r.avg)} <small>${r.count}</small></span>` : ""}</div></a>`;
+<div class="bd"><h3>${esc(p.title)}</h3><span class="pr">${cardPrice(p)}</span>${r ? `<span class="rt">${stars(r.avg)} <small>${r.count}</small></span>` : ""}</div></a>`;
 }
 
 function hero(store, t, products) {
@@ -191,7 +210,7 @@ export function storePage(store, products, baseUrl, { category } = {}) {
 ${module ? module.discovery(categoryContext(store, t, products, cats, card)) : catsSection(store, t, cats).replace('class="sec tight"', 'class="sec"')}
 <section id="shop" class="sec${cats.length >= 2 && t.cats !== "pill" ? " tight" : ""}"><div class="wrap"><div class="sec-h"><h2>${esc(shopHeading)}</h2>${chips(store, cats, null)}</div>${grid}</div></section>
 ${feat ? `<section class="sec feat"><div class="wrap"><div class="pic">${img(feat.image_url, feat.alt_text || feat.title, ' loading="lazy"')}</div><div class="txt">${feat.category ? `<span class="kick">${esc(feat.category)}</span>` : ""}<h2>${esc(feat.title)}</h2>
-${feat.tagline ? `<p class="tl">${esc(feat.tagline)}</p>` : ""}<div class="price">${priceLabel(feat)}</div><a class="btn" href="${esc(base(store))}/${esc(feat.slug)}">Shop now</a></div></div></section>` : ""}
+${feat.tagline ? `<p class="tl">${esc(feat.tagline)}</p>` : ""}<div class="price">${cardPrice(feat)}</div><a class="btn" href="${esc(base(store))}/${esc(feat.slug)}">Shop now</a></div></div></section>` : ""}
 ${band}
 ${store.about ? `<section id="about" class="sec story${aboutPic ? "" : " solo"}"><div class="wrap">${aboutPic ? `<div class="pic">${img(aboutPic, "", ' loading="lazy"')}</div>` : ""}<div class="txt"><h2>About ${esc(store.store_name)}</h2><p>${esc(store.about)}</p></div></div></section>` : ""}`;
   return shell({ ...meta, current: null, body, signup: true });
@@ -217,7 +236,8 @@ export function productPage(store, p, baseUrl, others = []) {
 var fmt=function(c){return new Intl.NumberFormat("en-US",{style:"currency",currency:cur.toUpperCase()}).format(c/100)};
 function sel(){return document.querySelector('input[name=variant]:checked')}
 function limit(){var v=sel();var s=v?v.dataset.stock:(P.inventory==null?"":String(P.inventory));return s===""?20:Math.min(20,Number(s))}
-function sync(){var v=sel();document.getElementById("price").textContent=fmt(v?Number(v.dataset.price):P.unit)${p.billing_interval ? '+(P.billing_interval?" / "+P.billing_interval:"")' : ""};q=Math.min(q,limit());var o=document.getElementById("q");if(o)o.textContent=q;
+${p.compare_at_cents ? `function was(u){var w=document.getElementById("was"),c=${Number(p.compare_at_cents)},n=Math.floor((1-u/c)*100),b=w.querySelector(".psave");w.hidden=!(c>u);if(b){b.textContent="Save "+n+"%";b.hidden=n<1}}
+` : ""}function sync(){var v=sel();${p.compare_at_cents ? "was(v?Number(v.dataset.price):P.unit);" : ""}document.getElementById("price").textContent=fmt(v?Number(v.dataset.price):P.unit)${p.billing_interval ? '+(P.billing_interval?" / "+P.billing_interval:"")' : ""};q=Math.min(q,limit());var o=document.getElementById("q");if(o)o.textContent=q;
 var st=document.getElementById("stock"),l=v?v.dataset.stock:(P.inventory==null?"":String(P.inventory));st.textContent=l!==""&&Number(l)<=5?"Only "+l+" left":"";st.className="stock"+(l!==""&&Number(l)<=5?" low":"")}
 document.querySelectorAll("input[name=variant]").forEach(function(r){r.addEventListener("change",sync)});
 document.querySelectorAll("[data-q]").forEach(function(b){b.addEventListener("click",function(){q=Math.max(1,Math.min(limit(),q+Number(b.dataset.q)));sync()})});
@@ -240,7 +260,7 @@ document.getElementById("now").addEventListener("click",function(){add();locatio
 <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="${esc(home(store))}">Home</a><span>/</span>${p.category ? `<a href="${esc(catHref(store, p.category))}">${esc(p.category)}</a><span>/</span>` : ""}<span aria-current="page">${esc(p.title)}</span></nav>
 <article class="pd"><div class="media"><div class="pic">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" fetchpriority="high">` : ""}${p.label && p.in_stock ? `<span class="tag">${esc(p.label)}</span>` : ""}</div>${isAiImage(p.image_file) ? `<p class="fine ai">Photo created with AI. The product is shown as sold.</p>` : ""}</div>
 <div class="info"><div class="cat">${p.kind === "digital" ? "Digital download" : esc(p.category || store.store_name)}</div><h1>${esc(p.title)}</h1>${rv.count ? `<a class="rt" href="#reviews">${stars(rv.avg)} ${rv.avg} (${rv.count})</a>` : ""}
-<div class="price" id="price">${money(startPrice, p.currency)}${p.billing_interval ? ` / ${esc(p.billing_interval)}` : ""}</div>${p.billing_interval ? `<p class="fine">Renews automatically ${p.billing_interval === "year" ? "yearly" : "monthly"} until canceled. Access lasts through your paid period. Manage or cancel from your order confirmation.</p>` : ""}${p.bundle_items?.length ? `<section aria-label="Included products"><h2>What's included</h2><ul>${p.bundle_items.map((item)=>`<li>${esc(item.title)}</li>`).join("")}</ul></section>` : ""}${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}${opts}${buy}<div id="stock" class="stock" aria-live="polite"></div>
+${p.compare_at_cents ? `<div class="price"><span id="price">${money(startPrice, p.currency)}${p.billing_interval ? ` / ${esc(p.billing_interval)}` : ""}</span><span id="was"${p.compare_at_cents > startPrice ? "" : " hidden"}>${wasPrice(p, startPrice, true)}</span></div>` : `<div class="price" id="price">${money(startPrice, p.currency)}${p.billing_interval ? ` / ${esc(p.billing_interval)}` : ""}</div>`}${p.billing_interval ? `<p class="fine">Renews automatically ${p.billing_interval === "year" ? "yearly" : "monthly"} until canceled. Access lasts through your paid period. Manage or cancel from your order confirmation.</p>` : ""}${p.bundle_items?.length ? `<section aria-label="Included products"><h2>What's included</h2><ul>${p.bundle_items.map((item)=>`<li>${esc(item.title)}</li>`).join("")}</ul></section>` : ""}${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}${opts}${buy}<div id="stock" class="stock" aria-live="polite"></div>
 <div class="mini">${mini.map(([i, t]) => `<div>${i}<span>${esc(t)}</span></div>`).join("")}</div>
 ${p.description ? `<div class="desc">${String(p.description).split(/\n\s*\n/).filter(Boolean).map((t) => `<p>${esc(t)}</p>`).join("")}</div>` : ""}
 ${p.bullets.length ? `<ul class="b">${p.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}

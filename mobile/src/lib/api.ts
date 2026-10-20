@@ -65,11 +65,15 @@ export type Product = Draft & {
   in_stock: boolean;
   source: "cj" | null;
   cost: number | null;
+  /** The original price shown crossed out next to the price; null shows none. */
+  compare_at?: number | null;
 };
 export type ProductPatch = Partial<Draft> & {
   inventory?: number | null;
   /** What one item costs the seller, for Sales & profit. null clears it. */
   cost?: number | null;
+  /** The original price shown crossed out (display only). null clears it. */
+  compare_at?: number | null;
   option_name?: string;
   variants?: VariantInput[];
   status?: "draft";

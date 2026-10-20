@@ -151,6 +151,7 @@ export function createProduct(seller, b, deliveryFile = null) {
   if (b.delivery_url && !/^https:\/\//.test(b.delivery_url)) throw httpError(400, "The download link must start with https://");
   if (b.image_file && !/^[\w-]+\.(jpg|png|webp|gif)$/.test(b.image_file)) throw httpError(400, "Invalid image reference.");
   if (b.image_file && (!ownsImageFile(seller.id, b.image_file) || !fs.existsSync(path.join(dirs.images, b.image_file)))) throw httpError(400, "Upload a photo to this store before using it.");
+  if (b.compare_at !== undefined) compareAtCents(b.compare_at, cents(b.price));
   const id = newId("prd");
   const slug = uniqueSlug("products", "slug", slugify(b.title), seller.id);
   db.prepare(`INSERT INTO products (id, seller_id, slug, title, tagline, description, bullets, faq, tags, category, kind, price_cents, image_file, alt_text, seo_description, delivery_file, delivery_url)
@@ -178,6 +179,7 @@ export function updateProduct(seller, id, b) {
     faq: Array.isArray(b.faq) ? JSON.stringify(faqList(b.faq)) : row.faq,
   };
   if (next.price_cents < 50 && row.status === "live") throw httpError(400, "Live products need a price of at least $0.50.");
+  if (b.compare_at !== undefined) compareAtCents(b.compare_at, next.price_cents);
   db.transaction(() => {
     if (row.delivery_url !== next.delivery_url) snapshotProductDownloads(row);
     db.prepare("UPDATE products SET title=?, tagline=?, description=?, category=?, price_cents=?, delivery_url=?, bullets=?, tags=?, faq=? WHERE id=?")
@@ -193,6 +195,15 @@ export function updateProduct(seller, id, b) {
   return withPage(seller, db.prepare("SELECT * FROM products WHERE id = ?").get(row.id));
 }
 
+/** The original ("was") price in cents, or null to show none. Checked before anything is saved. */
+function compareAtCents(v, priceCents) {
+  if (v === undefined || v === null || v === "") return null;
+  const c = Math.round(Number(v) * 100);
+  if (!(Number.isFinite(c) && c > 0 && c <= 100_000_000)) throw httpError(400, "Enter the original price, like 20.00.");
+  if (c <= priceCents) throw httpError(400, "The original price must be higher than the price.");
+  return c;
+}
+
 /** Inventory, SKU, tax code and the option/variant list. Prices are re-read at checkout, so edits apply immediately. */
 function applyCommerceFields(id, b) {
   if (b.label != null) db.prepare("UPDATE products SET label = ? WHERE id = ?").run(clampStr(b.label, 24).replace(/\s+/g, " ").trim(), id);
@@ -203,6 +214,12 @@ function applyCommerceFields(id, b) {
     const c = b.cost === null || b.cost === "" ? null : Math.round(Number(b.cost) * 100);
     if (c !== null && !(c >= 0 && c <= 100_000_000)) throw httpError(400, "Enter the cost per item, like 4.50.");
     db.prepare("UPDATE products SET cost_cents = ? WHERE id = ?").run(c, id);
+  }
+  // An original price shown crossed out next to the price ("was $20, now $12"). Display only:
+  // checkout always charges the real price. It must be higher than the price to mean anything.
+  if (b.compare_at !== undefined) {
+    const price = db.prepare("SELECT price_cents FROM products WHERE id = ?").get(id).price_cents;
+    db.prepare("UPDATE products SET compare_at_cents = ? WHERE id = ?").run(compareAtCents(b.compare_at, price), id);
   }
   if (b.tax_code !== undefined) {
     if (b.tax_code && !TAX_CODE.test(b.tax_code)) throw httpError(400, "Tax codes look like txcd_99999999.");

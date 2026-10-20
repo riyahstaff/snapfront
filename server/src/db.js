@@ -176,6 +176,7 @@ addCol("products", "source", "TEXT");              // 'cj' for CJdropshipping im
 addCol("products", "source_id", "TEXT");           // CJ product id (pid)
 addCol("products", "source_vid", "TEXT");          // CJ variant id when the product has no options
 addCol("products", "cost_cents", "INTEGER");       // supplier price, before shipping
+addCol("products", "compare_at_cents", "INTEGER"); // the "was" price shown crossed out; display only
 addCol("product_variants", "source_vid", "TEXT");
 addCol("product_variants", "cost_cents", "INTEGER");
 addCol("products", "source_meta", "TEXT");         // supplier detail needed to order, e.g. AliExpress sku_attr
@@ -237,6 +238,7 @@ export function rowToProduct(r) {
   p.image_url = r.image_file ? `${config.publicUrl}/img/${r.image_file}` : null;
   p.has_delivery = Boolean(r.delivery_file || r.delivery_url || p.bundle_product_ids.length);
   p.cost = r.cost_cents == null ? null : r.cost_cents / 100;
+  p.compare_at = r.compare_at_cents == null ? null : r.compare_at_cents / 100;
   delete p.delivery_file;
   p.variants = db.prepare("SELECT id, name, price_cents, inventory, sku FROM product_variants WHERE product_id = ? ORDER BY position").all(r.id)
     .map((v) => ({ ...v, price: (v.price_cents ?? r.price_cents) / 100 }));

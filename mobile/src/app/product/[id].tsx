@@ -9,6 +9,7 @@ import { ProductPreview } from "@/components/product-preview";
 import { api, ApiError, money, type Product } from "@/lib/api";
 import { space, useColors } from "@/lib/theme";
 import { account, useMe } from "@/lib/account-store";
+import { parseMoney, salePreview } from "@/lib/sale-price";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function ProductScreen() {
@@ -18,6 +19,7 @@ export default function ProductScreen() {
   const [p, setP] = useState<Product | null>(null);
   const [price, setPrice] = useState("");
   const [cost, setCost] = useState("");
+  const [was, setWas] = useState("");
   const [words, setWords] = useState({ title: "", tagline: "", label: "", category: "", description: "" });
   const [msg, setMsg] = useState<{ text: string; tone: "error" | "ok" | "info" } | null>(note ? { text: note, tone: /^Saved as a draft/.test(note) ? "info" : "ok" } : null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export default function ProductScreen() {
 
   const load = useCallback(() => {
     api.product(id).then((x) => {
-      setP(x); setPrice(String(x.price)); setCost(x.cost != null ? String(x.cost) : "");
+      setP(x); setPrice(String(x.price)); setCost(x.cost != null ? String(x.cost) : ""); setWas(x.compare_at != null ? x.compare_at.toFixed(2) : "");
       setWords({ title: x.title, tagline: x.tagline, label: x.label ?? "", category: x.category, description: x.description });
     }).catch((e) => setMsg({ text: e instanceof ApiError ? e.message : "Couldn't load this product.", tone: "error" }));
   }, [id]);
@@ -40,6 +42,7 @@ export default function ProductScreen() {
   if (!p) return <Screen><Notice text={msg?.text ?? "Loading…"} tone={msg?.tone ?? "info"} /></Screen>;
 
   const live = p.status === "live";
+  const sale = salePreview(price, was);
   return (
     <Screen>
       <Stack.Screen options={{ title: live ? "Live product" : "Draft product" }} />
@@ -114,8 +117,14 @@ export default function ProductScreen() {
           <Button label="Compare with Amazon and Walmart" variant="ghost" onPress={() => router.push({ pathname: "/price-check", params: { image_file: p.image_file!, preview: p.image_url ?? undefined } })} />
         ) : null}
         <Field label="Price (USD)" hint={live ? "New prices apply to your store right away." : undefined} value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
+        <Field label="Original price (optional)" hint="Shown crossed out next to the price, for a sale. Use a price you really charged before. Leave it blank for none."
+          value={was} onChangeText={setWas} keyboardType="decimal-pad" placeholder="e.g. 20.00" />
+        {sale ? <Body muted={sale.ok} style={sale.ok ? undefined : { color: c.bad }}>{sale.text}</Body> : null}
         <Button label="Save price" variant="secondary" loading={busy === "price"} onPress={() => run("price", async () => {
-          const next = await api.updateProduct(p.id, { price: Number(price) || 0 }); setP({ ...p, ...next }); setMsg({ text: "Price saved.", tone: "ok" });
+          const original = parseMoney(was);
+          if (sale && !sale.ok) { setMsg({ text: sale.text, tone: "error" }); return; }
+          const next = await api.updateProduct(p.id, { price: Number(price.replace(/[$,]/g, "")) || 0, compare_at: original === null ? null : original });
+          setP({ ...p, ...next }); setMsg({ text: "Price saved.", tone: "ok" });
         })} />
         <Field label="Cost per item (USD)" hint={p.source === "cj" ? "Filled in from CJdropshipping. Add their shipping if you want it counted." : "What one costs you to make or buy. Used for profit in Sales & profit. Only you see it."}
           value={cost} onChangeText={setCost} keyboardType="decimal-pad" placeholder="e.g. 4.50" />
