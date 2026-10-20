@@ -44,5 +44,5 @@ test("the product screen saves the original price with the price and explains it
   const src = fs.readFileSync(path.join(root, "src/app/product/[id].tsx"), "utf8");
   assert.match(src, /label="Original price \(optional\)"/);
   assert.match(src, /compare_at: original === null \? null : original/);
-  assert.match(src, /price you really charged before/);
+  assert.match(src, /hint="Shown crossed out next to the price, for a sale\. Leave it blank for none\."/);
 });

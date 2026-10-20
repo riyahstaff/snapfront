@@ -117,7 +117,7 @@ export default function ProductScreen() {
           <Button label="Compare with Amazon and Walmart" variant="ghost" onPress={() => router.push({ pathname: "/price-check", params: { image_file: p.image_file!, preview: p.image_url ?? undefined } })} />
         ) : null}
         <Field label="Price (USD)" hint={live ? "New prices apply to your store right away." : undefined} value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
-        <Field label="Original price (optional)" hint="Shown crossed out next to the price, for a sale. Use a price you really charged before. Leave it blank for none."
+        <Field label="Original price (optional)" hint="Shown crossed out next to the price, for a sale. Leave it blank for none."
           value={was} onChangeText={setWas} keyboardType="decimal-pad" placeholder="e.g. 20.00" />
         {sale ? <Body muted={sale.ok} style={sale.ok ? undefined : { color: c.bad }}>{sale.text}</Body> : null}
         <Button label="Save price" variant="secondary" loading={busy === "price"} onPress={() => run("price", async () => {
