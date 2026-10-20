@@ -714,6 +714,7 @@ app.post("/api/admin/owner/avatars/:id/face-camera", adminOnly, wrap(async (req,
   const o = ownerAvatar(req.params.id);
   res.status(201).json(await avatars.turnToCamera(o.account, o.seller, o.avatar.id, req.body || {}));
 }));
+app.get("/api/admin/owner/avatars/:id/raw", adminOnly, wrap(async (req, res) => { const o = ownerAvatar(req.params.id); res.json(await avatars.rawStatus(o.seller, o.avatar.id)); }));
 app.get("/api/admin/owner/avatars/:id", adminOnly, wrap(async (req, res) => { const o = ownerAvatar(req.params.id); res.json(await avatars.avatar(o.seller, o.avatar.id)); }));
 app.post("/api/admin/owner/avatars/:id/talk", adminOnly, wrap(async (req, res) => {
   const o = ownerAvatar(req.params.id);

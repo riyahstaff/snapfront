@@ -368,8 +368,15 @@ export async function turnToCamera(account, seller, id, b = {}) {
   const newId_ = newId("avt");
   db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, look, source, consent_at, ref_files, gen_prompt) VALUES (?,?,?,?,?,?,?,?,?,?)")
     .run(newId_, seller.id, account.id, clean(b.name, 30) || `${from.name.slice(0, 16)} (facing)`, "photo", look || from.look || "", "ai", from.consent_at, JSON.stringify([from.image_file]), prompt);
-  try { await submitBlend(newId_, 0); } catch (e) { fail("avatars", newId_, e.message); throw e; }
+  try { await submitBlend(newId_, b.engine === "backup" ? 1 : 0); } catch (e) { fail("avatars", newId_, e.message); throw e; }
   return avatarView(getAvatar(seller, newId_));
+}
+/** Owner tools: the image service's own status for a running avatar (for diagnosing a stuck job). */
+export async function rawStatus(seller, id) {
+  const row = getAvatar(seller, id);
+  if (!row.runpod_id) return { status: row.status, note: "not submitted" };
+  const r = await aimedia.runpod(`${row.engine || EDIT}/status/${row.runpod_id}`);
+  return { status: row.status, engine: row.engine, runpod: { status: r.status, delayTime: r.delayTime, executionTime: r.executionTime, error: r.error || null } };
 }
 
 /** Delete a blend's two source photos once it's finished either way. */
