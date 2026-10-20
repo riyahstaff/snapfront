@@ -49,7 +49,10 @@ export function AccountSection() {
 
       <H2>Sign in</H2>
       {a.email ? (
-        <Body muted>Signed in as {a.email}. Use this email on another phone to get your stores and purchases there.</Body>
+        <>
+          <Body muted>Signed in as {a.email}. Use this email on another phone to get your stores and purchases there.</Body>
+          <Button label="Sign out" variant="secondary" onPress={async () => { await api.signOut(); account.clear(); router.replace("/sign-in"); }} />
+        </>
       ) : (
         <Body muted>Add your email so your stores and purchases aren’t tied to this phone. Already use Snapfront on another phone? Enter that email to bring your stores here.</Body>
       )}

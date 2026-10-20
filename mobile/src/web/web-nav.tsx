@@ -6,7 +6,8 @@ import { Pressable, Text, View, useWindowDimensions, type PressableStateCallback
 import { router, usePathname, type Href } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { useMe } from "@/lib/account-store";
+import { account, useMe } from "@/lib/account-store";
+import { api } from "@/lib/api";
 import { alpha, fonts, theme, useColors } from "@/lib/theme";
 
 // Keep the marketing funnel separate from the signed-in merchant workspace.
@@ -111,6 +112,13 @@ export function WebNav() {
               <Ionicons name="chevron-forward" size={18} color={c.line} />
             </Pressable>
           ))}
+          {signedIn ? (
+            <Pressable accessibilityRole="button" onPress={async () => { setOpen(false); await api.signOut(); account.clear(); go("/sign-in"); }}
+              style={{ paddingVertical: 14, paddingHorizontal: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 17, color: c.muted }}>Sign out</Text>
+              <Ionicons name="log-out-outline" size={18} color={c.line} />
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
     </View>

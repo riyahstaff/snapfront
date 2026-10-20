@@ -724,6 +724,12 @@ app.post("/api/billing/google", auth, wrap(async (req, res) => {
 
 /* ---------- email sign-in, so purchases and stores follow the person to a new phone ---------- */
 app.post("/api/auth/email/start", auth, wrap(async (req, res) => res.json(await auth2.startEmailLogin(req.account, req.body?.email))));
+// Signing out ends this device's session only; other phones and browsers stay signed in.
+app.post("/api/auth/logout", (req, res) => {
+  const token = (req.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (token) db.prepare("DELETE FROM sessions WHERE token_hash = ?").run(hashToken(token));
+  res.status(204).end();
+});
 app.post("/api/auth/email/verify", auth, (req, res) => res.json(auth2.verifyEmailLogin(req.account, req.body?.email, req.body?.code)));
 
 /* ---------- AI ---------- */

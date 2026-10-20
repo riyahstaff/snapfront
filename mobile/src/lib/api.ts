@@ -554,6 +554,13 @@ export const api = {
     await setStore(null);
     tokenCache = null;
   },
+  /** Sign this device out. The next request starts a fresh visitor account, ready to sign in again. */
+  async signOut() {
+    try { await request<void>("POST", "/api/auth/logout"); } catch { /* signed out locally either way */ }
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await setStore(null);
+    tokenCache = null;
+  },
   /** Work on another of this account's stores. */
   switchStore: (id: string) => setStore(id),
   async createStore(store_name: string) {

@@ -150,3 +150,16 @@ test("the owner's usage report counts each feature's records and needs the admin
   assert.equal(typeof tables.products.rows, "number");
   assert.ok(!JSON.stringify(tables).includes("@example.com"), "no customer data, only counts");
 });
+
+test("signing out ends only this device's session", async () => {
+  const { token } = await (await call("POST", "/api/sellers", { body: {} })).json();
+  const { db } = await import("../src/db.js");
+  const { account } = await (await call("GET", "/api/me", { token })).json();
+  const plans = await import("../src/plans.js");
+  const other = plans.newSession(account.id);   // the same account signed in on a second device
+  assert.equal((await call("POST", "/api/auth/logout", { token })).status, 204);
+  assert.equal((await call("GET", "/api/me", { token })).status, 401, "this device is signed out");
+  assert.equal((await call("GET", "/api/me", { token: other })).status, 200, "the other device stays signed in");
+  assert.equal((await call("POST", "/api/auth/logout")).status, 204, "signing out twice is harmless");
+  assert.ok(db.prepare("SELECT 1 FROM accounts WHERE id = ?").get(account.id), "the account and its stores are kept");
+});
