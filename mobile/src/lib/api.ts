@@ -68,6 +68,9 @@ export type Product = Draft & {
   /** The original price shown crossed out next to the price; null shows none. */
   compare_at?: number | null;
 };
+/** An AI assistant (Claude, ChatGPT…) connected through Snapfront's connector. */
+export type ConnectedApp = { id: string; name: string; site: string | null; connected_at: string; last_used_at: string | null };
+export type ConnectedApps = { apps: ConnectedApp[]; connector_url: string; guide_url: string };
 export type ProductPatch = Partial<Draft> & {
   inventory?: number | null;
   /** What one item costs the seller, for Sales & profit. null clears it. */
@@ -587,6 +590,10 @@ export const api = {
     return r;
   },
   legalUrl: (page: "privacy" | "terms") => `${API_URL}/${page}`,
+  /** Website pages: the Claude/ChatGPT connector guide and the tools page. */
+  siteUrl: (page: "connect-ai" | "tools") => `${API_URL}/${page}`,
+  connectedApps: () => request<ConnectedApps>("GET", "/api/connected-apps"),
+  disconnectApp: (id: string) => request<void>("DELETE", `/api/connected-apps/${encodeURIComponent(id)}`),
   productFromPhoto: (input: { imageBase64: string; mediaType: string; kind: string; hint?: string; price?: string; tone?: string }) =>
     request<Draft>("POST", "/api/ai/product-from-photo", input),
   /** `template_id` preserves the generated full source under the selected editable digital template. */

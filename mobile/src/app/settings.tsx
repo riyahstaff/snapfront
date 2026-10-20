@@ -6,6 +6,7 @@ import { Body, Button, Field, H2, Notice, Screen, Segmented } from "@/components
 import { api, ApiError, type Me } from "@/lib/api";
 import { account } from "@/lib/account-store";
 import { AccountSection } from "@/components/account-section";
+import { ConnectedAppsSection } from "@/components/connected-apps";
 import { ReleaseInfo } from "@/components/release-info";
 import { displayAddress } from "@/lib/store-address";
 import { SupplierSection } from "@/components/supplier-section";
@@ -139,6 +140,9 @@ export default function SettingsScreen() {
       </View>
       <View style={{ marginTop: space.lg }}>
         <SupplierSection />
+      </View>
+      <View style={{ marginTop: space.lg }}>
+        <ConnectedAppsSection />
       </View>
       <View style={{ gap: space.sm, marginTop: space.lg }}>
         <H2>About</H2>

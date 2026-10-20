@@ -28,6 +28,8 @@ let sendImpl = async (to, code) => {
   }
 };
 export function setEmailSender(f) { sendImpl = f; }   // used by tests
+/** Email a 6-digit sign-in code (used by the Claude/ChatGPT connect page). */
+export const emailCode = (to, code) => sendImpl(to, code);
 
 const recent = new Map();
 export async function startEmailLogin(account, rawEmail) {

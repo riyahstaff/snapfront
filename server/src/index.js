@@ -25,6 +25,8 @@ import * as domains from "./domains.js";
 import { landingPage } from "./landing.js";
 import { salesPage } from "./sales-page.js";
 import { THEME_IDS, publicThemes } from "./themes.js";
+import * as connector from "./connector.js";
+import * as sitePages from "./site-pages.js";
 import * as studio from "./studio.js";
 import { ensureModel as ensureCutoutModel } from "./cutout.js";
 import * as supplierDirectory from "./supplier-directory.js";
@@ -179,6 +181,18 @@ app.post("/api/meta/webhook", express.raw({ type: "*/*", limit: "1mb" }), (req, 
 });
 
 app.use(express.json({ limit: "12mb" }));
+
+/* ---------- the Claude/ChatGPT connector (MCP at /mcp, with its OAuth sign-in) and its guide pages ---------- */
+connector.mountConnector(app, {
+  createPreview: (seller, patch) => createStorefrontPreview(seller, patch),
+  saveImage: (base64, mediaType, sellerId) => saveImage(base64, mediaType, sellerId),
+  addCoverPhoto: (seller, file) => {
+    if (db.prepare("SELECT COUNT(*) AS n FROM storefront_photos WHERE seller_id = ?").get(seller.id).n >= 100) throw httpError(429, "This store has reached its saved cover limit.");
+    db.prepare("INSERT INTO storefront_photos (image_file, seller_id) VALUES (?,?)").run(file, seller.id);
+  },
+});
+app.get("/connect-ai", (_req, res) => res.set("Cache-Control", "no-cache").send(sitePages.connectAiPage()));
+app.get("/tools", (_req, res) => res.set("Cache-Control", "no-cache").send(sitePages.toolsPage()));
 
 /* ---------- helpers ---------- */
 /** Mark an order paid (once) and send the confirmation email. Safe to call from both the webhook and /thanks. */
@@ -375,17 +389,21 @@ app.post("/api/sellers", signupLimit, (req, res) => {
 
 const me = (req) => ({ ...store.publicSeller(plans.storesOf(req.account.id).find((s) => s.id === req.seller.id)), account: plans.publicAccount(plans.getAccount(req.account.id), req.seller.id) });
 const storefrontPreviews = new Map();
-app.post("/api/storefront/preview", auth, (req, res) => {
+/** A private 30-minute preview of a store with a design patch applied; the live store is untouched. */
+function createStorefrontPreview(seller, patch) {
   const now = Date.now();
   for (const [token, entry] of storefrontPreviews) if (entry.expires < now) storefrontPreviews.delete(token);
   if (storefrontPreviews.size >= 1000) throw httpError(429, "Previews are busy right now. Try again shortly.");
-  const patch = store.storefrontPatch(req.seller, req.body || {});
   // Keep at most five temporary snapshots per store, without touching live data.
-  const own = [...storefrontPreviews.entries()].filter(([, entry]) => entry.sellerId === req.seller.id);
+  const own = [...storefrontPreviews.entries()].filter(([, entry]) => entry.sellerId === seller.id);
   for (const [token] of own.slice(0, Math.max(0, own.length - 4))) storefrontPreviews.delete(token);
   const token = crypto.randomBytes(24).toString("base64url");
-  storefrontPreviews.set(token, { sellerId: req.seller.id, patch, expires: now + 30 * 60e3 });
-  res.set("Cache-Control", "no-store").json({ url: `${config.publicUrl}/storefront-preview/${token}`, expires_in: 1800 });
+  storefrontPreviews.set(token, { sellerId: seller.id, patch, expires: now + 30 * 60e3 });
+  return `${config.publicUrl}/storefront-preview/${token}`;
+}
+app.post("/api/storefront/preview", auth, (req, res) => {
+  const url = createStorefrontPreview(req.seller, store.storefrontPatch(req.seller, req.body || {}));
+  res.set("Cache-Control", "no-store").json({ url, expires_in: 1800 });
 });
 app.get("/storefront-preview/:token", (req, res) => {
   res.set("Cache-Control", "no-store").set("Referrer-Policy", "no-referrer").set("X-Robots-Tag", "noindex, nofollow");
@@ -449,6 +467,9 @@ app.delete("/api/me/banner", auth, (req, res) => {
 app.get("/api/sources", (_req, res) => res.json(supplierDirectory.directory()));
 app.get("/api/themes", (req, res) => res.json({ themes: publicThemes() }));
 app.get("/api/me", auth, (req, res) => res.json(me(req)));
+// AI assistants connected through the Claude/ChatGPT connector, with a way to disconnect each.
+app.get("/api/connected-apps", auth, (req, res) => res.json({ apps: connector.connectedApps(req.account.id), connector_url: sitePages.MCP_URL(), guide_url: `${config.publicUrl}/connect-ai` }));
+app.delete("/api/connected-apps/:id", auth, (req, res) => { connector.disconnectApp(req.account.id, req.params.id); res.status(204).end(); });
 app.patch("/api/me", auth, wrap(async (req, res) => { await store.updateStoreChecked(req.seller, req.body || {}); res.json(me(req)); }));
 
 /** Things kept per store outside the cascading tables: visit counts and AI photos/clips. */
