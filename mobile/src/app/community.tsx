@@ -94,7 +94,7 @@ export default function CommunityScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingBottom: 80 }} keyboardShouldPersistTaps="handled">
-      <View style={{ width: "100%", maxWidth: 1180, alignSelf: "center", paddingHorizontal: wide ? 24 : space.lg, paddingTop: space.lg, gap: space.lg }}>
+      <View style={{ width: "100%", maxWidth: 1888, alignSelf: "center", paddingHorizontal: wide ? 24 : space.lg, paddingTop: space.lg, gap: space.lg }}>
         {/* Tabs and the bell */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 4 }} style={{ flex: 1 }}>

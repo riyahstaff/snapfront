@@ -13,7 +13,7 @@ import { useColors } from "@/lib/theme";
 import { onUpgradeNeeded } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
 import { startBilling } from "@/lib/billing";
-import { PageHeader, WebNav } from "./web-nav";
+import { PAGE_WIDTH, PageHeader, WebNav } from "./web-nav";
 
 const TITLES: Record<string, string> = {
   snap: "Snap a product", draft: "Your product page", "product/[id]": "Product", settings: "Account and store settings", orders: "Orders", business: "Sales & profit",
@@ -51,7 +51,7 @@ export default function WebRootLayout() {
   if ((!loaded && !error) || (!guestRoute && (!checked || !me?.account.email)))
     return <View style={{ flex: 1, backgroundColor: c.bg }} />;
 
-  const page = { width: "100%" as const, maxWidth: 960, alignSelf: "center" as const, backgroundColor: c.bg };
+  const page = { width: "100%" as const, maxWidth: PAGE_WIDTH, alignSelf: "center" as const, backgroundColor: c.bg };
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <WebNav />

@@ -1,6 +1,6 @@
 import * as Application from "expo-application";
 
-export const RELEASE_NAME = "Connect with Instagram · sale prices · sign out";
+export const RELEASE_NAME = "Claude & ChatGPT connector · full-width website · sale prices";
 
 /** Native values identify the binary actually installed, not a Play Console track or JS config. */
 export function installedRelease() {

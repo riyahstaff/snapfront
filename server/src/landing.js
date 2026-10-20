@@ -29,7 +29,7 @@ export function landingPage() {
 <style>
 :root{--bg:#090B0E;--surface:#14171C;--sunk:#1D2128;--ink:#F5F6F8;--muted:#ADB4BF;--line:#363C46;--platinum:#E5E9F0;--on-platinum:#11151B;--copper:#D99568;--good:#76D8B3;color-scheme:dark}
 *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-a{color:inherit}.wrap{max-width:1120px;margin:0 auto;padding-inline:20px}
+a{color:inherit}main{overflow-x:clip}.wrap{max-width:1840px;margin:0 auto;padding-inline:clamp(20px,3vw,48px)}
 header{padding-block:18px;position:sticky;top:0;z-index:5;background:rgba(9,11,14,.82);backdrop-filter:blur(12px);border-bottom:1px solid rgba(54,60,70,.5)}
 header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:21px;letter-spacing:-.02em}

@@ -19,7 +19,9 @@ export const NAV: { label: string; href: Href; match: (p: string) => boolean }[]
   { label: "Academy", href: "/academy", match: (p) => p.startsWith("/academy") },
 ];
 export const WIDE = 980;
-export const CONTENT = 1180;
+// Pages fill the screen on computers (up to about 1900px with a slim margin); phones and tablets fit as before.
+export const CONTENT = 1840;
+export const PAGE_WIDTH = CONTENT + 48;
 
 type Hover = PressableStateCallbackType & { hovered?: boolean };
 const go = (href: Href) => router.push(href);
@@ -140,7 +142,7 @@ export function PageHeader({ title, canGoBack, onBack, right }: { title: string;
   const c = useColors();
   return (
     <View style={{ backgroundColor: c.bg }}>
-      <View style={{ width: "100%", maxWidth: 960, alignSelf: "center", paddingHorizontal: 24, paddingTop: 22, paddingBottom: 4, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 66 }}>
+      <View style={{ width: "100%", maxWidth: PAGE_WIDTH, alignSelf: "center", paddingHorizontal: 24, paddingTop: 22, paddingBottom: 4, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 66 }}>
         {canGoBack ? (
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onBack}
             style={(s: Hover): ViewStyle => ({ width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: c.line, alignItems: "center", justifyContent: "center", backgroundColor: s.hovered ? c.sunk : "transparent" })}>

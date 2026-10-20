@@ -7,7 +7,7 @@ import { router, Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts, useColors } from "@/lib/theme";
 import { assistant } from "@/lib/assistant-store";
-import { PageHeader } from "./web-nav";
+import { PAGE_WIDTH, PageHeader } from "./web-nav";
 
 type HeaderProps = { options: { headerTitle?: unknown; title?: string; headerRight?: (p: { canGoBack: boolean }) => React.ReactNode }; route: { name: string } };
 function Header({ options, route }: HeaderProps) {
@@ -17,7 +17,7 @@ function Header({ options, route }: HeaderProps) {
 
 export default function WebTabsLayout() {
   const c = useColors();
-  const page = { width: "100%" as const, maxWidth: 960, alignSelf: "center" as const, backgroundColor: c.bg };
+  const page = { width: "100%" as const, maxWidth: PAGE_WIDTH, alignSelf: "center" as const, backgroundColor: c.bg };
   return (
     <Tabs tabBar={() => null} screenOptions={{ header: (p) => <Header {...p} />, sceneStyle: page }}>
       <Tabs.Screen name="index" options={{ title: "Home", headerShown: false, sceneStyle: { backgroundColor: c.bg } }} />

@@ -10,7 +10,7 @@ const webApp = () => (config.storeDomain ? `https://app.${config.storeDomain}` :
 const BASE_CSS = `
 :root{--bg:#090B0E;--surface:#14171C;--sunk:#1D2128;--ink:#F5F6F8;--muted:#ADB4BF;--line:#363C46;--platinum:#E5E9F0;--on-platinum:#11151B;--copper:#D99568;--good:#76D8B3;--bad:#FFA89C;color-scheme:dark}
 *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-a{color:inherit}.wrap{max-width:1040px;margin:0 auto;padding-inline:20px}
+a{color:inherit}.wrap{max-width:1840px;margin:0 auto;padding-inline:clamp(20px,3vw,48px)}
 header{padding-block:18px;border-bottom:1px solid rgba(54,60,70,.5)}header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:21px;letter-spacing:-.02em}.brand img{width:30px;height:30px}
 header nav{display:flex;gap:20px;font-weight:500;font-size:15px;flex-wrap:wrap}header nav a{text-decoration:none;color:var(--muted)}header nav a:hover,header nav a[aria-current]{color:var(--ink)}
