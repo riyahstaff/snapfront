@@ -703,12 +703,16 @@ function ownerAvatar(id) {
 app.get("/api/admin/owner/avatars", adminOnly, (_req, res) => {
   const accounts = ownerAccounts();
   res.json({ avatars: accounts.flatMap((acc) => db.prepare("SELECT a.*, s.store_name FROM avatars a JOIN sellers s ON s.id = a.seller_id WHERE a.account_id = ? ORDER BY a.created_at DESC, a.rowid DESC").all(acc.id)
-    .map((a) => ({ id: a.id, store: a.store_name, account: acc.email, name: a.name, style: a.style, source: a.source || "ai", look: a.look, status: a.status, created_at: a.created_at, image_url: a.image_file ? `${config.publicUrl}/img/${a.image_file}` : null }))),
+    .map((a) => ({ id: a.id, store: a.store_name, account: acc.email, account_id: acc.id, name: a.name, style: a.style, source: a.source || "ai", look: a.look, status: a.status, created_at: a.created_at, image_url: a.image_file ? `${config.publicUrl}/img/${a.image_file}` : null }))),
     credits: Object.fromEntries(accounts.map((acc) => [acc.email, credits.balance(acc.id)])) });
 });
 app.post("/api/admin/owner/avatars/:id/restyle", adminOnly, wrap(async (req, res) => {
   const o = ownerAvatar(req.params.id);
   res.status(201).json(await avatars.restyle(o.account, o.seller, o.avatar.id, req.body || {}));
+}));
+app.post("/api/admin/owner/avatars/:id/face-camera", adminOnly, wrap(async (req, res) => {
+  const o = ownerAvatar(req.params.id);
+  res.status(201).json(await avatars.turnToCamera(o.account, o.seller, o.avatar.id, req.body || {}));
 }));
 app.get("/api/admin/owner/avatars/:id", adminOnly, wrap(async (req, res) => { const o = ownerAvatar(req.params.id); res.json(await avatars.avatar(o.seller, o.avatar.id)); }));
 app.post("/api/admin/owner/avatars/:id/talk", adminOnly, wrap(async (req, res) => {

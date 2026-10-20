@@ -182,5 +182,6 @@ test("the owner's avatar tools need the admin token and only reach owner account
     assert.equal((await call("POST", "/api/admin/owner/avatars/avt_customer/restyle", { headers: admin, body: { look: "a blazer" } })).status, 404, "customers' avatars are out of reach");
     assert.equal((await call("POST", "/api/admin/owner/avatars/avt_customer/talk", { headers: admin, body: { script: "Hello there everyone" } })).status, 404);
     assert.equal((await call("GET", "/api/admin/owner/avatars/avt_customer", { headers: admin })).status, 404);
+    assert.equal((await call("POST", "/api/admin/owner/avatars/avt_customer/face-camera", { headers: admin, body: {} })).status, 404);
   } finally { config.ownerEmails = []; }
 });

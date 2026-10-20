@@ -352,6 +352,26 @@ export async function restyle(account, seller, id, b = {}) {
   return avatarView(getAvatar(seller, newId_));
 }
 
+/** Owner tools: the same person from an avatar photo, turned to face the camera, as a photo avatar that
+ *  can talk. Used for Snapfront's own tutorials (a "From behind" avatar can't talk by design). */
+export async function turnToCamera(account, seller, id, b = {}) {
+  const from = getAvatar(seller, id);
+  if (from.status !== "done" || !from.image_file || !fs.existsSync(path.join(dirs.images, from.image_file))) throw httpError(409, "This avatar isn't ready yet.");
+  roomForAvatar(seller);
+  if (!aimedia.enabled()) throw httpError(503, "AI avatars aren't switched on yet.");
+  const look = clean(b.look, 240);
+  const prompt = "Image 1 shows a person, partly turned away and framed inside a phone screen. Create a new photorealistic portrait of the exact same person: "
+    + "the same face, facial features, skin tone, curly hair, build and outfit, unchanged and instantly recognisable. "
+    + "They now face the camera directly, looking into the lens with a warm, natural smile and relaxed shoulders, head and shoulders to half-body, centered. "
+    + `${look ? `They are wearing ${look}. ` : ""}A normal full-frame photo: no phone, no device, no screen frame, no border. `
+    + `Soft, even studio light, plain warm light background, sharp focus. One person only. ${NO_TEXT}`;
+  const newId_ = newId("avt");
+  db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, look, source, consent_at, ref_files, gen_prompt) VALUES (?,?,?,?,?,?,?,?,?,?)")
+    .run(newId_, seller.id, account.id, clean(b.name, 30) || `${from.name.slice(0, 16)} (facing)`, "photo", look || from.look || "", "ai", from.consent_at, JSON.stringify([from.image_file]), prompt);
+  try { await submitBlend(newId_, 0); } catch (e) { fail("avatars", newId_, e.message); throw e; }
+  return avatarView(getAvatar(seller, newId_));
+}
+
 /** Delete a blend's two source photos once it's finished either way. */
 function dropSources(id) {
   const row = db.prepare("SELECT src_files FROM avatars WHERE id = ?").get(id);
