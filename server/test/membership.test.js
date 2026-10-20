@@ -139,3 +139,14 @@ test("a reviewer's login works with its fixed code and sends no email; nobody el
   assert.equal((await call("POST", "/api/auth/email/verify", { token: third, body: { email: "reviewer@example.com", code: "482913" } })).status, 429);
   config.reviewLogins = new Map(); config.ownerEmails = [];
 });
+
+test("the owner's usage report counts each feature's records and needs the admin token", async () => {
+  assert.equal((await call("GET", "/api/admin/usage")).status, 401);
+  const r = await call("GET", "/api/admin/usage", { headers: { Authorization: "Bearer admin_test_secret" } });
+  assert.equal(r.status, 200);
+  const { tables } = await r.json();
+  assert.ok(tables.accounts.rows >= 1);
+  assert.ok(tables.sellers.first, "first and last use come from created_at");
+  assert.equal(typeof tables.products.rows, "number");
+  assert.ok(!JSON.stringify(tables).includes("@example.com"), "no customer data, only counts");
+});

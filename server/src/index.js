@@ -666,6 +666,24 @@ app.patch("/api/partners/me", auth, (req, res) => { partners.update(req.account,
 app.put("/api/partners/bio-card", auth, (req, res) => res.json(partners.setBioCard(req.account, req.seller, Boolean(req.body?.on))));
 app.post("/api/partners/claim", auth, (req, res) => res.json(partners.claim(req.account, String(req.body?.code || ""))));
 app.get("/api/admin/partners", adminOnly, (_req, res) => res.json(partners.adminSummary()));
+// Feature usage for the owner: row counts per table (and per status/kind where a table has one),
+// with when each was first and last used. Counts only; no customer data leaves the server.
+app.get("/api/admin/usage", adminOnly, (_req, res) => {
+  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map((t) => t.name);
+  const q = (name) => `"${name.replace(/"/g, '""')}"`;
+  const out = {};
+  for (const name of tables) {
+    const cols = db.prepare(`PRAGMA table_info(${q(name)})`).all().map((c) => c.name);
+    const row = { rows: db.prepare(`SELECT COUNT(*) AS n FROM ${q(name)}`).get().n };
+    const at = ["created_at", "at", "updated_at"].find((c) => cols.includes(c));
+    if (at && row.rows) Object.assign(row, db.prepare(`SELECT MIN(${q(at)}) AS first, MAX(${q(at)}) AS last FROM ${q(name)}`).get());
+    for (const c of ["status", "kind", "operation", "platform", "type", "context", "auth"].filter((c) => cols.includes(c))) {
+      row[`by_${c}`] = Object.fromEntries(db.prepare(`SELECT ${q(c)} AS k, COUNT(*) AS n FROM ${q(name)} GROUP BY ${q(c)} ORDER BY n DESC LIMIT 15`).all().map((r) => [String(r.k), r.n]));
+    }
+    out[name] = row;
+  }
+  res.json({ generated_at: new Date().toISOString(), tables: out });
+});
 app.post("/api/admin/partners/:id/paid", adminOnly, (req, res) => res.json(partners.markPaid(req.params.id, req.body?.note)));
 app.post("/api/admin/partners/:id/status", adminOnly, (req, res) => res.json(partners.setStatus(req.params.id, req.body?.status)));
 app.post("/api/admin/partners/sweep", adminOnly, wrap(async (_req, res) => res.json({ paid: await partners.sweep() })));
