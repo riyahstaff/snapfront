@@ -3,7 +3,7 @@
     "name": "Snapfront",
     "slug": "snapfront",
     "scheme": "snapfront",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

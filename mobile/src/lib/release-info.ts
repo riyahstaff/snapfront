@@ -1,6 +1,6 @@
 import * as Application from "expo-application";
 
-export const RELEASE_NAME = "Digital Design Studio · 50 designs · offline previews";
+export const RELEASE_NAME = "Connect with Instagram · sale prices · sign out";
 
 /** Native values identify the binary actually installed, not a Play Console track or JS config. */
 export function installedRelease() {
