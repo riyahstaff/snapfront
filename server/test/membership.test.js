@@ -163,3 +163,24 @@ test("signing out ends only this device's session", async () => {
   assert.equal((await call("POST", "/api/auth/logout")).status, 204, "signing out twice is harmless");
   assert.ok(db.prepare("SELECT 1 FROM accounts WHERE id = ?").get(account.id), "the account and its stores are kept");
 });
+
+test("the owner's avatar tools need the admin token and only reach owner accounts", async () => {
+  const { config } = await import("../src/config.js");
+  const { db } = await import("../src/db.js");
+  const admin = { Authorization: "Bearer admin_test_secret" };
+  const owner = await (await call("POST", "/api/sellers", { body: { store_name: "Lucky Owner" } })).json();
+  const customer = await (await call("POST", "/api/sellers", { body: { store_name: "Customer Shop" } })).json();
+  db.prepare("UPDATE accounts SET email = 'boss@example.com' WHERE id = ?").run(owner.account.id);
+  db.prepare("UPDATE accounts SET email = 'buyer@example.com' WHERE id = ?").run(customer.account.id);
+  for (const [id, who] of [["avt_owner", owner], ["avt_customer", customer]]) db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, status) VALUES (?,?,?,?,?,'done')").run(id, who.seller.id, who.account.id, "Ava", "photo");
+  config.ownerEmails = ["boss@example.com"];
+  try {
+    assert.equal((await call("GET", "/api/admin/owner/avatars")).status, 401);
+    const list = await (await call("GET", "/api/admin/owner/avatars", { headers: admin })).json();
+    assert.deepEqual(list.avatars.map((a) => a.id), ["avt_owner"]);
+    assert.equal(list.avatars[0].store, "Lucky Owner");
+    assert.equal((await call("POST", "/api/admin/owner/avatars/avt_customer/restyle", { headers: admin, body: { look: "a blazer" } })).status, 404, "customers' avatars are out of reach");
+    assert.equal((await call("POST", "/api/admin/owner/avatars/avt_customer/talk", { headers: admin, body: { script: "Hello there everyone" } })).status, 404);
+    assert.equal((await call("GET", "/api/admin/owner/avatars/avt_customer", { headers: admin })).status, 404);
+  } finally { config.ownerEmails = []; }
+});

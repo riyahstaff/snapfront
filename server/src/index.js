@@ -689,6 +689,33 @@ app.post("/api/partners/claim", auth, (req, res) => res.json(partners.claim(req.
 app.get("/api/admin/partners", adminOnly, (_req, res) => res.json(partners.adminSummary()));
 // Feature usage for the owner: row counts per table (and per status/kind where a table has one),
 // with when each was first and last used. Counts only; no customer data leaves the server.
+/* ---------- the owner's own avatars, for Snapfront's own tutorials and ads (admin token; owner accounts only) ---------- */
+// Lets the owner's tools find an avatar the owner made in the app, give it a new look (which faces the
+// camera) and make talking videos with it, charged to the owner's own account. Customers' accounts
+// are never reachable here: every request is checked against OWNER_EMAILS.
+const ownerAccounts = () => config.ownerEmails.length ? db.prepare(`SELECT * FROM accounts WHERE lower(email) IN (${config.ownerEmails.map(() => "?").join(",")})`).all(...config.ownerEmails) : [];
+function ownerAvatar(id) {
+  const a = db.prepare("SELECT * FROM avatars WHERE id = ?").get(String(id || ""));
+  const account = a && ownerAccounts().find((x) => x.id === a.account_id);
+  if (!account) throw httpError(404, "That isn't one of the owner's avatars.");
+  return { account, seller: db.prepare("SELECT * FROM sellers WHERE id = ?").get(a.seller_id), avatar: a };
+}
+app.get("/api/admin/owner/avatars", adminOnly, (_req, res) => {
+  const accounts = ownerAccounts();
+  res.json({ avatars: accounts.flatMap((acc) => db.prepare("SELECT a.*, s.store_name FROM avatars a JOIN sellers s ON s.id = a.seller_id WHERE a.account_id = ? ORDER BY a.created_at DESC, a.rowid DESC").all(acc.id)
+    .map((a) => ({ id: a.id, store: a.store_name, account: acc.email, name: a.name, style: a.style, source: a.source || "ai", look: a.look, status: a.status, created_at: a.created_at, image_url: a.image_file ? `${config.publicUrl}/img/${a.image_file}` : null }))),
+    credits: Object.fromEntries(accounts.map((acc) => [acc.email, credits.balance(acc.id)])) });
+});
+app.post("/api/admin/owner/avatars/:id/restyle", adminOnly, wrap(async (req, res) => {
+  const o = ownerAvatar(req.params.id);
+  res.status(201).json(await avatars.restyle(o.account, o.seller, o.avatar.id, req.body || {}));
+}));
+app.get("/api/admin/owner/avatars/:id", adminOnly, wrap(async (req, res) => { const o = ownerAvatar(req.params.id); res.json(await avatars.avatar(o.seller, o.avatar.id)); }));
+app.post("/api/admin/owner/avatars/:id/talk", adminOnly, wrap(async (req, res) => {
+  const o = ownerAvatar(req.params.id);
+  res.status(201).json(await avatarVideos.start(o.account, o.seller, { ...(req.body || {}), kind: "talk", avatar_id: o.avatar.id }));
+}));
+app.get("/api/admin/owner/avatars/:id/videos/:vid", adminOnly, wrap(async (req, res) => { const o = ownerAvatar(req.params.id); res.json(await avatarVideos.one(o.seller, req.params.vid)); }));
 app.get("/api/admin/usage", adminOnly, (_req, res) => {
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map((t) => t.name);
   const q = (name) => `"${name.replace(/"/g, '""')}"`;
