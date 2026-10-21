@@ -10,7 +10,7 @@ import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBo
 import { Figtree_400Regular, Figtree_500Medium, Figtree_700Bold } from "@expo-google-fonts/figtree";
 import type { NativeStackHeaderProps } from "expo-router";
 import { useColors } from "@/lib/theme";
-import { onUpgradeNeeded } from "@/lib/api";
+import { api, onUpgradeNeeded } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
 import { startBilling } from "@/lib/billing";
 import { pageWidthFor } from "@/lib/page-width";
@@ -47,7 +47,11 @@ export default function WebRootLayout() {
   // Checkout and email verification remain accessible to visitors.
   const guestRoute = pathname === "/sign-in" || pathname === "/plans";
   useEffect(() => {
-    if (checked && !me?.account.email && !guestRoute) router.replace("/sign-in");
+    if (!checked || me?.account.email || guestRoute) return;
+    // A new visitor at the app's front door sees the landing page (video, Vierra, features, pricing)
+    // instead of a bare sign-in box; links deeper into the app still ask them to sign in.
+    if (pathname === "/" && typeof window !== "undefined") window.location.replace(api.landingUrl());
+    else router.replace("/sign-in");
   }, [checked, me?.account.email, guestRoute, pathname]);
   if ((!loaded && !error) || (!guestRoute && (!checked || !me?.account.email)))
     return <View style={{ flex: 1, backgroundColor: c.bg }} />;

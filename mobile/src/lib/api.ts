@@ -596,6 +596,8 @@ export const api = {
   legalUrl: (page: "privacy" | "terms") => `${API_URL}/${page}`,
   /** Website pages: the Claude/ChatGPT connector guide and the tools page. */
   siteUrl: (page: "connect-ai" | "tools" | "help") => `${API_URL}/${page}`,
+  /** The public home page (snapfront.app), where new visitors see what Snapfront does. */
+  landingUrl: () => `${API_URL}/`,
   connectedApps: () => request<ConnectedApps>("GET", "/api/connected-apps"),
   /** The members' prompt library (about 1,000 prompts for Claude and ChatGPT). */
   prompts: () => request<PromptLibrary>("GET", "/api/prompts", undefined, undefined, 30000),

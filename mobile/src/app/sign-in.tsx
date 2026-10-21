@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { Body, Button, Notice, Screen } from "@/components/ui";
 import { EmailSignIn } from "@/components/email-sign-in";
 import { startBilling } from "@/lib/billing";
+import { api } from "@/lib/api";
 import { useMe } from "@/lib/account-store";
 import { radius, space, type, useColors } from "@/lib/theme";
 
@@ -40,6 +41,7 @@ export default function SignInScreen() {
         <View style={{ gap: 8, marginTop: space.md }}>
           <Text style={[type.label, { color: c.ink }]}>Not a member yet?</Text>
           <Button label="Become a member" variant="secondary" onPress={() => router.push("/plans")} />
+          <Button label="New here? See everything Snapfront does" variant="ghost" onPress={() => { if (typeof window !== "undefined") window.location.assign(api.landingUrl()); }} />
         </View>
       ) : null}
       {!done ? <Button label="Not now" variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} /> : null}
