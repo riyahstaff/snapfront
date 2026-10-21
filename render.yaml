@@ -1,0 +1,67 @@
+# Snapfront's backup copy on Render (docs/backup-host.md). It deploys from GitHub like Railway,
+# keeps a copy of the main server's data, and does nothing else until STANDBY is set to false.
+# Values marked sync: false are typed into Render's dashboard; secrets never go in this file.
+services:
+  - type: web
+    name: snapfront-backup
+    runtime: node
+    plan: starter            # enough while it waits; switch to Standard (2 GB) when it takes over
+    region: oregon
+    branch: main
+    autoDeploy: true
+    buildCommand: npm run build:render     # the web app is already built and in the repo
+    startCommand: npm run start:render     # copies the latest database first, then starts
+    healthCheckPath: /health
+    disk:
+      name: snapfront-data
+      mountPath: /data
+      sizeGB: 10
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /data
+      - key: STANDBY
+        value: "true"
+      - key: PRIMARY_URL
+        value: https://snapfront-api-production.up.railway.app
+      - key: BACKUP_TOKEN          # the same value as on Railway
+        sync: false
+      # Copy these from Railway (snapfront-api > Variables), unchanged:
+      - { key: PUBLIC_URL, sync: false }
+      - { key: STORE_DOMAIN, sync: false }
+      - { key: OWNER_EMAILS, sync: false }
+      - { key: REVIEW_LOGINS, sync: false }
+      - { key: ADMIN_TOKEN, sync: false }
+      - { key: ACADEMY_STUDIO_TOKEN, sync: false }
+      - { key: DOWNLOAD_SIGNING_SECRET, sync: false }
+      - { key: ANTHROPIC_API_KEY, sync: false }
+      - { key: CLAUDE_MODEL, sync: false }
+      - { key: AGENT_MODEL, sync: false }
+      - { key: STRIPE_SECRET_KEY, sync: false }
+      - { key: STRIPE_PUBLISHABLE_KEY, sync: false }
+      - { key: STRIPE_WEBHOOK_SECRET, sync: false }
+      - { key: PLATFORM_FEE_PERCENT, sync: false }
+      - { key: PLAN_PAY_LATER, sync: false }
+      - { key: REVENUECAT_WEBHOOK_AUTH, sync: false }
+      - { key: GOOGLE_PLAY_SERVICE_ACCOUNT, sync: false }
+      - { key: RESEND_API_KEY, sync: false }
+      - { key: EMAIL_FROM, sync: false }
+      - { key: ELEVENLABS_API_KEY, sync: false }
+      - { key: RUNPOD_API_KEY, sync: false }
+      - { key: SERPAPI_KEY, sync: false }
+      - { key: CJ_API_KEY, sync: false }
+      - { key: CLOUDFLARE_API_TOKEN, sync: false }
+      - { key: INSENSE_URL, sync: false }
+      - { key: JOINBRANDS_URL, sync: false }
+      - { key: META_APP_ID, sync: false }
+      - { key: META_APP_SECRET, sync: false }
+      - { key: META_LOGIN_CONFIG_ID, sync: false }
+      - { key: META_TOKEN_ENCRYPTION_KEY, sync: false }
+      - { key: META_WEBHOOK_VERIFY_TOKEN, sync: false }
+      - { key: META_PUBLISHING_ENABLED, sync: false }
+      - { key: META_AUTODM_ENABLED, sync: false }
+      - { key: INSTAGRAM_APP_ID, sync: false }
+      - { key: INSTAGRAM_APP_SECRET, sync: false }

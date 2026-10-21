@@ -62,6 +62,7 @@ import * as social from "./social.js";
 import * as digitalDesigns from "./digital-designs.js";
 import * as digitalIdeas from "./digital-ideas.js";
 import * as imageAssistant from "./image-assistant.js";
+import * as backup from "./backup.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, affiliateJoinPage, affiliatePortalPage, ugcPage, esc } from "./render.js";
 import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
@@ -70,6 +71,17 @@ import { materializeTemplatePreview } from "./template-preview.js";
 export const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
+
+/* ---------- backup copy on a second host (docs/backup-host.md) ---------- */
+// A copy (STANDBY=true) shows only a notice, so nothing is sent, posted or charged twice.
+app.use((req, res, next) => {
+  if (!config.standby) return next();
+  res.setHeader("X-Robots-Tag", "noindex, nofollow");
+  if (req.path === "/health") return next();
+  if (req.path === "/standby") return res.set("Cache-Control", "no-store").json(backup.standbyStatus());
+  res.status(503).set({ "Retry-After": "3600", "Cache-Control": "no-store" }).type("html").send(backup.STANDBY_PAGE);
+});
+backup.mountBackupRoutes(app, db);
 
 /* ---------- store addresses: <slug>.snapfront.app serves that store's pages at its root ---------- */
 const SHARED_PATHS = /^\/(api|img|media|d|thanks|membership|stripe|suppliers|social|health|privacy|terms|builds|themes|theme-assets|theme-demo|storefront-preview|digital-design-assets|digital-design-exports)(\/|$)/;
@@ -1597,7 +1609,13 @@ app.use((err, req, res, _next) => {
 });
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
-  app.listen(config.port, () => console.log(`Snapfront API on ${config.publicUrl} (port ${config.port})`));
+  app.listen(config.port, () => console.log(`Snapfront API on ${config.publicUrl} (port ${config.port})${config.standby ? ", as the backup copy" : ""}`));
+  if (config.standby) backup.startStandbyWorker();
+  else startBackgroundWork();
+}
+
+/** Everything the live server does on its own: queues, sweeps, syncs. Never on a backup copy. */
+function startBackgroundWork() {
   // The durable SQLite queue is deliberately started only by the real server process, never by
   // imported test apps. Disabled or incomplete Meta configuration starts no worker at all.
   if (social.startWorker()) console.log("[meta] seller publishing worker started");

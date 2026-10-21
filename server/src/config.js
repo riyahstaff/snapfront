@@ -68,6 +68,13 @@ export const config = {
   metaAutoDmEnabled: ["true", "owners"].includes(String(env.META_AUTODM_ENABLED || "").toLowerCase()),
   metaAutoDmOwnersOnly: String(env.META_AUTODM_ENABLED || "").toLowerCase() === "owners",
   metaWebhookVerifyToken: env.META_WEBHOOK_VERIFY_TOKEN || "",
+  // Backup copy on a second host (see docs/backup-host.md). STANDBY=true: this server only keeps a
+  // copy of the main server's data and runs nothing else. BACKUP_TOKEN (32+ characters, the same on
+  // both) lets the copy read the main server's data; PRIMARY_URL is the main server's own address.
+  standby: String(env.STANDBY || "").toLowerCase() === "true",
+  backupToken: String(env.BACKUP_TOKEN || "").trim(),
+  primaryUrl: String(env.PRIMARY_URL || "").trim().replace(/\/+$/, ""),
+  standbySyncHours: Math.max(1, Math.min(48, Number(env.STANDBY_SYNC_HOURS) || 6)),
 };
 
 export const dirs = {
