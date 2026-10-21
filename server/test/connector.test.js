@@ -302,6 +302,13 @@ test("the guide and tools pages are up and link to each other", async () => {
   assert.ok(guide.includes(`${config.publicUrl}/mcp`));
   assert.match(guide, /Add custom connector/);
   assert.match(guide, /Developer mode/);
+  for (const k of ["claude", "chatgpt"]) {
+    assert.ok(guide.includes(`src="/site/tutorials/connect-${k}.mp4"`), k);
+    const v = await fetch(`${base}/site/tutorials/connect-${k}.mp4`, { headers: { Range: "bytes=0-1023" } });
+    assert.equal(v.status, 206, "videos stream (range requests)");
+    assert.match(v.headers.get("content-type"), /video\/mp4/);
+    assert.equal((await fetch(`${base}/site/tutorials/connect-${k}.jpg`)).status, 200);
+  }
   const tools = await (await fetch(`${base}/tools`)).text();
   assert.match(tools, /Tools that work with Snapfront/);
   assert.match(tools, /https:\/\/www\.eromify\.com\/mcp/);

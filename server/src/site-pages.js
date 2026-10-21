@@ -83,7 +83,9 @@ ol.steps li::before{content:counter(s);display:grid;place-items:center;width:30p
 .prompts{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
 .prompt{border:1px solid var(--line);border-radius:16px;padding:16px 18px;background:linear-gradient(180deg,var(--surface),var(--bg))}.prompt b{display:block;font-size:13px;color:var(--copper);letter-spacing:.04em;margin-bottom:6px}
 .note{border-left:3px solid var(--copper);padding:4px 0 4px 16px;color:var(--muted);max-width:70ch}
-ul.plain{margin:10px 0 0;padding-left:20px}ul.plain li{margin-bottom:6px}`;
+ul.plain{margin:10px 0 0;padding-left:20px}ul.plain li{margin-bottom:6px}
+.tut{margin:0 0 22px;max-width:1100px}.tut video{display:block;width:100%;aspect-ratio:16/9;height:auto;border-radius:20px;border:1px solid var(--line);background:#000}
+.tut figcaption{margin-top:10px;font-size:15px;color:var(--muted)}`;
 export function connectAiPage() {
   const url = MCP_URL();
   const body = `<div class="wrap">
@@ -100,7 +102,8 @@ export function connectAiPage() {
 </div>
 <p class="note" style="margin-top:20px">It can't publish or delete products, see your buyers' details, or touch payments and your membership. Changes to a live store show to buyers right away, so your assistant should tell you what it's about to change. Ask it to preview first.</p></section>
 
-<section id="claude"><h2>Connect Claude</h2><div class="grid">
+<section id="claude"><h2>Connect Claude</h2><figure class="tut"><video controls preload="none" playsinline poster="/site/tutorials/connect-claude.jpg" aria-label="Video: how to connect Snapfront to Claude"><source src="/site/tutorials/connect-claude.mp4" type="video/mp4"></video>
+<figcaption>Watch it first: connecting Snapfront to Claude, step by step (1 minute). The Claude screens are illustrations, so yours may look a little different. Presented by an AI avatar.</figcaption></figure><div class="grid">
 <div class="panel"><h3>Free, Pro and Max plans</h3><ol class="steps">
 <li><span>On <a href="https://claude.ai">claude.ai</a> or in the Claude app, open <span class="k">Customize</span> then <span class="k">Connectors</span>.</span></li>
 <li><span>Click <span class="k">Add custom connector</span>. Name it <b>Snapfront</b> and paste <code>${esc(url)}</code> as the URL.</span></li>
@@ -114,7 +117,8 @@ export function connectAiPage() {
 <p class="muted" style="margin-top:14px">Claude asks before each tool runs. Choose <b>Always allow</b> only for the read tools if you like to approve every change.</p></div>
 </div></section>
 
-<section id="chatgpt"><h2>Connect ChatGPT</h2><div class="panel"><ol class="steps">
+<section id="chatgpt"><h2>Connect ChatGPT</h2><figure class="tut"><video controls preload="none" playsinline poster="/site/tutorials/connect-chatgpt.jpg" aria-label="Video: how to connect Snapfront to ChatGPT"><source src="/site/tutorials/connect-chatgpt.mp4" type="video/mp4"></video>
+<figcaption>Watch it first: connecting Snapfront to ChatGPT, step by step (1 minute). The ChatGPT screens are illustrations, so yours may look a little different. Presented by an AI avatar.</figcaption></figure><div class="panel"><ol class="steps">
 <li><span>In ChatGPT on the web, open <span class="k">Settings</span>, then <span class="k">Apps &amp; Connectors</span>, then <span class="k">Advanced settings</span>, and turn on <span class="k">Developer mode</span>. On Business and Enterprise plans an admin may need to allow it first.</span></li>
 <li><span>Back in <span class="k">Apps &amp; Connectors</span>, click <span class="k">Create</span>. Name it <b>Snapfront</b>, paste <code>${esc(url)}</code>, and set Authentication to <b>OAuth</b>.</span></li>
 <li><span>Sign in on the Snapfront page that opens with your email and the 6-digit code, then tap <span class="k">Allow</span>, and finish with <span class="k">Create</span>.</span></li>
