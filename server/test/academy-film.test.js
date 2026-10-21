@@ -44,4 +44,7 @@ test("the UGC lesson plays the film, and the builder doesn't make slides for it"
   const cat = await (await fetch(`${base}/api/academy`, { headers: { Authorization: `Bearer ${s.token}` } })).json();
   assert.equal(cat.modules.flatMap((m) => m.lessons).find((x) => x.id === "ugc").minutes, 5);
   assert.deepEqual(academy.FILMS(), [{ lesson: "ugc", film: "ugc-income", ready: true }]);
+  const list = await fetch(`${base}/api/academy-films`, { headers: { Authorization: `Bearer ${STUDIO}` } });
+  assert.deepEqual((await list.json()).films, academy.FILMS());
+  assert.equal((await fetch(`${base}/api/academy-films`, { headers: { Authorization: `Bearer ${s.token}` } })).status, 403);
 });

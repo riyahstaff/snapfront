@@ -11,7 +11,7 @@ About five minutes, narrated by Cecily (the Academy narrator). It teaches how UG
 | `record.mjs` | Records the app scenes from a private demo server ("Glow Lab", example data only). The Scripts tab shows `demo-script.json`, a real script from the live Scripts tool. |
 | `cards.mjs` | Works out the timing, then draws the cards, phone frames and caption pills frame by frame in Figtree. |
 | `edit.py` | Cuts it together, adds music (`tools/promo/music.py`) and exports to `out/final/`. |
-| `upload.mjs` | Sends the finished film to the live server for the Academy lesson. |
+| `upload.mjs` | Sends the finished film to the live server for the Academy lesson (`GET /api/academy-films` lists them). |
 
 ## Remaking it
 
