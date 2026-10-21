@@ -7,6 +7,8 @@
   var script = document.currentScript;
   var SDK = (script && script.getAttribute("data-sdk")) || "";
   var API = (script && script.getAttribute("data-api")) || "/api/vierra/session";
+  // In the web app the launcher starts hidden and the Home screen shows it (Vierra.show / Vierra.hide).
+  var allowed = !(script && script.hasAttribute("data-hidden"));
   var GREETING = "Hey, I'm Vierra. Ask me anything about Snapfront: how something works, where to find it, or what to do next.";
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -116,10 +118,10 @@
     el.launch = h("button", { class: "launch", type: "button", "aria-haspopup": "dialog", "aria-label": "Ask Vierra, Snapfront's voice guide" },
       '<span class="badge">' + mango(30) + '</span><span>Ask Vierra</span>');
     el.launch.addEventListener("click", open);
+    el.launch.hidden = !allowed;
     root.appendChild(el.launch);
     if (!reduceMotion) {
-      el.launch.classList.add("shimmer");
-      setTimeout(function () { el.launch.classList.remove("shimmer"); }, 6000);
+      if (allowed) shimmer();
       // A gentle reminder every so often, never while the panel is open.
       setInterval(function () { if (el.panel.hidden && document.visibilityState === "visible") { el.launch.classList.remove("shimmer"); void el.launch.offsetWidth; el.launch.classList.add("shimmer"); setTimeout(function () { el.launch.classList.remove("shimmer"); }, 6000); } }, 45000);
     }
@@ -317,12 +319,26 @@
   function close() {
     if (conv) { var c = conv; conv = null; convMode = null; c.endSession().catch(function () {}); }
     thinking = false; animate();
-    el.panel.hidden = true; el.launch.hidden = false;
-    el.launch.focus();
+    el.panel.hidden = true; el.launch.hidden = !allowed;
+    if (allowed) el.launch.focus();
+  }
+  function shimmer() {
+    if (reduceMotion || !el.launch) return;
+    el.launch.classList.remove("shimmer"); void el.launch.offsetWidth; el.launch.classList.add("shimmer");
+    setTimeout(function () { el.launch.classList.remove("shimmer"); }, 6000);
+  }
+  /** Show the launcher (with its shimmer) or hide it; an open panel stays open until it's closed. */
+  function setAllowed(on) {
+    var was = allowed; allowed = on;
+    if (!el.launch || !el.panel.hidden) return;
+    el.launch.hidden = !on;
+    if (on && !was) shimmer();
   }
   window.addEventListener("pagehide", function () { if (conv) try { conv.endSession(); } catch (_) {} });
 
-  window.Vierra = { open: function () { open(); }, close: function () { close(); }, ask: function () { open(); setView("type"); } };
+  window.Vierra = { open: function () { open(); }, close: function () { close(); }, ask: function () { open(); setView("type"); },
+    show: function () { setAllowed(true); }, hide: function () { setAllowed(false); } };
+  try { window.dispatchEvent(new Event("vierra-ready")); } catch (_) {}
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build); else build();
   document.addEventListener("click", function (e) { var t = e.target.closest && e.target.closest("[data-open-vierra]"); if (t) { e.preventDefault(); open(); } });
 })();

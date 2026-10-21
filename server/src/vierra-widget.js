@@ -9,7 +9,19 @@ let version = null;
 const widgetVersion = () => (version ??= crypto.createHash("sha256").update(fs.readFileSync(WIDGET)).digest("hex").slice(0, 10));
 
 /** The tag, or "" when Vierra is switched off (no ElevenLabs key or VIERRA_ENABLED=false). */
-export function vierraTag() {
+export function vierraTag({ hidden = false } = {}) {
   if (!String(process.env.ELEVENLABS_API_KEY || "").trim() || process.env.VIERRA_ENABLED === "false") return "";
-  return `<script src="/site/vierra/vierra.js?v=${widgetVersion()}" data-sdk="/site/vierra/elevenlabs-client-${SDK_VERSION}.js" defer></script>`;
+  return `<script src="/site/vierra/vierra.js?v=${widgetVersion()}" data-sdk="/site/vierra/elevenlabs-client-${SDK_VERSION}.js"${hidden ? " data-hidden" : ""} defer></script>`;
+}
+
+/** The web app's index.html with Vierra added, hidden until the app's Home screen shows her. */
+let appPage = null;   // { mtimeMs, html }
+export function withVierra(file) {
+  const st = fs.statSync(file);
+  if (!appPage || appPage.mtimeMs !== st.mtimeMs) {
+    const html = fs.readFileSync(file, "utf8");
+    const tag = vierraTag({ hidden: true });
+    appPage = { mtimeMs: st.mtimeMs, html: tag && html.includes("</body>") ? html.replace("</body>", `${tag}</body>`) : html };
+  }
+  return appPage.html;
 }

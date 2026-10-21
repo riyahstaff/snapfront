@@ -31,6 +31,7 @@ import * as sitePages from "./site-pages.js";
 import * as promptLibrary from "./prompt-library.js";
 import * as helpPage from "./help-page.js";
 import * as vierra from "./vierra.js";
+import { withVierra } from "./vierra-widget.js";
 import * as studio from "./studio.js";
 import { ensureModel as ensureCutoutModel } from "./cutout.js";
 import * as supplierDirectory from "./supplier-directory.js";
@@ -86,7 +87,7 @@ function serveWebApp(req, res, next) {
   webappStatic(req, res, () => {
     if (!fs.existsSync(webappIndex())) return res.status(503).send("The Snapfront web app is being updated. Try again in a minute.");
     res.setHeader("Cache-Control", "no-cache");
-    res.sendFile(webappIndex());
+    res.type("html").send(withVierra(webappIndex()));
   });
 }
 // The web app (app.snapfront.app) calls the API, photos and files on snapfront.app.

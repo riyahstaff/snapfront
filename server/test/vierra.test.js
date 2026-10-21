@@ -163,3 +163,15 @@ test("the home and help pages carry the widget, and the SDK is served compressed
   const sdkFile = fs.readFileSync(new URL("../assets/vierra/elevenlabs-client.min.js", import.meta.url));
   assert.ok(zlib.brotliCompressSync(sdkFile).length < 200_000);
 });
+
+test("the web app's page gets Vierra hidden, for its Home screen to show", async () => {
+  const { withVierra, vierraTag } = await import("../src/vierra-widget.js");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vierra-app-"));
+  const file = path.join(dir, "index.html");
+  fs.writeFileSync(file, "<!doctype html><html><body><div id=\"root\"></div></body></html>");
+  const html = withVierra(file);
+  assert.match(html, /<script src="\/site\/vierra\/vierra\.js\?v=[0-9a-f]{10}" data-sdk="[^"]+" data-hidden defer><\/script><\/body>/);
+  assert.equal((html.match(/vierra\.js/g) || []).length, 1);
+  assert.doesNotMatch(vierraTag(), /data-hidden/, "the website's pages show her straight away");
+  fs.rmSync(dir, { recursive: true, force: true });
+});

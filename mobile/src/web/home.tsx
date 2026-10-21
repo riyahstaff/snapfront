@@ -18,6 +18,7 @@ import { ToolCard } from "./tool-card";
 import { PromoFilm } from "./promo-film";
 import { alpha, fonts, useColors } from "@/lib/theme";
 import { CONTENT, WebFooter } from "./web-nav";
+import { useAskVierra } from "@/lib/ask-vierra";
 
 
 type Hover = PressableStateCallbackType & { hovered?: boolean };
@@ -47,6 +48,7 @@ const TOOLS: { title: string; art: string; detail: string; icon: Icon; href: Hre
 ];
 
 export default function WebHome() {
+  useAskVierra();
   const c = useColors();
   const me = useMe();
   const { width } = useWindowDimensions();
