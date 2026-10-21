@@ -57,6 +57,32 @@ test("malformed prompt files are refused with a clear reason", () => {
   assert.equal(ok.categories[0].blurb, "One line");
 });
 
+test("groups, @for lines and connector: off", () => {
+  const dir = fs.mkdtempSync(path.join(tmp, "groups-"));
+  const long = "Package this as a Snapfront digital download and plan the launch. ".repeat(7);
+  fs.writeFileSync(path.join(dir, "01.txt"), `# category: Shop\n# blurb: B\n\n## Mine\n${long}\n`);
+  fs.writeFileSync(path.join(dir, "02.txt"), `# category: Shop\n# group: Ebooks and guides\n# connector: off\n# source: chapter 2\n\n## Theirs\n@for: solo sellers\n${long}\n## Theirs with a tool\n@for: shops\n${long} Then use get_store.\n`);
+  const { prompts } = lib.loadPrompts(dir);
+  const [mine, theirs, tool] = prompts;
+  assert.equal(mine.group, ""); assert.equal(mine.for, ""); assert.equal(mine.snapfront, true);
+  assert.equal(theirs.group, "Ebooks and guides"); assert.equal(theirs.for, "solo sellers");
+  assert.equal(theirs.snapfront, false, "mentions Snapfront but doesn't use the connector");
+  assert.ok(!theirs.prompt.startsWith("@for"), "the @for line isn't part of the prompt");
+  assert.equal(tool.snapfront, true, "naming a connector tool still counts");
+  fs.writeFileSync(path.join(dir, "03.txt"), `# category: Shop\n# connector: maybe\n`);
+  assert.throws(() => lib.loadPrompts(dir), /can only be "off"/);
+});
+
+test("the full set: 1,000 prompts, and every imported plan says who it's for", () => {
+  const { prompts, categories } = lib.loadPrompts();
+  assert.ok(prompts.length >= 1000, `${prompts.length} prompts`);
+  const grouped = prompts.filter((p) => p.group);
+  assert.ok(grouped.length >= 500);
+  for (const p of grouped) assert.ok(p.for, `${p.id} has a buyer`);
+  assert.ok(categories.length <= 14, "the category filter stays short");
+  assert.doesNotMatch(prompts.map((p) => p.prompt).join("\n"), /\bAct as a (AI|RPA|instructional)\b/);
+});
+
 test("files with the same category merge, and IDs come from titles", () => {
   const dir = fs.mkdtempSync(path.join(tmp, "merge-"));
   const long = "Use Snapfront to check my store. ".repeat(12);
@@ -80,6 +106,8 @@ test("/prompts serves every prompt with copy buttons, highlighted blanks and com
   for (const p of prompts) assert.ok(html.includes(`id="${p.id}"`), p.id);
   for (const c of categories) assert.ok(html.includes(`data-cat="${c.id}"`), c.id);
   assert.equal((html.match(/class="btn copy"/g) || []).length, prompts.length);
+  for (const g of new Set(prompts.map((p) => p.group).filter(Boolean))) assert.ok(html.includes(`<h3 class="gh">${g.replace(/&/g, "&amp;")}<span>`), g);
+  assert.match(html, /<p class="for">For [a-z]/);
   assert.match(html, /<mark>\[[A-Z]/);
   assert.equal((html.match(/<script>/g) || []).length, 1, "only the page's own script");
   assert.match(html, /href="\/connect-ai"/);
@@ -100,7 +128,7 @@ test("/api/prompts returns the library as JSON", async () => {
   const body = await res.json();
   assert.equal(body.count, body.prompts.length);
   assert.ok(body.count >= 500);
-  assert.deepEqual(Object.keys(body.prompts[0]).sort(), ["category", "id", "prompt", "snapfront", "title"]);
+  assert.deepEqual(Object.keys(body.prompts[0]).sort(), ["category", "for", "group", "id", "prompt", "snapfront", "title"]);
 });
 
 test("the site menu and the connector guide link to the library", async () => {
