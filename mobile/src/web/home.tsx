@@ -38,7 +38,7 @@ const TOOLS: { title: string; art: string; detail: string; icon: Icon; href: Hre
   { title: "Instagram AutoDM", art: "autodm", detail: "Someone comments a keyword; your Instagram DMs them the link.", icon: "chatbubble-ellipses-outline", href: "/autodm" },
   { title: "Affiliates", art: "affiliates", detail: "Fans and creators share their own link and earn on each sale.", icon: "ribbon-outline", href: "/affiliates" },
   { title: "Ad pixels", art: "pixels", detail: "Meta, TikTok, Google and Pinterest see your sales, so ads find buyers.", icon: "pulse-outline", href: "/pixels" },
-  { title: "Earn with Snapfront", art: "earn", detail: "Share your link: 40% of every Lifetime sale and $19 a month for every Monthly member.", icon: "cash-outline", href: "/earn" },
+  { title: "Earn with Snapfront", art: "earn", detail: "Share your link and earn 40% of every membership payment from the people you send.", icon: "cash-outline", href: "/earn" },
   { title: "Snapfront Academy", art: "academy", detail: "Short video lessons: your store, content, going LIVE on TikTok and the top 10 ways to market.", icon: "school-outline", href: "/academy" },
   { title: "Faceless videos", art: "faceless", detail: "Your product photos, big captions and a natural voiceover, ready for TikTok and Reels.", icon: "videocam-outline", href: "/faceless" },
   { title: "AI avatars", art: "avatars", detail: "An original AI character, your own photo or a blend of two that shows off your products in posts, stories and videos.", icon: "person-circle-outline", href: "/avatars" },
@@ -91,9 +91,6 @@ export default function WebHome() {
           </View>
           <View style={{ flex: wide ? 1 : undefined, borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: c.line, aspectRatio: 4 / 3, boxShadow: c.dark ? "0 40px 120px rgba(0,0,0,0.6)" : "0 40px 100px rgba(15,18,23,0.18)" } as object}>
             <Image source={require("../../assets/chrome-hero.jpg")} contentFit="cover" style={{ width: "100%", height: "100%" }} accessibilityLabel="A brushed-chrome doorway with storefront examples" />
-            <View style={{ position: "absolute", left: 14, bottom: 12, backgroundColor: "rgba(9,11,14,0.7)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: c.muted }}>Concept artwork</Text>
-            </View>
           </View>
         </View>
       </View>

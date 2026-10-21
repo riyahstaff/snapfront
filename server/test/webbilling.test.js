@@ -86,13 +86,13 @@ test("buying Lifetime on the website: Stripe Checkout, then Pro unlocks for good
   const { token, seller } = (await web("POST", "/api/sellers", null, {})).json();
   const offers = (await web("GET", "/api/billing/web/offers", token)).json();
   assert.equal(offers.enabled, true);
-  assert.deepEqual(offers.offers.map((o) => [o.plan, o.price]), [["lifetime", "$299"], ["pro", "$69"]]);
+  assert.deepEqual(offers.offers.map((o) => [o.plan, o.price]), [["lifetime", "$499"], ["pro", "$99"]]);
 
   const r = (await web("POST", "/api/billing/web/checkout", token, { plan: "lifetime" })).json();
   assert.match(r.url, /^https:\/\/checkout\.stripe\.com\//);
   const s = created.at(-1);
   assert.equal(s.mode, "payment");
-  assert.equal(s.line_items[0].price_data.unit_amount, 29900);
+  assert.equal(s.line_items[0].price_data.unit_amount, 49900);
   assert.equal(s.metadata.snapfront_plan, "lifetime");
   assert.match(s.success_url, /^https:\/\/app\.shopdomain\.test\/plans\?checkout=done&session_id=\{CHECKOUT_SESSION_ID\}$/);
 
@@ -125,7 +125,7 @@ test("Pro on the website follows the Stripe subscription, and deleting the accou
   const s = created.at(-1);
   assert.equal(s.mode, "subscription");
   assert.deepEqual(s.line_items[0].price_data.recurring, { interval: "month" });
-  assert.equal(s.line_items[0].price_data.unit_amount, 6900);
+  assert.equal(s.line_items[0].price_data.unit_amount, 9900);
 
   const end = Math.floor(Date.now() / 1000) + 30 * 864e2;
   subs.set("sub_1", { id: "sub_1", status: "active", items: { data: [{ current_period_end: end }] } });
@@ -228,4 +228,61 @@ test("monthly subscribers can switch to Lifetime; the monthly plan then stops at
   subs.get("sub_9").status = "canceled";
   db.prepare("UPDATE stripe_plan_purchases SET checked_at = datetime('now', '-1 hour')").run();
   assert.equal((await web("POST", "/api/billing/sync", token)).json().account.plan, "pro");
+});
+
+test("Lifetime is for the first LIFETIME_LIMIT members, then Yearly ($499 a year) takes its place", async () => {
+  const sold = () => db.prepare("SELECT COUNT(DISTINCT account_id) AS n FROM stripe_plan_purchases WHERE plan = 'lifetime' AND status = 'active'").get().n;
+  const buyer = (await web("POST", "/api/sellers", null, {})).json();
+  let offers = (await web("GET", "/api/billing/web/offers", buyer.token)).json().offers;
+  assert.equal(offers[0].plan, "lifetime");
+  assert.equal(offers[0].limit, 500);
+  assert.equal(offers[0].left, 500 - sold());
+  // Before the spots are gone, Yearly can't be bought.
+  assert.equal((await web("POST", "/api/billing/web/checkout", buyer.token, { plan: "yearly" })).status, 409);
+
+  process.env.LIFETIME_LIMIT = String(sold());   // every founding spot taken
+  try {
+    offers = (await web("GET", "/api/billing/web/offers", buyer.token)).json().offers;
+    assert.deepEqual(offers.map((o) => [o.plan, o.price]), [["yearly", "$499"], ["pro", "$99"]]);
+    const closed = await web("POST", "/api/billing/web/checkout", buyer.token, { plan: "lifetime" });
+    assert.equal(closed.status, 409);
+    assert.match(closed.json().error, /founding Lifetime memberships are taken/);
+    const r = await web("POST", "/api/billing/web/checkout", buyer.token, { plan: "yearly" });
+    assert.equal(r.status, 200);
+    const s = created.at(-1);
+    assert.equal(s.mode, "subscription");
+    assert.equal(s.line_items[0].price_data.unit_amount, 49900);
+    assert.deepEqual(s.line_items[0].price_data.recurring, { interval: "year" });
+    assert.equal(s.allow_promotion_codes, true);
+    // The home page and the sales page follow.
+    const home = (await req("shopdomain.test", "GET", "/")).text;
+    assert.match(home, /plans\?buy=yearly">Join for \$499 a year</);
+    assert.doesNotMatch(home, /FOUNDING 500/);
+    assert.match((await req("shopdomain.test", "GET", "/join")).text, /Get Yearly for \$499/);
+  } finally { delete process.env.LIFETIME_LIMIT; }
+  const home = (await req("shopdomain.test", "GET", "/")).text;
+  assert.match(home, /FOUNDING 500/);
+  assert.match(home, /founding spots left/);
+});
+
+test("search engines get robots.txt, a sitemap, canonical links and structured data", async () => {
+  const robots = await req("shopdomain.test", "GET", "/robots.txt");
+  assert.match(robots.text, /Disallow: \/api\//);
+  assert.match(robots.text, /Sitemap: https:\/\/shopdomain\.test\/sitemap\.xml/);
+  const map = (await req("shopdomain.test", "GET", "/sitemap.xml")).text;
+  for (const p of ["/", "/join", "/themes", "/help", "/connect-ai"]) assert.ok(map.includes(`<loc>https://shopdomain.test${p}</loc>`), p);
+  const home = (await req("shopdomain.test", "GET", "/")).text;
+  assert.match(home, /<link rel="canonical" href="https:\/\/shopdomain\.test\/">/);
+  assert.match(home, /twitter:card/);
+  const ld = JSON.parse(home.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]);
+  const types = ld["@graph"].map((g) => g["@type"]);
+  assert.deepEqual(types, ["Organization", "WebSite", "SoftwareApplication", "VideoObject"]);
+  assert.equal(ld["@graph"][2].offers[0].price, "499.00");
+  assert.doesNotMatch(home, /Concept artwork/);
+  assert.ok((home.match(/<video class="loop"/g) || []).length >= 9, "the cards have their animations");
+  const help = (await req("shopdomain.test", "GET", "/help")).text;
+  const faq = JSON.parse(help.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]);
+  assert.equal(faq["@type"], "FAQPage");
+  assert.ok(faq.mainEntity.length > 40);
+  assert.match(help, /<link rel="canonical" href="https:\/\/shopdomain\.test\/help">/);
 });

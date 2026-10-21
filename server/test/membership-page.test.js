@@ -39,8 +39,9 @@ test("/join sells the membership with live prices and no income claims", async (
   assert.equal(r.status, 200);
   const text = visible(r.text);
   assert.match(text, /Skip the course\./);
-  assert.match(text, /\$299/);
-  assert.match(text, /\$69/);
+  assert.match(text, /\$499/);
+  assert.match(text, /\$99/);
+  assert.match(text, /500 Lifetime spots left/);
   assert.match(r.text, /https:\/\/app\.snapfront\.test\/plans\?buy=lifetime"/);
   assert.match(r.text, /https:\/\/app\.snapfront\.test\/plans\?buy=pro"/);
   assert.match(text, /All sales are final/);
@@ -60,9 +61,9 @@ test("pay-later wording appears only when PLAN_PAY_LATER is set, with the real s
   process.env.PLAN_PAY_LATER = "klarna, afterpay, nonsense";
   const later = salesPage.payLater();
   assert.deepEqual(later.providers, ["Klarna", "Afterpay"]);
-  assert.equal(later.per, "$74.75");
+  assert.equal(later.per, "$124.75");
   const text = visible((await call(null, "GET", "/join")).text);
-  assert.match(text, /4 payments of \$74\.75 with Klarna or Afterpay/);
+  assert.match(text, /4 payments of \$124\.75 with Klarna or Afterpay/);
   delete process.env.PLAN_PAY_LATER;
 });
 
@@ -105,7 +106,7 @@ test("partners can put a membership card on their link-in-bio page; it always di
   assert.match(page.text, new RegExp(`href="https://snapfront\\.test/join/${code}"`));
   assert.match(visible(page.text), /Snapfront membership/);
   assert.match(visible(page.text), /I earn a commission if you join/);
-  assert.match(visible(page.text), /\$299 for life · or \$69\/month/);
+  assert.match(visible(page.text), /\$499 for life · or \$99\/month/);
 
   // Suspended partners lose the card at once, and can't switch it back on.
   db.prepare("UPDATE partners SET status = 'suspended' WHERE account_id = ?").run(partner.account.id);

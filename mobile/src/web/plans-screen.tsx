@@ -1,4 +1,4 @@
-// Becoming a member on the website: pick Lifetime or Monthly, confirm an email (so the membership
+// Becoming a member on the website: pick Lifetime (first 500 members; then Yearly) or Monthly, confirm an email (so the membership
 // belongs to that email from the start), pay through Stripe Checkout, then get the free phone app.
 // Web-only: metro.config.js uses this in place of src/app/plans.tsx when building the website;
 // the phone app's plans.tsx sells nothing (members sign in there).
@@ -12,7 +12,7 @@ import { EmailSignIn } from "@/components/email-sign-in";
 import { account, useMe } from "@/lib/account-store";
 import { buy, checkoutCanceled, finishReturnFromCheckout, getAppInfo, getOffers, manageSubscription, restore, returningFromCheckout, type Offer } from "@/lib/billing.web";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
-import { PlanCards, type PlanChoice } from "@/components/plan-cards";
+import { FALLBACK_PRICE, PlanCards, type LongOffer, type PlanChoice } from "@/components/plan-cards";
 
 
 export default function PlansWebScreen() {
@@ -44,14 +44,18 @@ export default function PlansWebScreen() {
   const current = me?.account.plan ?? "free";
   // Coming from a pricing button on snapfront.app (…/plans?buy=lifetime): go straight to checkout.
   useEffect(() => {
-    const want: PlanChoice | null = buyParam === "lifetime" || buyParam === "launch" ? "lifetime" : buyParam === "pro" ? "pro" : null;
+    let want: PlanChoice | null = buyParam === "lifetime" || buyParam === "launch" ? "lifetime" : buyParam === "pro" ? "pro" : buyParam === "yearly" ? "yearly" : null;
     if (!want || autoBuy.current || !offers.length || !me || returningFromCheckout()) return;
     autoBuy.current = true;
-    if (me.account.lifetime || (current === "pro" && want === "pro")) return;
+    // An old Lifetime link after the founding spots are gone (or a Yearly link before): the plan on sale.
+    if ((want === "lifetime" || want === "yearly") && !offerFor(want)) want = longOffer?.plan ?? null;
+    if (!want || me.account.lifetime || (current === "pro" && want !== "lifetime")) return;
     void purchase(want);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, when offers and the account are ready
   }, [buyParam, offers, me, current]);
   const offerFor = (p: PlanChoice) => offers.find((o) => o.plan === p);
+  const longRaw = offers.find((o) => o.plan === "lifetime" || o.plan === "yearly");
+  const longOffer: LongOffer | null = longRaw ? { plan: longRaw.plan as LongOffer["plan"], price: longRaw.price, left: longRaw.left, limit: longRaw.limit } : null;
 
   async function purchase(p: PlanChoice, emailReady = false) {
     // The membership belongs to an email from the start: confirm it before paying.
@@ -86,14 +90,14 @@ export default function PlansWebScreen() {
 
   if (welcome && me && me.account.plan !== "free") return <Welcome planName={me.account.plan_name} email={welcome.email} linkedEmail={me.account.email ?? null} />;
   if (gate) {
-    const name = gate === "lifetime" ? "Lifetime" : "Monthly";
-    const price = offerFor(gate)?.price ?? (gate === "lifetime" ? "$299" : "$69");
+    const name = gate === "lifetime" ? "Lifetime" : gate === "yearly" ? "Yearly" : "Monthly";
+    const price = offerFor(gate)?.price ?? FALLBACK_PRICE[gate];
     return (
       <Screen>
         <View style={{ gap: space.sm }}>
           <Text style={[type.label, { color: c.muted }]}>Step 1 of 2</Text>
           <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Your email</Text>
-          <Body muted>Your {name} membership ({price}{gate === "pro" ? " a month" : " once"}) is saved to this email. You’ll use it to sign in here and in the free Snapfront app. Next, you pay securely with Stripe.</Body>
+          <Body muted>Your {name} membership ({price}{gate === "pro" ? " a month" : gate === "yearly" ? " a year" : " once"}) is saved to this email. You’ll use it to sign in here and in the free Snapfront app. Next, you pay securely with Stripe.</Body>
         </View>
         <View style={{ maxWidth: 520, gap: space.md }}>
           <EmailSignIn confirmLabel="Continue to payment" onDone={({ me: next }) => {
@@ -119,7 +123,7 @@ export default function PlansWebScreen() {
       </View>
       <Notice text={busy === "confirm" ? "Checking your payment…" : msg?.text ?? null} tone={busy === "confirm" ? "info" : msg?.tone} />
       {current === "launch" ? <Notice text="You have Launch from before, with one live store. Get Lifetime or Monthly to unlock everything." /> : null}
-      <PlanCards account={me?.account ?? null} prices={{ lifetime: offerFor("lifetime")?.price, pro: offerFor("pro")?.price }} limits={limits?.pro} busy={busy} onBuy={purchase} wide />
+      <PlanCards account={me?.account ?? null} long={longOffer} monthly={offerFor("pro")?.price} limits={limits?.pro} busy={busy} onBuy={purchase} wide />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Ionicons name="lock-closed" size={14} color={c.muted} />
         <Text style={[type.small, { color: c.muted, flex: 1 }]}>Secure checkout by Stripe. Your membership works here and in the free Snapfront app: sign in with the same email.</Text>
@@ -127,7 +131,7 @@ export default function PlansWebScreen() {
       <Button label="Check my purchases" variant="ghost" loading={busy === "restore"} disabled={Boolean(busy)} onPress={doRestore} />
       {current === "pro" && !me?.account.lifetime ? <Button label="Manage subscription" variant="ghost" loading={busy === "manage"} disabled={Boolean(busy)} onPress={manage} /> : null}
       <Text style={[type.small, { color: c.muted }]}>
-        All sales are final. Lifetime is a one-time purchase. Monthly renews every month until you cancel from Manage subscription (or in Google Play, if you subscribed on your phone). If Monthly ends, your stores stop taking orders until you renew.
+        All sales are final. Lifetime is a one-time purchase, for the first 500 members. Monthly renews every month and Yearly every year until you cancel from Manage subscription (or in Google Play, if you subscribed on your phone). If your subscription ends, your stores stop taking orders until you renew.
       </Text>
       {current === "free" && !me?.account.email ? <Button label="Already a member? Sign in" variant="ghost" onPress={() => router.push("/sign-in")} /> : null}
       <Button label={current === "free" ? "Not yet: keep trying it free" : "Back"} variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />

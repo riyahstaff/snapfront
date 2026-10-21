@@ -43,7 +43,7 @@ function Join({ data, onJoined }: { data: PartnerView; onJoined: (v: PartnerView
     <>
       <View style={{ gap: space.sm }}>
         <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Earn {money(p.per_sale)} for every Lifetime sale</Text>
-        <Text style={[type.body, { color: c.muted }]}>Share Snapfront with your followers. When someone you send buys Lifetime ({money(p.lifetime_price)}), you earn {p.rate}%. When they choose Monthly ({money(p.monthly_price)}), you earn {money(p.monthly_per_month)} every month they pay.</Text>
+        <Text style={[type.body, { color: c.muted }]}>Share Snapfront with your followers. When someone you send becomes a member, you earn {p.rate}% of what they pay: {money(p.per_sale)} on {p.long_plan === "yearly" ? "Yearly" : "Lifetime"}, and {money(p.monthly_per_month)} for every month of Monthly ({money(p.monthly_price)}) they pay.</Text>
       </View>
       <Card title="How it works">
         {[
@@ -101,7 +101,7 @@ function Dashboard({ data, onChange }: { data: PartnerView; onChange: (v: Partne
   };
   return (
     <>
-      <Card title="Your link" sub={`You earn ${money(data.program.per_sale)} on every Lifetime sale and ${money(data.program.monthly_per_month)} every month a Monthly member you sent pays.`}>
+      <Card title="Your link" sub={`You earn ${data.program.rate}% of every payment: ${money(data.program.per_sale)} on ${data.program.long_plan === "yearly" ? "each Yearly payment" : "every Lifetime sale"} and ${money(data.program.monthly_per_month)} every month a Monthly member you sent pays.`}>
         <CopyLink url={data.link!} />
         <View style={{ flexDirection: "row", gap: space.md, flexWrap: "wrap" }}>
           <Button label="Share" icon={<Ionicons name="share-outline" size={18} color={c.onAccent} />} onPress={() => Share.share({ message: `I build my online store with Snapfront: ${data.link}` }).catch(() => {})} style={{ flexGrow: 1 }} />

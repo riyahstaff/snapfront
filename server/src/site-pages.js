@@ -4,11 +4,20 @@
 // Same look as the home page: dark, platinum buttons, Figtree.
 import { vierraTag } from "./vierra-widget.js";
 import { config } from "./config.js";
+import { SECTIONS } from "./help-page.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 export const MCP_URL = () => `${config.publicUrl}/mcp`;
 export const webAppUrl = () => webApp();
 const webApp = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
+
+/** Canonical address and the tags Google, Facebook, X and LinkedIn read for a public page. */
+function seoHead({ title, description, path }) {
+  const url = `${config.publicUrl}${path}`, image = `${config.publicUrl}/site/chrome-hero.webp`;
+  return `<link rel="canonical" href="${esc(url)}"><meta property="og:type" content="website"><meta property="og:site_name" content="Snapfront"><meta property="og:url" content="${esc(url)}">`
+    + `<meta property="og:title" content="${esc(title)}">${description ? `<meta property="og:description" content="${esc(description)}">` : ""}<meta property="og:image" content="${esc(image)}">`
+    + `<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}">${description ? `<meta name="twitter:description" content="${esc(description)}">` : ""}<meta name="twitter:image" content="${esc(image)}">`;
+}
 
 const BASE_CSS = `
 :root{--bg:#090B0E;--surface:#14171C;--sunk:#1D2128;--ink:#F5F6F8;--muted:#ADB4BF;--line:#363C46;--platinum:#E5E9F0;--on-platinum:#11151B;--copper:#D99568;--good:#76D8B3;--bad:#FFA89C;color-scheme:dark}
@@ -27,10 +36,10 @@ section{padding-block:44px;border-top:1px solid rgba(54,60,70,.5)}section:first-
 footer{border-top:1px solid rgba(54,60,70,.5);padding-block:28px;color:var(--muted);font-size:14px}footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between}footer nav{display:flex;gap:18px;flex-wrap:wrap}
 code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
 `;
-function shell({ title, description, body, current = "", css = "", plain = false, tail = "" }) {
+function shell({ title, description, body, current = "", css = "", plain = false, tail = "", path = null, jsonLd = null }) {
   const nav = plain ? "" : `<nav aria-label="Site"><a href="/">Home</a><a href="/connect-ai"${current === "connect" ? ' aria-current="page"' : ""}>Claude &amp; ChatGPT</a><a href="/tools"${current === "tools" ? ' aria-current="page"' : ""}>Tools</a><a href="/help"${current === "help" ? ' aria-current="page"' : ""}>Help</a><a href="${webApp()}/sign-in">Sign in</a></nav>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title>${description ? `<meta name="description" content="${esc(description)}">` : ""}
+<title>${esc(title)}</title>${description ? `<meta name="description" content="${esc(description)}">` : ""}${path ? seoHead({ title, description, path }) : '<meta name="robots" content="noindex">'}${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>` : ""}
 <meta name="theme-color" content="#090B0E"><meta name="color-scheme" content="dark"><link rel="icon" href="/site/mark.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap">
 <style>${BASE_CSS}${css}</style></head><body>
@@ -146,7 +155,7 @@ export function connectAiPage() {
 </div>
 <script>(function(){var b=document.getElementById("copy"),u=document.getElementById("u");b.addEventListener("click",function(){var t=u.textContent;function done(){b.textContent="Copied";setTimeout(function(){b.textContent="Copy link"},2000)}
 if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,select)}else select();function select(){var r=document.createRange();r.selectNodeContents(u);var s=getSelection();s.removeAllRanges();s.addRange(r)}})})();</script>`;
-  return shell({ title: "Use Snapfront with Claude or ChatGPT", description: "Connect Snapfront to Claude or ChatGPT so your own assistant can check your store, design it, write product pages and make faceless videos.", body, current: "connect", css: GUIDE_CSS });
+  return shell({ title: "Use Snapfront with Claude or ChatGPT", description: "Connect Snapfront to Claude or ChatGPT so your own assistant can check your store, design it, write product pages and make faceless videos.", body, current: "connect", css: GUIDE_CSS, path: "/connect-ai" });
 }
 
 /* ---------- /tools ---------- */
@@ -175,10 +184,12 @@ export function toolsPage() {
 <p style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap"><a class="btn" href="/connect-ai">Use Snapfront with Claude or ChatGPT</a><a class="btn ghost" href="${esc(webApp())}/prompts">Bonus: 1k Prompts</a></p></section>
 <div class="tools">${cards}</div>
 <p class="fine">Snapfront isn't affiliated with these companies. Their prices, plans and rules are their own, so check them before you sign up. Built in means Snapfront connects to it for you.</p></div>`;
-  return shell({ title: "Tools that work with Snapfront", description: "Claude, ChatGPT, Eromify, Canva, CapCut and the suppliers built into Snapfront: what each is for and how it works with your store.", body, current: "tools", css: TOOLS_CSS });
+  return shell({ title: "Tools that work with Snapfront", description: "Claude, ChatGPT, Eromify, Canva, CapCut and the suppliers built into Snapfront: what each is for and how it works with your store.", body, current: "tools", css: TOOLS_CSS, path: "/tools" });
 }
 
 /* ---------- /help (the body comes from help-page.js) ---------- */
 export function helpShell(body, { css }) {
-  return shell({ title: "Help and FAQ | Snapfront", description: "How Snapfront works: what each feature does, how to set it up and where to find it, with a glossary.", body, current: "help", css, tail: vierraTag() });
+  // Every question on the page, as FAQ structured data (the answers are visible on the page too).
+  const faq = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: SECTIONS.flatMap((sec) => sec.items).map((it) => ({ "@type": "Question", name: it.q, acceptedAnswer: { "@type": "Answer", text: it.a } })) };
+  return shell({ title: "Snapfront help and FAQ: how every feature works", description: "How Snapfront works: AI product pages, storefronts, digital products, marketing, payments, plans and the Android app. Answers, where to find each tool, and a glossary.", body, current: "help", css, tail: vierraTag(), path: "/help", jsonLd: faq });
 }

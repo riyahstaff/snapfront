@@ -218,6 +218,14 @@ app.get("/help", (req, res) => {
   promptLibrary.sendCompressed(req, res, page);
 });
 app.get(["/faq", "/support"], (_req, res) => res.redirect(301, "/help"));
+/* ---------- search engines: robots.txt and the sitemap of the public website pages ---------- */
+app.get("/robots.txt", (_req, res) => res.type("text/plain").set("Cache-Control", "public, max-age=3600").send(
+  `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /d/\nDisallow: /builds/\nDisallow: /mcp\nDisallow: /oauth/\nDisallow: /storefront-preview\n\nSitemap: ${config.publicUrl}/sitemap.xml\n`));
+app.get("/sitemap.xml", (_req, res) => {
+  const pages = [["/", "weekly", "1.0"], ["/join", "weekly", "0.9"], ["/themes", "weekly", "0.8"], ["/help", "weekly", "0.8"], ["/connect-ai", "monthly", "0.7"], ["/tools", "monthly", "0.6"], ["/privacy", "yearly", "0.2"], ["/terms", "yearly", "0.2"]];
+  const day = new Date().toISOString().slice(0, 10);
+  res.type("application/xml").set("Cache-Control", "public, max-age=3600").send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map(([p, f, pr]) => `<url><loc>${config.publicUrl}${p}</loc><lastmod>${day}</lastmod><changefreq>${f}</changefreq><priority>${pr}</priority></url>`).join("\n")}\n</urlset>\n`);
+});
 // The library for the app's "Bonus: 1k Prompts" screen (signed-in app users only).
 app.get("/api/prompts", auth, (req, res) => {
   const page = promptLibrary.promptsJson();
@@ -1591,8 +1599,8 @@ app.get("/privacy", legal("Privacy policy", `
 <h2>Contact</h2><p><a href="mailto:support@snapfront.app">support@snapfront.app</a></p>`));
 app.get("/terms", legal("Terms of use", `
 <p>By using Snapfront you agree to sell only products you have the right to sell, to describe them honestly, and to follow Stripe's terms and restricted-business list. You're responsible for fulfilling orders, taxes and refunds. Snapfront may remove listings that break these rules. Snapfront doesn't take a fee on your sales; Stripe's own processing fees apply.</p>
-<h2>Plans and payments</h2><p>Snapfront Lifetime is a one-time payment; Snapfront Monthly renews every month until you cancel, and you keep it until the end of the month you've paid for. Memberships are bought on snapfront.app (through Stripe); the Snapfront Android app is included free for members, who sign in with the same email. Plans bought earlier through Google Play keep working and are managed in Google Play. <strong>All sales are final: Snapfront plans are non-refundable</strong>, except where the law requires otherwise or where Google Play's own refund policy applies to a Google Play purchase.</p>
-<h2>Snapfront Partners</h2><p>Partners earn 40% of each Snapfront Lifetime sale and $19 for each paid month of Snapfront Monthly from customers they refer, under the rules shown in Earn with Snapfront. Commissions are paid after Snapfront receives the payment. Partners must disclose that they earn a commission, may not make income claims, and may not earn on their own purchases. Snapfront may withhold commissions earned against these rules, on fraudulent or charged-back sales, and may change the program with notice.</p>
+<h2>Plans and payments</h2><p>Snapfront Lifetime is a one-time payment, offered to the first 500 members. Snapfront Monthly renews every month and Snapfront Yearly every year until you cancel, and you keep it until the end of the period you've paid for. Memberships are bought on snapfront.app (through Stripe); the Snapfront Android app is included free for members, who sign in with the same email. Plans bought earlier through Google Play keep working and are managed in Google Play. <strong>All sales are final: Snapfront plans are non-refundable</strong>, except where the law requires otherwise or where Google Play's own refund policy applies to a Google Play purchase.</p>
+<h2>Snapfront Partners</h2><p>Partners earn 40% of every membership payment from customers they refer (a Lifetime purchase, and every paid month of Monthly or year of Yearly), under the rules shown in Earn with Snapfront. Commissions are paid after Snapfront receives the payment. Partners must disclose that they earn a commission, may not make income claims, and may not earn on their own purchases. Snapfront may withhold commissions earned against these rules, on fraudulent or charged-back sales, and may change the program with notice.</p>
 <h2>Contact</h2><p><a href="mailto:support@snapfront.app">support@snapfront.app</a></p>`));
 
 /* ---------- research list shown in the app's "What's selling" tab ---------- */

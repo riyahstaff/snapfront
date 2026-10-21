@@ -2,7 +2,7 @@
 // app's Liquid Chrome look (graphite, platinum, the silver aperture mark and the chrome gateway art).
 import { vierraTag } from "./vierra-widget.js";
 import { PLANS } from "./plans.js";
-import { PLANS as PRICES } from "./webbilling.js";
+import { PLANS as PRICES, longPlan, lifetimeLeft, LIFETIME_LIMIT } from "./webbilling.js";
 import { THEMES, publicThemes } from "./themes.js";
 import { config } from "./config.js";
 import { QUESTIONS } from "./start-plan.js";
@@ -11,19 +11,52 @@ import { PROMO_CSS, promoSection } from "./promo-video.js";
 const webAppUrl = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
 
 const usd = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
+const ART_VERSION = 2;   // same as the web app's tool cards (mobile/src/web/tool-card.tsx)
+/** A short silent loop from assets/site/tools (the web app's tool-card animations). It plays only while on screen. */
+const art = (key, cls = "card-art") => `<div class="${cls}" aria-hidden="true"><video class="loop" muted loop playsinline preload="none" disablepictureinpicture poster="/site/tools/${key}.webp?v=${ART_VERSION}"><source src="/site/tools/${key}.webm?v=${ART_VERSION}" type="video/webm"><source src="/site/tools/${key}.mp4?v=${ART_VERSION}" type="video/mp4"></video></div>`;
+const DESCRIPTION = "Snapfront is an AI online store builder. Snap a photo to get a product page, open a storefront, sell digital downloads, and make posts, videos and emails. Start free.";
+
+/** Structured data for Google: the organization, the site, the app with its prices, and the promo film. */
+function structuredData() {
+  const base = config.publicUrl;
+  const long = longPlan();
+  const offers = [
+    { "@type": "Offer", name: long === "lifetime" ? "Snapfront Lifetime" : "Snapfront Yearly", price: (PRICES[long].cents / 100).toFixed(2), priceCurrency: "USD", url: `${base}/#pricing` },
+    { "@type": "Offer", name: "Snapfront Monthly", price: (PRICES.pro.cents / 100).toFixed(2), priceCurrency: "USD", url: `${base}/#pricing` },
+  ];
+  const graph = [
+    { "@type": "Organization", "@id": `${base}/#org`, name: "Snapfront", url: `${base}/`, logo: `${base}/site/apple-touch-icon.png`, email: "support@snapfront.app" },
+    { "@type": "WebSite", "@id": `${base}/#site`, name: "Snapfront", url: `${base}/`, publisher: { "@id": `${base}/#org` } },
+    { "@type": "SoftwareApplication", name: "Snapfront", applicationCategory: "BusinessApplication", operatingSystem: "Web, Android", url: `${base}/`, description: DESCRIPTION,
+      image: `${base}/site/chrome-hero.webp`, publisher: { "@id": `${base}/#org` }, offers },
+    { "@type": "VideoObject", name: "Snapfront: everything it does, in one quick film", description: "A quick tour of Snapfront: AI product pages from a photo, storefront themes, digital products, marketing posts, faceless videos, email, Instagram AutoDM, affiliates and the Academy.",
+      thumbnailUrl: [`${base}/site/promo/promo.jpg`], contentUrl: `${base}/site/promo/promo-1080.mp4`, uploadDate: "2026-10-18T12:00:00-04:00", duration: "PT1M23S", publisher: { "@id": `${base}/#org` } },
+  ];
+  return JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replace(/</g, "\\u003c");
+}
+
 export function landingPage() {
   const year = new Date().getFullYear();
   const web = webAppUrl();
+  // Lifetime is a founding offer for the first LIFETIME_LIMIT members; then Yearly takes its place.
+  const long = longPlan(), isLife = long === "lifetime", left = lifetimeLeft(), limit = LIFETIME_LIMIT();
+  const taken = Math.min(100, Math.max(2, Math.round((limit - left) / Math.max(1, limit) * 100)));
   const featured = ['p-bridal-dresses','p-gaming-monitors','p-sneakers','p-chocolate','p-furniture','p-streetwear','p-skincare','p-surfboards']
     .map((id) => publicThemes().find((theme) => theme.id === id)).filter((theme) => theme?.preview_url);
   const safe = (s) => String(s ?? '').replace(/[&<>"']/g, (v) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[v]));
   const showcaseSlides = featured.map((theme, i) => '<article class="theme-slide'+(i===0?' active':'')+'" data-slide="'+i+'" aria-hidden="false"><a href="'+safe(theme.demo_url)+'" aria-label="View the '+safe(theme.name)+' storefront theme (read-only demo)"><img loading="'+(i<4?'eager':'lazy')+'" src="'+safe(theme.preview_url)+'" alt="'+safe(theme.name)+' actual Snapfront storefront theme preview"><div class="theme-caption"><span>'+safe(theme.name)+'</span><small>'+safe(theme.category||theme.for)+'</small></div></a></article>').join('');
   const themeDots = featured.map((_,i) => '<button class="carousel-dot'+(i===0?' active':'')+'" type="button" aria-label="Show theme '+(i+1)+'" data-dot="'+i+'"></button>').join('');
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Snapfront: snap a photo, open a store</title>
-<meta name="description" content="Launch a beautiful online store with AI product listings, designer themes, digital products, marketing automation, UGC tools, an affiliate program and step-by-step seller training. Explore Snapfront free.">
-<meta property="og:title" content="Snapfront: snap a photo, open a store"><meta property="og:description" content="Storefront design, AI creative tools, UGC, marketing, affiliates and training in one commerce studio.">
-<meta property="og:image" content="${config.publicUrl}/site/chrome-hero.webp">
+<title>Snapfront: AI store builder. Snap a photo, open a store, sell anything</title>
+<meta name="description" content="${DESCRIPTION}">
+<link rel="canonical" href="${config.publicUrl}/">
+<meta name="robots" content="index,follow,max-image-preview:large,max-video-preview:-1">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Snapfront"><meta property="og:url" content="${config.publicUrl}/">
+<meta property="og:title" content="Snapfront: snap a photo, open a store"><meta property="og:description" content="AI product pages, 100+ storefront themes, digital products, posts, faceless videos, email and affiliates in one place. Start free.">
+<meta property="og:image" content="${config.publicUrl}/site/chrome-hero.webp"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="900"><meta property="og:image:alt" content="Snapfront: a chrome doorway into online storefronts">
+<meta property="og:video" content="${config.publicUrl}/site/promo/promo-720.mp4"><meta property="og:video:type" content="video/mp4">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Snapfront: snap a photo, open a store"><meta name="twitter:description" content="AI product pages, storefronts, digital products, posts and videos in one place. Start free."><meta name="twitter:image" content="${config.publicUrl}/site/chrome-hero.webp">
+<script type="application/ld+json">${structuredData()}</script>
 <meta name="theme-color" content="#090B0E"><meta name="color-scheme" content="dark">
 <link rel="icon" href="/site/mark.png"><link rel="apple-touch-icon" href="/site/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap">
@@ -119,6 +152,47 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
 .quiz ol{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:s}.quiz li{counter-increment:s;display:grid;grid-template-columns:30px 1fr;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
 .quiz li:before{content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--sunk);display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--muted)}
 .quiz li b{display:block}.quiz li span{color:var(--muted);font-size:14px}.quiz .sum{color:var(--muted);margin:0}.quiz .eyebrow{margin:0}
+
+/* Color and motion: looping card art (the web app's tool animations), a livelier hero, founding spots. */
+:root{--mango:#FFB347;--coral:#FF7A59;--violet:#9B8CFF;--glow:linear-gradient(100deg,var(--mango),var(--coral) 45%,var(--violet))}
+.card-art{position:relative;aspect-ratio:16/10;border-radius:14px;overflow:hidden;background:#1d2128;isolation:isolate}
+.card-art video{width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+.card-art:after{content:"";position:absolute;inset:55% 0 0;background:linear-gradient(transparent,rgba(20,23,28,.85));pointer-events:none}
+.steps.with-art li{position:relative;padding:12px 12px 22px}.steps.with-art li::before{position:absolute;top:22px;left:22px;z-index:2;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.steps.with-art li b,.steps.with-art li span{padding:0 10px}.steps.with-art .card-art{margin-bottom:8px}
+.steps li,.capability-grid>div,.learn-card{transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease}
+.steps li:hover,.capability-grid>div:hover,.learn-card:hover{transform:translateY(-4px);border-color:#6b7584;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.steps li:hover video,.capability-grid>div:hover video,.learn-card:hover video{transform:scale(1.06)}
+.capability-grid>div{padding:12px 12px 22px}.capability-grid h3,.capability-grid p{padding:0 10px}.capability-grid h3{margin-top:16px}
+.learn-visual.media{position:relative;padding:0;justify-content:flex-end}.learn-visual.media .card-art{position:absolute;inset:0;aspect-ratio:auto;border-radius:0}
+.learn-visual.media .card-art:after{inset:30% 0 0;background:linear-gradient(transparent,rgba(9,11,14,.92))}
+.learn-visual.media>*:not(.card-art){position:relative;z-index:1;margin-inline:17px}.learn-visual.media>.lock-label{position:absolute;top:17px;left:0;padding:5px 10px;border-radius:999px;background:rgba(9,11,14,.65);backdrop-filter:blur(8px)}
+.learn-visual.media>small:last-child,.learn-visual.media>.lesson-progress:last-child{margin-bottom:17px}
+.learn-visual.media .partner-number{margin:0 17px 6px}
+.hero h1 span{background:linear-gradient(180deg,#FFFFFF 0%,#FFE2B8 45%,#FF9F68 100%);-webkit-background-clip:text;background-clip:text}
+.hero:after{content:"";position:absolute;z-index:-1;inset:-10% -20% auto auto;width:60vw;height:60vw;max-width:780px;max-height:780px;border-radius:50%;background:radial-gradient(circle,rgba(255,150,70,.16),rgba(155,140,255,.08) 45%,transparent 70%);filter:blur(10px);pointer-events:none}
+.hero{isolation:isolate}
+.art{overflow:visible}.art img{border-radius:28px}
+.float{position:absolute;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(20,23,28,.86);backdrop-filter:blur(12px);border:1px solid #3d4450;box-shadow:0 18px 50px rgba(0,0,0,.55);font-size:14px;font-weight:700;white-space:nowrap}
+.float small{display:block;font-weight:500;font-size:12px;color:var(--muted)}.float i{font-style:normal;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.float.f1{top:8%;left:-4%}.float.f1 i{background:#16352c;color:#92e7c6}
+.float.f2{top:44%;right:-5%}.float.f2 i{background:#3a2614;color:var(--mango)}
+.float.f3{bottom:7%;left:6%}.float.f3 i{background:linear-gradient(135deg,var(--mango),var(--coral));color:#2a1405}
+@media(max-width:900px){.float.f1{left:2%}.float.f2{right:2%}}
+@media(max-width:520px){.float{font-size:12px;padding:8px 10px}.float small{display:none}.float i{width:24px;height:24px}.float.f2{display:none}}
+.spots{display:grid;gap:6px;margin:2px 0 4px}.spots-bar{height:8px;border-radius:8px;background:var(--sunk);overflow:hidden;position:relative}
+.spots-bar i{display:block;height:100%;border-radius:8px;background:var(--glow)}
+.spots small{color:var(--muted);font-size:13px}.spots b{color:var(--mango)}
+.plan.pro{position:relative;border-color:transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--glow) border-box;border:2px solid transparent}
+.badge{justify-self:start;font-size:12px;font-weight:800;letter-spacing:.06em;color:#2a1405;background:var(--glow);padding:4px 10px;border-radius:999px}
+@media (prefers-reduced-motion:no-preference){
+ .float{animation:floatIn .7s cubic-bezier(.2,.8,.2,1) both,bob 6s ease-in-out infinite}.float.f2{animation-delay:.25s,1.5s}.float.f3{animation-delay:.5s,3s}
+ @keyframes floatIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+ @keyframes bob{0%,100%{translate:0 0}50%{translate:0 -7px}}
+ .spots-bar i{background-size:200% 100%;animation:shine 3s linear infinite}@keyframes shine{from{background-position:0 0}to{background-position:-200% 0}}
+ .hero:after{animation:drift 18s ease-in-out infinite alternate}@keyframes drift{from{transform:translate(0,0)}to{transform:translate(-6%,8%)}}
+}
+@media(prefers-reduced-motion:reduce){.steps li:hover,.capability-grid>div:hover,.learn-card:hover{transform:none}.card-art video{transition:none}}
 ${PROMO_CSS}</style></head><body>
 <header><div class="wrap"><a class="brand" href="/"><img src="/site/mark.png" alt="" width="32" height="32">snapfront</a>
 <nav><a href="#features">Features</a><a href="#ai-team">AI team</a><a href="#themes">Themes</a><a href="#learn">Learn &amp; earn</a><a href="#pricing">Pricing</a><a href="${web}/sign-in">Sign in</a><a class="btn small" href="#pricing">Unlock Snapfront</a></nav></div></header>
@@ -131,17 +205,20 @@ ${PROMO_CSS}</style></head><body>
     <div class="ctas"><button class="btn" type="button" id="start-here">Start here: find your first step <span aria-hidden="true">→</span></button><a class="btn ghost" href="${web}/sign-in">Start free — create account <span aria-hidden="true">↗</span></a></div>
     <p class="note">Explore the showcase without an account. Verify your email to use the free tools. Upgrade when you are ready to launch.</p>
   </div>
-  <figure class="art" style="margin:0"><img src="/site/chrome-hero.webp" alt="The original Snapfront chrome gateway with jewelry and furniture showcases" width="1200" height="900" fetchpriority="high"><figcaption>Concept artwork</figcaption></figure>
+  <figure class="art" style="margin:0"><img src="/site/chrome-hero.webp" alt="A brushed-chrome Snapfront doorway opening onto jewelry and furniture storefronts" width="1200" height="900" fetchpriority="high">
+    <div class="float f1" aria-hidden="true"><i>✓</i><span>Product page ready<small>Title, photos, price checked</small></span></div>
+    <div class="float f2" aria-hidden="true"><i>$</i><span>New order<small>Paid with Stripe, 0% Snapfront fees</small></span></div>
+    <div class="float f3" aria-hidden="true"><i>🥭</i><span>Ask Vierra<small>“Where do I add a discount?”</small></span></div></figure>
 </div>
 ${promoSection()}
 <section id="themes" class="featured-stores"><div class="wrap"><div class="featured-heading"><div><p class="eyebrow">Original storefront designs</p><h2>Sleek, modern, eye-catching stores. Endless possibilities</h2><p class="sub">Give your brand a stunning storefront that captures attention and turns visitors into customers.</p></div><a class="btn ghost small" href="/themes">See over 100 themes ↗</a></div><div class="hero-showcase carousel-below"><div class="stage-top"><span class="live-pulse"></span> PREMIUM STOREFRONTS <span class="stage-count">OVER 100 DESIGNS</span></div><div class="theme-stage" id="theme-stage" aria-label="Animated showcase of storefront themes">${showcaseSlides}</div><div class="stage-controls"><span>Read-only previews · use arrows to explore</span><div class="stage-actions"><button type="button" id="prev-theme" aria-label="Previous theme">←</button><div class="carousel-dots" id="carousel-dots">${themeDots}</div><button type="button" id="next-theme" aria-label="Next theme">→</button></div></div></div></div></section>
 <section><div class="wrap">
   <h2>From photo to paid in three steps</h2>
   <p class="sub">Everything a small shop needs, written and set up for you.</p>
-  <ol class="steps">
-    <li><b>Snap or pick a product</b><span>Take a photo, upload a supplier screenshot, or add something from your supplier’s catalog.</span></li>
-    <li><b>Get the page and the price</b><span>Title, description, options and a price checked against the big retailers, ready to edit.</span></li>
-    <li><b>Share your store</b><span>Your store gets its own address, like yourshop.snapfront.app. Buyers pay with Stripe and your supplier ships.</span></li>
+  <ol class="steps with-art">
+    <li>${art("snap")}<b>Snap or pick a product</b><span>Take a photo, upload a supplier screenshot, or add something from your supplier’s catalog.</span></li>
+    <li>${art("digital")}<b>Get the page and the price</b><span>Title, description, options and a price checked against the big retailers, ready to edit.</span></li>
+    <li>${art("buyers")}<b>Share your store</b><span>Your store gets its own address, like yourshop.snapfront.app. Buyers pay with Stripe and your supplier ships.</span></li>
   </ol>
   <div class="chips" aria-label="Suppliers you can connect"><span>CJdropshipping</span><span>Printful</span><span>AliExpress</span><span>Your own stock</span></div>
 </div></section>
@@ -149,7 +226,7 @@ ${promoSection()}
   <h2>Join here. Take it everywhere.</h2>
   <p class="sub">Your membership starts on this website. The Snapfront app comes with it, free, so you can snap products and check orders on the go.</p>
   <ol class="steps">
-    <li><b>Pick your access</b><span>Verify your email for a limited free account, or choose Lifetime or Monthly for full Pro access.</span></li>
+    <li><b>Pick your access</b><span>Verify your email for a limited free account, or choose ${isLife ? "Lifetime" : "Yearly"} or Monthly for full Pro access.</span></li>
     <li><b>Open your workspace</b><span>Create and test on your browser; paid plans unlock published storefronts and higher creative allowances.</span></li>
     <li><b>Get the free app</b><span>Download Snapfront on Android and sign in with the same email. Your stores, products and membership are already there.</span></li>
   </ol>
@@ -170,12 +247,12 @@ ${promoSection()}
   </div>
 </div></section>
 <section class="capabilities"><div class="wrap"><p class="eyebrow">Inside the membership</p><h2>Everything works together.</h2><div class="capability-grid">
-  <div><span>✧</span><h3>Store &amp; checkout</h3><p>Theme customization, custom store address, Stripe checkout, orders, discounts, reviews and multi-store management.</p></div>
-  <div><span>◈</span><h3>Creative &amp; digital</h3><p>AI listings, photo enhancement, AI product photos and video, digital designs, editable documents and downloadable products.</p></div>
-  <div><span>⌁</span><h3>Products &amp; suppliers</h3><p>Product discovery, trending ideas, retailer price checks, CJdropshipping, AliExpress, Printful and your own inventory.</p></div>
-  <div><span>↗</span><h3>Audience &amp; marketing</h3><p>AI posts, faceless videos, email campaigns and automations, Instagram AutoDM, growth channels, ad pixels and sales insights.</p></div>
-  <div><span>◇</span><h3>Earn through creators</h3><p>Store affiliates, UGC creator portfolios and brand pitches, and the separate Snapfront referral partner program.</p></div>
-  <div><span>✦</span><h3>Help &amp; education</h3><p>Snapfront Academy, guided lessons, daily content ideas, the store assistant, Vierra the voice guide, a full Help &amp; FAQ and a private members’ community with live coaching.</p></div>
+  <div>${art("sales-profit")}<h3>Store &amp; checkout</h3><p>Theme customization, custom store address, Stripe checkout, orders, discounts, reviews and multi-store management.</p></div>
+  <div>${art("ai-media")}<h3>Creative &amp; digital</h3><p>AI listings, photo enhancement, AI product photos and video, digital designs, editable documents and downloadable products.</p></div>
+  <div>${art("suppliers")}<h3>Products &amp; suppliers</h3><p>Product discovery, trending ideas, retailer price checks, CJdropshipping, AliExpress, Printful and your own inventory.</p></div>
+  <div>${art("marketing")}<h3>Audience &amp; marketing</h3><p>AI posts, faceless videos, email campaigns and automations, Instagram AutoDM, growth channels, ad pixels and sales insights.</p></div>
+  <div>${art("faceless")}<h3>Earn through creators</h3><p>Store affiliates, UGC creator portfolios and brand pitches, and the separate Snapfront referral partner program.</p></div>
+  <div>${art("community")}<h3>Help &amp; education</h3><p>Snapfront Academy, guided lessons, daily content ideas, the store assistant, Vierra the voice guide, a full Help &amp; FAQ and a private members’ community with live coaching.</p></div>
 </div></div></section>
 <section id="ai-team" class="ai-team"><div class="wrap"><p class="eyebrow">New: your AI team</p><h2>Ask, talk and hand off the busywork.<br><span class="soft">Snapfront works with the AI you already use.</span></h2><p class="sub">A voice guide who knows the whole app, a connector that lets Claude or ChatGPT work on your store, and a bonus library of 1,000 ready-to-send prompts.</p><div class="learn-grid">
  <div class="learn-card"><div class="learn-visual vierra-visual"><span class="lock-label">ASK VIERRA</span><div class="v-orb" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 1 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5z" fill="none" stroke="#2a1405" stroke-width="1.8"/><path d="M18.5 11a6.5 6.5 0 0 1-13 0M12 17.5V21" fill="none" stroke="#2a1405" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="v-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><small>Talk or type · answers in seconds</small></div><h3>Talk to someone who knows it all.</h3><p>Vierra is Snapfront’s voice guide. Ask how anything works or where to find it, out loud or by typing, and she answers with the steps and a tip to make it easier.</p><button class="btn small v-try" type="button" data-open-vierra>Talk to Vierra</button></div>
@@ -183,16 +260,16 @@ ${promoSection()}
  <div class="learn-card"><div class="learn-visual prompts-visual"><span class="lock-label">MEMBERS’ BONUS</span><div class="partner-number">1,000</div><strong>Ready-to-send prompts</strong><small>Products · store · videos · side hustles · money · career</small></div><h3>Bonus: 1k Prompts, one tap away.</h3><p>Pick a prompt, fill in your details, and it opens in Claude or ChatGPT already typed in. Hundreds of them use the Snapfront connector, so your assistant can build the product right in your store.</p><a class="quiet-link" href="#pricing">Included with membership ↓</a></div>
 </div></div></section>
 <section id="learn" class="learn-section"><div class="wrap"><p class="eyebrow">Learn it. Use it. Earn with it.</p><h2>Tools build the store.<br><span class="soft">Skills build the business.</span></h2><p class="sub">Snapfront is a creation studio and a place to learn the work behind a thriving shop.</p><div class="learn-grid">
- <div class="learn-card"><div class="learn-visual academy-visual"><span class="lock-label">SNAPFRONT ACADEMY</span><div class="lesson-play">▶</div><strong>From first product to first campaign.</strong><div class="lesson-progress"><i></i></div><small>Lesson previews · step-by-step video teaching</small></div><h3>Follow lessons, not guesses.</h3><p>Understand store setup, creative selling, marketing fundamentals, live social selling and the practical next steps. The first module is open; the full Academy comes with membership.</p></div>
- <div class="learn-card"><div class="learn-visual ugc-visual"><span class="lock-label">UGC CREATOR KIT</span><div class="ugc-profile"><div class="ugc-avatar">UGC</div><strong>Your creator portfolio</strong><small>Portfolio · Rate card · Brand pitches</small><div class="ugc-samples"><i></i><i></i><i></i></div></div></div><h3>Become the creator brands find.</h3><p>Make a UGC portfolio, organize your rates, build video scripts and send stronger pitches to brands — separate from selling products in your store.</p></div>
- <div class="learn-card"><div class="learn-visual partner-visual"><span class="lock-label">AFFILIATE OPPORTUNITIES</span><div class="partner-number">40<span>%</span></div><strong>Lifetime referral commission</strong><small>Plus $19 per paid monthly subscriber month, subject to program terms</small></div><h3>Two ways to grow with affiliates.</h3><p>Recruit promoters for your own products, or join the Snapfront partner program to refer new members and earn on qualifying membership purchases.</p></div>
+ <div class="learn-card"><div class="learn-visual media">${art("academy")}<span class="lock-label">SNAPFRONT ACADEMY</span><strong>From first product to first campaign.</strong><small>Short video lessons, step by step</small></div><h3>Follow lessons, not guesses.</h3><p>Understand store setup, creative selling, marketing fundamentals, live social selling and the practical next steps. The first module is open; the full Academy comes with membership.</p></div>
+ <div class="learn-card"><div class="learn-visual media">${art("ugc")}<span class="lock-label">UGC CREATOR KIT</span><strong>Your creator portfolio</strong><small>Portfolio, rate card and brand pitches</small></div><h3>Become the creator brands find.</h3><p>Make a UGC portfolio, organize your rates, build video scripts and send stronger pitches to brands — separate from selling products in your store.</p></div>
+ <div class="learn-card"><div class="learn-visual media">${art("affiliates")}<span class="lock-label">AFFILIATE OPPORTUNITIES</span><div class="partner-number">40<span>%</span></div><strong>Of every membership payment you refer</strong><small>Lifetime, Monthly or Yearly. Program terms apply and may change.</small></div><h3>Two ways to grow with affiliates.</h3><p>Recruit promoters for your own products, or join the Snapfront partner program to refer new members and earn on qualifying membership purchases.</p></div>
 </div></div></section>
 <section class="differentiator"><div class="wrap"><p class="eyebrow">Why Snapfront?</p><h2>Less switching tabs.<br>More creating momentum.</h2><div class="difference-grid"><div><strong>One connected workflow</strong><p>Product pages, theme design, checkout, content, marketing and education live together — without piecing together disconnected tools.</p></div><div><strong>Built for beginners and builders</strong><p>Start with limited free creation credits, explore polished examples and graduate to more production capacity as you grow.</p></div><div><strong>Your brand takes center stage</strong><p>Customize your storefront, use your own photos and connect Stripe. Snapfront charges 0% platform transaction fees; payment processing still applies.</p></div></div></div></section>
 <section id="pricing" class="vault-section"><div class="wrap">
-  <div class="vault-heading"><div class="vault-emblem" aria-hidden="true">✦<span>🔒</span></div><div><p class="eyebrow">Your access key</p><h2>Unlock the full studio.<br><span class="soft">Everything is waiting inside.</span></h2></div></div><p class="sub">Peek inside with a verified free account. Open the vault with Lifetime or Monthly to unlock the full Pro allowances, live storefront selling, the complete Academy and the connected business toolkit.</p>
+  <div class="vault-heading"><div class="vault-emblem" aria-hidden="true">✦<span>🔒</span></div><div><p class="eyebrow">Your access key</p><h2>Unlock the full studio.<br><span class="soft">Everything is waiting inside.</span></h2></div></div><p class="sub">Peek inside with a verified free account. Open the vault with ${isLife ? "Lifetime" : "Yearly"} or Monthly to unlock the full Pro allowances, live storefront selling, the complete Academy and the connected business toolkit.</p>
   <p class="sub">Buyers pay you directly through Stripe. Stripe’s standard processing fees apply.</p>
   <div class="plans">
-    <div class="plan pro"><h3>Lifetime</h3><div class="price">${usd(PRICES.lifetime.cents)} <small>once, for life</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>The Snapfront Android app, free</li><li>Academy lessons, daily post ideas and the members’ community</li><li>Bonus: 1,000 prompts for Claude and ChatGPT</li><li>Works with Claude and ChatGPT through the Snapfront connector</li><li>Every new feature we add</li></ul><a class="btn small" href="${web}/plans?buy=lifetime">Join for ${usd(PRICES.lifetime.cents)}</a></div>
+    <div class="plan pro">${isLife ? `<span class="badge">FOUNDING 500</span>` : ""}<h3>${isLife ? "Lifetime" : "Yearly"}</h3><div class="price">${usd(PRICES[long].cents)} <small>${isLife ? "once, for life" : "a year"}</small></div>${isLife ? `<div class="spots"><div class="spots-bar" role="img" aria-label="${limit - left} of ${limit} founding Lifetime memberships taken"><i style="width:${taken}%"></i></div><small><b>${left} of ${limit}</b> founding spots left. After that, Lifetime is replaced by Yearly at ${usd(PRICES.yearly.cents)} a year.</small></div>` : ""}<ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>The Snapfront Android app, free</li><li>Academy lessons, daily post ideas and the members’ community</li><li>Bonus: 1,000 prompts for Claude and ChatGPT</li><li>Works with Claude and ChatGPT through the Snapfront connector</li><li>Every new feature we add</li>${isLife ? "<li>No monthly bill, ever</li>" : "<li>Billed once a year, cancel any time</li>"}</ul><a class="btn small" href="${web}/plans?buy=${long}">Join for ${usd(PRICES[long].cents)}${isLife ? "" : " a year"}</a></div>
     <div class="plan"><h3>Monthly</h3><div class="price">${usd(PRICES.pro.cents)} <small>a month</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>The Snapfront Android app, free</li><li>Academy lessons, daily post ideas and the members’ community</li><li>Bonus: 1,000 prompts for Claude and ChatGPT</li><li>Works with Claude and ChatGPT through the Snapfront connector</li><li>Cancel any time</li></ul><a class="btn ghost small" href="${web}/plans?buy=pro">Join for ${usd(PRICES.pro.cents)} a month</a></div>
   </div>
   <p class="note">Pay here with Stripe, then get the Snapfront app free on Android and sign in with the same email. All sales are final.</p>
@@ -227,6 +304,19 @@ ${promoSection()}
  document.addEventListener('visibilitychange',()=>document.hidden?stop():play());
  window.addEventListener('resize',()=>{show(Math.min(index,maxStart()));play();});
  show(0);play();
+})();
+</script>
+<script>
+(function(){
+ const vids=Array.from(document.querySelectorAll('video.loop'));
+ if(!vids.length||!('IntersectionObserver' in window))return;
+ const calm=window.matchMedia('(prefers-reduced-motion: reduce)');
+ const seen=new Set();
+ const sync=(v)=>{ if(seen.has(v)&&!calm.matches&&document.visibilityState==='visible'){v.muted=true;v.play().catch(()=>{});} else v.pause(); };
+ const io=new IntersectionObserver((entries)=>entries.forEach((e)=>{ if(e.isIntersecting)seen.add(e.target); else seen.delete(e.target); sync(e.target); }),{rootMargin:'120px 0px'});
+ vids.forEach((v)=>io.observe(v));
+ const all=()=>vids.forEach(sync);
+ document.addEventListener('visibilitychange',all); calm.addEventListener?.('change',all);
 })();
 </script>
 <dialog class="quiz" id="quiz" aria-labelledby="quiz-title"><div class="in" id="quiz-body"></div></dialog>

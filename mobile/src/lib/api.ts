@@ -762,7 +762,7 @@ export const autodm = {
 export const money = (n: number) => `$${(Number(n) || 0).toFixed(2)}`;
 
 /* ---------- Snapfront Partners (earn by sharing Snapfront) ---------- */
-export type PartnerProgram = { rate: number; monthly_per_month: number; monthly_price: number; hold_days: number; play_hold_days: number; window_days: number; lifetime_price: number; per_sale: number; terms: string[] };
+export type PartnerProgram = { rate: number; monthly_per_month: number; monthly_price: number; hold_days: number; play_hold_days: number; window_days: number; lifetime_price: number; per_sale: number; long_plan?: "lifetime" | "yearly"; yearly_price?: number; yearly_per_year?: number; terms: string[] };
 export type PartnerCommission = { id: string; created_at: string; plan: string; sale: number; commission: number; status: "pending" | "approved" | "paid" | "void"; available_at: string; paid_at: string | null; note: string };
 export type PartnerView = {
   joined: boolean; has_email?: boolean; program: PartnerProgram;

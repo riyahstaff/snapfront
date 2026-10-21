@@ -1,5 +1,6 @@
-// The two memberships, sold on the website (Stripe): Lifetime (one payment, everything for good)
-// and Monthly (everything, billed monthly). The phone app shows only what's included (everything()).
+// The memberships sold on the website (Stripe): Lifetime (one payment, everything for good) for the
+// first 500 members, then Yearly in its place; and Monthly. The phone app shows only what's
+// included (everything()).
 import React from "react";
 import { Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,8 +8,10 @@ import { Body, Button } from "@/components/ui";
 import type { Account, PlanLimits } from "@/lib/api";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
 
-export type PlanChoice = "lifetime" | "pro";
-export const FALLBACK_PRICE: Record<PlanChoice, string> = { lifetime: "$299", pro: "$69" };
+export type PlanChoice = "lifetime" | "pro" | "yearly";
+export const FALLBACK_PRICE: Record<PlanChoice, string> = { lifetime: "$499", pro: "$99", yearly: "$499" };
+/** The long-term plan on sale: Lifetime (with founding spots left) or, once they're gone, Yearly. */
+export type LongOffer = { plan: "lifetime" | "yearly"; price: string; left?: number; limit?: number };
 
 export function everything(l?: PlanLimits): string[] {
   if (!l) return [];
@@ -22,31 +25,43 @@ export function everything(l?: PlanLimits): string[] {
 }
 
 type Props = {
-  account: Account | null; prices: Partial<Record<PlanChoice, string>>; limits?: PlanLimits;
+  account: Account | null; long: LongOffer | null; monthly?: string; limits?: PlanLimits;
   busy: string | null; onBuy: (p: PlanChoice) => void; wide?: boolean;
 };
-export function PlanCards({ account, prices, limits, busy, onBuy, wide }: Props) {
+export function PlanCards({ account, long, monthly, limits, busy, onBuy, wide }: Props) {
+  const c = useColors();
   const lifetime = Boolean(account?.lifetime);
-  const monthly = account?.plan === "pro" && !lifetime;
+  const subscribed = account?.plan === "pro" && !lifetime;
+  const offer: LongOffer = long ?? { plan: "lifetime", price: FALLBACK_PRICE.lifetime };
+  const isLife = offer.plan === "lifetime";
+  const spots = isLife && offer.limit ? (
+    <View style={{ gap: 6 }}>
+      <View style={{ height: 8, borderRadius: 8, backgroundColor: c.sunk, overflow: "hidden" }} accessibilityLabel={`${offer.limit - (offer.left ?? 0)} of ${offer.limit} founding Lifetime memberships taken`}>
+        <View style={{ height: "100%", width: `${Math.min(100, Math.max(2, Math.round((offer.limit - (offer.left ?? 0)) / offer.limit * 100)))}%`, borderRadius: 8, backgroundColor: c.accent }} />
+      </View>
+      <Text style={[type.small, { color: c.muted }]}><Text style={{ fontFamily: fonts.bodyBold, color: c.ink }}>{offer.left} of {offer.limit}</Text> founding spots left. After that, Lifetime is replaced by Yearly.</Text>
+    </View>
+  ) : null;
   return (
     <View style={{ flexDirection: wide ? "row" : "column", flexWrap: "wrap", gap: space.lg }}>
-      <Card title="Lifetime" badge="Best value" price={prices.lifetime ?? FALLBACK_PRICE.lifetime} period="once, for life" featured wide={wide}
-        blurb="Pay once and keep everything, including every feature we add."
-        items={[...everything(limits), "No monthly bill, ever"]}
-        state={lifetime ? "yours" : "buy"} cta={`Get Lifetime for ${prices.lifetime ?? FALLBACK_PRICE.lifetime}`}
-        note={monthly ? "Switching from monthly? Your monthly plan stops at the end of the month you've paid for." : undefined}
-        busy={busy === "lifetime"} disabled={Boolean(busy)} onBuy={() => onBuy("lifetime")} />
-      <Card title="Monthly" price={prices.pro ?? FALLBACK_PRICE.pro} period="a month" wide={wide}
+      <Card title={isLife ? "Lifetime" : "Yearly"} badge={isLife ? "Founding 500" : "Best value"} price={offer.price} period={isLife ? "once, for life" : "a year"} featured wide={wide}
+        blurb={isLife ? "Pay once and keep everything, including every feature we add. Only for the first 500 members." : "Everything in Snapfront, billed once a year. Cancel any time."}
+        extra={spots}
+        items={[...everything(limits), isLife ? "No monthly bill, ever" : "Billed once a year"]}
+        state={lifetime ? (isLife ? "yours" : "covered") : subscribed && !isLife ? "covered-sub" : "buy"} cta={`Get ${isLife ? "Lifetime" : "Yearly"} for ${offer.price}`}
+        note={subscribed && isLife ? "Switching from a subscription? It stops at the end of the period you've paid for." : undefined}
+        busy={busy === offer.plan} disabled={Boolean(busy)} onBuy={() => onBuy(offer.plan)} />
+      <Card title="Monthly" price={monthly ?? FALLBACK_PRICE.pro} period="a month" wide={wide}
         blurb="Everything in Snapfront. Cancel any time."
         items={everything(limits)}
-        state={monthly ? "yours" : lifetime ? "covered" : "buy"} cta={`Start monthly for ${prices.pro ?? FALLBACK_PRICE.pro}/month`}
+        state={subscribed ? "yours" : lifetime ? "covered" : "buy"} cta={`Start monthly for ${monthly ?? FALLBACK_PRICE.pro}/month`}
         busy={busy === "pro"} disabled={Boolean(busy)} onBuy={() => onBuy("pro")} />
     </View>
   );
 }
 
-function Card({ title, badge, price, period, blurb, items, state, cta, note, featured, busy, disabled, onBuy, wide }: {
-  title: string; badge?: string; price: string; period: string; blurb: string; items: string[]; state: "buy" | "yours" | "covered"; cta: string; note?: string;
+function Card({ title, badge, price, period, blurb, items, state, cta, note, featured, busy, disabled, onBuy, wide, extra }: {
+  title: string; badge?: string; price: string; period: string; blurb: string; items: string[]; state: "buy" | "yours" | "covered" | "covered-sub"; cta: string; note?: string; extra?: React.ReactNode;
   featured?: boolean; busy: boolean; disabled: boolean; onBuy: () => void; wide?: boolean;
 }) {
   const c = useColors();
@@ -65,6 +80,7 @@ function Card({ title, badge, price, period, blurb, items, state, cta, note, fea
         <Text style={[type.body, { color: c.muted }]}>  {period}</Text>
       </Text>
       <Body muted>{blurb}</Body>
+      {extra}
       <View style={{ gap: 8 }}>
         {items.map((f) => (
           <View key={f} style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
@@ -76,6 +92,7 @@ function Card({ title, badge, price, period, blurb, items, state, cta, note, fea
       {note && state === "buy" ? <Text style={[type.small, { color: c.muted }]}>{note}</Text> : null}
       {state === "buy" ? <Button label={cta} variant={featured ? "primary" : "secondary"} loading={busy} disabled={disabled} onPress={onBuy} /> : null}
       {state === "covered" ? <Text style={[type.small, { color: c.muted }]}>Included in your Lifetime plan.</Text> : null}
+      {state === "covered-sub" ? <Text style={[type.small, { color: c.muted }]}>You’re already a member. To change how you pay, open Manage subscription.</Text> : null}
     </View>
   );
 }

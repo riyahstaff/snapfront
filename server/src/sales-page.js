@@ -9,7 +9,7 @@
 // - Prices and partner terms are read from billing and the partner program, never typed in here.
 // - "Pay in 4" is only mentioned when PLAN_PAY_LATER says Klarna/Afterpay are switched on in Stripe.
 import { PLANS } from "./plans.js";
-import { PLANS as PRICES } from "./webbilling.js";
+import { PLANS as PRICES, longPlan, lifetimeLeft, LIFETIME_LIMIT } from "./webbilling.js";
 import * as partners from "./partners.js";
 import { publicThemes } from "./themes.js";
 import { config } from "./config.js";
@@ -37,11 +37,15 @@ export function buyUrl(plan, code) {
 
 export function salesPage({ code = null } = {}) {
   const web = webAppUrl();
-  const life = usd(PRICES.lifetime.cents), month = usd(PRICES.pro.cents);
-  const later = payLater();
-  const rate = partners.RATE(), perSale = usd(Math.round(PRICES.lifetime.cents * rate / 100)), perMonth = usd(partners.MONTHLY_CENTS());
+  // Lifetime while founding spots are left (the first 500 members), then Yearly.
+  const long = longPlan(), isLife = long === "lifetime";
+  const lname = isLife ? "Lifetime" : "Yearly", lper = isLife ? "once, for life" : "a year";
+  const life = usd(PRICES[long].cents), month = usd(PRICES.pro.cents);
+  const later = isLife ? payLater() : null;
+  const spots = isLife ? `Founding offer: ${lifetimeLeft()} of ${LIFETIME_LIMIT()} Lifetime spots left. After that, Lifetime is replaced by Yearly.` : "";
+  const rate = partners.RATE(), perSale = usd(Math.round(PRICES[long].cents * rate / 100)), perMonth = usd(partners.MONTHLY_CENTS());
   const pro = PLANS.pro;
-  const buyLife = esc(buyUrl("lifetime", code)), buyMonth = esc(buyUrl("pro", code));
+  const buyLife = esc(buyUrl(long, code)), buyMonth = esc(buyUrl("pro", code));
   const free = esc(code ? `${web}/sign-in?via=${encodeURIComponent(code)}` : `${web}/sign-in`);
   const canonical = `${config.publicUrl}/join${code ? `/${encodeURIComponent(code)}` : ""}`;
   const shots = ["p-skincare", "p-streetwear", "p-chocolate", "p-furniture"]
@@ -77,7 +81,7 @@ export function salesPage({ code = null } = {}) {
   ];
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Snapfront membership: skip the course, let the AI do the work</title>
-<meta name="description" content="Snapfront builds your product pages, storefront and posts for you, and teaches you the rest. ${esc(life)} once for life, or ${esc(month)} a month.">
+<meta name="description" content="Snapfront builds your product pages, storefront and posts for you, and teaches you the rest. ${esc(isLife ? `${life} once for life for the first ${LIFETIME_LIMIT()} members` : `${life} a year`)}, or ${esc(month)} a month.">
 <link rel="canonical" href="${esc(canonical)}">
 <meta property="og:title" content="Skip the course. Let the AI do the work."><meta property="og:description" content="Product pages, a storefront, posts and faceless videos, made for you. Snapfront membership.">
 <meta property="og:image" content="${esc(config.publicUrl)}/site/chrome-hero.webp"><meta property="og:url" content="${esc(canonical)}">
@@ -143,8 +147,8 @@ ${code ? `<div class="via">Shared by <b>${esc(code)}</b>, a Snapfront partner wh
   <p class="eyebrow">Snapfront membership</p>
   <h1>Skip the course.<br><span>Let the AI do the work.</span></h1>
   <p class="lede">Snapfront writes your product pages, designs your storefront and makes your posts, then teaches you the rest. You make the calls. The AI does the heavy lifting.</p>
-  <div class="pricechip"><b>${esc(life)}</b><span>once, for life</span><span aria-hidden="true">·</span><span>or ${esc(month)} a month</span></div>
-  <div class="ctas"><a class="btn" href="${buyLife}">Get Lifetime for ${esc(life)}</a><a class="btn ghost" href="${free}">Try it free first</a></div>
+  <div class="pricechip"><b>${esc(life)}</b><span>${esc(lper)}</span><span aria-hidden="true">·</span><span>or ${esc(month)} a month</span></div>
+  <div class="ctas"><a class="btn" href="${buyLife}">Get ${lname} for ${esc(life)}</a><a class="btn ghost" href="${free}">Try it free first</a></div>
   ${later ? `<p class="note">${esc(later.line)}</p>` : `<p class="note">No card needed for the free account.</p>`}
   ${shots.length ? `<figure class="shots" style="margin-block-end:0">${shots.map((t) => `<img src="${esc(t.preview_url)}" alt="${esc(t.name)} storefront design" loading="lazy">`).join("")}<figcaption>Real Snapfront storefront designs. Yours gets your photos and words.</figcaption></figure>` : ""}
 </div>
@@ -209,7 +213,7 @@ ${code ? `<div class="via">Shared by <b>${esc(code)}</b>, a Snapfront partner wh
   <p class="eyebrow">Optional</p>
   <h2>Earn while you build.</h2>
   <div class="earn"><div class="num">${esc(rate)}<small>%</small></div>
-    <p>Every member gets their own Snapfront link. When someone you send buys Lifetime, you earn <b>${esc(rate)}% (${esc(perSale)})</b>. When they choose Monthly, you earn <b>${esc(perMonth)}</b> for every month they pay.</p>
+    <p>Every member gets their own Snapfront link. When someone you send becomes a member, you earn <b>${esc(rate)}%</b> of what they pay: <b>${esc(perSale)}</b> on ${lname}, and <b>${esc(perMonth)}</b> for every month of Monthly they pay.</p>
     <p>You're paid once Snapfront is paid. It's completely optional, and what you earn depends only on who buys through your link. You always say you earn a commission when you share it.</p>
   </div>
 </div></section>
@@ -218,11 +222,11 @@ ${code ? `<div class="via">Shared by <b>${esc(code)}</b>, a Snapfront partner wh
   <p class="eyebrow">Your membership</p>
   <h2>Pick how you want to pay.</h2>
   <div class="plans">
-    <div class="plan best"><h3>Lifetime</h3><div class="price">${esc(life)} <small>once, for life</small></div>
+    <div class="plan best"><h3>${lname}</h3><div class="price">${esc(life)} <small>${esc(lper)}</small></div>${spots ? `<p class="later">${esc(spots)}</p>` : ""}
       <ul><li>Up to ${pro.liveStores} live stores, 0% Snapfront fees</li><li>${pro.photo} AI product pages and ${pro.product} AI digital products a month</li><li>AI photos, video, faceless videos and avatars</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>The full Academy and the private members' community</li><li>Every new feature we add</li></ul>
-      <a class="btn block" href="${buyLife}">Get Lifetime for ${esc(life)}</a>${later ? `<p class="later">${esc(later.line)}</p>` : ""}</div>
+      <a class="btn block" href="${buyLife}">Get ${lname} for ${esc(life)}</a>${later ? `<p class="later">${esc(later.line)}</p>` : ""}</div>
     <div class="plan"><h3>Monthly</h3><div class="price">${esc(month)} <small>a month</small></div>
-      <ul><li>Everything in Lifetime</li><li>Billed monthly</li><li>Cancel any time</li><li>Switch to Lifetime whenever you like</li></ul>
+      <ul><li>Everything in ${lname}</li><li>Billed monthly</li><li>Cancel any time</li><li>Switch to ${lname} whenever you like</li></ul>
       <a class="btn ghost block" href="${buyMonth}">Start Monthly for ${esc(month)}</a></div>
   </div>
   <p class="note">Secure checkout with Stripe. All sales are final. Not sure yet? <a href="${free}">Start with a free account</a> and try the tools first.</p>
@@ -237,11 +241,11 @@ ${code ? `<div class="via">Shared by <b>${esc(code)}</b>, a Snapfront partner wh
 <section class="final"><div class="wrap">
   <h2>You don't need more videos.<br><span class="chrome">You need it built.</span></h2>
   <p class="lede" style="margin-top:0">Snap a photo and watch the first draft of your store appear.</p>
-  <div class="ctas"><a class="btn" href="${buyLife}">Get Lifetime for ${esc(life)}</a><a class="btn ghost" href="${free}">Try it free first</a></div>
+  <div class="ctas"><a class="btn" href="${buyLife}">Get ${lname} for ${esc(life)}</a><a class="btn ghost" href="${free}">Try it free first</a></div>
 </div></section>
 </main>
 <footer><div class="wrap">© ${year} Snapfront${code ? ` · ${esc(code)} earns a commission on purchases made through this page.` : ""}
 <nav><a href="/">snapfront.app</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="mailto:support@snapfront.app">support@snapfront.app</a></nav></div></footer>
-<div class="sticky" role="region" aria-label="Join Snapfront"><div class="wrap"><div><b>Snapfront Lifetime · ${esc(life)}</b><span>${later ? `or 4 × ${esc(later.per)}` : `or ${esc(month)} a month`}</span></div><a class="btn" href="${buyLife}">Join now</a></div></div>
+<div class="sticky" role="region" aria-label="Join Snapfront"><div class="wrap"><div><b>Snapfront ${lname} · ${esc(life)}</b><span>${later ? `or 4 × ${esc(later.per)}` : `or ${esc(month)} a month`}</span></div><a class="btn" href="${buyLife}">Join now</a></div></div>
 </body></html>`;
 }

@@ -43,8 +43,10 @@ after(() => { server?.close(); fs.rmSync(tmp, { recursive: true, force: true });
 test("her knowledge is the live help page, the app's pages and today's prices", () => {
   const k = vierra.knowledgeText();
   for (const s of SECTIONS) for (const it of s.items) assert.ok(k.includes(`Q: ${it.q}`), it.q);
-  assert.match(k, /\$299 once for life/);
-  assert.match(k, /\$69 a month/);
+  assert.match(k, /\$499 once for life/);
+  assert.match(k, /\$99 a month/);
+  assert.match(k, /first 500 members/);
+  assert.match(k, /40% of what the people they refer pay/);
   assert.match(k, /app\.snapfront\.app\/settings/);
   assert.match(k, /GLOSSARY/);
   assert.match(k, /support@snapfront\.app/);

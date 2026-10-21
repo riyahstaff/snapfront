@@ -7,7 +7,7 @@ import { API_URL, ApiError, api, type Me } from "./api";
 
 export const LIFETIME = "lifetime";
 export const PRO = "pro";
-export type Offer = { plan: "lifetime" | "pro"; price: string; sku: string; offerToken?: string };
+export type Offer = { plan: "lifetime" | "pro" | "yearly"; price: string; sku: string; offerToken?: string; left?: number; limit?: number };
 
 /* ---------- Snapfront Partners: who sent this person ---------- */
 // A partner link (snapfront.app/r/CODE) leaves a cookie on .snapfront.app; a link straight to the

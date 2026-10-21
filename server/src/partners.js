@@ -1,6 +1,6 @@
 // Snapfront Partners: anyone with a Snapfront account can share their own link
-// (snapfront.app/r/CODE) and earn when someone they sent buys Snapfront: 40% of Lifetime, and
-// $19 for every month a Monthly subscriber they sent pays.
+// (snapfront.app/r/CODE) and earn when someone they sent buys Snapfront: 40% (PARTNER_RATE) of
+// every payment: a Lifetime purchase, and every paid month of Monthly or year of Yearly.
 //
 // How a sale is credited: the link sets a cookie on .snapfront.app; the website (app.snapfront.app)
 // reads it and tells the server, which remembers the referring partner on the new account (first
@@ -21,8 +21,10 @@ import { sendEmail } from "./growth.js";
 import { cleanEmail } from "./audience.js";
 
 const num = (env, fallback, min, max) => { const v = Number(process.env[env]); return Number.isFinite(v) && v >= min && v <= max ? v : fallback; };
-export const RATE = () => num("PARTNER_RATE", 40, 1, 90);                          // % of a Lifetime sale
-export const MONTHLY_CENTS = () => num("PARTNER_MONTHLY_CENTS", 1900, 0, 100000);  // per paid month of Monthly
+export const RATE = () => num("PARTNER_RATE", 40, 1, 90);                          // % of every payment
+const share = (cents) => Math.round(cents * RATE() / 100);
+/** What a partner earns on one paid month of Monthly at today's price. */
+export const MONTHLY_CENTS = () => share(webbilling.PLANS.pro.cents);
 // Held until Snapfront has the money: Stripe pays out in about 2 business days; Google Play pays
 // developers monthly, about 15 days after the month ends.
 const HOLD = { stripe: () => num("PARTNER_HOLD_DAYS_STRIPE", 4, 0, 120), play: () => num("PARTNER_HOLD_DAYS_PLAY", 45, 0, 120) };
@@ -148,13 +150,15 @@ export function bioCard(seller) {
   if (!seller?.partner_card || !seller.account_id) return null;
   const p = db.prepare("SELECT * FROM partners WHERE account_id = ? AND status = 'active'").get(seller.account_id);
   if (!p) return null;
-  return { code: p.code, url: salesLink(p.code), lifetime: dollars(webbilling.PLANS.lifetime.cents), monthly: dollars(webbilling.PLANS.pro.cents) };
+  const long = webbilling.longPlan();
+  return { code: p.code, url: salesLink(p.code), lifetime: dollars(webbilling.PLANS.lifetime.cents), monthly: dollars(webbilling.PLANS.pro.cents), long_plan: long, long_price: dollars(webbilling.PLANS[long].cents) };
 }
 
 export function view(account, seller = null) {
   const p = db.prepare("SELECT * FROM partners WHERE account_id = ?").get(account.id);
+  const long = webbilling.longPlan();
   const program = { rate: RATE(), monthly_per_month: dollars(MONTHLY_CENTS()), monthly_price: dollars(webbilling.PLANS.pro.cents), hold_days: HOLD_DAYS(), play_hold_days: HOLD.play(), window_days: WINDOW_DAYS(), lifetime_price: dollars(webbilling.PLANS.lifetime.cents),
-    per_sale: dollars(Math.round(webbilling.PLANS.lifetime.cents * RATE() / 100)), terms: TERMS };
+    per_sale: dollars(share(webbilling.PLANS[long].cents)), long_plan: long, yearly_price: dollars(webbilling.PLANS.yearly.cents), yearly_per_year: dollars(share(webbilling.PLANS.yearly.cents)), terms: TERMS };
   if (!p) return { joined: false, program, has_email: Boolean(account.email) };
   const sum = (status) => db.prepare("SELECT COALESCE(SUM(commission_cents),0) AS c FROM partner_commissions WHERE partner_id = ? AND status = ?").get(account.id, status).c;
   const commissions = db.prepare("SELECT * FROM partner_commissions WHERE partner_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 100").all(account.id);
@@ -251,18 +255,18 @@ function onPurchase(e) {
   const partnerEmail = plans.getAccount(partner.account_id)?.email;
   if (sameEmail(partnerEmail, e.email) || sameEmail(partnerEmail, buyer.email)) return;
   const sale = Math.round(Number(e.amount_cents)) || webbilling.PLANS.lifetime.cents;
-  record(partner, buyer, e, sale, Math.round(sale * RATE() / 100));
+  record(partner, buyer, e, sale, share(sale));
 }
-/** A paid month of Monthly: a fixed amount per month (never more than what was paid). */
+/** A paid month of Monthly or year of Yearly: the same share of what was paid. */
 function onMonth(e) {
-  if (!MONTHLY_CENTS() || e.test) return;
+  if (e.test) return;
   const buyer = plans.getAccount(e.account_id);
   const partner = partnerFor(buyer, { recurring: true });
   if (!partner) return;
   const partnerEmail = plans.getAccount(partner.account_id)?.email;
   if (sameEmail(partnerEmail, e.email) || sameEmail(partnerEmail, buyer.email)) return;
   const sale = Math.round(Number(e.amount_cents)) || 0;
-  record(partner, buyer, e, sale, Math.min(MONTHLY_CENTS(), sale));
+  record(partner, buyer, e, sale, share(sale));
 }
 webbilling.onPurchaseChange(onPurchase);
 playbilling.onPurchaseChange(onPurchase);

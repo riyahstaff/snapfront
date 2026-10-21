@@ -42,8 +42,8 @@ test("the home page leads to becoming a member; trying it free is a quiet link",
   const html = await (await call("GET", "/")).text();
   assert.match(html, /href="#pricing">Become a member</);
   assert.match(html, /href="https:\/\/app\.shopdomain\.test\/sign-in">Sign in</);
-  assert.match(html, /href="https:\/\/app\.shopdomain\.test\/plans\?buy=lifetime">Join for \$299</);
-  assert.match(html, /href="https:\/\/app\.shopdomain\.test\/plans\?buy=pro">Join for \$69 a month</);
+  assert.match(html, /href="https:\/\/app\.shopdomain\.test\/plans\?buy=lifetime">Join for \$499</);
+  assert.match(html, /href="https:\/\/app\.shopdomain\.test\/plans\?buy=pro">Join for \$99 a month</);
   assert.match(html, /class="quiet-link">Try the creative tools free/);
   assert.doesNotMatch(html, /<h3>Free<\/h3>|\$0</, "no free plan card");
 });
@@ -52,7 +52,7 @@ test("the phone app's 'needs Pro' messages name no prices; the website's do", as
   const { token } = await (await call("POST", "/api/sellers", { body: {} })).json();
   const web = await call("POST", "/api/stripe/onboard", { token });
   assert.equal(web.status, 402);
-  assert.match((await web.json()).error, /\$299 for life or \$69 a month/);
+  assert.match((await web.json()).error, /\$499 for life or \$99 a month/);
   const phone = await call("POST", "/api/stripe/onboard", { token, headers: { "X-Snapfront-App": "android" } });
   assert.equal(phone.status, 402);
   const body = await phone.json();

@@ -17,7 +17,7 @@ export const LIFETIME = "snapfront_lifetime";
 export const PRO = "snapfront_pro";
 const PRO_BASE_PLAN = "pro-monthly-69";
 
-export type Offer = { plan: "lifetime" | "pro"; price: string; sku: string; offerToken?: string };
+export type Offer = { plan: "lifetime" | "pro" | "yearly"; price: string; sku: string; offerToken?: string; left?: number; limit?: number };
 type SubOffer = { basePlanIdAndroid?: string | null; offerTokenAndroid?: string | null; displayPrice: string };
 
 let accountId: string | null = null;

@@ -8,12 +8,20 @@ import { httpError } from "./claude.js";
 import { stripeClient } from "./payments.js";
 import * as playbilling from "./playbilling.js";
 
-// What's on sale: everything in Snapfront, either once for good (Lifetime) or monthly (Pro).
-// Both unlock the "pro" plan. Launch ($29 once) is no longer sold; people who bought it keep it.
+// What's on sale: everything in Snapfront (the "pro" plan), bought three ways. Lifetime (one
+// payment) is for the first LIFETIME_LIMIT members (500): once that many Lifetime memberships are
+// sold, Lifetime is no longer offered and Yearly takes its place. Monthly is always offered.
+// Launch ($29 once) is no longer sold; people who bought it keep it.
 const cents = (env, fallback) => (Number.isInteger(Number(process.env[env])) && Number(process.env[env]) >= 100 ? Number(process.env[env]) : fallback);
 export const PLANS = {
-  lifetime: { name: "Snapfront Lifetime", cents: cents("LIFETIME_PRICE_CENTS", 29900), mode: "payment", grants: "pro", description: "Everything in Snapfront, for life. One payment, no monthly bill." },
-  pro: { name: "Snapfront Pro", cents: cents("PRO_PRICE_CENTS", 6900), mode: "subscription", grants: "pro", description: "Everything in Snapfront, billed monthly. Cancel any time." },
+  lifetime: { name: "Snapfront Lifetime", cents: cents("LIFETIME_PRICE_CENTS", 49900), mode: "payment", grants: "pro", description: "Everything in Snapfront, for life. One payment, no monthly bill. For the first 500 members." },
+  pro: { name: "Snapfront Pro", cents: cents("PRO_PRICE_CENTS", 9900), mode: "subscription", interval: "month", grants: "pro", description: "Everything in Snapfront, billed monthly. Cancel any time." },
+  yearly: { name: "Snapfront Yearly", cents: cents("YEARLY_PRICE_CENTS", 49900), mode: "subscription", interval: "year", grants: "pro", description: "Everything in Snapfront, billed once a year. Cancel any time." },
+};
+/** How many Lifetime memberships are sold before Lifetime closes (LIFETIME_LIMIT, default 500). */
+export const LIFETIME_LIMIT = () => {
+  const raw = String(process.env.LIFETIME_LIMIT ?? "").trim(), n = Number(raw);
+  return raw && Number.isInteger(n) && n >= 0 ? n : 500;
 };
 const LEGACY = { launch: { grants: "launch" } };
 export const enabled = () => Boolean(config.stripeKey);
@@ -50,10 +58,14 @@ export const NO_REFUNDS = "All sales are final. Snapfront plans are non-refundab
 /** Where the website sends people to get the Android app (set PLAY_STORE_URL to override). */
 export const androidUrl = () => process.env.PLAY_STORE_URL || `https://play.google.com/store/apps/details?id=${config.playPackage || "com.sidebanc.snapfront"}`;
 
-/** "$299 for life or $69 a month", for upgrade messages. */
-export const priceLine = () => `${money(PLANS.lifetime.cents)} for life or ${money(PLANS.pro.cents)} a month`;
-/** Prices shown on the website's plan screen. */
-export const offers = () => Object.entries(PLANS).map(([plan, p]) => ({ plan, price: money(p.cents), sku: plan }));
+/** "$499 for life or $99 a month" (later "$499 a year or $99 a month"), for upgrade messages. */
+export const priceLine = () => (lifetimeOpen() ? `${money(PLANS.lifetime.cents)} for life or ${money(PLANS.pro.cents)} a month` : `${money(PLANS.yearly.cents)} a year or ${money(PLANS.pro.cents)} a month`);
+/** Prices shown on the website's plan screen: Lifetime (with spots left) or Yearly, and Monthly. */
+export const offers = () => [
+  lifetimeOpen() ? { plan: "lifetime", price: money(PLANS.lifetime.cents), sku: "lifetime", left: lifetimeLeft(), limit: LIFETIME_LIMIT() }
+    : { plan: "yearly", price: money(PLANS.yearly.cents), sku: "yearly" },
+  { plan: "pro", price: money(PLANS.pro.cents), sku: "pro" },
+];
 
 export function planFromPurchases(accountId, now = Date.now()) {
   const rows = db.prepare("SELECT * FROM stripe_plan_purchases WHERE account_id = ? AND status = 'active'").all(accountId);
@@ -64,6 +76,17 @@ export function planFromPurchases(accountId, now = Date.now()) {
 }
 playbilling.addPlanSource(planFromPurchases);
 /** Has this account bought Lifetime (on the website or in the app)? */
+/** Lifetime memberships that count toward the limit: paid and not refunded, website or Google Play. */
+export function lifetimeSold() {
+  const web = db.prepare("SELECT COUNT(DISTINCT account_id) AS n FROM stripe_plan_purchases WHERE plan = 'lifetime' AND status = 'active'").get().n;
+  let play = 0;
+  try { play = db.prepare("SELECT COUNT(DISTINCT account_id) AS n FROM play_purchases WHERE product_id = 'snapfront_lifetime' AND status = 'active'").get().n; } catch { /* no Play table yet */ }
+  return web + play;
+}
+export const lifetimeLeft = () => Math.max(0, LIFETIME_LIMIT() - lifetimeSold());
+export const lifetimeOpen = () => lifetimeLeft() > 0;
+/** The long-term plan on sale right now: Lifetime while spots are left, then Yearly. */
+export const longPlan = () => (lifetimeOpen() ? "lifetime" : "yearly");
 export const hasLifetime = (accountId) => Boolean(db.prepare("SELECT 1 FROM stripe_plan_purchases WHERE account_id = ? AND plan = 'lifetime' AND status = 'active'").get(accountId)) || playbilling.hasLifetime(accountId);
 
 async function customerFor(account) {
@@ -78,13 +101,15 @@ async function customerFor(account) {
 export async function startCheckout(account, plan, { ref = null } = {}) {
   if (plan === "launch") plan = "lifetime";   // old links
   const p = PLANS[plan];
-  if (!p) throw httpError(400, "Pick Lifetime or Pro monthly.");
+  if (!p) throw httpError(400, "Pick a membership: Lifetime, Yearly or Monthly.");
   if (hasLifetime(account.id)) throw httpError(409, "You already have Snapfront Lifetime.");
-  // Monthly subscribers can still switch to Lifetime (their subscription is then stopped).
-  if (plan === "pro" && playbilling.bestPlan(account.id) === "pro") throw httpError(409, "You already have Snapfront Pro.");
+  if (plan === "lifetime" && !lifetimeOpen()) throw httpError(409, `All ${LIFETIME_LIMIT()} founding Lifetime memberships are taken. Choose Yearly or Monthly.`, { offers: offers() });
+  if (plan === "yearly" && lifetimeOpen()) throw httpError(409, "Yearly opens once the founding Lifetime memberships are gone. Choose Lifetime or Monthly.", { offers: offers() });
+  // Subscribers can still switch to Lifetime (their subscription is then stopped).
+  if (p.mode === "subscription" && playbilling.bestPlan(account.id) === "pro") throw httpError(409, "You already have Snapfront Pro. To change how you pay, open Manage subscription.");
   const s = stripeClient();
   const price_data = { currency: "usd", unit_amount: p.cents, product_data: { name: p.name, description: p.description },
-    ...(p.mode === "subscription" ? { recurring: { interval: "month" } } : {}) };
+    ...(p.mode === "subscription" ? { recurring: { interval: p.interval } } : {}) };
   const session = await s.checkout.sessions.create({
     mode: p.mode,
     customer: await customerFor(account),

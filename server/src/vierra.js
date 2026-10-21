@@ -103,9 +103,12 @@ export function knowledgeText() {
   out.push("WHERE THINGS ARE", "The web app is at app.snapfront.app. The website is snapfront.app. The menu at the top of the web app has My store, Create, Digital products, Marketing, Academy and Bonus: 1k Prompts, and there's a search box for every tool. These are the app's pages:");
   for (const [name, path, what] of APP_PAGES) out.push(`- ${name} (app.snapfront.app${path}): ${what}.`);
   out.push("- Website pages: Help and FAQ (snapfront.app/help), Use Snapfront with Claude or ChatGPT (snapfront.app/connect-ai), Tools that work with Snapfront (snapfront.app/tools), Privacy, Terms, and Delete account.", "");
-  const life = webbilling.PLANS.lifetime.cents, month = webbilling.PLANS.pro.cents, pro = PLANS.pro, free = PLANS.free;
+  const life = webbilling.PLANS.lifetime.cents, month = webbilling.PLANS.pro.cents, year = webbilling.PLANS.yearly.cents, pro = PLANS.pro, free = PLANS.free;
   out.push("PRICES AND ALLOWANCES TODAY",
-    `- Snapfront Pro: ${money(life)} once for life (Lifetime), or ${money(month)} a month (Monthly). Both include everything. All sales are final.`,
+    webbilling.lifetimeOpen()
+      ? `- Snapfront Pro: ${money(life)} once for life (Lifetime), or ${money(month)} a month (Monthly). Lifetime is a founding offer for the first ${webbilling.LIFETIME_LIMIT()} members; after that it's replaced by Yearly at ${money(year)} a year. Every plan includes everything. All sales are final.`
+      : `- Snapfront Pro: ${money(year)} a year (Yearly) or ${money(month)} a month (Monthly). The founding Lifetime memberships are all taken. Both include everything. All sales are final.`,
+    "- Earn with Snapfront: members who share their link earn 40% of what the people they refer pay, on Lifetime and on every month or year of Monthly and Yearly.",
     `- Pro monthly allowances: ${pro.photo} AI product pages, ${pro.product} AI digital products, ${pro.agent} store assistant requests, ${pro.research} price checks, ${pro.studio} photo edits, ${pro.post} AI marketing posts, ${pro.scene} AI lifestyle photos and ${pro.video} AI video clips. Up to ${pro.stores} stores.`,
     `- Free accounts can try things: ${free.photo} AI product pages, ${free.product} AI digital product, ${free.research} price checks, ${free.studio} photo edits, ${free.post} marketing posts and ${free.scene} lifestyle photos. Publishing a store needs Pro.`,
     `- Credits (for avatar videos and talking avatars) come in packs: ${credits.packs().map((p) => `${p.name} ${p.credits} credits for ${money(p.cents)}`).join("; ")}. Credits never expire, and a failed video gives its credits back.`,

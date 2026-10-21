@@ -428,7 +428,7 @@ export function membershipCard(card) {
   if (!card) return "";
   const usd = (n) => `$${Number(n).toFixed(Number(n) % 1 ? 2 : 0)}`;
   return `<a class="lk sfm" href="${esc(card.url)}" rel="noopener" target="_blank">
-<span class="sfm-mark" aria-hidden="true">✦</span><span class="sfm-t"><b>Snapfront membership</b><small>Build a store from one photo. The AI does the heavy lifting.</small><em>${esc(usd(card.lifetime))} for life · or ${esc(usd(card.monthly))}/month</em></span><span class="sfm-go">See it</span></a>
+<span class="sfm-mark" aria-hidden="true">✦</span><span class="sfm-t"><b>Snapfront membership</b><small>Build a store from one photo. The AI does the heavy lifting.</small><em>${esc(usd(card.long_price ?? card.lifetime))} ${card.long_plan === "yearly" ? "a year" : "for life"} · or ${esc(usd(card.monthly))}/month</em></span><span class="sfm-go">See it</span></a>
 <p class="sfm-note">I earn a commission if you join through this link.</p>`;
 }
 const MEMBERSHIP_CARD_CSS = `<style>.lk.sfm{justify-content:flex-start;text-align:left;gap:14px;border-color:var(--line);background:var(--surface);border-radius:var(--r-in);padding:14px 16px}

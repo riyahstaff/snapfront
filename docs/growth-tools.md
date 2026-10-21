@@ -52,7 +52,7 @@ Webhook deliveries are verified with `X-Hub-Signature-256` (app secret). Each pe
 
 - Anyone with a Snapfront account and email joins in **Earn with Snapfront** and gets `snapfront.app/r/CODE`.
 - The link sets an `sf_via` cookie on `.snapfront.app`; the website sends it to `/api/partners/claim` (and with the checkout). The first partner wins, for `PARTNER_WINDOW_DAYS` (60).
-- **40%** of each Lifetime sale (`PARTNER_RATE`) and **$19 for every paid month** of Monthly (`PARTNER_MONTHLY_CENTS`, never more than the month's payment), from the website (each Stripe invoice) or Google Play (each renewal order).
+- **40% of every payment** (`PARTNER_RATE`): a Lifetime purchase, and every paid month of Monthly or year of Yearly, from the website (each Stripe invoice) or Google Play (each renewal order).
 - All sales are final (shown on Stripe Checkout and in the terms). Commissions are paid when Snapfront is paid: held `PARTNER_HOLD_DAYS_STRIPE` (4) days for website sales and `PARTNER_HOLD_DAYS_PLAY` (45) for Google Play, re-checked for refunds/chargebacks when they come due, then paid by one Stripe transfer per commission (looked up by transfer group first, so a crash can never pay twice) to the partner's connected store account, or by hand to PayPal from `https://snapfront.app/admin/partners`. `PARTNER_AUTO_PAYOUTS=false` turns automatic transfers off.
 - No earning on your own purchase (same email on the account or at checkout), from a suspended partner, or after the referral window.
 

@@ -38,7 +38,7 @@ export function ChromeHero() {
         <Image source={require("../../assets/chrome-hero.jpg")} contentFit="contain" accessible={false} style={{ width: "100%", aspectRatio: 4 / 3 }} />
       </Animated.View>
       <View style={[styles.caption, { backgroundColor: c.surface }]}>
-        <Text style={[type.small, { color: c.muted, flex: 1 }]}>A glimpse of what you can create · Concept artwork</Text>
+        <Text style={[type.small, { color: c.muted, flex: 1 }]}>A glimpse of what you can create</Text>
         {reduceMotion === false ? <Pressable onPress={() => setPaused((value) => !value)} accessibilityRole="button" accessibilityLabel={paused ? "Play home artwork motion" : "Pause home artwork motion"} accessibilityState={{ selected: paused }} style={styles.motionButton}>
           <Ionicons name={paused ? "play-outline" : "pause-outline"} size={16} color={c.ink} />
           <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12, color: c.ink }}>{paused ? "Play" : "Pause"}</Text>
