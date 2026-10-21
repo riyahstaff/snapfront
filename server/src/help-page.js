@@ -3,6 +3,7 @@
 // when a feature changes, change its answer here (the tests check the links and the structure).
 import zlib from "node:zlib";
 import { config } from "./config.js";
+import { vierraTag } from "./vierra-widget.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const webApp = () => (config.storeDomain ? `https://app.${config.storeDomain}` : `${config.publicUrl}/app`);
@@ -147,6 +148,9 @@ export const qid = (q) => q.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^
 
 export const HELP_CSS = `
 .hero{padding-block:56px 22px}.hero .lead{max-width:66ch}
+.ask{display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;max-width:760px;margin-top:22px;padding:18px 20px;border-radius:18px;border:1px solid rgba(255,170,60,.35);background:linear-gradient(135deg,rgba(255,178,58,.10),rgba(242,97,58,.06))}
+.ask b{display:block;font-size:18px;margin-bottom:2px}.ask p{margin:0;color:var(--muted);max-width:52ch}
+.ask .btn{background:linear-gradient(135deg,#FFC24A,#FF8A2B);border-color:transparent;color:#2A1405}
 .bar{position:sticky;top:0;z-index:5;background:rgba(9,11,14,.94);backdrop-filter:blur(8px);border-block:1px solid rgba(54,60,70,.5);padding-block:14px;margin-top:18px}
 .bar input{width:100%;font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 .layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:48px;align-items:start;padding-block:28px 40px}
@@ -187,7 +191,8 @@ export function helpBody() {
   }).join("")}</section>`).join("");
   const glossary = `<section class="sec" id="glossary"><h2>Glossary</h2><dl>${GLOSSARY.map(([t, d]) => `<dt id="term-${qid(t)}">${esc(t)}</dt><dd>${esc(d)}</dd>`).join("")}</dl></section>`;
   return `<div class="wrap"><section class="hero"><h1>Help and FAQ</h1>
-<p class="lead">How Snapfront works: what each feature does, why you'd use it, how to set it up and where to find it. ${count} answers, plus a glossary of the words you'll see.</p></section></div>
+<p class="lead">How Snapfront works: what each feature does, why you'd use it, how to set it up and where to find it. ${count} answers, plus a glossary of the words you'll see.</p>
+${vierraTag() ? `<div class="ask"><div><b>Rather just ask?</b><p>Talk to Vierra, our voice guide. She knows everything on this page and the app, and she'll tell you the quickest way to do it.</p></div><button class="btn" type="button" data-open-vierra>Ask Vierra</button></div>` : ""}</section></div>
 <div class="bar"><div class="wrap"><input id="hq" type="search" placeholder="Search help: Stripe, AutoDM, Printful, refunds…" aria-label="Search help" autocomplete="off"></div></div>
 <div class="wrap"><div class="layout"><nav class="toc" aria-label="Help topics">${toc}</nav><div>
 <p class="none" id="hnone" hidden>No answers match that. Try a shorter word, or email support@snapfront.app.</p>

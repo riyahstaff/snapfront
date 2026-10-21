@@ -1,5 +1,6 @@
 // snapfront.app home page: what Snapfront does, what it costs, where to get it. Styled in the
 // app's Liquid Chrome look (graphite, platinum, the silver aperture mark and the chrome gateway art).
+import { vierraTag } from "./vierra-widget.js";
 import { PLANS } from "./plans.js";
 import { PLANS as PRICES } from "./webbilling.js";
 import { THEMES, publicThemes } from "./themes.js";
@@ -254,5 +255,5 @@ ${promoSection()}
  open.addEventListener('click',()=>{i=0;answers={};question();dlg.showModal();});
  dlg.addEventListener('click',e=>{if(e.target===dlg)close();});
 })();
-</script></body></html>`;
+</script>${vierraTag()}</body></html>`;
 }

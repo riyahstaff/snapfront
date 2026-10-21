@@ -1,6 +1,7 @@
 import express from "express";
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
 import { ownsSellerImage as sellerOwnsImage, sellerImageIsInUse, sellerImageIsStored } from "./media-ownership.js";
@@ -29,6 +30,7 @@ import * as connector from "./connector.js";
 import * as sitePages from "./site-pages.js";
 import * as promptLibrary from "./prompt-library.js";
 import * as helpPage from "./help-page.js";
+import * as vierra from "./vierra.js";
 import * as studio from "./studio.js";
 import { ensureModel as ensureCutoutModel } from "./cutout.js";
 import * as supplierDirectory from "./supplier-directory.js";
@@ -328,6 +330,18 @@ app.get("/join/:code", (req, res) => {
   res.send(salesPage({ code }));
 });
 // The home page's images (brand mark and chrome art).
+// Vierra's browser SDK (ElevenLabs @elevenlabs/client, pinned): big, so it's sent compressed and only
+// loaded when someone opens Vierra. The file name carries the version, so it can be cached for good.
+const VIERRA_SDK = path.resolve(new URL("../assets/vierra/elevenlabs-client.min.js", import.meta.url).pathname);
+let vierraSdk = null;
+app.get("/site/vierra/elevenlabs-client-:version.js", (req, res) => {
+  if (!vierraSdk) {
+    const js = fs.readFileSync(VIERRA_SDK);
+    vierraSdk = { html: js, gzip: zlib.gzipSync(js, { level: 9 }), br: zlib.brotliCompressSync(js) };
+  }
+  res.set("Cache-Control", "public, max-age=31536000, immutable");
+  promptLibrary.sendCompressed(req, res, vierraSdk, "application/javascript; charset=utf-8");
+});
 app.use("/site", express.static(path.resolve(new URL("../assets/site/", import.meta.url).pathname), { maxAge: "30d", fallthrough: false }));
 
 /* ---------- fixed Meta callbacks: no client-controlled redirects or secret-bearing pages ---------- */
@@ -488,6 +502,35 @@ app.get("/api/themes", (req, res) => res.json({ themes: publicThemes() }));
 app.get("/api/me", auth, (req, res) => res.json(me(req)));
 // AI assistants connected through the Claude/ChatGPT connector, with a way to disconnect each.
 app.get("/api/connected-apps", auth, (req, res) => res.json({ apps: connector.connectedApps(req.account.id), connector_url: sitePages.MCP_URL(), guide_url: `${config.publicUrl}/connect-ai` }));
+
+/* ---------- Ask Vierra: the voice guide on the home and help pages ---------- */
+// Only Snapfront's own pages may start a conversation (a browser sends Origin on these requests).
+const vierraOrigins = () => new Set([config.publicUrl, ...(config.storeDomain ? [`https://${config.storeDomain}`, `https://www.${config.storeDomain}`, `https://app.${config.storeDomain}`] : [])].map((u) => u.replace(/\/$/, "")));
+const vierraHits = new Map();
+function vierraLimited(ip) {
+  const now = Date.now(), list = (vierraHits.get(ip) || []).filter((t) => now - t < 24 * 3600e3);
+  if (list.filter((t) => now - t < 3600e3).length >= 12 || list.length >= 40) return true;
+  list.push(now); vierraHits.set(ip, list);
+  if (vierraHits.size > 20000) vierraHits.clear();
+  return false;
+}
+app.post("/api/vierra/session", wrap(async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const origin = String(req.get("origin") || "");
+  if (!vierraOrigins().has(origin)) throw httpError(403, "Vierra only works on snapfront.app.");
+  if (vierraLimited(req.ip)) throw httpError(429, "You've talked with Vierra a lot today. Take a break and try again later, or check the Help page.");
+  const mode = req.body?.mode === "text" ? "text" : "voice";
+  res.json(await vierra.session(mode));
+}));
+function ownerOnly(req, res, next) {
+  auth(req, res, (err) => (err ? next(err) : credits.isOwner(req.account) ? next() : next(httpError(403, "Only Snapfront's owner can do that."))));
+}
+app.get("/api/admin/owner/vierra", ownerOnly, (_req, res) => res.json(vierra.status()));
+app.get("/api/admin/owner/vierra/voices", ownerOnly, wrap(async (req, res) => res.json({ voices: await vierra.searchVoices(req.query || {}) })));
+app.post("/api/admin/owner/vierra/voice", ownerOnly, wrap(async (req, res) => res.json(await vierra.chooseVoice(req.body || {}))));
+app.post("/api/admin/owner/vierra/sync", ownerOnly, wrap(async (_req, res) => res.json({ agent_id: await vierra.syncAgent({ force: true }), ...vierra.status() })));
+app.post("/api/admin/owner/vierra/ask", ownerOnly, wrap(async (req, res) => res.json(await vierra.ask(req.body?.text))));
+
 app.delete("/api/connected-apps/:id", auth, (req, res) => { connector.disconnectApp(req.account.id, req.params.id); res.status(204).end(); });
 app.patch("/api/me", auth, wrap(async (req, res) => { await store.updateStoreChecked(req.seller, req.body || {}); res.json(me(req)); }));
 
@@ -1528,6 +1571,7 @@ app.get("/privacy", legal("Privacy policy", `
 <li>Stripe: payments, seller identity checks and sales tax.</li>
 <li>Google Play and the App Store: plan purchases.</li>
 <li>Resend: sending sign-in codes, order confirmations, review requests and checkout reminders.</li>
+<li>ElevenLabs: when you talk or type to Vierra, the voice guide on our website, your voice and messages go to ElevenLabs to understand you and to make her replies. Recordings of your voice aren't kept, and conversation transcripts are deleted after 30 days.</li>
 <li>CJdropshipping, AliExpress and Printful: the buyer's name, address and phone number for orders of their products.</li>
 <li>SerpApi (Google Lens): product photos, to compare prices at other stores.</li>
 <li>Cloudflare and Railway: hosting, including stores on their own domains.</li>
@@ -1559,6 +1603,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   // The durable SQLite queue is deliberately started only by the real server process, never by
   // imported test apps. Disabled or incomplete Meta configuration starts no worker at all.
   if (social.startWorker()) console.log("[meta] seller publishing worker started");
+  // Bring Vierra's knowledge up to date with this deploy (quietly; visitors' sessions retry it too).
+  if (vierra.enabled()) setTimeout(() => vierra.syncAgent().then((id) => console.log("[vierra] agent ready", id)).catch((e) => console.warn("[vierra] sync", e.message)), 10_000);
   if (imageAssistant.startWorker()) console.log("[image-assistant] durable image worker started");
   // AI video and lifestyle photos: check the Runpod key, then collect finished jobs.
   if (aimedia.enabled()) {

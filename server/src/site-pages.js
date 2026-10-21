@@ -2,6 +2,7 @@
 // "Use Snapfront with Claude or ChatGPT" guide (/connect-ai), "Tools that work with Snapfront" (/tools)
 // and the page shell for the prompt library (/prompts, built in prompt-library.js).
 // Same look as the home page: dark, platinum buttons, Figtree.
+import { vierraTag } from "./vierra-widget.js";
 import { config } from "./config.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -25,7 +26,7 @@ section{padding-block:44px;border-top:1px solid rgba(54,60,70,.5)}section:first-
 footer{border-top:1px solid rgba(54,60,70,.5);padding-block:28px;color:var(--muted);font-size:14px}footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between}footer nav{display:flex;gap:18px;flex-wrap:wrap}
 code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
 `;
-function shell({ title, description, body, current = "", css = "", plain = false }) {
+function shell({ title, description, body, current = "", css = "", plain = false, tail = "" }) {
   const nav = plain ? "" : `<nav aria-label="Site"><a href="/">Home</a><a href="/connect-ai"${current === "connect" ? ' aria-current="page"' : ""}>Claude &amp; ChatGPT</a><a href="/prompts"${current === "prompts" ? ' aria-current="page"' : ""}>Prompts</a><a href="/tools"${current === "tools" ? ' aria-current="page"' : ""}>Tools</a><a href="/help"${current === "help" ? ' aria-current="page"' : ""}>Help</a><a href="${webApp()}/sign-in">Sign in</a></nav>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>${description ? `<meta name="description" content="${esc(description)}">` : ""}
@@ -35,7 +36,7 @@ function shell({ title, description, body, current = "", css = "", plain = false
 <header><div class="wrap"><a class="brand" href="/"><img src="/site/mark.png" alt="" width="30" height="30">snapfront</a>${nav}</div></header>
 <main>${body}</main>
 ${plain ? "" : `<footer><div class="wrap"><span>© ${new Date().getFullYear()} Snapfront · support@snapfront.app</span><nav><a href="/help">Help</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a></nav></div></footer>`}
-</body></html>`;
+${tail}</body></html>`;
 }
 
 /* ---------- the sign-in and approval screens the connector opens ---------- */
@@ -183,5 +184,5 @@ export function promptsShell(body, { count, css }) {
 
 /* ---------- /help (the body comes from help-page.js) ---------- */
 export function helpShell(body, { css }) {
-  return shell({ title: "Help and FAQ | Snapfront", description: "How Snapfront works: what each feature does, how to set it up and where to find it, with a glossary.", body, current: "help", css });
+  return shell({ title: "Help and FAQ | Snapfront", description: "How Snapfront works: what each feature does, how to set it up and where to find it, with a glossary.", body, current: "help", css, tail: vierraTag() });
 }
