@@ -87,6 +87,7 @@ fade = np.minimum(1, t_all / 2.5) * np.minimum(1, (LEN - t_all) / 4)
 L *= fade; R *= fade
 peak = max(np.abs(L).max(), np.abs(R).max())
 out = np.stack([L, R], 1) / peak * 0.7
-out_path = pathlib.Path(__file__).parent / "out" / "music.wav"
+import os
+out_path = pathlib.Path(os.environ.get("MUSIC_OUT") or pathlib.Path(__file__).parent / "out" / "music.wav")   # MUSIC_OUT: other films reuse the bed
 wavfile.write(out_path, SR, (out * 32767).astype(np.int16))
 print("music", out_path, f"{LEN:.1f}s")

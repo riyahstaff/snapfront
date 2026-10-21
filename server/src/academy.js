@@ -27,8 +27,31 @@ const dir = () => path.join(config.dataDir, "academy");
 const hashOf = (l) => (presenter.appliesTo(l.id) ? `p${presenter.versionOf(l).slice(0, 11)}`
   : crypto.createHash("sha256").update(JSON.stringify([l.title, l.slides.map(({ heading, points, say }) => ({ heading, points, say })), 2])).digest("hex").slice(0, 12));
 const fileOf = (l) => path.join(dir(), `${l.id}-${hashOf(l)}.mp4`);
-/** The newest finished video of a lesson: the current one, or the previous one while a new one is made. */
+/* ---------- films: a finished video made outside the server (tools/ugc-film), uploaded by the owner ---------- */
+// A lesson with `film: "<name>"` plays <data>/academy/films/<name>.mp4 once it's uploaded, instead of
+// the narrated slides (which are still made, so there's a video before the film arrives).
+const FILM_NAME = /^[a-z0-9-]{3,40}$/;
+const filmPath = (name) => path.join(dir(), "films", `${name}.mp4`);
+const filmOf = (l) => (l.film && FILM_NAME.test(l.film) && fs.existsSync(filmPath(l.film)) ? filmPath(l.film) : null);
+export const FILMS = () => LESSONS.filter((l) => l.film).map((l) => ({ lesson: l.id, film: l.film, ready: Boolean(filmOf(l)) }));
+/** Save an uploaded film (an MP4) for the lessons that name it. */
+export function saveFilm(name, buf, seconds) {
+  if (!FILM_NAME.test(String(name)) || !LESSONS.some((l) => l.film === name)) throw httpError(404, "No lesson uses that film.");
+  if (!Buffer.isBuffer(buf) || buf.length < 100000) throw httpError(400, "Upload the MP4 file itself.");
+  if (buf.subarray(4, 8).toString("latin1") !== "ftyp") throw httpError(400, "That isn't an MP4 video.");
+  fs.mkdirSync(path.join(dir(), "films"), { recursive: true });
+  const out = filmPath(name), part = `${out}.part`;
+  fs.writeFileSync(part, buf);
+  fs.renameSync(part, out);
+  const secs = Math.max(1, Math.min(7200, Math.round(Number(seconds) || 0))) || null;
+  fs.writeFileSync(`${out}.json`, JSON.stringify({ seconds: secs, made_at: new Date().toISOString(), film: true }));
+  return { film: name, bytes: buf.length, seconds: secs, lessons: LESSONS.filter((l) => l.film === name).map((l) => l.id) };
+}
+
+/** The newest finished video of a lesson: its film, the current one, or the previous one while a new one is made. */
 function currentFile(l) {
+  const film = filmOf(l);
+  if (film) return film;
   if (fs.existsSync(fileOf(l))) return fileOf(l);
   try {
     const all = versionsOf(l);
@@ -219,7 +242,7 @@ export function buildMissing({ voice = "af_heart", only = null } = {}) {
     lastError = null;   // a new run: only this run's failures are worth showing
     let made = 0;
     for (const l of LESSONS.filter((x) => !only || only.includes(x.id))) {
-      if (fs.existsSync(fileOf(l))) continue;
+      if (fs.existsSync(fileOf(l)) || filmOf(l)) continue;
       try {
         const t0 = Date.now();
         const target = fileOf(l);   // worked out once: it depends on settings that can change while building

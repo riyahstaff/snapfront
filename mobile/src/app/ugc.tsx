@@ -57,7 +57,7 @@ function FindWork({ kit }: { kit: UgcKit }) {
         {kit.platforms.disclosure ? <Text style={[type.small, { color: c.muted }]}>{kit.platforms.disclosure}</Text> : null}
       </Card>
       <Card title="Price your videos" sub="Typical starting rates. Raise them as your portfolio grows.">
-        {[["Your first videos", "$50 to $150 a video"], ["With a solid portfolio", "$150 to $400 a video"], ["Paid ad usage rights", "+30% to +100%, or a monthly fee"], ["Raw footage", "+$50 to $100"], ["Rush (under 72 hours)", "+25%"]].map(([a, b]) => (
+        {[["Your first videos", "$75 to $150 a video"], ["With a solid portfolio", "$150 to $400 a video"], ["Paid ad usage rights", "+30% to +100%, or a monthly fee"], ["Raw footage", "+$50 to $100"], ["Rush (under 72 hours)", "+25%"]].map(([a, b]) => (
           <View key={a} style={{ flexDirection: "row", justifyContent: "space-between", gap: space.md }}>
             <Text style={[type.body, { color: c.ink, flexShrink: 1 }]}>{a}</Text><Text style={[type.body, { color: c.muted }]}>{b}</Text>
           </View>

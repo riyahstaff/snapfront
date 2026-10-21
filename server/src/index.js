@@ -1013,6 +1013,10 @@ app.get("/academy-media/:file", (req, res) => {
   res.set("Cache-Control", "private, max-age=3600").type("video/mp4").sendFile(file);
 });
 app.get("/api/admin/academy", adminOnly, (_req, res) => res.json(academy.buildStatus()));
+// A finished film for a lesson (tools/ugc-film): owner only, MP4, up to 400 MB.
+app.put("/api/academy/films/:name", (req, res, next) => ownerOrStudio(req, res, next), express.raw({ type: ["video/mp4", "application/octet-stream"], limit: "400mb" }),
+  (req, res) => res.json(academy.saveFilm(req.params.name, req.body, req.query.seconds)));
+app.get("/api/academy/films", (req, res, next) => ownerOrStudio(req, res, next), (_req, res) => res.json({ films: academy.FILMS() }));
 /* ---------- Academy lessons taught by an avatar: the owner (or ACADEMY_STUDIO_TOKEN, for the screen recorder) ---------- */
 function ownerOrStudio(req, res, next) {
   const t = (req.get("authorization") || "").replace(/^Bearer\s+/i, "");
