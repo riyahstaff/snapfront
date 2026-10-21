@@ -5,7 +5,8 @@
 //
 // Visitors never see the API key. The page asks /api/vierra/session for a short-lived conversation
 // token (voice, WebRTC) or signed URL (typed chat, WebSocket); the agent only accepts those.
-// Optional settings: VIERRA_VOICE_ID (else the voice the owner picked), VIERRA_LLM, VIERRA_TTS_MODEL.
+// Optional settings: VIERRA_VOICE_ID (else the voice the owner picked), VIERRA_LLM, VIERRA_TTS_MODEL,
+// VIERRA_AGENT_ID (an existing agent to keep using, e.g. after moving to a new host).
 import crypto from "node:crypto";
 import { db } from "./db.js";
 import { httpError } from "./claude.js";
@@ -225,7 +226,8 @@ export function syncAgent({ force = false } = {}) {
     }
     const body = agentBody(kbId);
     const cHash = hash(JSON.stringify(body));
-    let agentId = getState("agent_id");
+    let agentId = getState("agent_id") || (/^agent_[A-Za-z0-9]{10,60}$/.test(String(process.env.VIERRA_AGENT_ID || "").trim()) ? String(process.env.VIERRA_AGENT_ID).trim() : null);
+    if (agentId && !getState("agent_id")) setState("agent_id", agentId);
     if (!agentId) {
       agentId = (await el("POST", "/v1/convai/agents/create", body, { timeout: 60_000 })).agent_id;
       setState("agent_id", agentId);

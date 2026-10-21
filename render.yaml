@@ -1,11 +1,11 @@
-# Snapfront's backup copy on Render (docs/backup-host.md). It deploys from GitHub like Railway,
-# keeps a copy of the main server's data, and does nothing else until STANDBY is set to false.
+# Snapfront on Render (docs/backup-host.md). Render is the live server since 21 Oct 2026 (Railway
+# stopped deploying). Set STANDBY to "true" here to make this a backup copy of another server.
 # Values marked sync: false are typed into Render's dashboard; secrets never go in this file.
 services:
   - type: web
     name: snapfront-backup
     runtime: node
-    plan: starter            # enough while it waits; switch to Standard (2 GB) when it takes over
+    plan: standard           # 2 GB memory: photo cut-outs and lesson-video voices need more than 512 MB
     region: oregon
     branch: main
     autoDeploy: true
@@ -24,11 +24,16 @@ services:
       - key: DATA_DIR
         value: /data
       - key: STANDBY
-        value: "true"
-      - key: PRIMARY_URL
+        value: "false"
+      - key: PRIMARY_URL           # only used when STANDBY is "true"
         value: https://snapfront-api-production.up.railway.app
-      - key: BACKUP_TOKEN          # the same value as on Railway
+      - key: BACKUP_TOKEN          # the same value as on the other host
         sync: false
+      # Vierra keeps the ElevenLabs agent and voice she had on Railway.
+      - key: VIERRA_AGENT_ID
+        value: agent_2601m5eeg43rfa38d13vg51f818v
+      - key: VIERRA_VOICE_ID
+        value: TJz0pp7opUc4JvMXMXob
       # Copy these from Railway (snapfront-api > Variables), unchanged:
       - { key: PUBLIC_URL, sync: false }
       - { key: STORE_DOMAIN, sync: false }
