@@ -10,21 +10,24 @@ import { radius, space, type, useColors } from "@/lib/theme";
 
 type Msg = { text: string; tone: "error" | "ok" | "info" } | null;
 
-const INFO: Record<SupplierId, { what: string; payLabel: string; payOn: string; payOff: string; site: string; siteLabel: string }> = {
+const INFO: Record<SupplierId, { what: string; time: string; payLabel: string; payOn: string; payOff: string; site: string; siteLabel: string }> = {
   cj: {
     what: "Wholesale products shipped from CJ’s warehouses.",
+    time: "Takes about 2 minutes.",
     payLabel: "Pay CJ automatically", payOn: "Orders are paid from your CJ wallet, so they ship right away. Keep money in your CJ wallet.",
     payOff: "Orders wait in CJ until you pay for them there (My CJ, then Orders).",
     site: "https://cjdropshipping.com/", siteLabel: "Open CJdropshipping",
   },
   printful: {
     what: "Your own designs on shirts, mugs, posters and more, printed and shipped by Printful.",
+    time: "Takes about 10 minutes, plus the time to design your products in Printful.",
     payLabel: "Send orders to Printful automatically", payOn: "Orders are confirmed in Printful straight away and charged to the card on your Printful account.",
     payOff: "Orders arrive in Printful as drafts. Confirm them in Printful (Orders) so they’re printed.",
     site: "https://developers.printful.com/", siteLabel: "Open Printful’s Developer Portal",
   },
   aliexpress: {
     what: "Products from AliExpress sellers, ordered through your own AliExpress account.",
+    time: "Takes a few days: AliExpress reviews new developer accounts and apps before you get your App Key, usually within 2 to 5 working days.",
     payLabel: "Pay AliExpress automatically", payOn: "Snapfront tries to pay each order with your saved AliExpress payment method.",
     payOff: "Orders wait in your AliExpress account until you pay for them there (My Orders).",
     site: "https://openservice.aliexpress.com/", siteLabel: "Open AliExpress Open Platform",
@@ -45,10 +48,10 @@ export function SupplierSection() {
   );
 }
 
-function SupplierCard({ id, state }: { id: SupplierId; state: SupplierState }) {
+export function SupplierCard({ id, state, startOpen = false }: { id: SupplierId; state: SupplierState; startOpen?: boolean }) {
   const c = useColors();
   const info = INFO[id];
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [fields, setFields] = useState<SupplierConnectInput>({});
   const [autoPay, setAutoPay] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -96,7 +99,7 @@ function SupplierCard({ id, state }: { id: SupplierId; state: SupplierState }) {
 
       {open ? (
         <View style={{ gap: space.md }}>
-          <Text style={[type.small, { color: c.muted }]}>{info.what}</Text>
+          <Text style={[type.small, { color: c.muted }]}>{info.what}{state.connected ? "" : ` ${info.time}`}</Text>
           {state.connected ? (
             <>
               <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
@@ -144,18 +147,23 @@ function Steps({ id, callbackUrl }: { id: SupplierId; callbackUrl?: string }) {
   const c = useColors();
   const [copied, setCopied] = useState(false);
   const steps = id === "cj" ? [
-    "Sign in to CJdropshipping (it’s free).",
+    "Sign in to CJdropshipping, or create a free account.",
     "Open My CJ, then Authorization, then API.",
-    "Generate an API key, copy it and paste it below.",
+    "Generate an API key, copy it and paste it below. Then tap Connect CJdropshipping.",
   ] : id === "printful" ? [
-    "In Printful, add a store if you don’t have one (choose “Manual order platform / API”) and create your products there.",
-    "Open Printful’s Developer Portal and choose Your tokens, then Create a token.",
-    "Give it access to your store, with the Orders and Sync products permissions. Copy the token and paste it below.",
+    "Sign in to Printful, or create a free account at printful.com.",
+    "Add a store for Snapfront: open Stores, choose Add store, then pick “Manual order platform / API”. Skip this if you already have one.",
+    "Add your designs to that store as products (in the store, choose Add product). Only products in this store show up in Find.",
+    "Open Printful’s Developer Portal (button below), sign in with your Printful login and open Your tokens. Create a private token.",
+    "Give the token access to the store from step 2 and turn on the Orders and Sync products permissions (read and write). Pick an expiry date: when it expires, make a new token and paste it here again.",
+    "Copy the token straight away (Printful only shows it once), paste it below and tap Connect Printful.",
   ] : [
-    "Sign in to the AliExpress Open Platform with your AliExpress account and register as a developer.",
-    "Create an app in the Dropshipping category and wait for AliExpress to approve it.",
-    "In the app’s settings, set the Callback URL to the address below.",
-    "Copy the app’s App Key and App Secret, paste them below, then approve Snapfront on the AliExpress page that opens.",
+    "Use an AliExpress account with your shipping details and a payment method saved. Snapfront places each order in this account.",
+    "Open the AliExpress Open Platform (button below), sign in with that AliExpress account and register as a developer. AliExpress reviews this first, usually in 2 to 5 working days.",
+    "Once you’re approved, open the App Console, choose Create app and pick the Dropshipping app type. Add a name (like “My Snapfront store”), a short description and a logo.",
+    "In the app’s settings, set the Callback URL to the address below (tap it to copy). If AliExpress reviews the app too, wait until it’s approved.",
+    "Copy the app’s App Key and App Secret, paste them below and tap Save and authorize.",
+    "An AliExpress page opens: sign in with the same account and approve Snapfront. Then go to Find, choose AliExpress and paste any product link to add it to your store.",
   ];
   return (
     <View style={{ gap: 6 }}>

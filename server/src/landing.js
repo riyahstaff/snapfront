@@ -188,7 +188,7 @@ ${promoSection()}
   <div class="free-entry"><div><strong>Not ready to purchase?</strong><p>Register a free account with a verified email to explore the studio and use limited free credits. A free account does not include a live, selling storefront.</p></div><a class="btn ghost small" href="${web}/sign-in">Create a free account ↗</a></div>
 </div></section>
 </main>
-<footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="${web}/sign-in">Sign in</a><a href="#features">Features</a><a href="#learn">Academy, UGC &amp; affiliates</a><a href="${web}/sign-in">Create an account</a><a href="/connect-ai">Claude &amp; ChatGPT</a><a href="/prompts">Prompts</a><a href="/tools">Tools</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a><span>support@snapfront.app</span></nav></div></footer>
+<footer><div class="wrap"><span>© ${year} Snapfront</span><nav><a href="${web}/sign-in">Sign in</a><a href="#features">Features</a><a href="#learn">Academy, UGC &amp; affiliates</a><a href="${web}/sign-in">Create an account</a><a href="/connect-ai">Claude &amp; ChatGPT</a><a href="/prompts">Prompts</a><a href="/tools">Tools</a><a href="/help">Help &amp; FAQ</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a><span>support@snapfront.app</span></nav></div></footer>
 <script>
 (function(){
  const stage=document.getElementById('theme-stage');

@@ -591,7 +591,7 @@ export const api = {
   },
   legalUrl: (page: "privacy" | "terms") => `${API_URL}/${page}`,
   /** Website pages: the Claude/ChatGPT connector guide and the tools page. */
-  siteUrl: (page: "connect-ai" | "tools" | "prompts") => `${API_URL}/${page}`,
+  siteUrl: (page: "connect-ai" | "tools" | "prompts" | "help") => `${API_URL}/${page}`,
   connectedApps: () => request<ConnectedApps>("GET", "/api/connected-apps"),
   disconnectApp: (id: string) => request<void>("DELETE", `/api/connected-apps/${encodeURIComponent(id)}`),
   productFromPhoto: (input: { imageBase64: string; mediaType: string; kind: string; hint?: string; price?: string; tone?: string }) =>

@@ -20,3 +20,6 @@ tools/site-art/out/
 tools/promo/out/
 tools/promo/*.log
 server/assets/site/promo/*.webm
+
+# Local databases made by running the server without DATA_DIR
+server/src/data/

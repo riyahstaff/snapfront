@@ -1,9 +1,11 @@
 import React, { useCallback, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Notice } from "@/components/ui";
+import { SupplierCard } from "@/components/supplier-section";
+import { Button, Notice, usePageWidth } from "@/components/ui";
+import { PAGE_MAX } from "@/lib/page-width";
 import { api, ApiError, money, type CatalogItem, type SupplierId } from "@/lib/api";
 import { useMe } from "@/lib/account-store";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
@@ -30,6 +32,10 @@ export default function FindScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const current = useRef({ source: "cj" as SupplierId, term: "" });
+  // On the website the page sits in the same centered column as its title, with more cards per row.
+  const max = PAGE_MAX[usePageWidth()];
+  const { width } = useWindowDimensions();
+  const cols = Platform.OS === "web" ? (width >= 1100 ? 4 : width >= 760 ? 3 : 2) : 2;
 
   const s = me?.account.suppliers?.[source];
   const meta = SUPPLIERS.find((x) => x.id === source)!;
@@ -66,9 +72,11 @@ export default function FindScreen() {
   return (
     <FlatList
       style={{ backgroundColor: c.bg }}
-      contentContainerStyle={{ padding: space.lg, gap: space.md }}
+      contentContainerStyle={[{ paddingHorizontal: Platform.OS === "web" ? space.xl : space.lg, paddingTop: space.lg, paddingBottom: space.xxl, gap: space.md },
+        max ? { width: "100%", maxWidth: max, alignSelf: "center" } : null]}
       columnWrapperStyle={{ gap: space.md }}
-      numColumns={2}
+      key={cols}
+      numColumns={cols}
       data={ready ? items : []}
       keyExtractor={(p) => `${source}:${p.pid}`}
       keyboardShouldPersistTaps="handled"
@@ -76,7 +84,7 @@ export default function FindScreen() {
       onEndReached={() => { if (!busy && items.length && page < pages) run(current.current.source, current.current.term, page + 1); }}
       ListHeaderComponent={
         <View style={{ gap: space.md, marginBottom: space.sm }}>
-          <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Find products{"\n"}to sell</Text>
+          {Platform.OS !== "web" ? <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Find products{"\n"}to sell</Text> : null}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -space.lg }} contentContainerStyle={{ paddingHorizontal: space.lg, gap: space.sm }}
             accessibilityRole="tablist">
             {SUPPLIERS.map((x) => {
@@ -95,16 +103,16 @@ export default function FindScreen() {
           <Text style={[type.body, { color: c.muted }]}>{meta.blurb}</Text>
 
           {!ready ? (
-            <View style={{ gap: space.sm, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, padding: space.lg }}>
+            <View style={{ gap: space.sm }}>
               <Text style={[type.heading, { color: c.ink }]}>
-                {s?.pending_authorization ? `Finish connecting ${meta.label}` : `Connect your ${meta.label} account`}
+                {s?.pending_authorization ? `Finish connecting ${meta.label}` : `Connect your ${meta.label} account first`}
               </Text>
               <Text style={[type.small, { color: c.muted }]}>
-                {source === "printful" ? "Paste a private token from your Printful account. Your products show up here, and orders go to your Printful account."
-                  : s?.pending_authorization ? "Your app details are saved. Approve Snapfront on AliExpress to finish."
-                  : "Add your AliExpress app’s App Key and App Secret, then approve Snapfront on AliExpress."}
+                {source === "printful" ? "Snapfront shows the products in your own Printful store, and sends each order to your Printful account so Printful prints and ships it. Follow these steps once."
+                  : "Snapfront places AliExpress orders in your own AliExpress account, so you need an AliExpress developer app (it's free). Follow these steps once."}
               </Text>
-              <Button label={s?.pending_authorization ? "Finish in Store settings" : `Connect ${meta.label}`} onPress={() => router.push("/settings")} />
+              {s ? <SupplierCard id={source} state={s} startOpen /> : <Button label={`Connect ${meta.label} in Settings`} onPress={() => router.push("/settings")} />}
+              <Text style={[type.small, { color: c.muted }]}>You can also manage suppliers any time in Settings, under Suppliers.</Text>
             </View>
           ) : (
             <>
@@ -150,17 +158,17 @@ export default function FindScreen() {
         </Text>
       ) : null}
       ListFooterComponent={busy ? <ActivityIndicator color={c.accent} style={{ padding: space.xl }} /> : null}
-      renderItem={({ item }) => <Tile item={item} source={source} />}
+      renderItem={({ item }) => <Tile item={item} source={source} cols={cols} />}
     />
   );
 }
 
-function Tile({ item, source }: { item: CatalogItem; source: SupplierId }) {
+function Tile({ item, source, cols }: { item: CatalogItem; source: SupplierId; cols: number }) {
   const c = useColors();
   return (
     <Pressable onPress={() => router.push({ pathname: "/supplier/[pid]", params: { pid: item.pid, source } })} accessibilityRole="button"
       accessibilityLabel={`${item.title}${item.cost != null ? `, costs you ${money(item.cost)}` : ""}`}
-      style={({ pressed }) => ({ flex: 1, maxWidth: "50%", backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, overflow: "hidden", opacity: pressed ? 0.85 : 1 })}>
+      style={({ pressed }) => ({ flex: 1, maxWidth: `${100 / cols}%`, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, overflow: "hidden", opacity: pressed ? 0.85 : 1 })}>
       <Image source={item.image ? { uri: item.image } : null} style={{ width: "100%", aspectRatio: 1, backgroundColor: c.sunk }} contentFit="cover" transition={150} />
       <View style={{ padding: space.sm, gap: 4 }}>
         <Text numberOfLines={2} style={[type.small, { color: c.ink, minHeight: 36 }]}>{item.title}</Text>

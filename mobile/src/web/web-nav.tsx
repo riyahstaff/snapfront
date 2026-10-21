@@ -170,7 +170,7 @@ export function WebFooter() {
       <View style={{ width: "100%", maxWidth: CONTENT, alignSelf: "center", paddingHorizontal: 24, paddingVertical: 32, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 16 }}>
         <Text style={{ fontFamily: fonts.body, fontSize: 14, color: c.muted }}>© {new Date().getFullYear()} Snapfront · support@snapfront.app</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}>
-          {link("snapfront.app", "https://snapfront.app")}{link("Claude & ChatGPT", "https://snapfront.app/connect-ai")}{link("Prompts", "https://snapfront.app/prompts")}{link("Tools", "https://snapfront.app/tools")}{link("Privacy", "https://snapfront.app/privacy")}{link("Terms", "https://snapfront.app/terms")}{link("Delete account", "https://snapfront.app/delete-account")}
+          {link("snapfront.app", "https://snapfront.app")}{link("Claude & ChatGPT", "https://snapfront.app/connect-ai")}{link("Prompts", "https://snapfront.app/prompts")}{link("Tools", "https://snapfront.app/tools")}{link("Help & FAQ", "https://snapfront.app/help")}{link("Privacy", "https://snapfront.app/privacy")}{link("Terms", "https://snapfront.app/terms")}{link("Delete account", "https://snapfront.app/delete-account")}
         </View>
       </View>
     </View>

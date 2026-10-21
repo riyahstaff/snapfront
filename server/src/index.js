@@ -28,6 +28,7 @@ import { THEME_IDS, publicThemes } from "./themes.js";
 import * as connector from "./connector.js";
 import * as sitePages from "./site-pages.js";
 import * as promptLibrary from "./prompt-library.js";
+import * as helpPage from "./help-page.js";
 import * as studio from "./studio.js";
 import { ensureModel as ensureCutoutModel } from "./cutout.js";
 import * as supplierDirectory from "./supplier-directory.js";
@@ -199,6 +200,12 @@ app.get("/prompts", (req, res) => {
   res.set("Cache-Control", "public, max-age=300");
   promptLibrary.sendCompressed(req, res, page);
 });
+app.get("/help", (req, res) => {
+  const page = helpPage.helpPage((body) => sitePages.helpShell(body, { css: helpPage.HELP_CSS }));
+  res.set("Cache-Control", "public, max-age=300");
+  promptLibrary.sendCompressed(req, res, page);
+});
+app.get(["/faq", "/support"], (_req, res) => res.redirect(301, "/help"));
 // The same library as data, for the app or anyone building on it.
 app.get("/api/prompts", (req, res) => {
   const page = promptLibrary.promptsJson();

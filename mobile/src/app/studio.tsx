@@ -4,8 +4,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Field, H2, Notice } from "@/components/ui";
-import { api, ApiError, type StudioPresets, type StudioStyle } from "@/lib/api";
+import { Body, Button, Field, H2, Notice, PageScroll, usePageWidth } from "@/components/ui";
+import { api, ApiError, type Product, type StudioPresets, type StudioStyle } from "@/lib/api";
+import { PAGE_MAX } from "@/lib/page-width";
 import { account, useMe } from "@/lib/account-store";
 import { draftStore } from "@/lib/draft-store";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
@@ -37,13 +38,76 @@ function valueParam(value: string | string[] | undefined): string {
  * candidates remain reviewable rather than promising that an image model preserved product identity.
  */
 export default function StudioScreen() {
-  const c = useColors();
-  const me = useMe();
-  const insets = useSafeAreaInsets();
   const route = useLocalSearchParams<{ target?: string | string[]; image_file?: string | string[]; image_url?: string | string[] }>();
   const target = valueParam(route.target);
   const imageFile = valueParam(route.image_file);
-  const imageUrl = valueParam(route.image_url);
+  // Opened from Home, the menu or search (not from a product): pick the product first.
+  if (!target || !imageFile) return <ProductPicker />;
+  return <Cleanup target={target} imageFile={imageFile} imageUrl={valueParam(route.image_url)} />;
+}
+
+/** Choose which physical product's photo to clean up. */
+function ProductPicker() {
+  const c = useColors();
+  const me = useMe();
+  const storeId = me?.id;
+  const [products, setProducts] = useState<Product[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!storeId) return;
+    let active = true;
+    api.products(storeId).then((list) => { if (active) { setError(null); setProducts(list.filter((p) => p.kind === "physical")); } })
+      .catch((e) => { if (active) setError(e instanceof ApiError ? e.message : "Couldn't load your products. Try again."); });
+    return () => { active = false; };
+  }, [storeId]);
+  const withPhoto = products?.filter((p) => p.image_file) ?? [];
+  const noPhoto = products?.filter((p) => !p.image_file) ?? [];
+  return (
+    <PageScroll style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }}>
+      <View style={{ gap: space.sm }}>
+        <H2>Which product photo?</H2>
+        <Body muted>Pick a physical product and Snapfront will make cleaned-up versions of its photo: a plain background in the colour you choose, or a scene like marble or wood. Your original photo stays until you choose a new one.</Body>
+      </View>
+      <Notice text={error} tone="error" />
+      {!storeId || (!products && !error) ? <ActivityIndicator color={c.accent} /> : null}
+      {products && !products.length ? (
+        <View style={{ gap: space.md }}>
+          <Notice text="You don't have any physical products yet. Photo cleanup works on photos of things you ship, like candles, clothes or jewelry. For digital products, use the Digital photo studio." tone="info" />
+          <Button label="Snap a product" onPress={() => router.push("/snap")} />
+          <Button label="Digital photo studio" variant="ghost" onPress={() => router.push("/digital-photo-studio")} />
+        </View>
+      ) : null}
+      {withPhoto.length ? (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.md }}>
+          {withPhoto.map((p) => (
+            <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`Clean up the photo of ${p.title}`}
+              onPress={() => router.push({ pathname: "/studio", params: { target: p.id, image_file: p.image_file!, image_url: p.image_url ?? "" } })}
+              style={({ pressed }) => ({ flexGrow: 1, flexBasis: 150, maxWidth: 230, borderRadius: radius.md, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, overflow: "hidden", opacity: pressed ? 0.85 : 1 })}>
+              <Image source={{ uri: p.image_url ?? undefined }} style={{ width: "100%", aspectRatio: 1, backgroundColor: c.sunk }} contentFit="cover" />
+              <View style={{ padding: space.sm, gap: 2 }}>
+                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.ink }} numberOfLines={2}>{p.title}</Text>
+                <Text style={[type.small, { color: c.muted }]}>{p.status === "live" ? "Live" : "Draft"}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      {noPhoto.length ? (
+        <View style={{ gap: space.sm }}>
+          <Text style={[type.small, { color: c.muted }]}>These need a photo first. Open one and add a photo, then come back here.</Text>
+          {noPhoto.map((p) => <Button key={p.id} label={p.title} variant="ghost" onPress={() => router.push(`/product/${p.id}`)} />)}
+        </View>
+      ) : null}
+    </PageScroll>
+  );
+}
+
+function Cleanup({ target, imageFile, imageUrl }: { target: string; imageFile: string; imageUrl: string }) {
+  const c = useColors();
+  const me = useMe();
+  const insets = useSafeAreaInsets();
+  const max = PAGE_MAX[usePageWidth()];
+  const column = max ? { width: "100%" as const, maxWidth: max, alignSelf: "center" as const } : null;
   const [presets, setPresets] = useState<StudioPresets | null>(null);
   const [shots, setShots] = useState<Shot[]>([]);
   const [selected, setSelected] = useState(0);
@@ -75,7 +139,7 @@ export default function StudioScreen() {
         if (active) {
           sourceRef.current = null;
           setShots([]);
-          setMsg({ text: "Choose a physical product from the current store before using Product Photo Cleanup.", tone: "error" });
+          setMsg({ text: "This photo isn't from a physical product in the store you have open. Go back and choose the product again.", tone: "error" });
         }
         return;
       }
@@ -84,7 +148,7 @@ export default function StudioScreen() {
       setShots([]);
       if (target === "draft") {
         sourceRef.current = imageFile;
-        setShots([{ file: imageFile, url: imageUrl, label: "Original draft photo" }]);
+        setShots([{ file: imageFile, url: imageUrl, label: "Original photo" }]);
         return;
       }
       try {
@@ -95,7 +159,7 @@ export default function StudioScreen() {
           return;
         }
         sourceRef.current = product.image_file;
-        setShots([{ file: product.image_file, url: product.image_url ?? imageUrl, label: "Verified original product photo" }]);
+        setShots([{ file: product.image_file, url: product.image_url ?? imageUrl, label: "Original photo" }]);
       } catch (error) {
         if (active && ownsSession({ ...started, sourceFile: imageFile })) setMsg({ text: error instanceof ApiError ? error.message : "Couldn’t verify the physical product source. No cleanup request was made.", tone: "error" });
       }
@@ -170,10 +234,10 @@ export default function StudioScreen() {
   const off = busy != null || !shots.length;
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView ref={scroller} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: 120 + insets.bottom }} keyboardShouldPersistTaps="handled">
-        <View style={{ gap: 4 }}><H2>Product Photo Cleanup</H2><Text style={[type.small, { color: c.muted }]}>Review each candidate closely. Cleanup generation can alter details, so confirm the product identity before using one.</Text></View>
+      <PageScroll ref={scroller} contentContainerStyle={{ padding: space.xl, gap: space.lg, paddingBottom: 120 + insets.bottom }} keyboardShouldPersistTaps="handled">
+        <Text style={[type.small, { color: c.muted }]}>Pick a background or scene to make a new version of this photo. AI can change small details, so check the product still looks right before you use one.</Text>
         <View style={{ aspectRatio: 1, borderRadius: radius.lg, overflow: "hidden", backgroundColor: c.sunk }}>
-          {shot?.url ? <Image source={{ uri: shot.url }} style={{ flex: 1 }} contentFit="cover" transition={200} accessibilityLabel={`${shot.label} photo`} /> : <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: space.lg }}><Text style={[type.small, { color: c.muted, textAlign: "center" }]}>Verifying the physical product&apos;s original source…</Text></View>}
+          {shot?.url ? <Image source={{ uri: shot.url }} style={{ flex: 1 }} contentFit="cover" transition={200} accessibilityLabel={`${shot.label} photo`} /> : <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: space.lg }}><Text style={[type.small, { color: c.muted, textAlign: "center" }]}>{msg?.tone === "error" ? "This photo can't be cleaned up from here." : "Loading the product photo…"}</Text></View>}
           {busy && busy !== "use" ? (
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center", gap: space.sm, padding: space.lg }}>
               <ActivityIndicator color="#fff" size="large" />
@@ -182,7 +246,7 @@ export default function StudioScreen() {
             </View>
           ) : null}
           <View style={{ position: "absolute", left: 12, bottom: 12, backgroundColor: "rgba(0,0,0,0.6)", borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 5 }}>
-            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: "#fff" }}>{shot?.label || "Checking source"}</Text>
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: "#fff" }}>{shot?.label || "Loading"}</Text>
           </View>
         </View>
 
@@ -198,17 +262,17 @@ export default function StudioScreen() {
         ) : null}
         <Notice text={msg?.text ?? null} tone={msg?.tone} />
 
-        {!presets ? <ActivityIndicator color={c.accent} /> : !presets.enabled ? (
+        {!presets ? (msg?.tone === "error" ? null : <ActivityIndicator color={c.accent} />) : !presets.enabled ? (
           <Notice text="The photo studio is being switched on. Check back soon." tone="info" />
         ) : (
           <>
-            {left != null ? <Text style={[type.small, { color: c.muted }]}>Use the verified original source to make a cleanup candidate, then review product identity before using it. {left} of {a!.limits.studio} studio edits left{a!.plan === "free" ? "" : " this month"}.</Text> : null}
+            {left != null ? <Text style={[type.small, { color: c.muted }]}>Each new version starts from your original photo. {left} of {a!.limits.studio} photo edits left{a!.plan === "free" ? "" : " this month"}.</Text> : null}
             <View style={{ gap: space.sm }}>
               <H2>Clean background</H2>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.md }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
                 {presets.colors.map((col) => (
                   <Pressable key={col.id} disabled={off} onPress={() => make({ color: col.id }, col.name)} accessibilityRole="button" accessibilityLabel={`${col.name} background`}
-                    style={{ alignItems: "center", gap: 4, width: 64, opacity: off ? 0.5 : 1 }}>
+                    style={{ alignItems: "center", gap: 4, width: 60, opacity: off ? 0.5 : 1 }}>
                     <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `#${col.hex}`, borderWidth: 1, borderColor: c.line }} />
                     <Text style={[type.small, { color: c.ink }]} numberOfLines={1}>{col.name}</Text>
                   </Pressable>
@@ -237,9 +301,11 @@ export default function StudioScreen() {
             </View> : null}
           </>
         )}
-      </ScrollView>
+      </PageScroll>
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: space.lg, paddingBottom: space.lg + insets.bottom, backgroundColor: c.surface, borderTopWidth: 1, borderColor: c.line }}>
-        <Button label={!shot ? "Waiting for verified original" : selected === 0 ? "Keep the original" : "Use this reviewed candidate"} loading={busy === "use"} disabled={!shot || (off && busy !== "use")} onPress={selected === 0 ? () => router.back() : use} />
+        <View style={[column, { paddingHorizontal: column ? space.xl : space.xl - space.lg }]}>
+          <Button style={{ alignSelf: "stretch" }} label={!shot ? (msg?.tone === "error" ? "Go back" : "Loading the photo…") : selected === 0 ? "Keep the original" : "Use this photo"} loading={busy === "use"} disabled={(!shot && msg?.tone !== "error") || (!!shot && off && busy !== "use")} onPress={!shot || selected === 0 ? () => router.back() : use} />
+        </View>
       </View>
     </View>
   );

@@ -26,7 +26,7 @@ footer{border-top:1px solid rgba(54,60,70,.5);padding-block:28px;color:var(--mut
 code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
 `;
 function shell({ title, description, body, current = "", css = "", plain = false }) {
-  const nav = plain ? "" : `<nav aria-label="Site"><a href="/">Home</a><a href="/connect-ai"${current === "connect" ? ' aria-current="page"' : ""}>Claude &amp; ChatGPT</a><a href="/prompts"${current === "prompts" ? ' aria-current="page"' : ""}>Prompts</a><a href="/tools"${current === "tools" ? ' aria-current="page"' : ""}>Tools</a><a href="${webApp()}/sign-in">Sign in</a></nav>`;
+  const nav = plain ? "" : `<nav aria-label="Site"><a href="/">Home</a><a href="/connect-ai"${current === "connect" ? ' aria-current="page"' : ""}>Claude &amp; ChatGPT</a><a href="/prompts"${current === "prompts" ? ' aria-current="page"' : ""}>Prompts</a><a href="/tools"${current === "tools" ? ' aria-current="page"' : ""}>Tools</a><a href="/help"${current === "help" ? ' aria-current="page"' : ""}>Help</a><a href="${webApp()}/sign-in">Sign in</a></nav>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>${description ? `<meta name="description" content="${esc(description)}">` : ""}
 <meta name="theme-color" content="#090B0E"><meta name="color-scheme" content="dark"><link rel="icon" href="/site/mark.png">
@@ -34,7 +34,7 @@ function shell({ title, description, body, current = "", css = "", plain = false
 <style>${BASE_CSS}${css}</style></head><body>
 <header><div class="wrap"><a class="brand" href="/"><img src="/site/mark.png" alt="" width="30" height="30">snapfront</a>${nav}</div></header>
 <main>${body}</main>
-${plain ? "" : `<footer><div class="wrap"><span>© ${new Date().getFullYear()} Snapfront · support@snapfront.app</span><nav><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a></nav></div></footer>`}
+${plain ? "" : `<footer><div class="wrap"><span>© ${new Date().getFullYear()} Snapfront · support@snapfront.app</span><nav><a href="/help">Help</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/delete-account">Delete account</a></nav></div></footer>`}
 </body></html>`;
 }
 
@@ -179,4 +179,9 @@ export function toolsPage() {
 /* ---------- /prompts (the body comes from prompt-library.js) ---------- */
 export function promptsShell(body, { count, css }) {
   return shell({ title: `${count} prompts for Claude and ChatGPT | Snapfront`, description: `${count} full, copy-and-paste prompts for Claude and ChatGPT: digital products, your Snapfront store, short videos, AI agents, side hustles, money, health and career.`, body, current: "prompts", css });
+}
+
+/* ---------- /help (the body comes from help-page.js) ---------- */
+export function helpShell(body, { css }) {
+  return shell({ title: "Help and FAQ | Snapfront", description: "How Snapfront works: what each feature does, how to set it up and where to find it, with a glossary.", body, current: "help", css });
 }

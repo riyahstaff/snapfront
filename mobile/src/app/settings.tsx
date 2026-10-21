@@ -149,6 +149,7 @@ export default function SettingsScreen() {
           <View style={{ gap: space.sm, marginTop: space.lg }}>
             <H2>About</H2>
             <ReleaseInfo detailed />
+            <Button label="Help and FAQ" variant="secondary" onPress={() => WebBrowser.openBrowserAsync(api.siteUrl("help"))} />
             <Button label="Privacy policy" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("privacy"))} />
             <Button label="Terms of use" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("terms"))} />
             {confirm ? (

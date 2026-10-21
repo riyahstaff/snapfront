@@ -8,13 +8,13 @@
 export type PageWidth = "narrow" | "focus" | "wide" | "full";
 export const PAGE_MAX: Record<PageWidth, number | undefined> = { narrow: 608, focus: 760, wide: 1120, full: undefined };
 
-const NARROW = new Set(["snap", "price-check"]);
+const NARROW = new Set(["snap", "price-check", "studio"]);
 const FOCUS = new Set([
   "ai-media", "faceless", "marketing", "avatars", "discounts", "store-offers", "pixels",
-  "studio", "digital-photo-studio", "draft", "product", "supplier", "welcome", "start", "sign-in", "community-post", "lesson", "assistant",
+  "digital-photo-studio", "draft", "product", "supplier", "welcome", "start", "sign-in", "community-post", "lesson", "assistant",
 ]);
 const WIDE = new Set([
-  "academy", "autodm", "affiliates", "earn", "channels", "reviews", "trends", "sources", "ugc", "credits", "create", "community", "plans",
+  "academy", "find", "autodm", "affiliates", "earn", "channels", "reviews", "trends", "sources", "ugc", "credits", "create", "community", "plans",
 ]);
 
 /** The width for a route name ("snap", "product/[id]") or a path ("/product/abc"). */
