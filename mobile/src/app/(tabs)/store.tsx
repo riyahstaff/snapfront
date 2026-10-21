@@ -6,7 +6,7 @@ import { Link, router, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Notice, Pill } from "@/components/ui";
+import { Button, Notice, Pill, ButtonRow } from "@/components/ui";
 import { api, ApiError, money, type Me, type Product } from "@/lib/api";
 import { account } from "@/lib/account-store";
 import { loadStorefrontDraft } from "@/lib/storefront-draft";
@@ -97,9 +97,11 @@ export default function StoreScreen() {
           <Button label={seller.stripe_connected ? "Continue setup" : "Connect Stripe"} onPress={connectStripe} style={{ alignSelf: "flex-start" }} />
         </View>
       ) : null}
-      <Button label="Bundles & subscriptions" variant="secondary" onPress={() => router.push("/store-offers")} />
-      <Button label="Add a product" icon={<Ionicons name="add-circle-outline" size={20} color={c.onAccent} />} onPress={addProduct} />
-      <Button label={setupDraftStep ? `Resume storefront setup · step ${setupDraftStep}` : "Build your storefront"} variant="secondary" icon={<Ionicons name="sparkles-outline" size={20} color={c.ink} />} onPress={() => router.push("/storefront-setup")} />
+      <ButtonRow>
+        <Button label="Add a product" icon={<Ionicons name="add-circle-outline" size={20} color={c.onAccent} />} onPress={addProduct} />
+        <Button label={setupDraftStep ? `Resume storefront setup · step ${setupDraftStep}` : "Build your storefront"} variant="secondary" icon={<Ionicons name="sparkles-outline" size={20} color={c.ink} />} onPress={() => router.push("/storefront-setup")} />
+        <Button label="Bundles & subscriptions" variant="secondary" onPress={() => router.push("/store-offers")} />
+      </ButtonRow>
       {setupDraftStep ? <Notice text="Your storefront setup is saved on this phone. Resume it here when you’re ready." /> : null}
       {drafts > 0 ? (
         <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start", backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, padding: space.md }}>

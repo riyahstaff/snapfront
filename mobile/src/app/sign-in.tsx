@@ -6,7 +6,7 @@ import { Body, Button, Notice, Screen } from "@/components/ui";
 import { EmailSignIn } from "@/components/email-sign-in";
 import { startBilling } from "@/lib/billing";
 import { useMe } from "@/lib/account-store";
-import { space, type, useColors } from "@/lib/theme";
+import { radius, space, type, useColors } from "@/lib/theme";
 
 export default function SignInScreen() {
   const c = useColors();
@@ -16,6 +16,7 @@ export default function SignInScreen() {
 
   return (
     <Screen>
+      <View style={Platform.OS === "web" ? { width: "100%", maxWidth: 520, alignSelf: "center", marginTop: space.xl, padding: space.xxl, gap: space.xl, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, backgroundColor: c.surface } : { gap: space.xl }}>
       <View style={{ gap: space.sm }}>
         <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>Sign in to Snapfront</Text>
         <Body muted>{signedIn && !done
@@ -42,6 +43,7 @@ export default function SignInScreen() {
         </View>
       ) : null}
       {!done ? <Button label="Not now" variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} /> : null}
+      </View>
     </Screen>
   );
 }

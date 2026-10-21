@@ -1,6 +1,6 @@
 import { DigitalIdeaPicker } from "@/components/digital-idea-picker";
 import React, { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, Platform } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Body, Button, Field, H1, Notice, Screen } from "@/components/ui";
 import { account, useMe } from "@/lib/account-store";
@@ -71,12 +71,12 @@ export default function CreateScreen() {
         {!templateId ? <Button label="See which formats sell best" variant="ghost" style={{ alignSelf: "flex-start", paddingHorizontal: 0, minHeight: 36 }} onPress={() => router.push("/trends")} /> : null}
       </View>
       {!templateId ? <DigitalIdeaPicker key={me?.id ?? "loading"} /> : null}
-      <View style={{ gap: space.sm }} accessibilityRole="radiogroup">
+      <View style={Platform.OS === "web" ? { flexDirection: "row", flexWrap: "wrap", gap: space.md } : { gap: space.sm }} accessibilityRole="radiogroup">
         {types.map((t) => {
           const on = t.id === typeForGeneration;
           return (
             <Pressable key={t.id} disabled={Boolean(templateId)} onPress={() => setType(t.id)} accessibilityRole="radio" accessibilityState={{ selected: on, disabled: Boolean(templateId) }}
-              style={{ flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.md, borderWidth: on ? 2 : 1, borderColor: on ? c.accent : c.line, backgroundColor: c.surface, opacity: templateId && !on ? 0.45 : 1 }}>
+              style={{ ...(Platform.OS === "web" ? { flexGrow: 1, flexBasis: 220, minHeight: 92 } : null), flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.md, borderWidth: on ? 2 : 1, borderColor: on ? c.accent : c.line, backgroundColor: c.surface, opacity: templateId && !on ? 0.45 : 1 }}>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={[type.heading, { color: c.ink }]}>{t.name}</Text>
                 <Text style={[type.small, { color: c.muted }]}>{t.sub}</Text>

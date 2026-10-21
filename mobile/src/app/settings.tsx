@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Switch, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
-import { Body, Button, Field, H2, Notice, Screen, Segmented } from "@/components/ui";
+import { Body, Button, Field, H2, Notice, Screen, Segmented, Columns } from "@/components/ui";
 import { api, ApiError, type Me } from "@/lib/api";
 import { account } from "@/lib/account-store";
 import { AccountSection } from "@/components/account-section";
@@ -86,90 +86,93 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <AccountSection />
-      <Appearance />
-      <View style={{ height: space.md }} />
-      <H2>{seller && seller.account.stores.length > 1 ? `This store: ${seller.store_name}` : "Your store"}</H2>
-      <Field label="Store name" value={name} onChangeText={setName} />
-      <Field label="Tagline" hint="The big headline at the top of your store." value={tagline} onChangeText={setTagline} />
-      <Field label="Store address" value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} keyboardType="url"
-        hint={seller ? `Your store’s link: ${seller.store_domain ? `${address.trim() || seller.store_slug}.${seller.store_domain}` : displayAddress(seller)}. Letters, numbers and dashes.` : undefined} />
-      <Button label="Save store details" onPress={save} loading={saving} />
-      <Notice text={msg?.text ?? null} tone={msg?.tone} />
-      <View style={{ marginTop: space.lg }}>
-        <DomainSection />
-      </View>
-      <View style={{ gap: space.md, marginTop: space.lg }}>
-        <H2>Shipping and tax</H2>
-        <Body muted>Shipping is charged once per order that has a physical item. Digital-only orders never pay shipping.</Body>
-        <View style={{ flexDirection: "row", gap: space.md }}>
-          <View style={{ flex: 1 }}><Field label="Flat shipping ($)" value={shipFlat} onChangeText={setShipFlat} keyboardType="decimal-pad" placeholder="0.00 = free" /></View>
-          <View style={{ flex: 1 }}><Field label="Free over ($)" value={freeOver} onChangeText={setFreeOver} keyboardType="decimal-pad" placeholder="Off" /></View>
-        </View>
-        <Field label="Ships to" hint="Two-letter country codes, separated by commas." value={countries} onChangeText={setCountries} autoCapitalize="characters" autoCorrect={false} placeholder="US, CA" />
-        <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={[type.label, { color: c.ink }]}>Collect sales tax automatically</Text>
-            <Text style={[type.small, { color: c.muted }]}>
-              {taxInfo?.active && taxInfo.registrations.length
-                ? `Stripe adds the right tax at checkout. Collecting in: ${taxInfo.registrations.join(", ")}.`
-                : "Stripe works out and adds the right tax at checkout. First add your business address and where you’re registered to collect tax."}
-            </Text>
+      <Columns left={<>
+          <AccountSection />
+          <Appearance />
+          <View style={{ height: space.md }} />
+          <H2>{seller && seller.account.stores.length > 1 ? `This store: ${seller.store_name}` : "Your store"}</H2>
+          <Field label="Store name" value={name} onChangeText={setName} />
+          <Field label="Tagline" hint="The big headline at the top of your store." value={tagline} onChangeText={setTagline} />
+          <Field label="Store address" value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} keyboardType="url"
+            hint={seller ? `Your store’s link: ${seller.store_domain ? `${address.trim() || seller.store_slug}.${seller.store_domain}` : displayAddress(seller)}. Letters, numbers and dashes.` : undefined} />
+          <Button label="Save store details" onPress={save} loading={saving} />
+          <Notice text={msg?.text ?? null} tone={msg?.tone} />
+          <View style={{ marginTop: space.lg }}>
+            <DomainSection />
           </View>
-          <Switch value={tax} onValueChange={setTax} accessibilityLabel="Collect sales tax automatically" trackColor={{ true: c.accent, false: c.line }} />
-        </View>
-        {seller?.stripe_connected ? (
-          <Button label={taxInfo?.active && taxInfo.registrations.length ? "Edit tax registrations" : "Set up sales tax"} variant="ghost" onPress={setupTax} />
-        ) : null}
-        <Button label="Save checkout settings" variant="secondary" loading={savingShip} onPress={saveShipping} />
-        <Notice text={shipMsg?.text ?? null} tone={shipMsg?.tone} />
-      </View>
-      <View style={{ gap: space.sm, marginTop: space.lg }}>
-        <H2>Payments</H2>
-        {seller && seller.account.plan === "free" && !seller.stripe_connected ? (
-          <>
-            <Body muted>Taking payments comes with Snapfront membership. Once you’re a member, you connect Stripe here and buyers pay straight into your account.</Body>
-            <Button label="See membership" variant="secondary" onPress={() => router.push("/plans")} />
-          </>
-        ) : (
-          <>
-            <Body muted>{seller?.stripe_ready ? "Stripe is connected. Open your dashboard to see sales and payouts." : "Connect Stripe so buyers can pay you. Money goes straight to your account."}</Body>
-            <Button label={seller?.stripe_ready ? "Open Stripe dashboard" : "Connect Stripe"} variant={seller?.stripe_ready ? "secondary" : "primary"} onPress={stripe} />
-          </>
-        )}
-      </View>
-      <View style={{ marginTop: space.lg }}>
-        <SupplierSection />
-      </View>
-      <View style={{ marginTop: space.lg }}>
-        <ConnectedAppsSection />
-      </View>
-      <View style={{ gap: space.sm, marginTop: space.lg }}>
-        <H2>About</H2>
-        <ReleaseInfo detailed />
-        <Button label="Privacy policy" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("privacy"))} />
-        <Button label="Terms of use" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("terms"))} />
-        {confirm ? (
-          <>
-            <Body>This deletes your account and every store, product and photo on it, for good. Your Stripe account and past payouts aren’t affected. A Pro subscription keeps renewing until you cancel it in Google Play.</Body>
-            <Button label="Delete my account" variant="danger" onPress={async () => {
-              try { await api.deleteAccount(); account.clear(); router.replace("/"); }
-              catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't delete your store.", tone: "error" }); }
-            }} />
-            <Button label="Keep my account" variant="ghost" onPress={() => setConfirm(false)} />
-          </>
-        ) : <Button label="Delete my account" variant="danger" onPress={() => setConfirm(true)} />}
-        {seller && seller.account.stores.length > 1 ? (confirmStore ? (
-          <>
-            <Body>Delete {seller.store_name} and its products? Your other stores aren’t affected.</Body>
-            <Button label={`Delete ${seller.store_name}`} variant="danger" onPress={async () => {
-              try { await api.deleteStore(seller.id); await account.refresh(); router.back(); }
-              catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't delete the store.", tone: "error" }); }
-            }} />
-            <Button label="Keep it" variant="ghost" onPress={() => setConfirmStore(false)} />
-          </>
-        ) : <Button label="Delete this store only" variant="ghost" onPress={() => setConfirmStore(true)} />) : null}
-      </View>
+      </>} right={<>
+          <View style={{ gap: space.md, marginTop: space.lg }}>
+            <H2>Shipping and tax</H2>
+            <Body muted>Shipping is charged once per order that has a physical item. Digital-only orders never pay shipping.</Body>
+            <View style={{ flexDirection: "row", gap: space.md }}>
+              <View style={{ flex: 1 }}><Field label="Flat shipping ($)" value={shipFlat} onChangeText={setShipFlat} keyboardType="decimal-pad" placeholder="0.00 = free" /></View>
+              <View style={{ flex: 1 }}><Field label="Free over ($)" value={freeOver} onChangeText={setFreeOver} keyboardType="decimal-pad" placeholder="Off" /></View>
+            </View>
+            <Field label="Ships to" hint="Two-letter country codes, separated by commas." value={countries} onChangeText={setCountries} autoCapitalize="characters" autoCorrect={false} placeholder="US, CA" />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[type.label, { color: c.ink }]}>Collect sales tax automatically</Text>
+                <Text style={[type.small, { color: c.muted }]}>
+                  {taxInfo?.active && taxInfo.registrations.length
+                    ? `Stripe adds the right tax at checkout. Collecting in: ${taxInfo.registrations.join(", ")}.`
+                    : "Stripe works out and adds the right tax at checkout. First add your business address and where you’re registered to collect tax."}
+                </Text>
+              </View>
+              <Switch value={tax} onValueChange={setTax} accessibilityLabel="Collect sales tax automatically" trackColor={{ true: c.accent, false: c.line }} />
+            </View>
+            {seller?.stripe_connected ? (
+              <Button label={taxInfo?.active && taxInfo.registrations.length ? "Edit tax registrations" : "Set up sales tax"} variant="ghost" onPress={setupTax} />
+            ) : null}
+            <Button label="Save checkout settings" variant="secondary" loading={savingShip} onPress={saveShipping} />
+            <Notice text={shipMsg?.text ?? null} tone={shipMsg?.tone} />
+          </View>
+          <View style={{ gap: space.sm, marginTop: space.lg }}>
+            <H2>Payments</H2>
+            {seller && seller.account.plan === "free" && !seller.stripe_connected ? (
+              <>
+                <Body muted>Taking payments comes with Snapfront membership. Once you’re a member, you connect Stripe here and buyers pay straight into your account.</Body>
+                <Button label="See membership" variant="secondary" onPress={() => router.push("/plans")} />
+              </>
+            ) : (
+              <>
+                <Body muted>{seller?.stripe_ready ? "Stripe is connected. Open your dashboard to see sales and payouts." : "Connect Stripe so buyers can pay you. Money goes straight to your account."}</Body>
+                <Button label={seller?.stripe_ready ? "Open Stripe dashboard" : "Connect Stripe"} variant={seller?.stripe_ready ? "secondary" : "primary"} onPress={stripe} />
+              </>
+            )}
+          </View>
+          <View style={{ marginTop: space.lg }}>
+            <SupplierSection />
+          </View>
+          <View style={{ marginTop: space.lg }}>
+            <ConnectedAppsSection />
+          </View>
+          <View style={{ gap: space.sm, marginTop: space.lg }}>
+            <H2>About</H2>
+            <ReleaseInfo detailed />
+            <Button label="Privacy policy" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("privacy"))} />
+            <Button label="Terms of use" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("terms"))} />
+            {confirm ? (
+              <>
+                <Body>This deletes your account and every store, product and photo on it, for good. Your Stripe account and past payouts aren’t affected. A Pro subscription keeps renewing until you cancel it in Google Play.</Body>
+                <Button label="Delete my account" variant="danger" onPress={async () => {
+                  try { await api.deleteAccount(); account.clear(); router.replace("/"); }
+                  catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't delete your store.", tone: "error" }); }
+                }} />
+                <Button label="Keep my account" variant="ghost" onPress={() => setConfirm(false)} />
+              </>
+            ) : <Button label="Delete my account" variant="danger" onPress={() => setConfirm(true)} />}
+            {seller && seller.account.stores.length > 1 ? (confirmStore ? (
+              <>
+                <Body>Delete {seller.store_name} and its products? Your other stores aren’t affected.</Body>
+                <Button label={`Delete ${seller.store_name}`} variant="danger" onPress={async () => {
+                  try { await api.deleteStore(seller.id); await account.refresh(); router.back(); }
+                  catch (e) { setMsg({ text: e instanceof ApiError ? e.message : "Couldn't delete the store.", tone: "error" }); }
+                }} />
+                <Button label="Keep it" variant="ghost" onPress={() => setConfirmStore(false)} />
+              </>
+            ) : <Button label="Delete this store only" variant="ghost" onPress={() => setConfirmStore(true)} />) : null}
+          </View>
+      </>} />
     </Screen>
   );
 }

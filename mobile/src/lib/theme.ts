@@ -60,7 +60,8 @@ export const fonts = {
   body: "Figtree_400Regular", bodyMedium: "Figtree_500Medium", bodyBold: "Figtree_700Bold",
 };
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
-export const radius = { sm: 10, md: 18, lg: 24, pill: 999 };
+// Controls use rounded rectangles (not ovals): buttons 12, chips and tags 10, inputs 14.
+export const radius = { sm: 10, md: 14, lg: 22, pill: 10, button: 12 };
 export const type = {
   hero: { fontFamily: fonts.display, fontSize: 36, lineHeight: 40, letterSpacing: -1.2 },
   title: { fontFamily: fonts.display, fontSize: 25, lineHeight: 30, letterSpacing: -0.6 },

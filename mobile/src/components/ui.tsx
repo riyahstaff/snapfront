@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
   type TextInputProps, type ViewStyle, type StyleProp, type ScrollViewProps,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -59,6 +59,7 @@ export function Button({ label, onPress, variant = "primary", loading, disabled,
       onPress={() => { Haptics.selectionAsync().catch(() => {}); onPress(); }}
       style={({ pressed }) => [
         styles.button,
+        WEB && variant === "ghost" ? { paddingHorizontal: 2, minWidth: 0, minHeight: 40 } : null,
         { backgroundColor: palette.bg, borderColor: palette.border, opacity: off ? 0.5 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] },
         style,
       ]}
@@ -73,7 +74,7 @@ export function Button({ label, onPress, variant = "primary", loading, disabled,
 export function Field({ label, hint, ...props }: TextInputProps & { label: string; hint?: string }) {
   const c = useColors();
   return (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: 6, ...(WEB ? { width: "100%", maxWidth: props.multiline ? 820 : 640 } : {}) }}>
       <Text style={[type.label, { color: c.ink }]}>{label}</Text>
       {hint ? <Text style={[type.small, { color: c.muted }]}>{hint}</Text> : null}
       <TextInput
@@ -108,6 +109,24 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
   );
 }
 
+/** Actions side by side on the website (they wrap when there isn't room); stacked full-width on the phone. */
+export function ButtonRow({ children }: { children: React.ReactNode }) {
+  if (Platform.OS !== "web") return <View style={{ gap: space.xl }}>{children}</View>;
+  return <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.md, alignItems: "center" }}>{children}</View>;
+}
+
+/** Two columns on a wide website screen; one column, left then right, everywhere else. */
+export function Columns({ left, right, gap = space.xl }: { left: React.ReactNode; right: React.ReactNode; gap?: number }) {
+  const { width } = useWindowDimensions();
+  if (Platform.OS !== "web" || width < 1280) return <>{left}{right}</>;
+  return (
+    <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 56 }}>
+      <View style={{ flex: 1, minWidth: 0, gap }}>{left}</View>
+      <View style={{ flex: 1, minWidth: 0, gap }}>{right}</View>
+    </View>
+  );
+}
+
 export function Notice({ text, tone = "info" }: { text: string | null; tone?: "info" | "error" | "ok" }) {
   const c = useColors();
   if (!text) return null;
@@ -130,10 +149,13 @@ export function Pill({ text, tone = "neutral" }: { text: string; tone?: "neutral
   );
 }
 
+// On the website, controls size to their content instead of stretching across a wide screen; the
+// phone app keeps full-width buttons and fields that are easy to tap.
+const WEB = Platform.OS === "web";
 const styles = StyleSheet.create({
-  button: { minHeight: 52, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: space.xl, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.sm },
+  button: { minHeight: WEB ? 46 : 52, borderRadius: radius.button, borderWidth: 1, paddingHorizontal: WEB ? 22 : space.xl, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.sm, ...(WEB ? { alignSelf: "flex-start", minWidth: 132 } : {}) },
   input: { minHeight: 52, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.lg, paddingVertical: 14, fontFamily: fonts.body, fontSize: 16 },
-  seg: { flexDirection: "row", borderRadius: radius.md, padding: 3 },
+  seg: { flexDirection: "row", borderRadius: radius.md, padding: 3, ...(WEB ? { width: "100%", maxWidth: 560 } : {}) },
   segItem: { flex: 1, minHeight: 44, justifyContent: "center", alignItems: "center", paddingVertical: 10, paddingHorizontal: 6, borderRadius: radius.sm },
-  notice: { borderRadius: radius.md, padding: space.lg },
+  notice: { borderRadius: radius.md, padding: space.lg, ...(WEB ? { maxWidth: 880 } : {}) },
 });

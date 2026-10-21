@@ -89,7 +89,7 @@ export default function WebHome() {
           </View>
           <View style={{ flex: wide ? 1 : undefined, borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: c.line, aspectRatio: 4 / 3, boxShadow: c.dark ? "0 40px 120px rgba(0,0,0,0.6)" : "0 40px 100px rgba(15,18,23,0.18)" } as object}>
             <Image source={require("../../assets/chrome-hero.jpg")} contentFit="cover" style={{ width: "100%", height: "100%" }} accessibilityLabel="A brushed-chrome doorway with storefront examples" />
-            <View style={{ position: "absolute", left: 14, bottom: 12, backgroundColor: "rgba(9,11,14,0.7)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <View style={{ position: "absolute", left: 14, bottom: 12, backgroundColor: "rgba(9,11,14,0.7)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
               <Text style={{ fontFamily: fonts.body, fontSize: 12, color: c.muted }}>Concept artwork</Text>
             </View>
           </View>
@@ -171,7 +171,7 @@ function Section({ title, subtitle, action, pad, children }: { title?: string; s
 function CTA({ label, href, url, icon, primary, small }: { label: string; href?: Href; url?: string; icon?: Icon; primary?: boolean; small?: boolean }) {
   const c = useColors();
   const body = (s: Hover) => ({
-    flexDirection: "row" as const, alignItems: "center" as const, gap: 10, borderRadius: 999, borderWidth: 1,
+    flexDirection: "row" as const, alignItems: "center" as const, gap: 10, borderRadius: 10, borderWidth: 1,
     paddingHorizontal: small ? 18 : 24, height: small ? 42 : 52,
     borderColor: primary ? c.accent : c.line,
     backgroundColor: primary ? (s.hovered ? c.accentHover : c.accent) : s.hovered ? c.sunk : "transparent",
@@ -225,7 +225,7 @@ function StorePanel({ products, wide }: { products: Product[] | null; wide: bool
               <TextInput value={name} onChangeText={setName} placeholder="e.g. Paw Place" placeholderTextColor={c.muted} maxLength={80} onSubmitEditing={() => name.trim().length >= 2 && saveName()}
                 accessibilityLabel="Store name" style={{ flexGrow: 1, minWidth: 220, height: 48, borderRadius: 14, borderWidth: 1, borderColor: c.line, backgroundColor: c.bg, color: c.ink, paddingHorizontal: 16, fontFamily: fonts.body, fontSize: 16 }} />
               <Pressable accessibilityRole="button" disabled={busy || name.trim().length < 2} onPress={saveName}
-                style={{ height: 48, paddingHorizontal: 22, borderRadius: 999, backgroundColor: c.accent, justifyContent: "center", opacity: busy || name.trim().length < 2 ? 0.5 : 1 }}>
+                style={{ height: 48, paddingHorizontal: 22, borderRadius: 10, backgroundColor: c.accent, justifyContent: "center", opacity: busy || name.trim().length < 2 ? 0.5 : 1 }}>
                 <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: c.onAccent }}>{busy ? "Saving…" : "Save name"}</Text>
               </Pressable>
             </View>

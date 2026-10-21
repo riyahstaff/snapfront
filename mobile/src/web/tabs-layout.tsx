@@ -23,14 +23,14 @@ export default function WebTabsLayout() {
       <Tabs.Screen name="index" options={{ title: "Home", headerShown: false, sceneStyle: { backgroundColor: c.bg } }} />
       <Tabs.Screen name="find" options={{ title: "Find", headerTitle: "Find products",
         headerRight: () => (
-          <Pressable onPress={() => router.push("/sources")} accessibilityRole="button" accessibilityLabel="Supplier directory" style={{ flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: c.line, borderRadius: 999, paddingHorizontal: 14, height: 36 }}>
+          <Pressable onPress={() => router.push("/sources")} accessibilityRole="button" accessibilityLabel="Supplier directory" style={{ flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: c.line, borderRadius: 10, paddingHorizontal: 14, height: 36 }}>
             <Ionicons name="business-outline" size={17} color={c.accent} />
             <Text style={{ color: c.accent, fontFamily: fonts.bodyBold, fontSize: 14 }}>Suppliers</Text>
           </Pressable>
         ) }} />
       <Tabs.Screen name="assistant" options={{ title: "Assistant", headerTitle: "Store assistant",
         headerRight: () => (
-          <Pressable onPress={() => assistant.clear()} accessibilityRole="button" accessibilityLabel="Start a new chat" style={{ flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: c.line, borderRadius: 999, paddingHorizontal: 14, height: 36 }}>
+          <Pressable onPress={() => assistant.clear()} accessibilityRole="button" accessibilityLabel="Start a new chat" style={{ flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: c.line, borderRadius: 10, paddingHorizontal: 14, height: 36 }}>
             <Ionicons name="create-outline" size={17} color={c.ink} />
             <Text style={{ color: c.ink, fontFamily: fonts.bodyBold, fontSize: 14 }}>New chat</Text>
           </Pressable>

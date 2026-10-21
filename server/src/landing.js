@@ -36,7 +36,7 @@ header .wrap{display:flex;justify-content:space-between;align-items:center;gap:1
 .brand img{width:32px;height:32px}
 header nav{display:flex;align-items:center;gap:22px;font-weight:500;font-size:15px}header nav a{text-decoration:none;color:var(--muted)}header nav a:hover{color:var(--ink)}
 header nav .btn{color:var(--on-platinum)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:12px 24px;border-radius:999px;font-weight:700;font-size:16px;text-decoration:none;border:1px solid var(--platinum);background:var(--platinum);color:var(--on-platinum);transition:transform .15s ease}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:12px 24px;border-radius:12px;font-weight:700;font-size:16px;text-decoration:none;border:1px solid var(--platinum);background:var(--platinum);color:var(--on-platinum);transition:transform .15s ease}
 .btn:hover{transform:translateY(-1px)}.btn.small{min-height:40px;padding:8px 18px;font-size:15px}
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}.btn.soon{color:var(--muted);cursor:default}.btn.soon:hover{transform:none}
 a:focus-visible,.btn:focus-visible{outline:2px solid var(--platinum);outline-offset:3px}
@@ -57,7 +57,7 @@ h2{font-weight:800;font-size:clamp(30px,4.2vw,46px);line-height:1.04;letter-spac
 .steps li{counter-increment:s;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;display:grid;gap:8px;align-content:start}
 .steps li::before{content:counter(s);width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:var(--on-platinum);background:linear-gradient(160deg,#FFFFFF,#AEB6C2)}
 .steps b{font-size:19px}.steps span{color:var(--muted)}
-.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.chips span{border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-weight:500;font-size:15px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.chips span{border:1px solid var(--line);border-radius:10px;padding:7px 14px;font-weight:500;font-size:15px;color:var(--muted)}
 .devices{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
 .device{border:1px solid var(--line);border-radius:20px;padding:24px;display:grid;gap:10px;align-content:start;background:linear-gradient(180deg,var(--surface),var(--bg))}
 .device h3{margin:0;font-size:20px;letter-spacing:-.01em}.device p{margin:0;color:var(--muted)}.device .btn{justify-self:start;margin-top:8px}

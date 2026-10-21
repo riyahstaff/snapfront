@@ -18,7 +18,7 @@ h1{font-size:clamp(34px,5vw,54px);line-height:1.05;letter-spacing:-.03em;margin:
 h2{font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;text-wrap:balance}
 h3{font-size:19px;margin:0 0 6px;letter-spacing:-.01em}
 p{margin:0 0 14px}.lead{font-size:clamp(18px,2vw,21px);color:var(--muted);max-width:62ch}.muted{color:var(--muted)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 24px;border-radius:999px;font:700 16px/1 Figtree,system-ui,sans-serif;text-decoration:none;border:1px solid var(--platinum);background:var(--platinum);color:var(--on-platinum);cursor:pointer}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 24px;border-radius:12px;font:700 16px/1 Figtree,system-ui,sans-serif;text-decoration:none;border:1px solid var(--platinum);background:var(--platinum);color:var(--on-platinum);cursor:pointer}
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}.btn:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--platinum);outline-offset:3px}
 section{padding-block:44px;border-top:1px solid rgba(54,60,70,.5)}section:first-of-type{border-top:0}
 footer{border-top:1px solid rgba(54,60,70,.5);padding-block:28px;color:var(--muted);font-size:14px}footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between}footer nav{display:flex;gap:18px;flex-wrap:wrap}

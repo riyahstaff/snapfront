@@ -82,11 +82,11 @@ export function WebNav() {
         ) : <View style={{ flex: 1 }} />}
         <View style={{ flexDirection: "row", alignItems: "center", gap: wide ? 10 : 4 }}>
           {plan === "free" ? (
-            <Pressable accessibilityRole="link" onPress={() => go(signedIn ? "/plans" : "/sign-in")} style={(s: Hover): ViewStyle => ({ backgroundColor: s.hovered ? c.accentHover : c.accent, borderRadius: 999, paddingHorizontal: wide ? 18 : 14, height: 38, justifyContent: "center" })}>
+            <Pressable accessibilityRole="link" onPress={() => go(signedIn ? "/plans" : "/sign-in")} style={(s: Hover): ViewStyle => ({ backgroundColor: s.hovered ? c.accentHover : c.accent, borderRadius: 10, paddingHorizontal: wide ? 18 : 14, height: 38, justifyContent: "center" })}>
               <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.onAccent }}>{signedIn ? (wide ? "Unlock full access" : "Upgrade") : (wide ? "Get started free" : "Join free")}</Text>
             </Pressable>
           ) : (
-            <Pressable accessibilityRole="link" onPress={() => go("/plans")} style={{ borderWidth: 1, borderColor: c.line, borderRadius: 999, paddingHorizontal: 12, height: 32, justifyContent: "center" }}>
+            <Pressable accessibilityRole="link" onPress={() => go("/plans")} style={{ borderWidth: 1, borderColor: c.line, borderRadius: 10, paddingHorizontal: 12, height: 32, justifyContent: "center" }}>
               <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.good }}>{plan === "pro" ? (me?.account.lifetime ? "Lifetime" : "Pro") : "Launch"}</Text>
             </Pressable>
           )}
@@ -131,7 +131,7 @@ function NavLink({ label, href, active }: { label: string; href: Href; active: b
   const c = useColors();
   return (
     <Pressable accessibilityRole="link" onPress={() => go(href)}
-      style={(s: Hover): ViewStyle => ({ paddingHorizontal: 12, height: 36, borderRadius: 999, justifyContent: "center", backgroundColor: active ? c.sunk : s.hovered ? alpha(c.sunk, 0.7) : "transparent" })}>
+      style={(s: Hover): ViewStyle => ({ paddingHorizontal: 12, height: 36, borderRadius: 10, justifyContent: "center", backgroundColor: active ? c.sunk : s.hovered ? alpha(c.sunk, 0.7) : "transparent" })}>
       {(s: Hover) => <Text style={{ fontFamily: active ? fonts.bodyBold : fonts.bodyMedium, fontSize: 15, color: active || s.hovered ? c.ink : c.muted }}>{label}</Text>}
     </Pressable>
   );
