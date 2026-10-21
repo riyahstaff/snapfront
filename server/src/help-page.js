@@ -76,7 +76,7 @@ export const SECTIONS = [
   { id: "ai", name: "Claude, ChatGPT and the store assistant", items: [
     { q: "What does the Claude and ChatGPT connector do?", a: "It lets your own Claude or ChatGPT assistant work on your store: check it for problems, try new looks with a private preview, write and update product pages, set prices and sale prices, draft new products and make faceless videos. You connect it once with your Snapfront email. It runs on your Claude or ChatGPT plan.", where: ["How to connect", "/connect-ai", "site"] },
     { q: "What can't the connector do?", a: "It can't publish or delete products, see your buyers' details, or touch payments and your membership. Changes to a live store show to buyers right away, so ask your assistant to show you a preview first." },
-    { q: "Where do I find prompts to use with it?", a: "The prompt library has 1,000 prompts to copy into Claude or ChatGPT, many written for the Snapfront connector. Fill in the parts in [BRACKETS] with your own details.", where: ["Prompt library", "/prompts", "site"] },
+    { q: "Where do I find prompts to use with it?", a: "Open Bonus: 1k Prompts in the app menu. It has 1,000 prompts for Claude and ChatGPT, many written for the Snapfront connector. Search or pick a category, open a prompt, fill in your details (your store's name is filled in for you), then tap Open in Claude or Open in ChatGPT: a new chat opens with the prompt already typed in, and it's copied too in case you need to paste it.", where: ["Bonus: 1k Prompts", "/prompts"] },
     { q: "How do I disconnect Claude or ChatGPT?", a: "In Snapfront, open Settings, then Connected AI apps, and tap Disconnect. You can also remove the connector inside Claude or ChatGPT.", where: ["Settings", "/settings"] },
     { q: "What's the store assistant?", a: "A chat inside Snapfront (with Pro) that can research what's selling, write and design digital products, edit listings, set prices and stock, create discount codes and check your orders. You ask in plain words.", where: ["Store assistant", "/assistant"] },
   ] },
@@ -198,7 +198,7 @@ ${vierraTag() ? `<div class="ask"><div><b>Rather just ask?</b><p>Talk to Vierra,
 <p class="none" id="hnone" hidden>No answers match that. Try a shorter word, or email support@snapfront.app.</p>
 ${sections}${glossary}
 <section class="sec" id="contact"><h2>Contact support</h2><div class="contact"><p>Email <b>support@snapfront.app</b> with your store's address, what you were doing and what happened. A screenshot helps. We answer as soon as we can.</p>
-<p style="margin:0">Using Claude or ChatGPT with Snapfront? See <a href="/connect-ai">the connector guide</a> and <a href="/prompts">the prompt library</a>.</p></div></section>
+<p style="margin:0">Using Claude or ChatGPT with Snapfront? See <a href="/connect-ai">the connector guide</a> and <a href="${webApp()}/prompts">Bonus: 1k Prompts</a> in the app.</p></div></section>
 </div></div></div><script>${HELP_JS}</script>`;
 }
 

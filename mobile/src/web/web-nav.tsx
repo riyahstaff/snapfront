@@ -18,6 +18,7 @@ export const NAV: { label: string; href: Href; match: (p: string) => boolean }[]
   { label: "Digital products", href: "/create", match: (p) => p.startsWith("/create") || p.startsWith("/digital") },
   { label: "Marketing", href: "/marketing", match: (p) => p.startsWith("/marketing") },
   { label: "Academy", href: "/academy", match: (p) => p.startsWith("/academy") },
+  { label: "Bonus: 1k Prompts", href: "/prompts", match: (p) => p.startsWith("/prompt") },
 ];
 export const WIDE = 980;
 // Pages fill the screen on computers (up to about 1900px with a slim margin); phones and tablets fit as before.
@@ -33,7 +34,7 @@ export function WebNav() {
   const path = usePathname() || "/";
   const { width } = useWindowDimensions();
   // The full row of links needs about 1300px next to the membership button; narrower gets the menu.
-  const wide = width >= Math.max(WIDE, 1110);
+  const wide = width >= Math.max(WIDE, 1260);
   const [open, setOpen] = useState(false);
   const plan = me?.account.plan ?? "free";
   const signedIn = Boolean(me?.account.email);
@@ -170,7 +171,7 @@ export function WebFooter() {
       <View style={{ width: "100%", maxWidth: CONTENT, alignSelf: "center", paddingHorizontal: 24, paddingVertical: 32, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 16 }}>
         <Text style={{ fontFamily: fonts.body, fontSize: 14, color: c.muted }}>© {new Date().getFullYear()} Snapfront · support@snapfront.app</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}>
-          {link("snapfront.app", "https://snapfront.app")}{link("Claude & ChatGPT", "https://snapfront.app/connect-ai")}{link("Prompts", "https://snapfront.app/prompts")}{link("Tools", "https://snapfront.app/tools")}{link("Help & FAQ", "https://snapfront.app/help")}{link("Privacy", "https://snapfront.app/privacy")}{link("Terms", "https://snapfront.app/terms")}{link("Delete account", "https://snapfront.app/delete-account")}
+          {link("snapfront.app", "https://snapfront.app")}{link("Claude & ChatGPT", "https://snapfront.app/connect-ai")}{link("Bonus: 1k Prompts", "/prompts")}{link("Tools", "https://snapfront.app/tools")}{link("Help & FAQ", "https://snapfront.app/help")}{link("Privacy", "https://snapfront.app/privacy")}{link("Terms", "https://snapfront.app/terms")}{link("Delete account", "https://snapfront.app/delete-account")}
         </View>
       </View>
     </View>

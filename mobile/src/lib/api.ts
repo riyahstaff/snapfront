@@ -68,6 +68,10 @@ export type Product = Draft & {
   /** The original price shown crossed out next to the price; null shows none. */
   compare_at?: number | null;
 };
+/** One prompt from the bonus prompt library. `snapfront` means it uses the Snapfront connector. */
+export type LibraryPrompt = { id: string; title: string; category: string; group: string; for: string; prompt: string; snapfront: boolean };
+export type PromptCategory = { id: string; name: string; blurb: string; count: number };
+export type PromptLibrary = { count: number; categories: PromptCategory[]; prompts: LibraryPrompt[] };
 /** An AI assistant (Claude, ChatGPT…) connected through Snapfront's connector. */
 export type ConnectedApp = { id: string; name: string; site: string | null; connected_at: string; last_used_at: string | null };
 export type ConnectedApps = { apps: ConnectedApp[]; connector_url: string; guide_url: string };
@@ -591,8 +595,10 @@ export const api = {
   },
   legalUrl: (page: "privacy" | "terms") => `${API_URL}/${page}`,
   /** Website pages: the Claude/ChatGPT connector guide and the tools page. */
-  siteUrl: (page: "connect-ai" | "tools" | "prompts" | "help") => `${API_URL}/${page}`,
+  siteUrl: (page: "connect-ai" | "tools" | "help") => `${API_URL}/${page}`,
   connectedApps: () => request<ConnectedApps>("GET", "/api/connected-apps"),
+  /** The members' prompt library (about 1,000 prompts for Claude and ChatGPT). */
+  prompts: () => request<PromptLibrary>("GET", "/api/prompts", undefined, undefined, 30000),
   disconnectApp: (id: string) => request<void>("DELETE", `/api/connected-apps/${encodeURIComponent(id)}`),
   productFromPhoto: (input: { imageBase64: string; mediaType: string; kind: string; hint?: string; price?: string; tone?: string }) =>
     request<Draft>("POST", "/api/ai/product-from-photo", input),

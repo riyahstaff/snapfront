@@ -197,21 +197,18 @@ connector.mountConnector(app, {
 });
 app.get("/connect-ai", (_req, res) => res.set("Cache-Control", "no-cache").send(sitePages.connectAiPage()));
 app.get("/tools", (_req, res) => res.set("Cache-Control", "no-cache").send(sitePages.toolsPage()));
-app.get("/prompts", (req, res) => {
-  const page = promptLibrary.promptsPage((body) => sitePages.promptsShell(body, { count: promptLibrary.library().prompts.length, css: promptLibrary.PROMPTS_CSS }));
-  res.set("Cache-Control", "public, max-age=300");
-  promptLibrary.sendCompressed(req, res, page);
-});
+// The prompt library is a members' bonus inside the app; the old public address leads there.
+app.get("/prompts", (_req, res) => res.redirect(302, `${sitePages.webAppUrl()}/prompts`));
 app.get("/help", (req, res) => {
   const page = helpPage.helpPage((body) => sitePages.helpShell(body, { css: helpPage.HELP_CSS }));
   res.set("Cache-Control", "public, max-age=300");
   promptLibrary.sendCompressed(req, res, page);
 });
 app.get(["/faq", "/support"], (_req, res) => res.redirect(301, "/help"));
-// The same library as data, for the app or anyone building on it.
-app.get("/api/prompts", (req, res) => {
+// The library for the app's "Bonus: 1k Prompts" screen (signed-in app users only).
+app.get("/api/prompts", auth, (req, res) => {
   const page = promptLibrary.promptsJson();
-  res.set("Cache-Control", "public, max-age=300").set("Access-Control-Allow-Origin", "*");
+  res.set("Cache-Control", "private, max-age=300");
   promptLibrary.sendCompressed(req, res, page, "application/json; charset=utf-8");
 });
 

@@ -2,7 +2,7 @@
 // with the connector link to copy, the guide, and a way to disconnect each one.
 import React, { useCallback, useState } from "react";
 import { View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import * as Clipboard from "expo-clipboard";
 import { Body, Button, H2, Notice } from "@/components/ui";
@@ -44,7 +44,7 @@ export function ConnectedAppsSection() {
         catch { setMsg({ text: url, tone: "info" }); }
       }} />
       <Button label="How to connect Claude or ChatGPT" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.siteUrl("connect-ai"))} />
-      <Button label="Prompts to copy into Claude or ChatGPT" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.siteUrl("prompts"))} />
+      <Button label="Bonus: 1k Prompts for Claude and ChatGPT" variant="ghost" onPress={() => router.push("/prompts")} />
       <Button label="Tools that work with Snapfront" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.siteUrl("tools"))} />
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
     </View>

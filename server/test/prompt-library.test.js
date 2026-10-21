@@ -96,45 +96,33 @@ test("files with the same category merge, and IDs come from titles", () => {
   assert.ok(prompts.every((p) => p.snapfront));
 });
 
-test("/prompts serves every prompt with copy buttons, highlighted blanks and compression", async () => {
-  const { prompts, categories } = lib.library();
-  const res = await fetch(`${base}/prompts`);
-  assert.equal(res.status, 200);
-  assert.match(res.headers.get("content-type"), /text\/html/);
-  const html = await res.text();
-  assert.ok(html.includes(`<h1>${prompts.length} prompts for Claude and ChatGPT</h1>`));
-  for (const p of prompts) assert.ok(html.includes(`id="${p.id}"`), p.id);
-  for (const c of categories) assert.ok(html.includes(`data-cat="${c.id}"`), c.id);
-  assert.equal((html.match(/class="btn copy"/g) || []).length, prompts.length);
-  for (const g of new Set(prompts.map((p) => p.group).filter(Boolean))) assert.ok(html.includes(`<h3 class="gh">${g.replace(/&/g, "&amp;")}<span>`), g);
-  assert.match(html, /<p class="for">For [a-z]/);
-  assert.match(html, /<mark>\[[A-Z]/);
-  assert.equal((html.match(/<script>/g) || []).length, 1, "only the page's own script");
-  assert.match(html, /href="\/connect-ai"/);
-  assert.match(html, /aria-current="page">Prompts</);
-
-  const gz = await fetch(`${base}/prompts`, { headers: { "Accept-Encoding": "gzip" } });
-  assert.equal(gz.headers.get("content-encoding"), "gzip");
-  assert.match(gz.headers.get("vary"), /Accept-Encoding/);
-  const page = lib.promptsPage(() => "");   // cached: the same page the server sent
-  assert.equal(zlib.gunzipSync(page.gzip).toString(), html);
-  assert.ok(page.br.length < page.html.length / 3, "compressed well");
+test("the old /prompts address leads to the library in the app", async () => {
+  const r = await fetch(`${base}/prompts`, { redirect: "manual" });
+  assert.equal(r.status, 302);
+  assert.match(r.headers.get("location"), /\/prompts$/);
+  assert.notEqual(r.headers.get("location"), "/prompts");
 });
 
-test("/api/prompts returns the library as JSON", async () => {
-  const res = await fetch(`${base}/api/prompts`);
+test("/api/prompts is for signed-in app users and returns the library as compressed JSON", async () => {
+  assert.equal((await fetch(`${base}/api/prompts`)).status, 401, "no token, no library");
+  const reg = await (await fetch(`${base}/api/sellers`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ store_name: "Prompt Shop" }) })).json();
+  const res = await fetch(`${base}/api/prompts`, { headers: { Authorization: `Bearer ${reg.token}`, "Accept-Encoding": "br" } });
   assert.equal(res.status, 200);
   assert.match(res.headers.get("content-type"), /application\/json/);
+  assert.equal(res.headers.get("content-encoding"), "br");
+  assert.match(res.headers.get("cache-control"), /private/);
   const body = await res.json();
   assert.equal(body.count, body.prompts.length);
-  assert.ok(body.count >= 500);
+  assert.ok(body.count >= 1000);
   assert.deepEqual(Object.keys(body.prompts[0]).sort(), ["category", "for", "group", "id", "prompt", "snapfront", "title"]);
 });
 
-test("the site menu and the connector guide link to the library", async () => {
+test("the site points members to Bonus: 1k Prompts in the app", async () => {
   const tools = await (await fetch(`${base}/tools`)).text();
-  assert.match(tools, /<a href="\/prompts">Prompts<\/a>/);
-  assert.match(tools, /Browse the prompt library/);
+  assert.doesNotMatch(tools, /<a href="\/prompts"/);
+  assert.match(tools, /\/prompts">Bonus: 1k Prompts</);
   const guide = await (await fetch(`${base}/connect-ai`)).text();
-  assert.match(guide, /href="\/prompts">prompt library</);
+  assert.match(guide, /\/prompts">Bonus: 1k Prompts</);
+  const help = await (await fetch(`${base}/help`)).text();
+  assert.match(help, /Bonus: 1k Prompts/);
 });

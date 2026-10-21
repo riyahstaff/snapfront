@@ -57,6 +57,7 @@ export function HomeDashboard({ me, themes, draftStep, hasProducts = null, viewp
         <ActionCard title="AI studio" detail="Create, refine, reimagine." icon="sparkles-outline" href="/studio" compact={compact} />
         <ActionCard title="Your assistant" detail="Ideas with a next step." icon="chatbubbles-outline" href="/assistant" compact={compact} />
         <ActionCard title="Find products" detail="Source your next collection." icon="search-outline" href="/find" compact={compact} />
+        <ActionCard title="Bonus: 1k Prompts" detail="Send to Claude or ChatGPT in one tap." icon="gift-outline" href="/prompts" compact={compact} />
       </View>
       {me ? <View style={{ backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.lg, padding: space.lg, gap: space.md }}>
         <View style={{ gap: 4 }}><Text style={{ fontFamily: fonts.bodyMedium, color: c.brand, letterSpacing: 2, fontSize: 10 }}>YOUR WORKSPACE</Text><Text style={[type.title, { color: c.ink }]}>{me.store_name}</Text><Text style={[type.small, { color: c.muted }]}>Design your store. Review products. Keep every detail yours.</Text></View>

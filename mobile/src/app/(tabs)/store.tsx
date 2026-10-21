@@ -126,6 +126,7 @@ export default function StoreScreen() {
         <GrowTile icon="chatbubble-ellipses-outline" label="Instagram AutoDM" sub="Reply to keywords with your link" onPress={() => router.push("/autodm")} />
         <GrowTile icon="ribbon-outline" label="Affiliates" sub="Fans earn for each sale" onPress={() => router.push("/affiliates")} />
         <GrowTile icon="pulse-outline" label="Ad pixels" sub="Meta, TikTok, Google, Pinterest" onPress={() => router.push("/pixels")} />
+        <GrowTile icon="gift-outline" label="Bonus: 1k Prompts" sub="For Claude and ChatGPT" onPress={() => router.push("/prompts")} />
         <GrowTile icon="school-outline" label="Academy" sub="Video lessons, TikTok LIVE" onPress={() => router.push("/academy")} />
         <GrowTile icon="videocam-outline" label="Faceless videos" sub="Voiceover + your photos" onPress={() => router.push("/faceless")} />
         <GrowTile icon="person-circle-outline" label="AI avatars" sub="Characters, your photo, blends, videos" onPress={() => router.push("/avatars")} />

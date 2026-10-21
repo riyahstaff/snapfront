@@ -18,7 +18,7 @@ import { PAGE_WIDTH, PageHeader, WebNav } from "./web-nav";
 
 const TITLES: Record<string, string> = {
   snap: "Snap a product", draft: "Your product page", "product/[id]": "Product", settings: "Account and store settings", orders: "Orders", business: "Sales & profit",
-  email: "Email marketing", affiliates: "Affiliates", pixels: "Ad pixels", autodm: "Instagram AutoDM", earn: "Earn with Snapfront", academy: "Snapfront Academy", "lesson/[id]": "Lesson", community: "Community", faceless: "Faceless videos", avatars: "AI avatars", credits: "Credits", ugc: "UGC creator kit",
+  email: "Email marketing", affiliates: "Affiliates", pixels: "Ad pixels", autodm: "Instagram AutoDM", earn: "Earn with Snapfront", academy: "Snapfront Academy", prompts: "Bonus: 1k Prompts", "prompt/[id]": "Prompt", "lesson/[id]": "Lesson", community: "Community", faceless: "Faceless videos", avatars: "AI avatars", credits: "Credits", ugc: "UGC creator kit",
   discounts: "Discount codes", looks: "Store look", "storefront-setup": "Storefront setup", "store-offers": "Bundles & subscriptions", studio: "Product photo cleanup",
   "digital-photo-studio": "Digital photo studio", sources: "Supplier directory", marketing: "Marketing posts", "ai-media": "AI photos & video",
   insights: "Insights", reviews: "Reviews", channels: "Get more buyers", plans: "Membership", "sign-in": "Sign in", "price-check": "Price check", "supplier/[pid]": "Product",

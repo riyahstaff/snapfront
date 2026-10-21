@@ -18,6 +18,7 @@ const pages = [
   ["Affiliates", "/affiliates", "Let partners promote your products", "affiliate commission referral partners"],
   ["Ad pixels", "/pixels", "Connect advertising tracking", "facebook meta tiktok google analytics pixel"],
   ["Academy", "/academy", "Learn how to grow your business", "tutorials lessons courses training help learning"],
+  ["Bonus: 1k Prompts", "/prompts", "1,000 prompts to send to Claude or ChatGPT", "prompts claude chatgpt ai bonus copy library ideas"],
   ["UGC creator kit", "/ugc", "Find brand work and manage creator deals", "insense joinbrands ugc portfolio scripts pitches brands"],
   ["Faceless videos", "/faceless", "Create videos without appearing on camera", "youtube shorts faceless video"],
   ["AI avatars", "/avatars", "Create avatar videos", "talking avatar spokesperson presenter"],

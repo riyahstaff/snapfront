@@ -73,6 +73,7 @@ export const APP_PAGES = [
   ["Affiliates", "/affiliates", "Let partners promote your products"],
   ["Ad pixels", "/pixels", "Connect advertising tracking"],
   ["Academy", "/academy", "Learn how to grow your business"],
+  ["Bonus: 1k Prompts", "/prompts", "1,000 prompts to send to Claude or ChatGPT: pick one, fill in your details, then tap Open in Claude or Open in ChatGPT and it opens with the prompt typed in"],
   ["UGC creator kit", "/ugc", "Find brand work and manage creator deals"],
   ["Faceless videos", "/faceless", "Create videos without appearing on camera"],
   ["AI avatars", "/avatars", "Create avatar videos"],
@@ -98,9 +99,9 @@ const money = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 export function knowledgeText() {
   const out = ["SNAPFRONT HELP AND SITE GUIDE",
     "This is everything Vierra knows about Snapfront. It is built from the live help page (snapfront.app/help) and the live app. If something isn't here, Vierra doesn't know it.", ""];
-  out.push("WHERE THINGS ARE", "The web app is at app.snapfront.app. The website is snapfront.app. The menu at the top of the web app has My store, Create, Digital products, Marketing and Academy, and there's a search box for every tool. These are the app's pages:");
+  out.push("WHERE THINGS ARE", "The web app is at app.snapfront.app. The website is snapfront.app. The menu at the top of the web app has My store, Create, Digital products, Marketing, Academy and Bonus: 1k Prompts, and there's a search box for every tool. These are the app's pages:");
   for (const [name, path, what] of APP_PAGES) out.push(`- ${name} (app.snapfront.app${path}): ${what}.`);
-  out.push("- Website pages: Help and FAQ (snapfront.app/help), Use Snapfront with Claude or ChatGPT (snapfront.app/connect-ai), the prompt library of 1,000 prompts (snapfront.app/prompts), Tools that work with Snapfront (snapfront.app/tools), Privacy, Terms, and Delete account.", "");
+  out.push("- Website pages: Help and FAQ (snapfront.app/help), Use Snapfront with Claude or ChatGPT (snapfront.app/connect-ai), Tools that work with Snapfront (snapfront.app/tools), Privacy, Terms, and Delete account.", "");
   const life = webbilling.PLANS.lifetime.cents, month = webbilling.PLANS.pro.cents, pro = PLANS.pro, free = PLANS.free;
   out.push("PRICES AND ALLOWANCES TODAY",
     `- Snapfront Pro: ${money(life)} once for life (Lifetime), or ${money(month)} a month (Monthly). Both include everything. All sales are final.`,
