@@ -1,5 +1,6 @@
 // Website pages for the Claude/ChatGPT connector: the sign-in and approval screens it opens, the
-// "Use Snapfront with Claude or ChatGPT" guide (/connect-ai) and "Tools that work with Snapfront" (/tools).
+// "Use Snapfront with Claude or ChatGPT" guide (/connect-ai), "Tools that work with Snapfront" (/tools)
+// and the page shell for the prompt library (/prompts, built in prompt-library.js).
 // Same look as the home page: dark, platinum buttons, Figtree.
 import { config } from "./config.js";
 
@@ -25,7 +26,7 @@ footer{border-top:1px solid rgba(54,60,70,.5);padding-block:28px;color:var(--mut
 code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
 `;
 function shell({ title, description, body, current = "", css = "", plain = false }) {
-  const nav = plain ? "" : `<nav aria-label="Site"><a href="/">Home</a><a href="/connect-ai"${current === "connect" ? ' aria-current="page"' : ""}>Claude &amp; ChatGPT</a><a href="/tools"${current === "tools" ? ' aria-current="page"' : ""}>Tools</a><a href="${webApp()}/sign-in">Sign in</a></nav>`;
+  const nav = plain ? "" : `<nav aria-label="Site"><a href="/">Home</a><a href="/connect-ai"${current === "connect" ? ' aria-current="page"' : ""}>Claude &amp; ChatGPT</a><a href="/prompts"${current === "prompts" ? ' aria-current="page"' : ""}>Prompts</a><a href="/tools"${current === "tools" ? ' aria-current="page"' : ""}>Tools</a><a href="${webApp()}/sign-in">Sign in</a></nav>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>${description ? `<meta name="description" content="${esc(description)}">` : ""}
 <meta name="theme-color" content="#090B0E"><meta name="color-scheme" content="dark"><link rel="icon" href="/site/mark.png">
@@ -125,7 +126,7 @@ export function connectAiPage() {
 <li><span>In a new chat, click <span class="k">+</span>, then <span class="k">More</span>, choose <span class="k">Developer mode</span> and pick Snapfront.</span></li></ol>
 <p class="note" style="margin-top:18px">OpenAI decides which plans can use custom connectors and whether they can make changes or only read. On some plans ChatGPT can only use Snapfront's read tools (like checking your store). ChatGPT's menu names also change often: if one doesn't match, look for Connectors or Apps in Settings.</p></div></section>
 
-<section><h2>Things to ask</h2><div class="prompts">
+<section><h2>Things to ask</h2><p class="muted" style="margin-bottom:16px">Want more? The <a href="/prompts">prompt library</a> has hundreds of full prompts to copy, many written for the Snapfront connector.</p><div class="prompts">
 <div class="prompt"><b>Check my store</b>Check my Snapfront store and list the three changes that would help sales most. Fix the product descriptions for me after I say yes.</div>
 <div class="prompt"><b>Redesign</b>Show me three Snapfront store looks that fit a cozy candle shop, preview the best one with a new headline, and wait for my OK before changing the live store.</div>
 <div class="prompt"><b>Sale</b>Put my two best sellers on a fall sale: 20% off, with the current price shown crossed out as the original price.</div>
@@ -169,8 +170,13 @@ export function toolsPage() {
 <div class="links">${t.guide ? `<a class="btn" href="${esc(t.guide)}">${esc(t.how)}</a><a class="btn ghost" href="${esc(t.href)}" rel="noopener" target="_blank">Open ${esc(t.name)}</a>` : `<a class="btn ghost" href="${esc(t.href)}" rel="noopener" target="_blank">${esc(t.how)}</a>`}</div></article>`).join("");
   const body = `<div class="wrap"><section class="hero"><h1>Tools that work with Snapfront</h1>
 <p class="lead">Apps that pair well with your store. Start with the Snapfront connector for Claude or ChatGPT, then add the others where they help.</p>
-<p style="margin-top:20px"><a class="btn" href="/connect-ai">Use Snapfront with Claude or ChatGPT</a></p></section>
+<p style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap"><a class="btn" href="/connect-ai">Use Snapfront with Claude or ChatGPT</a><a class="btn ghost" href="/prompts">Browse the prompt library</a></p></section>
 <div class="tools">${cards}</div>
 <p class="fine">Snapfront isn't affiliated with these companies. Their prices, plans and rules are their own, so check them before you sign up. Built in means Snapfront connects to it for you.</p></div>`;
   return shell({ title: "Tools that work with Snapfront", description: "Claude, ChatGPT, Eromify, Canva, CapCut and the suppliers built into Snapfront: what each is for and how it works with your store.", body, current: "tools", css: TOOLS_CSS });
+}
+
+/* ---------- /prompts (the body comes from prompt-library.js) ---------- */
+export function promptsShell(body, { count, css }) {
+  return shell({ title: `${count} prompts for Claude and ChatGPT | Snapfront`, description: `${count} full, copy-and-paste prompts for Claude and ChatGPT: digital products, your Snapfront store, short videos, AI agents, side hustles, money, health and career.`, body, current: "prompts", css });
 }

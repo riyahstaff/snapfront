@@ -1,0 +1,161 @@
+# category: Health, energy and focus
+# blurb: Routines for sleep, food, movement, stress and focus so you have the energy to build. AI isn't a doctor: check anything medical with a professional.
+
+## Design my high-energy daily routine
+You are a wellness and productivity coach (not a doctor). Here's my typical day: [WAKE TIME, WORK HOURS, MEALS, EXERCISE, SCREEN TIME, BEDTIME] and my goals: [GOALS].
+Design a realistic daily routine that protects my energy: a morning start, work blocks with breaks, movement, meals, a wind-down and sleep. Change no more than 3 things at once.
+Explain why each change helps and give me a 2-week plan to build it. If anything I describe sounds like a medical issue (constant exhaustion, pain, very poor sleep), tell me to check with a doctor.
+
+## Fix my sleep schedule
+Act as a sleep habits coach (not a doctor). My current sleep: bedtime [TIME], wake time [TIME], wake-ups [HOW OFTEN], caffeine [WHEN], screens [WHEN], and what keeps me up [REASONS].
+Give me a 14-day plan using common sleep habits: a consistent wake time, morning light, a caffeine cutoff, a wind-down routine and a better bedroom setup. Make it fit my schedule and family life.
+Tell me which signs mean I should talk to a doctor (for example loud snoring, gasping at night or insomnia that lasts for weeks).
+
+## Weekly meal prep for busy people
+You are a meal prep coach. I cook for [NUMBER] people, I have [TIME] on [DAY] to prep, my budget is [BUDGET], and my preferences or needs are [DIET, ALLERGIES, DISLIKES].
+Make a weekly plan with 3 to 4 base recipes that mix and match into lunches and dinners, a shopping list by store section, a prep order for the session so nothing waits, and how long each item keeps in the fridge.
+Keep meals balanced, filling and realistic. No extreme diets.
+
+## Desk worker movement plan
+Act as a movement coach for people who sit all day. I work at a desk [HOURS] a day and my body feels [STIFF / SORE IN SPECIFIC PLACES / FINE].
+Give me: a desk setup checklist (screen height, chair, keyboard, feet), a 5-minute stretch routine for every 2 hours, 3 walking habits that fit a workday, and a 20-minute no-equipment workout for 3 days a week.
+Add form tips for each move, and tell me to stop and see a professional if something hurts.
+
+## Beginner strength plan at home
+You are a beginner-friendly fitness coach. I have [EQUIPMENT OR NONE], [DAYS] a week, [MINUTES] per session, and my level is [LEVEL].
+Make a 4-week plan with exercises, sets and reps, how to make each move easier or harder, rest days and a simple progress tracker. Include a 5-minute warm-up and cool-down.
+Explain how to know when to progress, and remind me to check with a doctor first if I have health conditions or injuries.
+
+## Stress reset toolkit
+Act as a stress management coach (not a therapist). I often feel overwhelmed by [TYPICAL STRESSORS].
+Give me a toolkit for those moments: a 2-minute breathing exercise with exact steps, a 10-minute reset walk, a brain-dump method to empty my head, a way to decide what to drop today, and how to ask someone for support.
+Make a printable one-page version. If I ever mention feeling hopeless or unsafe, encourage me to contact a crisis line or someone I trust right away.
+
+## Focus sessions that actually work
+You are a focus coach. I struggle with [DISTRACTIONS, e.g. my phone, notifications, multitasking, noise] and I work best at [TIME OF DAY].
+Design my focus system: work block length, what to do in breaks, phone rules, a 2-minute "start ritual", a list to park stray thoughts, and how to pick the day's 3 most important tasks the night before.
+Give me a 1-week experiment with a simple daily log, and tell me how to review it on day 7.
+
+## Prepare for a doctor's appointment
+Act as a patient preparation assistant (not a doctor). I'm seeing a doctor about [CONCERN].
+Help me prepare: a symptom timeline (when it started, how often, what makes it better or worse), my medications and supplements list, my questions in order of importance, and what to ask about next steps, tests and costs.
+Turn it into a one-page summary I can bring or show on my phone, and remind me to write down what the doctor says.
+
+## Understand my health information in plain English
+You are a plain-language health explainer (not a doctor). Here's something from my lab results or doctor's notes: [PASTE, with name and personal details removed].
+Explain each term in simple words, what the numbers or phrases generally mean, and list the questions I should ask my doctor about it.
+Don't diagnose me or suggest changing my treatment; help me understand and ask better questions. Tell me if anything looks like it needs a prompt follow-up with my doctor.
+
+## Healthy habits tracker
+Act as a habit coach. I want to build these habits: [HABITS, e.g. water, steps, sleep, reading, stretching, journaling].
+Make a weekly tracker, a "minimum version" of each habit for bad days, a reward system, and a 10-minute Sunday review routine with 3 questions.
+Design it so I can print it. If I say yes, turn it into a digital product for my Snapfront store and draft it with create_draft_product with a full product page.
+
+## Burnout check and recovery plan
+You are a burnout recovery coach (not a therapist). Ask me 8 questions, one at a time, about my energy, sleep, work hours, motivation, relationships and what I've stopped enjoying.
+Reflect back what you notice in plain words, then give me a 30-day recovery plan: what to drop or pause, boundaries to set (with the exact words to use), rest that actually restores me, and small joys to add back each week.
+Suggest talking to a doctor or therapist if things feel heavy or don't improve.
+
+## Healthy eating on a tight budget
+Act as a budget nutrition coach. My budget is [AMOUNT] per week for [NUMBER] people, and we have [KITCHEN EQUIPMENT].
+Give me a list of 25 cheap, healthy staples, 10 simple meals made from them, a weekly plan, and tips for buying produce, beans, eggs, rice and frozen foods to stretch money.
+Include a shopping list with estimated costs and 3 ways to use leftovers so nothing goes to waste.
+
+## Morning routine for side hustlers
+You are a routine designer for people building a side business. I have [MINUTES] in the morning before [JOB OR KIDS], and I usually feel [HOW YOU FEEL IN THE MORNING].
+Design a morning routine that includes movement, a quick healthy breakfast and 20 to 45 minutes of focused work on my business (with a list of the best tasks for that time).
+Give me a week-one version that's easy and a full version for later, plus what to prepare the night before.
+
+## Screen time detox plan
+Act as a digital wellness coach. My daily screen time is about [HOURS], mostly on [APPS], and I also use my phone to [RUN MY BUSINESS / POST CONTENT].
+Make a 2-week plan to cut mindless scrolling without hurting my business work: app limits, phone-free zones and times, replacement activities, and a content schedule that keeps creating separate from browsing.
+Give me a daily check-in question and a way to measure progress at the end.
+
+## Walking plan to build stamina
+You are a walking coach. I currently walk about [STEPS OR MINUTES] a day and my fitness level is [LEVEL].
+Build an 8-week plan that increases gradually, with weekly targets, route ideas, ways to make walks useful (calls, podcasts, planning my business), rainy day options, and shoe and safety tips.
+Remind me to check with a doctor first if I have heart, joint or other health concerns.
+
+## Hydration and snack plan for long workdays
+Act as a workday wellness coach. I work [HOURS] in a row at [PLACE] and often forget to eat or drink, then crash in the afternoon.
+Make a simple plan: water reminders that fit my day, 10 easy healthy snacks to keep nearby, a lunch I can prep in 10 minutes, and a routine to avoid the afternoon slump.
+Keep it practical and affordable, with no strict diet rules.
+
+## Daily check-in journal
+You are a reflective journaling guide (not a therapist). Give me 30 daily check-in prompts about mood, energy, wins, worries, relationships and what I need, plus a weekly reflection page with 5 questions.
+Keep the prompts short, kind and specific, and vary them so they don't feel repetitive.
+Include a gentle note on how to find professional support if I'm struggling, and offer to turn the journal into a printable product for my Snapfront store.
+
+## Plan healthy family dinners
+Act as a family meal planner. Our family is [MEMBERS, AGES, PICKY EATERS, ALLERGIES] and weeknight dinners need to take under [MINUTES].
+Make a 2-week dinner rotation with kid-friendly versions of each meal, a combined shopping list, prep tips, and 5 meals the kids can help cook (with the tasks for each age).
+Add 3 backup "nothing in the fridge" meals from pantry staples.
+
+## Posture and back-friendly workspace
+You are an ergonomics coach. Here's my workspace: [DESK, CHAIR, SCREEN, LAPTOP OR MONITOR, HOURS PER DAY] and where I feel tension: [NECK, SHOULDERS, LOWER BACK, WRISTS].
+Give me a setup checklist, cheap fixes (a laptop stand, an external keyboard, a footrest, a lumbar pillow), a 5-minute stretch routine and reminder ideas.
+Tell me which symptoms mean I should see a professional instead of adjusting things myself.
+
+## Weekly self-care schedule
+Act as a self-care planner. I'm busy with [RESPONSIBILITIES] and I recharge best by [WHAT RECHARGES YOU].
+Schedule self-care that fits real life: daily 10-minute resets, one longer activity each week, and a bigger treat each month. Include free options and ones I can do with family.
+Put it into a weekly calendar view and give me a way to protect these times from work.
+
+## Health goals for the year
+You are a health goals coach (not a doctor). Ask me what matters most to me first. Then help me set 3 health goals for the year that are specific and doable (for example walk 30 minutes 4 days a week, sleep 7 hours, cook at home 5 nights).
+Give me monthly steps for each goal, a way to track progress, what to do after a bad week, and a quarterly check-in.
+Suggest which goals to talk to my doctor about first.
+
+## Manage energy with a chronic condition
+Act as an energy management coach (not a doctor). I live with [CONDITION, only what I want to share] and my energy changes from day to day.
+Help me plan my week around my energy: sort my tasks into high, medium and low energy, build in rest and pacing, and adapt my side business work so I can keep going on low days.
+Give me a "low day" plan and a "good day" plan, and remind me to follow my care team's guidance.
+
+## Quick workouts for busy days
+You are a time-efficient fitness coach. Give me 10 workouts that take 10 to 15 minutes, with no equipment, for different goals: strength, cardio, mobility, stress relief and energy boost (2 of each).
+For each workout list the exercises, the time per move, a beginner version and a harder version.
+Add a weekly schedule that mixes them, and safety tips.
+
+## Mindful breaks during work
+Act as a mindfulness coach. Give me 10 one-to-three-minute mindful breaks I can do at my desk or between meetings: breathing, a body scan, stretching, gratitude, a sensory check, a short walk and more.
+Write the exact steps for each, when it helps most (before a hard call, after a stressful email, an afternoon slump) and how to remember to do them.
+
+## Healthy lunches for work
+You are a lunch planner. At work I have [MICROWAVE / FRIDGE / NOTHING], I have [MINUTES] to prep in the morning or the night before, I like [FOODS] and I avoid [FOODS OR ALLERGIES].
+Give me 15 lunch ideas that keep well and keep me full, a 2-week rotation, a shopping list, and what to batch-prep on Sunday.
+Add 3 lunches that cost under [AMOUNT] each and 3 that need no heating at all.
+
+## Recovery routine after long days
+Act as a recovery coach. After long workdays I feel [FEELINGS, e.g. wired, drained, sore, irritable].
+Create an evening routine to recover: decompressing after work, a light easy dinner, gentle movement, screen-off time and sleep prep.
+Give me a 20-minute version and a 60-minute version, and a short list of things to avoid that make the next day worse.
+
+## Wellness products to sell, described honestly
+You are a wellness product strategist. I want to sell wellness digital products such as [JOURNALS, MEAL PLANS, HABIT TRACKERS, WORKOUT GUIDES].
+Suggest 10 product ideas, the honest way to describe their benefits (no medical claims, no "cures" or guaranteed results), and the short disclaimers to include.
+Pick the best one, outline it, and draft it in my Snapfront store with create_draft_product with a full product page.
+
+## Plan my week around my health
+Act as a weekly planner. Here's my week: [MEETINGS, WORK HOURS, FAMILY, GYM, ERRANDS, SIDE BUSINESS].
+Put my workouts, meal prep, sleep and rest on the calendar first, then fit work and business tasks around them. Show me the plan day by day.
+Point out where my week is overloaded, suggest what to move, delegate or drop, and give me a 5-minute Sunday routine to plan next week the same way.
+
+## Stop stress eating, gently
+You are a supportive habits coach (not a dietitian or therapist). I tend to eat when I'm [STRESSED / BORED / TIRED / UPSET].
+Help me notice my triggers, build a short pause routine for those moments, plan satisfying regular meals and snacks so I'm not overly hungry, and find other ways to cope.
+Keep it kind, with no strict rules, no calorie counting and no "good" or "bad" foods. Suggest professional support if eating feels out of control.
+
+## Caffeine and energy plan
+Act as an energy coach. I drink [AMOUNT AND TYPE OF CAFFEINE] a day and still feel tired, especially [WHEN].
+Look at my sleep, meals and timing and suggest a gentle plan to use caffeine better: timing, amounts, a cutoff time, and how to cut back slowly if I want to.
+Give me other ways to boost energy, and tell me to check with a doctor if I'm tired all the time despite good sleep.
+
+## Healthy travel routine
+You are a travel wellness coach. I'm traveling for [WORK / PLEASURE] to [DESTINATION] for [DAYS], with a [TIME ZONE CHANGE].
+Give me a plan for adjusting my sleep, 15-minute hotel room workouts, eating well at restaurants and airports, staying hydrated, and keeping my side business moving while away (what to batch before I leave).
+Add a packing checklist for health basics.
+
+## Health appointment and medication organizer
+Act as a health organizer. Help me set up a system for my family's appointments, medications, refills, insurance cards and doctors' contacts.
+Give me a spreadsheet layout with columns, a reminder schedule for refills and checkups, a one-page emergency information sheet for each person, and a monthly 10-minute review.
+Remind me to keep this information private and stored safely.

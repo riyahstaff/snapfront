@@ -1,0 +1,126 @@
+# category: Robots, smart home and machines
+# blurb: Put robot vacuums, smart home routines, 3D printers, drones and new home robots to work, and turn them into side income.
+
+## Plan the robots and smart devices worth buying for my home
+You are a home automation consultant. My home is [SIZE AND TYPE], I live with [WHO, including pets], my budget is [BUDGET], and the chores I hate most are [CHORES].
+Recommend which devices are worth it right now (robot vacuum or mop, lawn robot, window robot, smart plugs, smart lights, a smart speaker, home robots if any fit) and which aren't yet.
+For each: what it actually does well, what it can't do, the price range, and how many hours a month it could save me. Rank by time saved per dollar. Tell me to check current models and reviews before buying.
+
+## Smart home routines that save me time
+Act as a smart home routine designer. I have these devices: [LIST, e.g. Alexa, Google Home, smart plugs, robot vacuum, smart lights, thermostat].
+Design 8 routines: wake up, leaving home, arriving home, work focus, cooking, bedtime, away on vacation and "guests coming". For each, give the trigger, what each device does, and how to set it up in the app step by step.
+Include one routine that saves energy money and estimate how.
+
+## Robot vacuum schedule and setup for a busy home
+You are a robot vacuum expert. My vacuum is [MODEL OR TYPE], my floors are [FLOORS], and I have [PETS / KIDS / RUGS].
+Give me the best cleaning schedule, room order, no-go zones, suction or mop settings per room, a maintenance checklist (brushes, filters, sensors) and a monthly 10-minute care routine.
+Tell me the 5 mistakes that make robot vacuums fail and how to avoid them.
+
+## Start a 3D printing side hustle
+Act as a 3D printing business coach. I have [PRINTER OR "no printer yet"] and [HOURS] a week.
+Give me 15 products people actually buy that are printable (organizers, replacement parts, cosplay pieces, planters, custom name signs, gaming accessories), with material cost, print time and a fair price for each.
+Tell me how to avoid selling designs I don't have the rights to (check licenses, design my own, or use commercial-licensed files).
+Then write a Snapfront product page for my best item and draft it as a physical product with create_draft_product.
+
+## 3D print product listing with real specs
+I 3D print [ITEM] in [MATERIAL], size [DIMENSIONS], in [COLORS]. It takes [PRINT TIME] to print.
+Act as an e-commerce copywriter. Write a Snapfront product page with an honest title, description (material, size, strength, care, made-to-order time), 5 selling points and 6 FAQs (custom colors, heat resistance, shipping time, returns).
+Create it as a physical draft with create_draft_product after I approve.
+
+## Drone photography side business
+You are a drone business advisor. I live in [COUNTRY / STATE] and I have or want [DRONE TYPE].
+Explain what licenses or registrations I may need (for example the FAA Part 107 certificate for commercial flights in the US) and tell me to confirm the current rules for my area.
+Give me 10 services I could sell (real estate photos, roof inspections, event video, construction progress), a price list, a portfolio plan and outreach messages to 3 types of local clients.
+
+## Make my home robot or assistant actually useful
+I have [HOME ROBOT OR ASSISTANT, e.g. a humanoid home robot, a robot arm, a smart display, a voice assistant].
+Act as a practical robotics advisor. List the tasks it can reliably do today, the tasks it struggles with, and a weekly routine that gets real value from it.
+Tell me how to set up privacy settings (cameras, microphones, data sharing) and what to keep it away from. Ask me which model I have so you can be specific, and tell me where its manual or support page might help.
+
+## Robot lawn mower setup and schedule
+You are a lawn robot expert. My yard is [SIZE AND SHAPE], with [SLOPES / TREES / FLOWER BEDS / NARROW PASSAGES / KIDS / PETS], and my mower is [MODEL OR "not bought yet"].
+Help me plan the boundary wire or mapping setup, where to put the charging station, the mowing schedule by season, safety settings (rain, night mowing, child lock), winter storage and maintenance (blades, wheels, sensors).
+Tell me what a robot mower can't handle in my yard and how to deal with it.
+
+## Automate my workspace with smart plugs and sensors
+Act as a productivity automation designer. My work setup is [DESCRIBE DESK, OFFICE OR STUDIO].
+Design automations with smart plugs, buttons, sensors and lights: a "focus mode" (lights, notifications off, music), a "filming mode" for content, a "shut down" routine that turns off everything, and a reminder to take breaks.
+Give setup steps and the cost of the devices needed.
+
+## Kitchen gadgets and robots that save cooking time
+You are a kitchen efficiency coach. I cook for [NUMBER] people, I want to save time on [MEALS], and my kitchen is [SIZE].
+Tell me which appliances actually save time (multicookers, air fryers, bread makers, robotic stirrers, smart ovens, dishwashers) for my situation and which would just be clutter, with price ranges.
+Then make a weekly meal prep plan that uses the ones I already have: [LIST WHAT YOU OWN], with the order to run them so everything finishes together.
+
+## Robot-friendly home: declutter plan
+Act as a professional organizer who works with robot vacuum owners. Make my home robot-friendly: what to lift off the floor, cable management, furniture height checks, rug tips, and a 15-minute nightly reset routine so the robot can clean every morning.
+Turn the plan into a printable checklist I could also sell as a digital product in Snapfront, and draft it with create_draft_product if I say yes.
+
+## Learn robotics as a beginner and earn from it
+You are a robotics teacher. I'm a beginner with [SKILLS, e.g. no coding, some Python] and [BUDGET].
+Give me a 12-week learning path: starter kit to buy, the first 5 projects, the skills each teaches, and free resources.
+Then list 8 ways people earn from robotics skills (repair, teaching kids' workshops, building props, home automation installs, content) and which I could start after 12 weeks.
+
+## Teach kids robotics: workshop business
+Act as a STEM education business coach. I want to run kids' robotics or coding workshops in [CITY] for ages [AGE RANGE].
+Plan a 4-week workshop: weekly lessons, kit list and cost per child, pricing, where to host (library, community center, school), safety and permission forms, and how to market it to parents.
+Write the flyer text and a parent FAQ. Suggest a digital product version (lesson plans for other teachers) I could sell in Snapfront.
+
+## Smart home installation service
+You are a home services business coach. I want to set up smart homes for people who don't want to do it themselves (seniors, busy families, landlords).
+Define 3 service packages (starter, family, security), what's included, the price for labor, how I handle devices (they buy or I buy and resell), and a setup checklist.
+Write my offer page and draft a "Smart home setup consultation" product in Snapfront as a service.
+
+## Smart home for aging parents
+Act as an aging-in-place technology advisor. My parent lives [ALONE / WITH SOMEONE], has [NEEDS, e.g. memory issues, mobility issues], and uses [CURRENT TECH].
+Recommend simple, respectful devices and routines: medication reminders, fall alerts, video calls, smart lights for night, door sensors, and a robot vacuum for floors.
+Include how to set it up so they stay in control, privacy considerations, and what to discuss with them first.
+
+## Energy-saving automation plan
+You are an energy efficiency consultant. My home has [HEATING / COOLING TYPE], my bills are about [AMOUNT] a month, and I have [SMART DEVICES].
+Design automations and habits that cut energy use: thermostat schedules, smart plugs on standby devices, lights on sensors, laundry timing for off-peak rates (if my utility has them).
+Estimate savings ranges and tell me how to check my real usage before and after.
+
+## Robots in my small business
+Act as an automation consultant for small businesses. My business is [TYPE, e.g. a bakery, a warehouse, a cleaning company, a print shop].
+List machines and robots that could help (packing machines, label printers, cleaning robots, cobots, delivery robots, vending, kiosks), what each costs, the work it replaces, and the payback time.
+Recommend the one to look at first and what to ask the seller.
+
+## Package a smart home guide as a digital product
+You are a technical writer. Turn what I know about [SMART HOME TOPIC, e.g. setting up Alexa routines for families, securing a smart home, smart homes for seniors] into a beginner-friendly digital guide.
+Give me the chapters, step-by-step setups (with notes on the screenshots to take), a troubleshooting section and a routine library.
+Write the first chapter in full and the product page, and draft it in my Snapfront store as a digital product with create_draft_product.
+
+## Robot repair and maintenance side hustle
+Act as a repair business coach. People in my area own robot vacuums, mowers and smart devices that break or stop working well.
+Plan a repair and maintenance service: the common fixes I can learn, tools and parts needed, pricing, safety, and how to get customers (local groups, neighborhood apps, flyers).
+Write a local post and a price list. Tell me which repairs to avoid (batteries with damage, anything under warranty).
+
+## Laser cutter or Cricut business plan
+You are a maker-business coach. I have a [CRICUT / LASER CUTTER / CNC] and [HOURS] a week.
+Give me 15 products that sell (custom signs, wedding decor, stickers, keychains, teacher gifts), materials cost, time per item, pricing and which ones can be personalized for more money.
+Write a Snapfront product page for a personalized item, including how buyers send their custom text, and draft it.
+
+## Home security without overspending
+Act as a home security advisor. My home is [TYPE], my worries are [WORRIES], my budget is [BUDGET].
+Recommend a setup (doorbell camera, door and window sensors, indoor cameras, smart locks, lights on timers) with privacy-friendly settings and no long contracts if possible.
+Give me a setup plan and a list of questions to ask before buying any monitoring service.
+
+## Content about robots and gadgets that earns
+You are a tech content strategist. I want to make short videos about home robots and gadgets. Give me 20 video ideas that people search for (setup tips, "is it worth it", fails and fixes, comparisons, routines).
+Tell me how affiliate links and brand deals usually work for tech creators, what to disclose, and how to stay honest when reviewing. Write 3 scripts.
+
+## Robot arm or cobot projects for a home studio
+Act as a robotics project advisor. I have or want a small desktop robot arm, and my budget is [BUDGET].
+List 10 useful projects: smooth camera motion for product videos, sorting small parts, drawing, engraving (only with the right attachment and safety gear), and demonstration content.
+Pick the best project for making product videos for my store, and give me step-by-step setup ideas, safety tips, and 3 video concepts I could film with it.
+
+## Automate my plant care or garden
+You are a smart garden advisor. I grow [PLANTS] [INDOORS / OUTDOORS] in [CLIMATE].
+Design an automated setup: soil moisture sensors, drip irrigation on a timer, grow lights on a schedule, and alerts to my phone. Include costs and a weekly 5-minute check.
+Suggest a digital product I could make from my garden knowledge and draft it in Snapfront if I want.
+
+## Future-proof plan: robots and AI in my job
+Act as a practical career futurist. My job is [JOB] in [INDUSTRY].
+Tell me which parts of my work robots and AI are likely to change in the next few years, which parts are harder to automate, and 5 skills I should build now (with a free resource for each).
+Then give me 3 side income ideas that use those skills and a 90-day plan for the best one. Be realistic, not dramatic.

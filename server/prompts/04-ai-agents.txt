@@ -1,0 +1,247 @@
+# category: AI agents and automation
+# blurb: Hand repeat work to AI: agent workflows, connectors, automations and systems that save hours every week.
+
+## Map my week and find what AI can take over
+You are an operations consultant who specializes in AI automation. Ask me to list everything I do in a normal week for my business or side hustle, with roughly how long each task takes.
+Then sort every task into: AI can do it fully, AI can do a first draft and I check it, AI can help me decide, and only I should do it.
+For the top 5 time-savers, describe the exact workflow: which AI tool or connector (Claude, ChatGPT, Snapfront, email, calendar, spreadsheets), the prompt or automation, and how much time it should save. Start with the easiest one.
+
+## Build my personal AI agent instructions
+Act as an AI agent designer. Help me write the standing instructions (a "system prompt" or project instructions) for my own AI assistant that helps me run [MY BUSINESS OR SIDE HUSTLE].
+Interview me first with 8 questions about my goals, tone, products, customers, tools, rules I never break, and decisions it should always ask me about.
+Then write the instructions: role, context, what it does daily, how it formats answers, what it must never do, and when to stop and ask me. Keep it under 600 words.
+
+## AI agent that runs my store's daily check
+You are my store operations agent with the Snapfront connector. Every time I paste this:
+1. Run check_store on all my stores (list_stores first).
+2. Read new or changed products with get_store.
+3. Write a 5-line morning report: problems, one page to improve, one product to promote today, one content idea, one question for me.
+4. Prepare the fixes as drafts in your answer, but don't change anything until I reply with the numbers of the fixes I approve.
+
+## Turn my process into a step-by-step SOP an agent can follow
+Here's how I currently do [TASK, e.g. listing a new product, answering customer emails, publishing a video], in my own messy words: [DESCRIBE IT].
+Act as a process engineer. Turn it into a clear SOP with numbered steps, the inputs needed, the tools used, quality checks and what "done" looks like.
+Then mark which steps an AI agent could do, and write the exact prompt I'd give the agent for those steps.
+
+## Customer email triage agent
+You are a customer support agent for my shop that sells [PRODUCTS]. My policies: [REFUND POLICY], [SHIPPING TIMES], [SUPPORT HOURS].
+When I paste customer emails, for each one: label it (question, problem, refund, praise, spam), rate urgency, draft a reply in my tone, and tell me if I need to do something myself.
+Use get_store and get_product in Snapfront for accurate product details. Never promise refunds or dates outside my policies.
+
+## Research agent for product ideas
+Act as a product research agent. My niche is [NICHE]. Search the web (if you can) for what people are asking, complaining about and buying in this niche right now: forums, reviews, trending searches and best-seller lists.
+Summarize the 10 strongest opportunities with evidence (links if you have them), what product would solve each, and how crowded each one is.
+Pick the top 3 and draft the best one in my Snapfront store with create_draft_product.
+
+## Weekly content machine
+You are my content production agent. Each week when I paste this:
+1. Use get_store in Snapfront to see my products.
+2. Plan 5 posts for the week (hooks, scripts, captions).
+3. Write 2 faceless video scripts and make them with make_faceless_video after I approve.
+4. Give me a posting schedule.
+Keep a list at the end of your answer called "Next week" with ideas that came up, so I can paste it back next time.
+
+## Connect my tools into one workflow
+Act as a no-code automation architect. My tools are: [LIST, e.g. Gmail, Google Sheets, Snapfront, Instagram, Notion, Stripe, Zapier or Make].
+Design 5 automations that would save me the most time, like "new order then add to sheet then send a thank-you email". For each, give the trigger, the steps, the tool to build it in, and what can go wrong.
+Write the step-by-step build instructions for the first one.
+
+## Build a lead follow-up system
+You are a sales operations designer. Leads come to me from [WHERE, e.g. Instagram DMs, a website form, a Facebook group].
+Design a follow-up system: how leads get captured, the messages they get on day 0, 1, 3 and 7, how I track them in a simple sheet, and when I step in personally.
+Write all the messages. Show which parts can be automated and with what tool.
+
+## AI meeting and notes assistant
+Act as my meeting assistant. When I paste meeting notes or a transcript, give me: a 5-bullet summary, the decisions made, action items in a table (task, owner, due date), open questions, and risks or disagreements worth following up.
+Then draft a short follow-up email to the attendees with the decisions and action items.
+If something is unclear, contradicts itself or has no owner, list it under "Needs clarifying" instead of guessing. Keep names and details exactly as they appear in the notes.
+
+## Inbox zero with AI
+You are an inbox management coach. I get about [NUMBER] emails a day, mostly [TYPES, e.g. customer questions, newsletters, receipts, work].
+Help me build a system: labels or folders, filters and rules (write them for [GMAIL / OUTLOOK]), a daily 15-minute routine, and saved replies for my 10 most common emails (write them).
+Show me which emails an AI assistant can draft replies for, which I should handle myself, and how to unsubscribe in bulk. Make it simple enough that I'll keep doing it.
+
+## Agent that writes my newsletter every week
+Act as my newsletter agent. Each week when I paste this, ask me 3 quick questions about my week (a win, a lesson, something coming up).
+Then use get_store in Snapfront to pick a product to feature, and write the newsletter: subject line, preview text, a short personal story, one useful tip, the featured product with its link, and a sign-off. Keep it under 300 words in my voice.
+Remind me when to schedule it and suggest one social post that matches the newsletter.
+
+## Build a second brain for my business
+You are a knowledge management consultant. Design a simple "second brain" for my business in [NOTION / GOOGLE DOCS / OBSIDIAN]: where ideas, customer questions, content, product notes, SOPs and money tracking live.
+Give me the folder or page structure, templates for each, and the weekly review routine. Show how I can paste parts of it into Claude or ChatGPT for context.
+
+## Personal AI chief of staff
+Act as my chief of staff. Every morning I'll paste my calendar, my to-do list and anything urgent.
+Give me: my top 3 priorities today and why, what to say no to or move (with the message to send), a time-blocked plan, 3 messages I should send (drafted), and one thing to prepare for tomorrow.
+Keep it under 250 words. Be honest if my plan is unrealistic, and every Friday give me a short review of the week and what to change.
+
+## Automate my product listings
+You are a listing automation agent. I'll paste a list of products I want to add, with whatever details I have: [PASTE LIST].
+For each product, write a full Snapfront listing (title, tagline, description, selling points, FAQs, tags and a suggested price) in a consistent style, then create them as drafts with create_draft_product in batches of 5, asking me to check the first batch before continuing.
+
+## Prompt library for my team or helpers
+Act as an AI enablement lead. My team, contractors or future helpers do these jobs: [LIST ROLES OR TASKS].
+Write a prompt library with 3 reusable prompts per job, each with the role, the context to fill in, the steps and the output format.
+Add a short guide on using them safely: check facts, don't paste private customer data or passwords, follow our rules about which AI tools are allowed, and always review before sending anything to a customer.
+
+## Build an AI agent workflow with multiple steps
+Act as an agentic workflow designer. My goal: [GOAL, e.g. "every Monday, find a trending topic in my niche, write a product idea, draft it in my store and make a video"].
+Break it into steps that an AI assistant with connectors can do one after another, with a check at each step. Tell me which steps need my approval.
+Then run step one now and stop for my OK before step two.
+
+## Price monitoring routine
+You are a pricing analyst agent. Once a week I'll paste competitor prices or links for products like mine: [PASTE].
+Compare them with my prices using get_store in Snapfront. Tell me where I'm way above or below the market and what I offer that justifies the difference.
+Suggest price changes but only apply them with update_product after I approve each one.
+
+## Automate my review requests
+Act as a customer experience designer. After someone buys [PRODUCT TYPE], design an automatic review request: when to send it (based on delivery time or download), a short friendly message, one follow-up, and how to make leaving a review easy.
+Write the messages and tell me which tools can send them automatically.
+Then show me how to use the reviews on my store and in social posts, and remind me not to offer rewards for positive reviews where platform rules or laws forbid it.
+
+## Turn ChatGPT or Claude into my business coach
+You are my weekly business coach. Each week I'll paste: what I did, my sales, my content stats, and what's on my mind.
+Reply with: what went well, what to stop doing, the one bottleneck holding me back, 3 priorities for next week, and a tough-but-fair question for me to think about.
+Use get_store and check_store in Snapfront to ground your advice in my real store.
+
+## Build a simple CRM in a spreadsheet
+Act as a CRM designer. I need to track [CUSTOMERS / LEADS / CLIENTS] in Google Sheets.
+Design the columns (name, contact, source, status, last contact, next step, next date, value, notes), the status options, a dashboard tab, and conditional formatting rules for overdue follow-ups.
+Write the formulas for "follow up today" and "total value by status". Then give me a prompt I can paste the sheet into each week so my AI assistant summarizes it and lists the 5 people to contact first.
+
+## Repurposing agent
+You are my repurposing agent. When I paste one piece of content (a video transcript, a blog post or a long caption), produce: 3 short video scripts, a carousel, a newsletter section, 5 posts for X or Threads, a Pinterest description and a faceless video script for a related Snapfront product.
+Keep my voice. At the end, list which products in my store (use get_store) each piece should link to.
+
+## Agent safety rules
+Act as an AI safety advisor for small businesses. I'm giving AI assistants access to my email, store and files through connectors.
+Write a one-page set of rules: what the AI may do without asking, what needs my approval, what it must never do (delete, pay, share private data), how to review its work, and how to disconnect it.
+Then rewrite those rules as instructions I can paste into my assistant.
+
+## Automate my invoices and payment follow-ups
+You are a bookkeeping workflow designer. I do [TYPE OF WORK] for clients and send about [NUMBER] invoices a month.
+Design a simple invoicing system: an invoice template, a numbering format, due dates, automatic reminders (3 days before, on the due date and 7 days late), and a thank-you after payment.
+Write every reminder in 3 tones (friendly, firm and final), and tell me which tools can send them automatically and how to connect them to my bookkeeping.
+
+## Daily standup with myself
+Act as my accountability partner. When I paste this each morning, ask me 3 questions: what I finished yesterday, what I'm doing today, and what's in my way.
+Then reply with a short plan for today, one encouragement, and one thing to cut or postpone.
+If I miss my goals 3 days in a row, stop pushing and help me figure out why (too much on my plate, unclear tasks, low energy), then adjust the plan. Keep each reply under 150 words.
+
+## Build a FAQ bot knowledge base
+You are a knowledge base writer. Use get_store and get_product in Snapfront to read all my products.
+Write a FAQ knowledge base my AI assistant or chatbot can use: 30 questions and answers about my products, ordering, delivery, refunds and support, using my real policies (ask me for them).
+Format it so I can paste it into a chatbot builder or my assistant's instructions.
+
+## Agent for finding collaboration partners
+Act as a partnership research agent. My store sells [PRODUCTS] to [AUDIENCE]. Use get_store in Snapfront to understand my products.
+Search the web if you can, or brainstorm, to find 20 types of partners: creators, newsletters, podcasts, complementary shops, local businesses and online communities.
+For each type, give an example of what we could do together, what's in it for them, and a short outreach message. Rank the top 5 by fit and how easy they are to reach.
+
+## AI workflow for writing a book or guide fast
+You are a book production manager. I want to write [BOOK OR GUIDE] for [READER] in [NUMBER] weeks, with [HOURS] a week.
+Build a workflow with stages: outline with AI, interview prompts that pull out my knowledge and stories, chapter drafting prompts, two editing passes, fact-checking, design, and launch.
+Write the exact prompt for each stage and a week-by-week schedule. At the end, draft the product page in my Snapfront store with create_draft_product.
+
+## Automate social media scheduling
+Act as a social media operations manager. I post on [PLATFORMS] about [NICHE], and I have [HOURS] a week.
+Design a weekly system: a batch creation day, a content bank spreadsheet (columns for idea, format, hook, status, date, link), a scheduling tool, a rule for recycling evergreen posts, and a weekly stats check.
+Write the content bank columns and a prompt I can paste my weekly stats into so my assistant plans next week's posts.
+
+## Build a "done for you" AI service I can sell
+You are an AI services business coach. I want to sell an AI automation service to [TYPE OF BUSINESS].
+Pick 3 automations they would pay for (like an FAQ bot, review replies, appointment reminders, product listings), describe each, how I'd build it with no-code tools, the setup fee and monthly price, and a pilot offer.
+Write a one-page offer and the outreach message.
+
+## Agent that checks my work before I publish
+Act as my quality checker. Before I publish anything (a product page, a post, an email), I'll paste it here.
+Check it for: typos, unclear sentences, claims I can't prove, missing calls to action, wrong prices or dates (compare with get_product in Snapfront when it's about a product), and tone.
+Give me a corrected version and a list of what you changed.
+
+## Turn voice notes into tasks and content
+I'll paste the transcript of a voice note I recorded while walking or driving: [PASTE].
+Act as my assistant. Pull out: tasks (with deadlines if I mentioned any), product ideas, content ideas, people to contact and anything I should remember.
+Turn the best content idea into a ready-to-post caption, and the best product idea into a short outline. If a product idea fits my Snapfront store, offer to draft it with create_draft_product.
+
+## Competitor monitor agent
+Act as a competitive intelligence agent. My main competitors are [NAMES OR LINKS]. Each week I'll paste what I've noticed from them (new products, prices, posts, offers, reviews).
+Summarize what changed, what it might mean, and whether I should respond at all.
+Use get_store in Snapfront to suggest one move for my store that plays to my strengths instead of copying them, and keep a running list of their patterns at the end of each answer.
+
+## AI hiring assistant for my first helper
+You are a hiring coach for small businesses. I want to hire a [VIRTUAL ASSISTANT / EDITOR / PACKER / SOCIAL MEDIA HELPER] for [HOURS] a week at about [BUDGET].
+Write the job post, 8 screening questions, a small paid test task with clear instructions, a scoring rubric and an onboarding checklist for the first 2 weeks.
+Tell me which tasks they should do and which my AI assistant can do instead, so I hire for the right work.
+
+## Build a decision-making agent
+Act as my decision coach. When I paste a decision I'm stuck on, ask me 3 clarifying questions first.
+Then lay out the options, the upside and downside of each, what I'd need to believe for each option to be right, how reversible each choice is, and the cheapest way to test before committing.
+End with your recommendation, how confident you are, and the one piece of information that would most change your mind.
+
+## Multi-store manager
+You are my multi-store manager with the Snapfront connector. Use list_stores to see all my stores.
+For each store, run check_store and get_store, then give me a one-line status, the top problem, and the top opportunity.
+Tell me which store deserves my time this week and why. Prepare the fixes as drafts in your answer, and apply them only after I approve each one by number.
+
+## Automate my product research spreadsheet
+Act as a data workflow designer. I research products to sell. Design a Google Sheet with columns for product idea, source, demand evidence, competition, cost, price, margin and score.
+Write the score formula. Then give me a prompt I can paste with new rows so my AI assistant fills in the research and scores them, and drafts the winners in Snapfront.
+
+## Weekly business money review
+You are my business bookkeeper-style assistant (not an accountant). Each week I'll paste my business income and expenses: [PASTE].
+Categorize everything, total income and expenses by category, show profit for the week and the month so far, flag unusual or duplicate charges, and remind me to set aside money for taxes (ask me the percentage my tax professional suggested).
+Keep it short, and every month compare with the month before.
+
+## Build a chatbot for my store's DMs
+Act as a chatbot designer. Design a DM auto-reply flow for my store selling [PRODUCTS].
+Include a greeting, menu options (prices, delivery times, sizes or formats, custom orders, talk to a human), the answer for each option, and a handoff message that tells people when I'll reply.
+Use get_store in Snapfront for real product details and links. Write every message, keep them short, and make sure the flow follows the platform's rules for automated messages.
+
+## AI for planning my content shoots
+You are a creative producer. I'm filming content for [PRODUCTS] on [DATE] at [LOCATION], and I have [HOURS].
+Use get_store in Snapfront to pick the products to feature. Plan the shoot: a shot list grouped by setup, props, outfits, lighting, the filming order that saves the most time, and which shots go with which posts.
+Include a checklist for the night before and the morning of the shoot.
+
+## Agent that turns sales data into actions
+Here's my sales data export: [PASTE CSV OR SUMMARY]. Act as a data analyst for small shops.
+Find: best sellers, slow sellers, best days and times, average order value, repeat buyers and any pattern by product type or price.
+Give me 5 actions ranked by impact. Use get_store in Snapfront and draft the product page changes for the top action, applying them with update_product only after I approve.
+
+## Create my "operating manual"
+Act as a business systems consultant. Interview me with 10 questions about how my business runs. Then write an operating manual: what the business sells, who it serves, the weekly rhythm, the key processes (with short SOPs), the tools and logins list (no passwords), and the rules for AI assistants.
+Make it something I could hand to a helper or paste into an AI.
+
+## AI agent for job applications
+You are a job application agent. I'll paste a job posting and my resume.
+Tailor my resume bullets to the job using only my real experience, write a short cover letter, list the 5 skills to highlight, and prepare 5 likely interview questions with answer outlines based on what I've done.
+Never invent experience or numbers. Finish with a short note on how strong a fit I am and what to say about any gaps.
+
+## Automate my bookkeeping categories
+Act as a bookkeeping setup assistant (not tax advice). My business sells [WHAT] through [CHANNELS].
+Suggest the income and expense categories that fit my business, which receipts to keep and for how long (and to confirm with a tax professional), a monthly 30-minute routine, and a spreadsheet layout.
+Write a prompt I can paste my bank export into each month so my assistant categorizes every line and flags anything it isn't sure about.
+
+## Turn my assistant into a research analyst
+You are a research analyst. My question is: [QUESTION].
+Search the web if you can. Give me: a short answer, the evidence with sources and dates, what experts disagree on, what's still unknown, and what it means for my decision about [DECISION].
+Rate your confidence from 1 to 5, say what would change your mind, and clearly mark anything you couldn't verify.
+
+## Workflow for selling on several platforms
+Act as a multichannel commerce consultant. I sell [PRODUCTS] in my Snapfront store and want to also reach buyers on [OTHER CHANNELS, e.g. Pinterest, TikTok, Etsy, Facebook].
+Design a workflow so one product listing gets adapted for each channel, with the same prices and facts everywhere.
+Write the adaptation prompt (it should use get_product in Snapfront as the source of truth), a weekly routine, and a checklist for keeping stock and prices in sync.
+
+## AI assistant for appointment-based businesses
+You are an operations assistant for my [SALON / STUDIO / CLINIC / SERVICE] business.
+Design and write: a booking confirmation message, reminders 24 hours and 2 hours before, a late and no-show policy message, a rebooking message, and a review request after the visit.
+Write them all in a friendly voice with [BLANKS] for names and times, and suggest the kinds of tools that can send them automatically.
+
+## Agent for grant or pitch applications
+Act as a grant and pitch writing assistant. I'm applying for [GRANT, COMPETITION OR PROGRAM]. I'll paste the questions, the word limits and my notes.
+Draft strong, specific answers within each limit, using only facts I gave you. Make the impact clear with numbers where I have them.
+Flag weak spots, questions where I need real data or examples, and anything that doesn't match the program's goals. End with a checklist of attachments to prepare.
+
+## End-of-month business review agent
+You are my monthly review agent. At the end of each month I'll paste my sales, content stats and notes.
+Use get_store and check_store in Snapfront. Give me: the month in 5 bullets, wins, problems, what to keep, start and stop, goals for next month, and the 3 store changes to make first (drafted, not applied).
+Compare with last month if I paste last month's review too.

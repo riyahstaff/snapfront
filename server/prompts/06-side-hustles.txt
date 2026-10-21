@@ -1,0 +1,283 @@
+# category: Side hustles
+# blurb: Pick, plan and start side hustles with AI, from your first sale to steady extra income. No get-rich-quick promises, just real plans.
+
+## Two ways to make my first $1,000 in 30 days
+You are a practical income coach. Give me 2 ways I could make my first $1,000 in 30 days. Both must use skills I already have, must not need an audience, and must be sellable within 48 hours.
+Before you answer, ask me clarifying questions one at a time until you're confident you understand my skills, time, budget and location. Then give me the two options with a day-by-day plan for the first 7 days, the exact first message or listing to post, and what could go wrong. Be honest about how realistic $1,000 is for each.
+
+## Learn from one person, then plan like them
+Act as a research coach. My goal is [GOAL, e.g. selling digital planners, starting a cleaning business]. Name the single most useful person or business to learn from for this goal (limit to one), with a short reason.
+Then, thinking the way they think, create a 20-day plan that needs less than [BUDGET] upfront and starts finding customers on day 1.
+Finally, ask me 3 yes or no questions to find what might stop me this week, and cut the plan to only the steps that directly lead to money.
+
+## Side hustle matchmaker
+You are a side hustle matchmaker. Ask me these one at a time: my skills, my job and schedule, hours per week, startup budget, whether I like people or prefer working alone, online or local, and my income goal.
+Then recommend 5 side hustles that fit, with startup cost, time to first dollar, realistic monthly income range, and the main risk for each. Pick the best one and give me a 14-day start plan.
+
+## Turn my skills into a paid offer
+Act as an offer coach. List the skills I'd be useful for based on this background: [YOUR BACKGROUND]. Then suggest 5 specific ways to earn with them this year, and who would pay for each.
+Take the best one and turn it into a clear offer: who it's for, the problem it solves, the result, what's included, the price, and how long it takes. Write a one-paragraph pitch.
+
+## Plan my first paying customer in 7 days
+You are a first-sale coach. My offer is [OFFER] at [PRICE] for [WHO], and I have [HOURS] a day this week.
+Create a 7-day plan to get my first paying customer: day-by-day actions, the exact messages and posts to send, where to find these people (online and offline), what to say when they ask the price, and how to handle "not now" without being pushy.
+No spam tactics. Tell me what to track each day, and end with what to do right after the first sale (deliver well, ask for feedback, ask for a referral).
+
+## Selling digital products as a side hustle
+Act as a digital products coach. I have [HOURS] hours a week. Help me pick a digital product I can make in one weekend, set up in my Snapfront store, and promote with short videos.
+Give me the product idea options, the weekend build plan, the product page (draft it with create_draft_product), and a 2-week content plan to get first sales. Be realistic about how long sales take.
+
+## Reselling side hustle plan
+You are a reselling expert. I want to flip [CATEGORY, e.g. thrifted clothes, furniture, electronics, sneakers, books] in [CITY].
+Tell me where to source, what sells fast, how to check value, how to price, how to photograph and list, and a weekly routine. Include a profit calculator (cost, fees, shipping, profit) and red flags to avoid.
+Write a listing template I can reuse and a product page for my Snapfront store.
+
+## Pet sitting and dog walking business
+Act as a pet care business coach. I live in [AREA] and I'm available [DAYS AND TIMES].
+Plan a pet sitting and dog walking side business: the services (walks, drop-in visits, overnights), how to research local prices, what insurance or bonding to look into, a client intake form (pet health, vet, keys, routines), a meet-and-greet script and how to get my first 5 clients.
+Write a flyer, a post for local groups or neighborhood apps, and a short visit-report message I send owners after each visit.
+
+## Cleaning business side hustle
+You are a cleaning business coach. Plan a residential cleaning side business: service menu (standard, deep, move-out), pricing per hour or per job, a supply list with cost, a checklist per room, booking and payment, and how to find first clients.
+Write a quote message, a booking confirmation and a review request. Remind me to check local business license and insurance rules.
+
+## Tutoring side hustle
+Act as a tutoring business coach. I can tutor [SUBJECTS] for [GRADES OR LEVELS]. Plan it: online vs in person, pricing, a free trial lesson plan, a progress report template and how to find students (parents' groups, schools, platforms).
+Write the parent message, a profile bio and a lesson plan for the first session. Suggest a digital product (study guides) I could sell in Snapfront.
+
+## Weekend market or pop-up booth
+You are a market vendor coach. I want to sell [PRODUCTS] at [MARKET TYPE] in [CITY].
+Plan my booth: product mix, price points, booth layout, signs, how much stock to bring, card payments, packaging, and how to collect emails. Give me a profit estimate template and a checklist for market day.
+Add a QR code sign idea that sends people to my Snapfront store for things I don't have on the table.
+
+## Print on demand side hustle
+Act as a print-on-demand strategist. I want to sell [SHIRTS / MUGS / POSTERS / STICKERS] for [NICHE].
+Give me 20 design ideas that fit the niche (original, no copyrighted characters, logos or song lyrics), the best products for each, pricing that covers base cost and fees, and how to make mockups.
+Write a product page for my best design and draft it in Snapfront as a physical product.
+
+## Faceless YouTube or TikTok channel as a side hustle
+You are a faceless channel strategist. Help me choose a niche with real search demand and a way to earn (affiliates, digital products, ads later).
+Give me the niche options, the channel name ideas, a 30-video plan, the production workflow with AI tools, and how to connect it to a digital product in my Snapfront store. Be honest about how long monetization usually takes.
+
+## Virtual assistant side hustle
+Act as a virtual assistant business coach. My skills are [SKILLS, e.g. email, scheduling, spreadsheets, social media, customer service] and I have [HOURS] a week.
+Define my VA services, 3 packages with hourly or monthly prices, a client onboarding checklist, and the best places to find first clients.
+Write my service page, a LinkedIn post announcing my services, and a discovery call script. Show me 5 ways AI tools can make me faster without lowering quality or risking clients' private data.
+
+## Errand and delivery side hustle
+You are a gig work advisor. I live in [CITY] and I have [CAR / BIKE / SCOOTER / NO VEHICLE] and [SCHEDULE].
+Compare the delivery, grocery and errand apps likely available near me, how to estimate real hourly earnings after gas, wear, insurance and taxes, the best hours and areas to work, and how to track mileage for taxes.
+Give me a simple weekly tracking sheet (hours, gross, costs, net per hour) and 5 ways to raise my net hourly rate.
+
+## Event and party services
+Act as an event services coach. I want to offer [BALLOON DECOR / FACE PAINTING / DJ / PHOTO BOOTH / PARTY PLANNING] in [CITY].
+Plan 3 packages with prices, a supply list with startup costs, a booking agreement outline, a deposit and cancellation policy, and setup and teardown checklists.
+Tell me how to get bookings (parents' groups, venues, wedding planners, Instagram), and write a package menu, an inquiry reply and a post showing a recent setup.
+
+## Handmade products side hustle
+You are a handmade business coach. I make [ITEM] and it takes me about [TIME] per piece.
+Help me figure out the real cost per item (materials, packaging and my time at a fair hourly rate), a profitable retail price, how many I can make each week, and where to sell (my Snapfront store, markets, local shops, consignment).
+Write a product page for my best item and draft it in Snapfront as a physical product with create_draft_product. Include a care card text to put in each order and 3 photo ideas.
+
+## Photography side hustle
+Act as a photography business coach. I have [CAMERA OR PHONE AND LENSES] and I'm good at [STYLE].
+Help me choose a niche (families, product photos for small shops, real estate, pets, headshots, events), set 3 packages and prices, and build a portfolio in 30 days.
+Write my offer, a booking reply, and a mini-session product page for my Snapfront store (drafted with create_draft_product). Add a shot list template I can reuse for client sessions.
+
+## Selling stock photos, video or AI art responsibly
+You are a stock content advisor. I make [PHOTOS / VIDEO CLIPS / AI IMAGES / ILLUSTRATIONS] about [SUBJECTS].
+Tell me which kinds of stock sites accept my type of content, how they generally treat AI-made content (and to read each site's current rules), what subjects buyers look for, and how to title and keyword each file.
+Make a 30-day upload plan with 5 content themes, and a checklist to avoid rejections (model releases, logos, trademarks, quality).
+
+## Bookkeeping or admin help for small businesses
+Act as a small-business admin services coach. I'm organized and good with [SPREADSHEETS / QUICKBOOKS / EMAIL / FILING].
+Define services that usually don't require a license (data entry, receipt organizing, invoicing help, inbox management) and which ones do (tax preparation in many places, so I should check my local rules).
+Set 3 monthly packages with prices, write my offer, and a short message to send to 10 local businesses.
+
+## Social media manager for local businesses
+You are a social media business coach. I want to manage social media for local businesses like [TYPES, e.g. cafés, salons, gyms].
+Define 3 monthly packages (posts per week, stories, replies, reporting), the price for each, and how I'll use AI and templates to create content efficiently while keeping each brand's voice.
+Write a pitch DM, a one-page proposal, a content approval process and a monthly report template.
+
+## Resume writing side hustle
+Act as a resume service coach. Plan a resume writing service: packages (resume only, resume and cover letter, the full package with LinkedIn), prices and turnaround times.
+Write the intake questionnaire (work history, results, target roles), my step-by-step process using AI for drafts and my own editing for quality, and my service page.
+Remind me to keep clients' personal details private and never invent experience for them.
+
+## Translation or language side hustle
+You are a language services coach. I speak [LANGUAGES] at [LEVEL].
+List the services I can sell (translation review, subtitles, tutoring, conversation practice, localizing product pages for shops), the typical price ranges to research, and where to find clients.
+Explain where AI translation helps (speed, first drafts) and where a human check matters most (legal, medical, marketing tone). Write my profile and an outreach message to small online shops.
+
+## Plant, garden or yard side hustle
+Act as a garden business coach. I live in [AREA] and it's currently [SEASON].
+Compare these ideas: plant sitting, selling propagated plants, small garden setups, yard cleanup and seasonal planting. Pick the best 3 for my area and season.
+Plan services and prices, a supply list, and a local post. Then suggest a printable plant-care guide I could sell in my Snapfront store and draft it with create_draft_product.
+
+## Car detailing side hustle
+You are a mobile detailing business coach. I have [EQUIPMENT OR BUDGET] and [VEHICLE].
+Plan the services (interior, exterior, full detail, add-ons), a supply list with costs, prices, time per job, a step-by-step checklist for each service, and how to get my first 10 clients.
+Write a price menu, a booking reply and before-and-after content ideas for social media. Remind me to check local rules about water runoff and business permits.
+
+## Moving help and junk removal
+Act as a moving services coach. I have [VEHICLE] and [HELPERS OR WORKING SOLO].
+Plan services (loading and unloading help, small moves, furniture assembly, junk hauling, donation drop-offs), how to price by the hour or by the load, safety rules (lifting, straps, what not to move), and where to dispose of items properly.
+Write a quote template, a booking confirmation and a local ad, and tell me what insurance to ask about.
+
+## Meal prep side hustle
+You are a meal prep business coach. First, tell me to check the food business laws where I live (cottage food rules, permits, licensed kitchens), because they decide what I can sell.
+Then plan weekly menus, pricing per meal, packaging and labels (ingredients, allergens), ordering deadlines and delivery or pickup.
+Write a weekly menu post, and also suggest a recipe-based digital product (a meal plan or prep guide) I could sell anywhere, and draft it in my Snapfront store.
+
+## Sell my knowledge in a paid workshop
+Act as a workshop coach. I know [TOPIC] and my audience is [WHO].
+Plan a 90-minute paid online workshop: a clear title, the outcome attendees leave with, the outline with timings, 2 hands-on exercises, a Q&A, the price and how to sell tickets.
+Write the sales page text, 3 promo posts and the reminder email, and draft the workshop ticket as a product in Snapfront. Tell me how to turn the recording into a product afterward.
+
+## Affiliate side hustle done honestly
+You are an affiliate marketing coach. My niche is [NICHE]. Explain how affiliate programs work, how to choose products I'd recommend anyway, how to disclose clearly, and the content formats that convert (reviews, comparisons, tutorials).
+Give me 10 content ideas and a disclosure line. Also tell me about Snapfront's earn program if I want to share Snapfront itself.
+
+## Side hustle with zero money to start
+Act as a scrappy business coach. I have $0 to invest and [HOURS] hours a week, and my skills are [SKILLS].
+Give me 10 side hustles that need no money (services using my skills, digital products made with free tools, selling things I already own, helping neighbors).
+Pick the 3 that fit me best, give me the first 3 steps for each with free tools, and tell me how to reinvest my first earnings.
+
+## Side hustle for introverts
+You are a coach for introverts. I don't want calls, selling in person or showing my face.
+Recommend 10 side hustles that fit (digital products, faceless content, writing, editing, data work, bookkeeping help, print on demand), with startup cost and time to first sale.
+For the best 3, give me a start plan and show how to get clients or buyers through writing only: listings, emails, async proposals and content.
+
+## Side hustle for stay-at-home parents
+Act as a coach for parents at home. I have [HOURS AND WHEN, e.g. nap times and evenings] and kids aged [AGES], and my skills are [SKILLS].
+Recommend side hustles that work in short blocks, can pause without losing clients, and don't need quiet phone calls.
+Give me a 30-day plan for the best one with daily 30-minute tasks, tips for working with interruptions, and how to set expectations with customers about reply times.
+
+## Side hustle for students
+You are a student income coach. I'm a [HIGH SCHOOL / COLLEGE] student with [SKILLS] and [HOURS] a week around classes.
+Recommend 8 side hustles that fit around my schedule, including campus ideas (tutoring, moving help, event photos) and online ones (digital products, freelance work).
+Give me the first week's plan for the best one. If I'm under 18, point out what may need a parent's help, like payment accounts and contracts.
+
+## Side hustle for retirees
+Act as an encore-career coach. I'm retired with experience in [FIELD], and I want about [INCOME GOAL] a month working [HOURS] a week.
+Suggest 10 options (consulting, tutoring, crafts, pet sitting, local tour guiding, digital products from my expertise, part-time seasonal work).
+Plan the best one for my interests, and tell me to check whether extra income could affect any benefits or taxes so I can ask the right office or advisor.
+
+## Side hustle while working 9 to 5
+You are a coach for people with full-time jobs. I work [SCHEDULE] as [JOB] and I have [HOURS] a week for a side hustle.
+Pick a side hustle that fits evenings and weekends, doesn't compete with my employer (remind me to check my contract and company policy), and can grow.
+Give me a weekly schedule with 5 to 10 hours, a 90-day roadmap with monthly goals, and rules to protect my energy for my main job.
+
+## Validate my side hustle idea this weekend
+Act as a startup validator. My idea is [IDEA] for [WHO] at about [PRICE].
+Give me a weekend test: a simple landing page or post, a list of 20 people or places to ask, the exact questions (that don't lead them to say yes), a small pre-sale offer, and what result means go, change or stop.
+Write the post, the questions and the pre-sale message. If I sell through Snapfront, draft a test product with create_draft_product.
+
+## Price my service
+You are a pricing coach for service businesses. My service is [SERVICE], I'm [EXPERIENCE LEVEL], in [AREA OR ONLINE], and I spend about [TIME] per job.
+Explain hourly, package and value-based pricing for my case, research steps to find local or market rates, a price range and a starting price with my reasoning.
+Write how to say my price confidently in a message and on a call, what to say when someone asks for a discount, and when to raise prices.
+
+## Side hustle tax and money setup (not tax advice)
+Act as a money organization coach for new side hustlers. I just started [SIDE HUSTLE] and expect about [AMOUNT] a month.
+Give me a setup checklist: a separate account, tracking income and expenses, keeping receipts, a percentage to set aside for taxes (tell me to confirm my number with a tax professional), and a 20-minute monthly review.
+Make a simple spreadsheet layout with categories and formulas, and list the questions to ask a tax professional in my first year.
+
+## Side hustle burnout check
+You are a sustainable-work coach. I'm doing [SIDE HUSTLE] for [HOURS] a week on top of [JOB, FAMILY AND OTHER COMMITMENTS], and I'm tired.
+Ask me 5 questions about what drains me and what earns the most. Then help me cut low-value work, raise prices or simplify my offer, batch tasks, and set boundaries with clients or customers (write the messages).
+Give me a lighter weekly plan that keeps income as steady as possible.
+
+## Grow my side hustle from $500 to $2,000 a month
+Act as a growth coach. My side hustle makes about [CURRENT MONTHLY INCOME] from [WHAT I SELL], and I spend [HOURS] a week on it.
+Find my bottleneck: the offer, the price, traffic, conversion or my capacity. Ask me for the numbers you need.
+Give me a 90-day plan with monthly targets, the 3 most important experiments to run, and what to stop doing. Be realistic about timelines and don't promise the number.
+
+## Local business helper side hustle
+You are a local business idea coach. Suggest how I could earn by helping local businesses get found and look good online: Google Business Profile setup and updates, review replies, photo refreshes, simple websites or online stores.
+Plan 3 packages with prices, an outreach script for 10 local businesses, and a simple before-and-after report to show results.
+Remind me to be clear about what I can and can't guarantee (I can't promise rankings).
+
+## Sell Canva templates as a side hustle
+Act as a Canva template seller coach. Help me choose a niche (small business social posts, wedding invitations, teacher slides, real estate flyers, podcast covers).
+Plan a 10-template starter pack, describe each template's layout and use, set a price, and explain how buyers get access (a template link in the download file).
+Write the product page with FAQs (do they need Canva Pro? can they change fonts and colors?), draft it in Snapfront with create_draft_product, and give me 10 Pinterest or post ideas to promote it.
+
+## Kids' party favors or custom gifts
+You are a custom gift business coach. Plan a line of personalized gifts for [OCCASIONS, e.g. birthdays, teacher gifts, baby showers].
+Decide the products, what personalization info to collect, production time, prices with materials and time included, and packaging.
+Write a Snapfront product page with clear personalization instructions (how buyers send names, colors and dates), draft it with create_draft_product, and write a proof-approval message to send before I make each order.
+
+## Side hustle from my car
+Act as a car income advisor. I have a [CAR TYPE] and I'm free [WHEN].
+List ways to earn with my car beyond rideshare: peer-to-peer car sharing, deliveries, moving help, airport runs for neighbors, mobile services (detailing, mobile repairs if I have the skills).
+Compare costs, risks and realistic earnings for each, and tell me exactly what to check with my insurance company before starting, since personal policies often don't cover business use.
+
+## Rent out what I own
+You are a sharing-economy advisor. I own [ITEMS, e.g. camera gear, tools, party supplies, a parking space, a spare room, camping gear].
+List rental options and platform types, how to set prices and deposits, insurance and damage policies to check, and how to vet renters.
+Write a rental listing for my best item, a pickup and return checklist, and a short rental agreement outline (and suggest getting it checked locally).
+
+## Personal shopper or gift-buying service
+Act as a personal shopping business coach. Plan a service for busy people or companies buying gifts: packages and fees, a client intake form (budget, recipient details, style, deadlines), sourcing, wrapping and delivery.
+Write the intake form, a holiday promotion post and a client update message.
+Suggest a digital gift guide I could also sell in my Snapfront store and draft it with create_draft_product.
+
+## Turn my side hustle into a digital product too
+I run [SIDE HUSTLE] and I've learned [WHAT YOU'VE LEARNED]. Act as a product strategist.
+List 8 digital products I could sell to people who want to start the same side hustle (a starter kit, a price sheet, client scripts, checklists, a contract outline, a social media pack), with prices and effort to make.
+Outline the best one in detail and draft it in my Snapfront store with create_draft_product, with a full product page.
+
+## Side hustle weekly review
+Act as my side hustle coach. Each week I'll paste: hours worked, income, expenses, number of customers or sales, and what happened.
+Calculate my real hourly rate after costs, compare it with last week, tell me what's working, what to cut, and one experiment to try next week.
+Keep it encouraging but honest, under 200 words, and every fourth week give me a monthly summary.
+
+## Write my side hustle's first website words
+You are a small-business copywriter. My side hustle is [WHAT], for [WHO], in [AREA OR ONLINE], and what makes me different is [DIFFERENCE].
+Write: a headline, a subheadline, 3 service or product blocks, an About section, 5 FAQs and a contact call to action.
+If I sell through Snapfront, adapt it for my store (headline, subtitle, button, About) and update it with update_store_design after I approve.
+
+## Side hustle ideas by season
+Act as a seasonal income planner. I live in [AREA] with [CLIMATE] and I have [SKILLS AND EQUIPMENT].
+List the best side hustles for each season: spring (cleaning, gardening), summer (events, pools, tutoring), fall (raking, Halloween, back to school) and winter (snow removal, holiday gifts, wrapping).
+Make a 12-month plan that rotates services so I earn all year, with when to start promoting each one.
+
+## Sell my notes and study material (the allowed kind)
+You are an academic product advisor. Tell me what kinds of study material are generally fine to sell (my own original notes, summaries and study guides) and what isn't (exam answers, copyrighted textbook content, school-owned material), and remind me to check my school's rules.
+Then turn my subject [SUBJECT] into a study guide product: outline, formats, a price, and a product page. Draft it in my Snapfront store with create_draft_product.
+
+## Community classes and clubs
+Act as a community class coach. I can teach [SKILL, e.g. knitting, guitar, cooking, Excel, beginner photography] in person.
+Plan a 4-week class series: where to host (library, community center, café, my home), the price, materials, a lesson plan for each class and how to fill seats.
+Write a class flyer, a sign-up product for my Snapfront store (drafted with create_draft_product) and a reminder message for students.
+
+## Side hustle using AI image tools
+You are an AI creative services coach. List services people pay for that use AI image tools: product mockups, social graphics, edited headshots, event invitations, menu designs, storyboards.
+Tell me how to deliver real quality (human editing, brand consistency, correct text), be honest about AI use when it matters, and check each tool's commercial-use terms.
+Set 3 packages with prices and write an offer for small businesses.
+
+## Write cold messages that don't feel cold
+Act as an outreach coach. My offer is [OFFER] for [WHO], and I'll reach them on [EMAIL / LINKEDIN / INSTAGRAM].
+Write 5 short first messages that open with something specific about them, offer one small useful idea, and end with an easy question.
+Write 2 follow-ups for each. No fake familiarity, no pressure. Tell me how many to send each day, how to personalize the first line quickly, and when to stop following up.
+
+## Side hustle math: is it worth it?
+You are a business math coach. My side hustle: [WHAT], price [PRICE], costs per sale [COSTS], platform or payment fees [FEES], and time per sale [TIME].
+Calculate my profit per sale, profit per hour, how many sales a month I need for [INCOME GOAL], and the hours that would take. Show the math clearly.
+Tell me where I can improve margins (price, costs, time) and whether this is worth my time compared with [ALTERNATIVE].
+
+## Make my side hustle look professional
+Act as a small-brand coach. My side hustle is [WHAT] for [WHO].
+Give me a checklist to look professional on a small budget: a name, a simple logo idea, a business email, a booking or store link (my Snapfront store), clear prices, simple terms, and a way to collect reviews.
+Write my email signature, a short brand description, and a first message template for new customers.
+
+## Side hustle for people with chronic illness or disabilities
+You are a flexible-work coach. I have [CONDITION OR LIMITS, only what I want to share] and my energy varies from day to day.
+Recommend side hustles that are flexible, can pause, and can be done from home or from bed (digital products, writing, editing, online tutoring, print on demand).
+Plan the best one with a low-energy day version and a high-energy day version of the routine, and tips for setting customer expectations without oversharing.
+
+## Upsells and repeat customers
+Act as a customer value coach. My side hustle sells [WHAT] and a typical customer spends [AMOUNT].
+Give me ideas to earn more from happy customers: packages, add-ons, subscriptions or memberships, referrals and seasonal offers, ranked by how easy they are to start.
+Write a referral message, a repeat-booking or reorder message, and a short thank-you note that invites them back.

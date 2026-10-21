@@ -1,0 +1,211 @@
+# category: Money, credit and debt
+# blurb: Budgets, debt payoff, credit building, saving and money habits. AI can organize and explain; it isn't a financial advisor, so check big decisions with a professional.
+
+## Build my zero-based budget
+You are a budgeting coach (not a financial advisor). My take-home pay is [MONTHLY INCOME, or list each paycheck and date]. My bills and spending are: [LIST WITH AMOUNTS].
+Build a zero-based budget where every dollar has a job: needs, debts, savings, and fun. Show it as a table.
+Point out where I'm overspending compared to common guidelines, suggest 5 realistic cuts, and give me a weekly 10-minute check-in routine. Ask me about irregular expenses (car repairs, gifts, annual fees) and add a sinking fund for each.
+
+## Debt payoff plan: avalanche vs snowball
+Act as a debt payoff coach. My debts are: [LIST: name, balance, interest rate, minimum payment]. I can put [EXTRA AMOUNT] extra toward debt each month.
+Calculate the payoff order, timeline and total interest for both the avalanche method (highest rate first) and the snowball method (smallest balance first). Show month-by-month for the first 6 months.
+Recommend one based on my personality (ask me 2 questions first), and tell me what to do with each freed-up payment.
+
+## Understand my credit report
+You are a credit education coach. I'll paste the sections of my credit report (with account numbers removed): [PASTE].
+Explain in plain English what each part means, what's helping my score (on-time history, low utilization, account age), what's hurting it, and which items look like they might be errors.
+For any item that looks wrong, explain my right to dispute inaccurate information with the credit bureau and the company that reported it. Don't suggest disputing information that is accurate.
+
+## Write a credit report dispute letter for an error
+Act as a consumer rights writing assistant (not a lawyer). This item on my credit report is wrong: [DESCRIBE THE ITEM AND WHY IT'S INACCURATE, e.g. not my account, paid but shows unpaid, wrong late date].
+Write a clear dispute letter to [BUREAU NAME] that identifies me (I'll fill in my details), the item, why it's inaccurate, what I want corrected, and a list of the proof I'm attaching.
+Tell me how to send it (online portal or certified mail), what timeline to expect, and how to follow up. Only dispute things that are actually inaccurate.
+
+## Goodwill letter for a late payment
+You are a letter-writing assistant. I had a late payment with [LENDER] on my [ACCOUNT TYPE] in [MONTH YEAR] because [REASON, e.g. a hospital stay, a job change, an autopay mix-up], and I've paid on time every month since [DATE].
+Write a short, sincere goodwill letter asking them to consider removing the late mark as a courtesy. Include: a thank-you for being a customer, a brief honest explanation, what I've done to prevent it happening again, and a polite request.
+Explain that this is a request, not a right, that they may say no, and how to send it (the lender's customer service address or secure message). Give me a shorter version I can use in a phone call.
+
+## Raise my credit score plan
+Act as a credit-building coach. My situation: score around [SCORE IF KNOWN], cards and limits [LIST], balances [LIST], late payments [ANY], collections [ANY], and how long I've had credit.
+Make a 90-day plan using legitimate steps: paying on time (autopay minimums), lowering credit utilization (show the target balances per card), not closing old cards, checking reports for errors, and becoming an authorized user or using a secured card or credit-builder loan if it fits.
+Explain what usually moves a score and how long changes take. Warn me about "credit repair" offers that promise to remove accurate negative items or sell new credit identities, because those are scams.
+
+## Credit utilization calculator
+You are a credit utilization tutor. My credit cards are: [CARD NAME, CREDIT LIMIT, CURRENT BALANCE, STATEMENT CLOSING DATE for each].
+Calculate my overall utilization and each card's utilization, and show them in a table. Show exactly how much I'd need to pay down to get under 30% and under 10%, both overall and per card.
+Explain in plain words why paying before the statement closing date can lower the balance that gets reported, and give me a simple monthly payment schedule that keeps utilization low without paying interest.
+
+## Build credit from scratch
+Act as a credit-building guide for beginners. I have [NO CREDIT / THIN CREDIT], I'm [AGE OR SITUATION], and my income is [INCOME].
+Explain the options in plain words: secured credit cards, credit-builder loans, becoming an authorized user, rent and utility reporting services, and student cards. Give pros, cons and what to watch for (fees, interest).
+Make a 12-month plan.
+
+## Emergency fund plan
+You are a savings coach. My monthly essentials (rent, utilities, food, transport, insurance, minimum debt payments) cost about [AMOUNT], and my income is [INCOME, AND HOW STABLE IT IS].
+Help me set a starter emergency fund goal and a full goal (in months of essentials), where to keep the money so it's safe but separate, how much to save per paycheck, and 10 realistic ways to find that money.
+Make a savings tracker with milestones, and write a simple rule for what counts as an emergency and how to refill the fund after using it.
+
+## Negotiate my bills down
+Act as a bill negotiation coach. My bills are: [PROVIDER, MONTHLY COST, HOW LONG I'VE BEEN A CUSTOMER, for internet, phone, insurance, subscriptions and so on].
+For each bill, write a short phone script or chat message asking for a lower rate or a better plan, including what to say if they say no (ask for the retention or loyalty department, mention a competitor's real offer) and when switching makes more sense.
+Rank the bills by how likely they are to come down, and give me a tracker to record what I asked, what they offered and the new monthly savings.
+
+## Cancel subscriptions I forgot about
+You are a spending detective. Here's my bank and card activity for the last 2 to 3 months, with account numbers removed: [PASTE].
+Find every subscription and recurring charge, and list each one with the amount, how often it charges, the monthly and yearly cost, and the category.
+Flag duplicates, free trials that turned into paid plans, and services I might not use. Give me a cancel, keep or downgrade list with the total I'd save per year, and tell me how to cancel the tricky ones (app store subscriptions, annual plans).
+
+## Paycheck-to-paycheck escape plan
+Act as a supportive money coach. I live paycheck to paycheck. My income is [INCOME AND PAY DATES], my bills are [BILLS AND DUE DATES], and my debts are [DEBTS].
+Build a 3-month plan to get one month ahead: line up bills with paydays, find small cuts, add a quick income boost (suggest a side hustle that fits my time and skills), set a first buffer goal, and decide what to do with any extra.
+Keep it realistic and kind, and show me week by week what to do.
+
+## Side hustle money system
+You are a money organizer for side hustlers (not a tax advisor). My side income is about [AMOUNT] a month from [SOURCE].
+Set up a system: a separate account, a percentage for taxes (ask me to confirm with a tax professional), a percentage to reinvest, a percentage for savings or debt, and a monthly tracking routine.
+Make a simple spreadsheet layout.
+
+## Understand my paycheck and taxes
+Act as a paycheck explainer (not a tax advisor). Here's my pay stub with personal information removed: [PASTE].
+Explain each line in plain English: gross pay, each tax, benefits deductions, retirement contributions and net pay. Show what percentage of my gross pay goes to each.
+Point out anything that looks unusual, and list the questions to ask HR or a tax professional, for example whether my withholding is right for my situation.
+
+## Plan for a big purchase
+You are a savings planner. I want to buy [ITEM, e.g. a car, a laptop, a wedding, a home down payment] costing about [AMOUNT] by [DATE], and I get paid [HOW OFTEN].
+Make a savings plan per paycheck, show what happens if I start a month late or save a bit more, and compare paying cash with financing at [INTEREST RATE] over [TERM] (total cost, monthly payment, total interest).
+Suggest ways to lower the price itself (timing, refurbished, negotiating), and where to keep the savings until I buy.
+
+## Car buying money plan
+Act as a car buying advisor who isn't a dealer. My budget is [BUDGET], my credit is [ROUGH SCORE OR UNKNOWN], and I need a car for [NEEDS].
+Explain the total cost of ownership (payment, insurance, gas or charging, repairs, registration), how to get pre-approved for a loan before visiting a dealer, how to compare loan offers by total cost, and red flags (add-ons, very long loan terms, "what monthly payment do you want?").
+Write a script for negotiating the out-the-door price, and a checklist for test drives and used car inspections.
+
+## First apartment money checklist
+You are a renting coach. I'm moving into my first apartment and I earn [INCOME].
+Give me a checklist of upfront costs (deposit, first month, application fees, moving, basic furniture) and monthly costs (rent, utilities, internet, renter's insurance, groceries, transport), and how much rent fits my income.
+Build my first-month budget, a list of what to buy now and what can wait, and 10 questions to ask before signing a lease (what's included, how repairs work, lease-break terms).
+
+## Investing basics for beginners
+Act as an investing teacher (not a financial advisor). Explain in plain English: what index funds are, the difference between a 401(k) or workplace plan and an IRA, why fees matter, risk and time horizon, and compound growth with an example.
+Give me questions to ask before choosing anything, and suggest talking to a fee-only advisor for personal advice.
+
+## Retirement catch-up plan
+You are a retirement education coach (not an advisor). I'm [AGE], I have [SAVINGS] saved, I earn [INCOME] and want to retire around [AGE].
+Explain the general options: employer match, contribution limits (tell me to check this year's limits), catch-up contributions if I'm eligible, and lowering expenses.
+Show a rough projection with clear assumptions and suggest getting professional advice.
+
+## Money talk with my partner
+Act as a couples money coach. My partner and I [SITUATION, e.g. just moved in together, are getting married, argue about spending, earn very different amounts].
+Give me a calm way to start the conversation (write the opening), 10 questions to discuss (goals, debts, spending styles, what money meant growing up), 3 ways couples split costs fairly, and a 30-minute monthly money date agenda.
+Add tips for keeping the talk from turning into a fight.
+
+## Teach my kids about money
+You are a family money educator. My kids are [AGES].
+Give me age-appropriate money lessons for each child, an allowance or chores system, a save, spend and give jar plan, and 10 activities that teach money (a pretend shop, comparing prices at the store, a first savings goal, planning a family outing on a budget).
+Write a one-page family money agreement we can fill in together, and ideas for teaching older kids about earning, like a small side hustle.
+
+## Spot money scams
+Act as a fraud awareness coach. Explain the most common scams right now: fake job offers, crypto investment scams, romance scams, fake debt collectors, "credit repair" that promises to delete accurate items or sells new credit numbers, and payment-app scams.
+For each: the warning signs, what to do, and where to report it. Make a one-page checklist I can share with my family.
+
+## Plan for an irregular income
+You are a budgeting coach for gig workers, freelancers and sellers. My income varies between [LOW] and [HIGH] a month, from [SOURCES].
+Build a budget based on my lowest typical month, a "pay myself a salary" system where income goes into a holding account and I pay myself the same amount each month, a buffer goal, and a rule for what to do with extra money in good months.
+Add a percentage to set aside for taxes on self-employment income, and tell me to confirm the right percentage with a tax professional.
+
+## Medical bill help
+Act as a patient billing advocate helper (not a lawyer). I got a medical bill for [AMOUNT] from [PROVIDER]. Explain how to ask for an itemized bill, check for errors, ask about financial assistance or charity care, check my insurance explanation of benefits, and set up a payment plan.
+Write the call script and a written request for an itemized bill.
+
+## Student loan options explained
+You are a student loan educator. My loans are [FEDERAL / PRIVATE, BALANCES, RATES]. Explain my general options (repayment plans, consolidation, refinancing for private loans, forgiveness programs I might qualify for) in plain words, and tell me to confirm details on the official government student aid site or with my servicer.
+List questions to ask my servicer.
+
+## No-spend challenge
+Act as an upbeat money coach. Plan a [7 / 30]-day no-spend challenge for my situation: [WHO I LIVE WITH, MY BIGGEST SPENDING HABITS].
+Define what's allowed (bills, a fixed grocery list, gas) and what's not, give me a daily prompt or mini task, list free activities in my area type [CITY / SUBURB / RURAL], and make a tracker.
+End with how to keep the good habits afterward. If I want, turn the challenge into a printable product for my Snapfront store and draft it with create_draft_product.
+
+## Grocery budget that still eats well
+You are a frugal meal planner. My grocery budget is [AMOUNT] per week for [NUMBER] people, with these needs: [DIET, ALLERGIES, KIDS' PREFERENCES], and I shop at [STORES].
+Make a weekly meal plan (breakfast, lunch, dinner, snacks), a shopping list with estimated costs, a batch-cooking plan, and 10 ways to cut grocery costs (store brands, unit prices, using leftovers, planning around sales).
+Keep meals balanced and filling, with no extreme diets.
+
+## Holiday spending plan
+Act as a holiday budget coach. My total holiday budget is [AMOUNT] and the holidays I'm planning for are [HOLIDAYS].
+Help me list everyone I buy for, set a limit per person, plan cheap and meaningful gift ideas, estimate travel, food and decorations, and spread the cost with a savings plan from now until [DATE].
+Give me scripts for suggesting a gift exchange or spending limit with family, and a tracker to record what I've spent.
+
+## Insurance review
+You are an insurance education coach (not an agent). Here are my policies: [AUTO, HOME OR RENTERS, HEALTH, LIFE, DISABILITY, with costs, deductibles and coverage amounts].
+Explain in plain words what each covers and doesn't, possible gaps to ask about (for example liability limits, renter's insurance if I don't have it, coverage for my side business), and where I might be overpaying.
+Write a short script for calling for quotes, and a comparison table to fill in for each quote.
+
+## Net worth tracker
+Act as a personal finance organizer. Help me list everything I own (cash, savings, retirement accounts, investments, car, home, business equipment) and everything I owe (credit cards, loans, mortgage, medical bills).
+Calculate my net worth, explain what it means without judgment, and design a simple monthly tracker with a chart idea.
+Explain why the direction it moves matters more than the number, and the 3 things that would move mine up fastest.
+
+## Money mindset reset
+You are a supportive money coach. Ask me 6 questions about how I grew up with money, what I believe about it and what I avoid. Then reflect back the patterns you see, kindly, and give me 5 small habits to build a healthier relationship with money.
+If anything sounds like serious financial stress, point me to free credit counseling from a nonprofit.
+
+## Talk to a debt collector
+Act as a consumer rights helper (not a lawyer). A debt collector contacted me about [DEBT, AMOUNT, ORIGINAL CREDITOR IF KNOWN].
+Explain my general rights in my country (in the US, the Fair Debt Collection Practices Act), how to ask for validation of the debt in writing, how to check whether the debt is mine and whether it's too old to collect in my state, and what not to say on the phone.
+Write a debt validation request letter, and tell me when to talk to a consumer lawyer or a nonprofit credit counselor.
+
+## Plan to pay off a credit card faster
+You are a debt coach. My card has a balance of [BALANCE] at [RATE]% interest, with a minimum payment of [MINIMUM].
+Show how long it takes and how much interest I'd pay with the minimum, with [AMOUNT] a month, and with [AMOUNT] a month. Show the interest saved in a simple table.
+Explain balance transfer cards honestly (the transfer fee, what happens when the intro rate ends, the need to pay it off in time) and when they help or hurt. Suggest 5 ways to find the extra money each month.
+
+## Make my first $10,000 savings goal
+Act as a savings strategist. I earn [INCOME] after tax and currently save about [AMOUNT] a month.
+Make a plan to save $10,000: monthly targets, a realistic timeline, where the money comes from (spending cuts, a raise, a side hustle, windfalls like tax refunds), and where to keep it.
+Add milestones to celebrate (cheaply) at $1,000, $2,500, $5,000 and $7,500, and a backup plan for months when something goes wrong.
+
+## Weekly money check-in
+You are my weekly money coach. Each week I'll paste my account balances, what I spent by category, and the bills coming up in the next 2 weeks.
+Tell me: whether I'm on track with my budget, what's coming up that I need money for, one thing to adjust this week, and one win worth noticing. Keep it under 150 words.
+Every fourth week, also give me a short monthly summary with my biggest spending category and one goal for next month.
+
+## Rebuild after a financial setback
+Act as a compassionate financial recovery coach. I'm dealing with [SETBACK, e.g. job loss, divorce, medical costs, a bankruptcy]. Help me make a 30-day stabilization plan: essentials first, who to call (lenders, landlord, utilities about hardship programs), benefits to check, and a small step for my credit.
+Then a 6-month rebuild plan. Suggest nonprofit credit counseling where it helps.
+
+## Compare two job offers by money
+You are a compensation analyst. Offer A: [SALARY, BONUS, RETIREMENT MATCH, HEALTH INSURANCE COST, PTO, COMMUTE, REMOTE DAYS]. Offer B: [SAME DETAILS].
+Compare the real yearly value of each, including the employer retirement match, insurance costs, commute costs and time, and any signing bonus. Show the math in a table.
+Then list the non-money factors (growth, stability, manager, flexibility) and ask me which matter most before giving a recommendation.
+
+## Turn my money knowledge into a digital product
+I'm good at [MONEY SKILL, e.g. budgeting on a low income, couponing, paying off debt, saving for a house]. Act as a product strategist for personal finance creators.
+Create a digital product (a budget workbook, a 30-day challenge, a spreadsheet template or a guide) from my real experience. Use honest results language: no promises of wealth, and a short "not financial advice" note.
+Outline it section by section, write the product page, and draft it in my Snapfront store with create_draft_product.
+
+## Plan a frugal vacation
+Act as a budget travel planner. I want to go to [DESTINATION OR TYPE OF TRIP] for [DAYS] with [WHO] on a total budget of [BUDGET], leaving from [CITY].
+Plan the cheapest good options: when to go, how to get there, where to stay, free and cheap things to do, food costs per day, and a day-by-day budget.
+Make a savings plan so I can pay cash before the trip, and list the 5 easy ways people overspend on vacation and how to avoid them.
+
+## Financial goals for the year
+You are my money planning coach. Ask me 4 questions first about my income, debts, savings and what I want my money to do for me this year.
+Then help me set 3 money goals (one for saving, one for debt, one for income). Make each specific and measurable, with monthly steps, a tracker and a check-in date each quarter.
+Tell me which goal to focus on first and why.
+
+## Avoid lifestyle creep after a raise
+Act as a money coach. I just got a raise of [AMOUNT] a year (about [AMOUNT] more per paycheck after tax), and my current goals are [GOALS].
+Make a plan for the extra money: a split between savings, debt payoff, retirement or investing (if it fits my situation), and something fun so it feels rewarding.
+Show how to automate it before the first bigger paycheck arrives, and what the split adds up to after one year.
+
+## Rent vs buy explained
+You are a housing money educator (not an advisor). Compare renting and buying for my situation: rent [RENT], home price range [PRICE], savings [SAVINGS], income [INCOME], and how long I expect to stay [YEARS].
+Explain the hidden costs of owning (maintenance, property taxes, insurance, closing costs, HOA fees) and the hidden benefits of renting, with a rough cost comparison and clear assumptions.
+List the questions to ask a lender and the signs I'm ready to buy.
+
+## Budget for a new baby
+Act as a family finance coach. We're expecting a baby in [MONTH], our household income is [INCOME], and we'll have [PARENTAL LEAVE DETAILS].
+Plan the costs: medical bills and insurance, gear (what's truly needed and what's nice to have), childcare options and prices to research, diapers and formula, and income changes during leave.
+Make a savings plan for the months before the baby arrives, a first-year budget, and a list of free or secondhand options for the expensive items.

@@ -1,0 +1,246 @@
+# category: Business growth and sales
+# blurb: Marketing, sales, email, ads and strategy prompts for running and growing a small online business.
+
+## One-page business plan
+You are a small-business strategist who writes plans people actually use. My business is [BUSINESS] selling [PRODUCTS] to [CUSTOMERS], and I've been running it for [TIME].
+Write a one-page plan with these sections: the problem I solve, my offer, my ideal customer, how customers find me, pricing and margins, monthly costs, 90-day goals, the 3 biggest risks with how I'll handle each, and the 5 numbers I'll check every week.
+Ask me for any number you need instead of making it up. If I sell through Snapfront, use get_store to fill in my real products and prices. Finish with the single most important thing to do this week.
+
+## SWOT that leads to action
+Act as a business consultant who hates analysis that goes nowhere. Do a SWOT analysis for my business: [DESCRIBE THE BUSINESS, CUSTOMERS, PRICES AND WHAT'S WORKING].
+For every strength, weakness, opportunity and threat, write one specific action I could take. Then score each action for impact (1 to 5) and effort (1 to 5).
+Pick the 3 actions with the best impact for the least effort and turn them into a 30-day plan with weekly tasks. Tell me what I should ignore for now.
+
+## Find my ideal customer
+You are a customer research expert. Based on what I sell [PRODUCTS] and what I know about my buyers so far [AGE, JOBS, LOCATIONS, WHY THEY BOUGHT, ANY COMMENTS], build 2 customer profiles.
+For each: their situation, goals, frustrations, what they've already tried, where they spend time online, the exact words they use to describe the problem, what makes them trust a seller and what stops them buying.
+Then use get_store in Snapfront and rewrite my store tagline and one product description for the main profile. Show me before and after, and apply it only after I approve.
+
+## Sales page that converts
+Act as a direct-response copywriter who writes honest, specific copy. Write a sales page for [PRODUCT] for [WHO] who want [RESULT].
+Structure: headline, subheadline, the problem in their words, why the usual fixes fail, the solution, exactly what's inside, who it's for and who it's not for, proof (only real proof I give you: [PROOF]), the offer and price, a guarantee if I have one, 6 FAQs, and a final call to action.
+No fake scarcity, no income claims, no invented testimonials. Use get_product in Snapfront for accurate details, then offer to update the product description with the shorter version.
+
+## Welcome email sequence
+You are an email marketer for small creator businesses. Write a 5-email welcome sequence for new subscribers to my [NICHE] list, who joined to get [FREEBIE].
+Day 0: deliver the freebie and set expectations. Day 1: my story and why I do this. Day 3: one useful lesson they can use today. Day 5: a real customer story or a behind-the-scenes look (ask me for one). Day 7: a friendly offer for [PRODUCT] with the link from my Snapfront store.
+Each email under 250 words, with a subject line, preview text and one clear call to action. Write in a warm, plain voice.
+
+## Abandoned checkout follow-up
+Act as an e-commerce retention expert. Write 3 messages for people who started checking out for [PRODUCT] but didn't finish.
+Message 1 (about 1 hour later): a helpful reminder with the product name and link, no pressure. Message 2 (24 hours later): answers to the 3 most common questions that stop people (use get_product in Snapfront to read the FAQ). Message 3 (72 hours later): a final reminder, with an incentive only if I choose to offer one: [OFFER OR NONE].
+Keep each under 90 words, human and specific. Tell me which tools can send these automatically.
+
+## Win back past customers
+You are a retention marketer. My customers who bought [PRODUCT OR CATEGORY] more than [TIME] ago have gone quiet.
+Write a 3-message win-back campaign: a "here's what's new" message, a genuinely helpful tip related to what they bought, and an honest reason to come back (a new product, a bundle, or an offer if I choose one).
+Use get_store in Snapfront to pick the products each message should mention, and explain why. Keep every message under 120 words with a subject line.
+
+## Customer journey map
+Act as a customer experience strategist. Map my customer's journey for [BUSINESS] from first seeing me to buying again: awareness, consideration, purchase, delivery, using the product, and repeat or referral.
+For each stage, list what they're thinking and feeling, where they drop off, what I currently do, and one improvement I can make this month.
+Turn the top 5 improvements into tasks with time estimates, and mark any that need a change to my Snapfront store pages.
+
+## Facebook and Instagram ad copy
+You are a paid social copywriter for small brands. Write 5 ad variations for [PRODUCT] aimed at [AUDIENCE], each with a different angle: the problem, the main benefit, a short story, social proof (only real proof: [PROOF]) and the offer.
+For each give: primary text (first line under 125 characters so it isn't cut off), a headline under 40 characters, a description and a suggested image or video idea.
+Match every claim to my product page (use get_product in Snapfront). Recommend which 2 to test first, a small test budget, and what result means "keep it".
+
+## Google search ads and keywords
+Act as a Google Ads specialist for small budgets. My product is [PRODUCT] at [PRICE] for [WHO].
+Give me 20 keywords with buying intent grouped by theme, 10 negative keywords to avoid wasted clicks, and 3 responsive search ads (15 headlines under 30 characters and 4 descriptions under 90 characters each).
+Suggest a starting daily budget, the match types to use, and the 3 numbers to watch in the first two weeks. Make sure the ads match what my product page actually says.
+
+## Offer that's hard to say no to
+You are an offer architect. My product is [PRODUCT] at [PRICE] for [WHO]. Make the offer stronger without lowering the price.
+Brainstorm ideas in 6 areas: bonuses that cost me little, a guarantee I can honestly keep, a faster result, less effort for the buyer, payment or bundle options, and a clearer outcome.
+Pick the best combination and write the new offer in one paragraph plus a "what you get" list. Use get_product in Snapfront and update the product description and selling points with update_product after I approve.
+
+## Customer interview script
+Act as a customer researcher. Write a 15-minute interview script for my past buyers of [PRODUCT].
+Include: a warm-up, questions about what was happening before they bought, why they chose me over alternatives, what almost stopped them, how using the product went, what they'd change, and what they'd tell a friend.
+Add tips for asking follow-up questions without leading them. Then explain how to turn the answers into better product pages (selling points, FAQs, headlines) and content ideas.
+
+## Pricing strategy review
+You are a pricing consultant for small online shops. Use get_store in Snapfront to read my products and prices. My costs per product are: [COSTS].
+Analyze margins, the gaps between my prices, whether I have an entry product and a premium option, and where a price looks too low for what's included.
+Recommend changes such as a premium tier, bundles, or a price increase, with the trade-offs of each. Show a before and after table, and apply changes with update_product only after I approve each row.
+
+## Referral program
+Act as a growth marketer for small businesses. Design a simple referral program for my store selling [PRODUCTS]: what the referrer gets, what the friend gets, how they share it, and how I track it manually at first (a code per person or a simple form).
+Write the announcement post, the message customers send to friends, the thank-you message to referrers and a one-paragraph rules section. Keep rewards affordable for my margins: [TYPICAL MARGIN].
+
+## Partnership pitch to a complementary business
+You are a business development lead. My business sells [PRODUCTS] to [AUDIENCE].
+List 5 kinds of businesses that sell to the same customers but don't compete with me. For each, suggest a partnership (a bundle, a giveaway, a cross-promotion, an affiliate deal or a co-created product) and what's in it for them.
+Write a short pitch email for the best two, under 150 words each, that leads with their benefit and asks for a 15-minute call.
+
+## Brand voice guide
+Act as a brand strategist. Use get_store in Snapfront to read my store, and study these samples of my writing: [PASTE 2 TO 3 SAMPLES].
+Create a one-page brand voice guide: 3 voice traits with what each means and doesn't mean, words we use, words we avoid, how we say no, how we apologize, how we sell without pushing, and 5 before-and-after examples from my own store text.
+Finish with a short version I can paste into my AI assistant's instructions.
+
+## Launch a new product line
+You are a product launch strategist. I'm adding [NEW PRODUCT LINE] to my store for [WHO].
+Plan the launch in 5 phases: quick research, naming and pricing, product pages, a pre-launch list or waitlist, launch week content, and a 30-day follow-up.
+For each phase give the tasks, the time they take and the goal. Draft the first product in Snapfront with create_draft_product with a full page (title, tagline, description, selling points, FAQs, price), and suggest a faceless video for launch day.
+
+## Weekly KPI dashboard
+Act as a business analyst for small online shops. Tell me the 6 numbers I should check every week (visitors, conversion rate, average order value, orders, top product, and refunds or complaints) and exactly how to calculate each one.
+Give me a simple spreadsheet layout with a row per week and a column per number, plus formulas for week-over-week change.
+Then write a prompt I can paste each week with my numbers so my assistant gives me a short summary and one action.
+
+## Handle a bad review
+You are a calm, fair reputation manager. Here's a negative review I received: [PASTE THE REVIEW] and what actually happened: [YOUR SIDE].
+Write a short public reply that thanks them, acknowledges the problem without arguing, says what I'll do, and moves the conversation to a private message. Then write the private message offering a fair fix based on my policy: [POLICY].
+Finally, tell me what to change in my product page or process so this doesn't happen again, and draft the page change in Snapfront if it's a product page issue.
+
+## Write my refund and shipping policy in plain words
+Act as a plain-language policy writer (not a lawyer). I sell [DIGITAL / PHYSICAL / BOTH] products. My actual rules are: [REFUNDS, RETURNS, SHIPPING TIMES, COSTS, COUNTRIES, DAMAGED ITEMS].
+Write a refund policy, a shipping policy and a short "what to expect after you order" section that buyers will actually read, using short sentences and examples.
+Flag anything I should check against my local consumer laws and my payment processor's rules. Then suggest a one-line FAQ answer for each product page in Snapfront.
+
+## Sales call script
+You are a consultative sales coach. I sell [SERVICE OR HIGHER-PRICED PRODUCT] for [PRICE] to [WHO].
+Write a 20-minute call script: a friendly opening, 6 discovery questions about their goals and situation, how to summarize their problem back to them, how to present my offer as a fit (or say honestly that it isn't), answers to 5 common objections (price, timing, "I need to think", "I'll try it myself", trust), and closing with a clear next step.
+Keep it helpful, not pushy, and add notes on when to stay quiet and listen.
+
+## Upsell and cross-sell plan
+Act as an e-commerce merchandising strategist. Use get_store in Snapfront to read my products.
+For each main product, suggest one upsell (a bigger or better version) and one cross-sell (a natural add-on), explain why it fits that buyer, and write a one-line pitch.
+Then rewrite one selling point per product to mention its add-on naturally. Show me the plan and apply the text changes with update_product after I approve.
+
+## Business name and positioning
+You are a naming and positioning expert. My business does [WHAT] for [WHO] and should feel [3 STYLE WORDS].
+Give me 20 name ideas in 4 styles (descriptive, invented, metaphor, founder or place) and flag obvious problems for each (hard to spell, too long, too close to a big brand).
+Pick your top 3, write a one-sentence positioning statement for each, and a short tagline. Remind me to check trademarks, social handles and domain availability before deciding.
+
+## Grow my email list
+Act as a list-building strategist. My audience is [WHO] and I post on [PLATFORMS] with about [AUDIENCE SIZE] followers.
+Give me 10 lead magnet ideas that fit my products, 5 places to put my sign-up link, a 2-week promotion plan, and 3 posts that push sign-ups without sounding like an ad.
+Write the sign-up page headline, a 3-bullet description of what they'll get, and the thank-you message. Explain how each lead magnet leads to a product in my Snapfront store.
+
+## Customer service saved replies
+You are a customer support lead for a small online shop. Using my real policies [PASTE POLICIES] and my products (use get_store in Snapfront), write 15 saved replies.
+Cover: where's my order, how do I download, wrong item, damaged item, refund request, change of address, discount code not working, sizing or compatibility, gift orders, a late delivery, a duplicate charge, a custom request, a product question before buying, a thank-you for a nice message, and an angry customer.
+Each under 100 words, friendly and specific, with [BLANKS] for order details.
+
+## Content marketing strategy
+Act as a content marketing lead for a small business. Build a 90-day content strategy for [BUSINESS] aimed at [AUDIENCE].
+Include: the goal and how I'll measure it, 4 content pillars, the main channel and 1 to 2 support channels, posting frequency I can keep up with [HOURS PER WEEK], a repurposing system (one idea into 5 posts), and a monthly review routine.
+Connect each pillar to products in my Snapfront store (use get_store) so content leads somewhere.
+
+## Quarterly goals and plan
+You are a practical business coach. Here's what happened last quarter: [RESULTS, SALES, WHAT WORKED, WHAT DIDN'T].
+Help me set 3 goals for this quarter. For each: why it matters, how I'll measure it, the weekly actions, and what I'll stop doing to make time for it.
+Then give me a 13-week plan with a focus for each week and a 15-minute Friday review checklist. Push back if my goals are unrealistic for my time: [HOURS PER WEEK].
+
+## Survey my customers
+Act as a customer researcher. Write a 7-question survey for buyers of [PRODUCTS] to learn why they bought, how it's going, what they'd want next, and what would make them recommend me.
+Mix multiple choice, a 1-to-10 rating and one open question, and keep it under 3 minutes. Write the short message that asks them to take it.
+Then explain how to paste the answers into my AI assistant to find patterns, and how to turn the results into new products or page improvements.
+
+## Turn my business into a brand story
+You are a brand storyteller. Interview me with 6 questions, one at a time: why I started, what I noticed that others missed, a hard moment, what I make and how, who I make it for, and what I want customers to feel.
+Then write my brand story in 3 lengths: one line, one paragraph and a 300-word About page.
+Use get_store in Snapfront and update my store's About section (under 600 characters) with the short version after I approve.
+
+## Wholesale pitch to shops
+Act as a wholesale strategist for makers. I make [PRODUCTS] and sell them at [RETAIL PRICES].
+Plan wholesale: typical wholesale pricing (usually around half of retail, but check my margins: [COSTS]), minimum order quantities, payment terms, a line sheet and how to find the right shops.
+Write the line sheet content (product, photo note, wholesale price, retail price, minimum) and a short pitch email to a local boutique.
+
+## Black Friday and Cyber Monday plan
+You are a holiday promotions planner. Plan my Black Friday to Cyber Monday weekend for my store selling [PRODUCTS].
+Cover: the offer (and whether a discount is even right for my margins), which products, early access for my email list, a 10-day content calendar, 3 emails, the store banner and headline.
+Use get_store in Snapfront and prepare the store changes as a preview with preview_store_design. Apply them only after I approve, and give me the original text so I can switch back afterward.
+
+## Cut costs without hurting quality
+Act as a cost-cutting consultant for small businesses. Here are my monthly business costs: [LIST EACH TOOL, SUBSCRIPTION, SUPPLY AND FEE WITH AMOUNT].
+Find savings: cheaper or free alternatives, overlapping tools, annual vs monthly billing, batch ordering, and things I can simply stop.
+Rank every idea by monthly savings and risk to quality or customers. Show the total I could save and which changes to make first.
+
+## Write case studies from real results
+You are a case study writer. Here's a real customer result, shared with their permission: [WHO THEY ARE, THEIR SITUATION, WHAT THEY USED, WHAT CHANGED, ANY NUMBERS, A QUOTE].
+Write a short case study with: the situation, the challenge, what they did with my product or service, the result, and their quote. Keep it under 350 words and don't exaggerate.
+Then make a 3-sentence version for social media, a one-line version for my product page, and a carousel outline.
+
+## Handle price objections
+Act as an honest sales coach. My buyers often say [OBJECTION, e.g. "it's too expensive", "I can find this free online", "I'll buy it later"] about [PRODUCT] at [PRICE].
+Write 5 honest responses I can use in DMs, product FAQs and content, each explaining value without pressure. Include one response that accepts it's not a fit for them.
+Use get_product in Snapfront and update the product FAQ with the best one after I approve.
+
+## Write a press pitch
+You are a PR coach for small businesses. My story is [STORY, e.g. a nurse who built a planner business on night shifts, a local maker, a student founder].
+Write a pitch to local news or a niche blog: a subject line, a 120-word pitch, a "why now" angle, and what I can offer (photos, an interview, a sample).
+List 10 types of outlets to pitch, how to find the right person, and a polite follow-up message for a week later.
+
+## Plan a giveaway the right way
+Act as a promotions planner. Plan a giveaway for my store selling [PRODUCTS] on [PLATFORM].
+Cover the prize, the entry method, the dates, how to pick a winner fairly, the rules (remind me to check the platform's promotion rules and local laws), and how to turn entrants into subscribers or buyers afterward.
+Write the announcement post, the official rules outline, the winner announcement and a follow-up message to everyone who entered.
+
+## Build a simple sales funnel
+You are a funnel strategist for small creators. Design a simple funnel for my product [PRODUCT] at [PRICE]: content that attracts the right people, a free lead magnet, a short welcome email sequence and the offer.
+Write: 3 content ideas that point to the lead magnet, the lead magnet outline, 3 welcome emails and the offer email.
+Tell me the number to measure at each step and what a healthy result looks like for a small audience.
+
+## Expansion: new market or audience
+Act as a growth strategist. My business sells [PRODUCTS] to [CURRENT AUDIENCE].
+Suggest 5 new audiences or markets I could sell to, how my products would need to change for each (words, format, price, size), and the cheapest way to test each one in 2 weeks.
+Pick the most promising test, then draft a version of one product for that audience in Snapfront with create_draft_product, written in their language.
+
+## Business task audit
+You are an operations consultant. Here are my recurring business tasks with how often and how long each takes: [LIST].
+For each task, decide: automate, delegate, batch, simplify or delete, and explain how in one sentence (name a tool or an AI prompt where it fits).
+Calculate the hours I'd get back each month, then give me a step-by-step plan for the top 3 changes.
+
+## Loyalty program for repeat buyers
+Act as a loyalty strategist for small shops. Design a simple loyalty program for my store selling [PRODUCTS] that I can run manually at first.
+Suggest 3 options (points, a "buy 3 get 1", or a VIP list with early access) with pros and cons for my margins [MARGIN] and how often people rebuy [HOW OFTEN].
+Pick the best, write the rules in plain words, the announcement post, the message to past buyers and a short line to add to my Snapfront store's About section.
+
+## Annual business review
+You are my business coach. Here's my year: [SALES BY MONTH, LAUNCHES, BEST PRODUCTS, WINS, PROBLEMS, HOURS WORKED].
+Give me an honest review: what worked, what didn't, what I learned, and where my time and money went.
+Use get_store in Snapfront to suggest which products to grow, fix or retire. Then make a plan for next year with 3 big goals, quarterly milestones and the first 30 days of actions.
+
+## Write product listings for other marketplaces
+Act as a marketplace SEO expert. Use get_product in Snapfront for [PRODUCT].
+Write versions for [ETSY / AMAZON / EBAY / FACEBOOK MARKETPLACE] following each platform's style: title length and keyword rules, bullet points, tags and description length.
+Keep every fact identical across platforms, and note which details each platform's buyers care about most. Mark anything I should double-check against that platform's current listing rules.
+
+## Influencer marketing on a small budget
+You are an influencer marketing manager for small brands. Plan how to work with micro creators in [NICHE] for my product [PRODUCT].
+Cover how to find them, how to check they're real (engagement, comments, audience fit), what to offer (free product, a commission or a flat fee), how to track results, and what to avoid (fake followers, no ad disclosure).
+Write the outreach message, a one-page creator brief and the follow-up after they post. Use get_product in Snapfront for the details in the brief.
+
+## Write my store's terms in plain English
+Act as a plain-language writer (not a lawyer). Here are my store's current terms or the rules I want: [PASTE OR DESCRIBE].
+Rewrite them so a customer understands them in one read: short sentences, headings for each topic (orders, payments, delivery, refunds, digital downloads and licenses, contact).
+Keep the meaning the same, list anything that changed in wording, and flag parts a lawyer should review for my location.
+
+## Prepare for a slow month
+You are a cash flow coach for small businesses. I expect a slow month in [MONTH] because [REASON].
+Plan: a promotion that makes sense for my margins, content to keep attention, an email to past buyers, a cost review, and a project to prepare for the next busy season.
+Use get_store in Snapfront and draft one new product or bundle with create_draft_product to give buyers a reason to come back. Estimate how much the plan could help, without promising numbers.
+
+## Competitive positioning map
+Act as a positioning strategist. My top competitors are [NAMES OR LINKS AND WHAT YOU KNOW ABOUT EACH].
+Place them on two scales: price (low to high) and focus (general to very specific). Show where I stand (use get_store in Snapfront) and where there's an open space.
+Recommend one positioning move, explain why customers would care, and rewrite my store tagline and headline for it. Apply the change after I approve.
+
+## Write a newsletter people open
+You are an editor for small business newsletters. Write a monthly newsletter template for my business with: a short personal story, one lesson, a product spotlight (use get_store in Snapfront), a customer question answered, and what's coming next.
+Then write this month's issue in full, under 400 words, and give me 10 subject lines in different styles to test.
+Add 3 tips for getting more people to open and reply.
+
+## Plan my first hire or contractor
+Act as an operations advisor for solo founders. My business does [WHAT] and I'm spending too much time on [TASKS].
+Tell me what to hand off first, whether a contractor, a part-time hire or AI tools fit better for each task, the likely cost, and how to measure whether it's working after 30 days.
+Write the job description, a short paid trial task and a scoring checklist for the trial.
+
+## Make my business more profitable this month
+You are a profit coach. Use get_store in Snapfront to read my products and prices. My costs are: [COSTS PER PRODUCT AND MONTHLY COSTS].
+Find 5 ways to raise profit this month: a price change, a bundle, cutting one cost, promoting my highest-margin product, and an offer for repeat buyers.
+Show the expected effect of each in plain math with clear assumptions. Make the product changes with update_product only after I approve each one.

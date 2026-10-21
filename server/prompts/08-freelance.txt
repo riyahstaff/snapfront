@@ -1,0 +1,175 @@
+# category: Freelancing and AI services
+# blurb: Sell your skills and AI-powered services to clients: offers, proposals, pricing, outreach and delivery.
+
+## Package my skills into 3 freelance offers
+You are a freelance business coach. My skills: [SKILLS]. My experience: [EXPERIENCE]. The clients I'd like: [CLIENT TYPE].
+Create 3 productized offers (fixed scope, fixed price): a small starter offer, a core offer and a monthly retainer. For each, give the name, what's included, what's not, the turnaround time, the price and who it's for.
+Write a short service page for each and a profile headline I can use on LinkedIn, Upwork, Fiverr or Contra. Tell me which offer to lead with and why.
+
+## Upwork or Fiverr profile that wins work
+Act as a freelance profile expert who has reviewed thousands of profiles. Write my profile for [PLATFORM] based on my background: [BACKGROUND, SKILLS, RESULTS].
+Include: a title with the keywords clients search, an overview that opens with the client's problem (not my life story), 3 proof points (only real ones), my process in 4 steps, and a call to action.
+Then write 3 gig or project listings with 3 packages each (basic, standard, premium), prices, delivery times and 5 FAQs. Tell me which keywords to put in tags.
+
+## Proposal template that clients say yes to
+You are a proposal writer. Write a proposal template for my [SERVICE] that I can reuse.
+Sections: a summary of their goal in their own words, my understanding of the problem, the plan in phases, what they get, the timeline, 3 price options (good, better, best), what I need from them, and next steps with a date.
+Keep it to one page. Then write a short version for platform bids under 150 words, and a list of 5 questions to ask before I send any proposal.
+
+## Cold email that gets replies from businesses
+Act as a B2B outreach expert. I offer [SERVICE] to [TYPE OF BUSINESS] and can help them [RESULT].
+Write 3 cold emails under 120 words each: one that leads with a specific observation about their business, one that offers a quick free idea, and one with a short case result (only if I give you a real one: [RESULT OR NONE]).
+Include subject lines, 2 follow-ups for each (day 3 and day 8), and a list of ways to personalize the first line in under 2 minutes per lead. No spammy tricks or fake "Re:" subjects.
+
+## AI automation agency starter plan
+You are an AI automation agency coach. I want to sell AI automations to [NICHE, e.g. dentists, real estate agents, gyms, salons].
+Find 5 pain points they pay to fix. For each: the automation (a chatbot, lead follow-up, review replies, appointment reminders or content), the no-code tools to build it, the setup fee, the monthly fee and the result to measure.
+Design a free or low-cost pilot offer to get my first case study. Write a one-page offer and a 20-minute discovery call script.
+
+## Sell AI chatbot setup to local businesses
+Act as a chatbot service designer. Plan a website or DM chatbot service for [BUSINESS TYPE].
+Cover what the bot answers (hours, prices, booking, FAQs), how it hands off to a human, the setup steps, a knowledge base template the owner fills in, pricing (a setup fee plus monthly care), and how I'll show results (questions answered, leads captured).
+Write the pitch message, a 5-minute demo script and the knowledge base questions I'll ask each client.
+
+## AI content writing service done right
+You are a content agency coach. Plan a writing service (blog posts, product descriptions, newsletters) for [CLIENT TYPE] that uses AI for first drafts but adds real expertise, editing and fact-checking.
+Write my 6-step quality process, 3 packages with prices and turnaround times, and how I'll match each client's voice.
+Show me how to explain "AI-assisted, human-edited" honestly in my proposals, and a checklist I run before every delivery.
+
+## Discovery call script
+Act as a consultative sales coach. Write a 30-minute discovery call script for my [SERVICE].
+Include: a 2-minute rapport opening, 10 discovery questions about their goals, current process, what they've tried, budget and timeline, how to summarize what I heard, how to present a fit (or say honestly it's not a fit and refer them), and how to book the next step before hanging up.
+Add a short note-taking template and the follow-up email to send within an hour.
+
+## Scope creep shield
+You are a freelance operations expert. Clients keep asking me for extra work outside the agreement.
+Write: a clear scope section for my contracts for [SERVICE] (what's included, what's not, how many revisions), a simple change request process, and 5 polite but firm replies for common situations (a "quick" extra, more revisions, a new deliverable, a rush, a changed direction).
+Each reply should say yes to the work with a price and timeline, or offer an alternative, without sounding annoyed.
+
+## Raise my freelance rates
+Act as a pricing coach for freelancers. I charge [CURRENT RATE] for [SERVICE], I've been doing it for [TIME], and I'm usually [BOOKED UP / STRUGGLING TO FIND WORK].
+Help me decide the new rate and when to apply it (new clients first, existing clients with notice). Write the message to existing clients with 30 days' notice and a short reason.
+Give me answers for 3 kinds of pushback and tell me what to do if a client leaves.
+
+## Freelance onboarding kit
+You are a client experience designer. Create an onboarding kit for new [SERVICE] clients.
+Write: a welcome email, an intake questionnaire (10 questions), a kickoff call agenda, a project timeline template, how we communicate and how fast I reply, what I need from them and by when, and what happens at the end of the project.
+Make it feel organized and friendly, so clients trust me from day one.
+
+## Testimonial request that gets responses
+Act as a reputation coach. Write a message asking happy clients for a testimonial right after a good result, with 3 easy questions to answer (what was happening before, what changed, what they'd tell someone considering me).
+Write a polite follow-up for a week later. Then show me how to edit their answers into a short testimonial without changing the meaning, and the message asking them to approve the edited version.
+
+## Portfolio when I have no clients yet
+You are a career coach for new freelancers. I do [SERVICE] but have no clients yet.
+Give me 5 ways to build a portfolio fast: spec projects, a concept redesign of a real brand (clearly labeled as a concept), pro bono work for a nonprofit, my own projects, and before-and-after examples.
+Make a 2-week plan to finish 3 portfolio pieces, with what each should show, and write the short case study format I'll use for each one.
+
+## Freelance contract outline
+Act as a contract outline helper (not a lawyer). List the sections my [SERVICE] contract should have: scope, timeline, payment terms, deposit, revisions, who owns the work and when, confidentiality, cancellation, late payments and how disputes are handled.
+Write plain-language example text for each section based on how I work: [HOW YOU WORK].
+Tell me to have a lawyer review it for my location, and list the questions to ask them.
+
+## Retainer offer that keeps clients for months
+You are a retainer strategist. Turn my one-time service [SERVICE] into a monthly retainer.
+Define what's included each month, a monthly report, 3 pricing tiers, the minimum commitment, what happens to unused hours, and how to pause or cancel.
+Write the pitch message to send at the end of a successful project, and a one-page retainer summary I can attach.
+
+## LinkedIn profile that attracts clients
+Act as a LinkedIn profile coach for freelancers. My service is [SERVICE] for [WHO], and my best results are [RESULTS].
+Write my headline (who I help and how), an About section (the problem, the result, how I work, proof, a call to action), and 3 ideas for the Featured section.
+Then write 5 post ideas with hooks that show my expertise, and a simple weekly routine for comments and connection requests.
+
+## Handle late payments professionally
+You are a freelancer's admin assistant. A client hasn't paid invoice [NUMBER] for [AMOUNT], due on [DATE].
+Write 4 messages: a friendly heads-up 3 days before the due date, a due-date reminder, a firmer note at 7 days late, and a final notice at 21 days late that refers to my contract's late terms and the next step.
+Then give me 5 ways to avoid late payments next time (deposits, milestones, autopay, clear terms) and the wording to add to my proposals.
+
+## Productize my consulting
+Act as a productization coach. I consult on [TOPIC] for [CLIENTS] and charge [RATE].
+Turn my knowledge into 4 products at different prices: a fixed-price audit, a template or toolkit (a digital product), a group workshop, and monthly advisory.
+For each, describe the deliverables, the price and who it's for. Draft the toolkit as a digital product in my Snapfront store with create_draft_product, with a full product page.
+
+## Freelance niche finder
+You are a niche strategist. My service is [SERVICE] and my background includes [INDUSTRIES OR INTERESTS].
+List 10 niches that need this service, pay well and are easy to reach. Score each from 1 to 5 on demand, budget, competition, my interest and how easy they are to find online.
+Pick the best niche, explain why, rewrite my profile headline for it, and list 20 places where those clients spend time.
+
+## Weekly freelance pipeline routine
+Act as my business development coach. Design a 3-hour weekly routine that keeps work coming: prospecting, follow-ups, one piece of content, proposals and client check-ins.
+Give me a simple pipeline tracker (columns and statuses), weekly targets (for example 10 new conversations), and message templates for each kind of outreach.
+Tell me which numbers to check each Friday and what to change if the pipeline dries up.
+
+## Portfolio website copy
+You are a freelance website copywriter. Write my portfolio page for [SERVICE] for [CLIENTS].
+Sections: a headline, the problem I solve, services with prices or "starting at", my process, 3 case studies from my real work [DETAILS], testimonials, an FAQ and a contact call to action.
+If I sell packages through Snapfront, adapt the headline and About for my store and update it with update_store_design after I approve.
+
+## Client report that wows
+Act as an account manager. This month I did [WORK] for a client, with these results: [RESULTS AND NUMBERS].
+Write a one-page monthly report: a 3-line summary, what we did, results with numbers and what they mean, what we learned, problems and how I handled them, and next month's plan.
+Keep it easy to skim, with the most important result at the top, and end with one recommendation that could grow the work.
+
+## Video editing or design service plan
+You are a creative services coach. I edit videos or design graphics for [CLIENTS].
+Plan my packages (per video or per design, and monthly bundles), turnaround times, revision limits, how files get delivered, and how I'll use AI tools to work faster without lowering quality.
+Write the brief form clients fill in (10 questions), the package menu and a message to send when a brief is unclear.
+
+## Freelance pricing calculator
+Act as a freelance finance coach. Help me find my minimum rate from: my yearly income goal [GOAL], weeks off [WEEKS], billable hours per week [HOURS], business costs [COSTS] and my estimated tax rate (ask me, and tell me to check it with a tax professional).
+Show the math step by step. Then turn the hourly number into package prices for [SERVICE], and explain why packages often earn more than hourly billing.
+
+## Fix a project that's going wrong
+You are a project rescue consultant. Here's what's happening with a client project: [WHAT WENT WRONG, THE TIMELINE, WHAT THE CLIENT SAID].
+Help me figure out the real cause, what to say to the client today (write the message: honest, calm, solution first), a recovery plan with new dates, and what to change in my process so it doesn't happen again.
+If the relationship can't be saved, help me end it professionally.
+
+## Ghostwriting service plan
+Act as a ghostwriting business coach. I want to ghostwrite [LINKEDIN POSTS / NEWSLETTERS / BOOKS] for [CLIENTS].
+Plan my interview process to capture each client's voice, packages and prices, a monthly workflow, how AI helps with drafts while I keep it sounding like them, and how I handle confidentiality and credit.
+Write my offer page and the 12 interview questions I'll ask every new client.
+
+## Freelance offboarding and referrals
+You are a client success coach. Write my end-of-project process for [SERVICE].
+Include: a wrap-up message with results, a file handover checklist, a short feedback request, a testimonial ask, a referral ask with a simple incentive if I choose one, and a check-in message 30 days later that might lead to more work.
+Write every message, and tell me the best timing for each.
+
+## Bid on a specific job post
+Here's a job post I want to win: [PASTE THE JOB POST]. Act as a proposal coach.
+Pull out what the client really cares about (stated and unstated), the risks they're worried about, and what most freelancers will say.
+Write a proposal under 200 words that speaks directly to their needs, suggest a price and timeline, and write 2 smart questions to ask that show I understand the work.
+
+## Turn freelance work into digital products
+Act as a product strategist for freelancers. I do [SERVICE] for [CLIENTS].
+List 8 digital products I could sell to people who can't afford to hire me (templates, checklists, swipe files, mini courses, SOPs), with prices and how much work each would take.
+Outline the best one and draft it in my Snapfront store with create_draft_product, with a full product page that mentions my service as the next step.
+
+## Freelance content plan that attracts clients
+You are a content coach for freelancers. My service is [SERVICE] for [CLIENTS] and I post on [PLATFORM].
+Plan 4 weeks of posts: tips, mini case studies, my process, an opinion on my industry and a weekly soft offer.
+Write the first week's 5 posts in full with hooks, give me a 20-minute daily routine for posting and replying to comments, and tell me which posts to turn into a lead magnet later.
+
+## Say no to bad-fit clients
+Act as a boundaries coach. Write kind, professional messages to decline: a client who wants too much for too little, a project outside my skills, a rush job I can't do well, a client who was rude in the first call, and a project I just don't want.
+Each message should be short, leave the door open where it makes sense, and suggest a referral or resource when possible.
+Add 5 red flags to watch for before agreeing to work with someone.
+
+## Upsell existing clients
+You are an account growth coach. My client [CLIENT TYPE] currently buys [CURRENT SERVICE] from me, and the results so far are [RESULTS].
+Suggest 3 related services they're likely to need, how to spot the right moment to offer each, and how to price them.
+Write the message to pitch one without being pushy, built around a result I've already delivered for them, and a follow-up if they say "maybe later".
+
+## Simple freelance CRM
+Act as a systems coach. Design a spreadsheet or Notion CRM for my freelance business with columns for lead, company, source, status, last contact, next step, next date, value and notes.
+Add statuses from "new lead" to "paid", a weekly 15-minute review checklist, and 2 formulas or filters (follow up today, total value by status).
+Write a prompt I can paste my CRM into each week so my AI assistant gives me a summary and the 5 people to contact.
+
+## AI-assisted research service
+You are a research services coach. Plan a service doing market research, competitor reviews or literature summaries for [CLIENTS], using AI to speed up searching and drafting and a human to check every source.
+Define 3 deliverables with prices, a quality checklist (every claim has a source, no made-up citations, dates checked), how I'll cite sources, and a sample report outline.
+Write my offer and an example of how I'll explain my process to clients.
+
+## Freelance year-end review
+Act as my freelance business coach. Here's my year: clients, income per client, hours per client, what I enjoyed and what drained me: [DETAILS].
+Calculate my real profit per hour for each client, rank my best and worst clients, and tell me what to raise prices on, what to stop offering and who to fire gently.
+Make a plan for next year with an income goal, target clients and 3 quarterly milestones.

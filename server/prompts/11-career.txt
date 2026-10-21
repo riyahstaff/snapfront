@@ -1,0 +1,160 @@
+# category: Career and income growth
+# blurb: Raises, job search, new skills and career moves that grow your main income alongside your store.
+
+## Ask for a raise with evidence
+You are a salary negotiation coach. My role is [ROLE] at [COMPANY TYPE], I've been there [TIME], and my wins this year are [WINS, WITH NUMBERS IF POSSIBLE].
+Help me build my case: my impact in business terms, how to research market pay (which sources to check), the number to ask for and my walk-away number.
+Write the meeting request email, a 2-minute opening script, answers to 5 likely pushbacks ("there's no budget", "wait until review season", "everyone got the same raise") and a follow-up email confirming what was agreed.
+
+## Negotiate a job offer
+Act as an offer negotiation coach. My offer is: [SALARY, BONUS, BENEFITS, START DATE, REMOTE DAYS, TITLE]. I want [WHAT YOU WANT] and my other options are [OTHER OFFERS OR NONE].
+Help me decide what to ask for and in what order. Write a warm, confident counteroffer email and a phone script.
+Tell me what else is negotiable if salary is fixed (a signing bonus, title, paid time off, start date, a learning budget, remote days) and how to respond if they say no.
+
+## Tailor my resume to a job
+You are a professional resume writer. Here's the job post: [PASTE] and my resume: [PASTE].
+Rewrite my bullet points to match the job's top requirements using only my real experience. Start each bullet with a strong verb and add results with numbers where I've given them. Write a 3-line summary for the top.
+List the keywords from the job post I'm missing, which ones I can honestly add, and tell me straight whether I'm a strong fit.
+
+## Cover letter that doesn't sound generic
+Act as a hiring manager who reads hundreds of cover letters. Write my cover letter for [JOB] at [COMPANY].
+Open with why this company and this role specifically, tell one short story that proves I can do the hardest part of the job, connect my experience [KEY EXPERIENCE] to their needs, and close with confidence. Under 250 words.
+Ask me for one specific thing I like about the company if I haven't told you, and never invent experience.
+
+## Interview prep with practice questions
+You are an interview coach. I'm interviewing for [ROLE] at [COMPANY TYPE]. Here's my key experience: [EXPERIENCE].
+Give me the 10 most likely questions, including 4 behavioral ones, and a strong answer outline for each using the STAR method (situation, task, action, result) and my real experience.
+Then interview me one question at a time. After each answer, give me feedback on clarity, length and impact, and a better version.
+
+## LinkedIn makeover for recruiters
+Act as a LinkedIn optimization expert. My target role is [TARGET ROLE] and my experience is [EXPERIENCE].
+Rewrite my headline, my About section (what I do, the results I've delivered, what I'm looking for) and my top 3 experience entries with results.
+List the skills recruiters search for in my field and give me a 4-week plan: one post a week, 10 thoughtful comments a week, and connection requests with a short message.
+
+## Career change plan
+You are a career change coach. I work as [CURRENT JOB] and want to move into [TARGET FIELD]. I can spend [HOURS] a week and [BUDGET] on this.
+Map my transferable skills, the gaps, and the fastest ways to close them (courses, projects, certifications). Show how to get real experience before switching (side projects, freelance work, volunteering, a stretch project at my current job).
+Give me a 6-month plan with monthly milestones and a list of 10 kinds of people to talk to.
+
+## Learn a high-income skill in 90 days
+Act as a learning coach. I want to learn [SKILL, e.g. data analysis, copywriting, UX design, sales, AI automation] in 90 days with [HOURS] a week.
+Make a week-by-week plan with free and paid resources, one project each month that proves the skill, and how to show it on my resume and portfolio.
+Add 3 ways to start earning from the skill before the 90 days are up, and tell me how to know if I'm on track.
+
+## Get promoted plan
+You are a career growth coach. I'm a [ROLE] and want to become [NEXT ROLE] within [TIME].
+Explain what people at the next level do differently, the gaps I probably need to close, how to get visible work, and how to make my manager an ally.
+Write the message asking my manager for a growth conversation, the agenda for that conversation, and a monthly check-in format to track progress.
+
+## Networking messages that get replies
+Act as a networking coach. Write 5 short, specific messages: reaching out to someone in a role I want, asking for a 15-minute chat, following up after the chat with thanks and one takeaway, reconnecting with an old coworker, and asking for a referral to a specific job.
+Each should be under 80 words, respectful of their time and easy to say yes to. Add tips on who to contact first and how many messages to send each week.
+
+## Build a personal brand at work
+You are a personal branding coach. I want to become known for [EXPERTISE] at my company and in my industry, without bragging.
+Tell me what to share (lessons, results, helpful resources), where (internal channels, LinkedIn, meetings, events), and how often.
+Give me a 4-week plan, 5 post ideas with hooks, and 3 ways to help colleagues that also build my reputation.
+
+## Performance review self-assessment
+Act as a performance review coach. Here are my notes from this year: [PROJECTS, RESULTS, FEEDBACK, CHALLENGES].
+Write my self-assessment: key achievements with business impact, how I grew, a challenge and what I learned from it, how I helped others, and my goals for next year.
+Keep it confident and honest, around 400 words, and suggest 3 points to raise in the review meeting (including pay or promotion if it fits).
+
+## Prepare for a tough conversation with my manager
+You are a workplace communication coach. I need to talk to my manager about [ISSUE, e.g. my workload, a conflict with a coworker, wanting remote days, a mistake I made].
+Help me plan: my goal for the conversation, how to open, the 3 points I'll make, what they might say and how I'll respond, and how to end with a clear next step.
+Write a short script, a message to request the meeting, and a follow-up email that summarizes what we agreed.
+
+## Job search plan for the next 30 days
+Act as a job search strategist. I'm looking for [ROLE] in [LOCATION OR REMOTE], with [YEARS] years of experience.
+Make a 30-day plan: a target list of 30 companies, daily targets for applications and networking messages, a tracker (columns and statuses), follow-up timing and interview prep.
+Show me how to use AI to tailor each application quickly without sending generic ones, and what to do if I get no replies after 2 weeks.
+
+## Remote job hunting plan
+You are a remote work career coach. I want a remote job in [FIELD].
+Tell me where remote jobs are posted, how to stand out in remote applications (show async communication, self-management and results), how to set up my home for video interviews, and the red flags of fake remote job scams (paying for equipment, chat-only interviews, checks to deposit).
+Write a remote-friendly resume summary and a short note about how I work remotely.
+
+## Freelance or a job: which should I choose?
+Act as a career decision coach. I'm choosing between [JOB OFFER DETAILS] and going freelance in [FIELD] where I expect [EXPECTED INCOME].
+Compare income stability, earning potential, benefits I'd have to pay for myself (health insurance, retirement, time off), taxes, lifestyle and risk.
+Ask me 4 questions about my savings, risk tolerance and goals, then give me a recommendation and a way to test freelancing for 60 days before deciding.
+
+## Use AI to be faster at my job
+You are an AI productivity coach. My job is [JOB] and my most time-consuming tasks are [TASKS].
+For each task, show how AI could help (first drafts, summaries, analysis, templates, checklists), the exact prompt I'd use, and what I must check myself before using the result.
+Remind me to follow my company's rules about which AI tools and data I'm allowed to use, and estimate the hours I could save each week.
+
+## Salary research for my role
+Act as a compensation researcher. My role is [ROLE] with [YEARS] years of experience in [LOCATION OR REMOTE], at a [COMPANY SIZE AND INDUSTRY].
+Tell me where to find reliable salary data (job posts with pay ranges, salary sites, industry surveys, recruiters, people in the role), how to compare sources, and what affects pay (skills, company size, location, negotiation).
+Help me build a target range with a low, middle and stretch number, and a script to ask a recruiter about their range.
+
+## Write my professional bio
+You are a bio writer. Write my professional bio in 3 lengths (one line, 50 words and 150 words) for [USE: a conference, LinkedIn, my website, a podcast intro].
+Use these facts: [ROLE, EXPERIENCE, RESULTS, WHAT I'M KNOWN FOR, A PERSONAL DETAIL].
+Give me third-person and first-person versions of each, and a version that mentions my side business and Snapfront store if I want it to.
+
+## Certifications worth getting
+Act as a career advisor for [FIELD]. I want to earn more and my current skills are [SKILLS].
+List certifications that employers in my field actually value, with the cost, time to complete, renewal requirements and the likely career impact. Separate "must have" from "nice to have".
+Recommend the best one for my goal [GOAL], a study plan, and how to show it on my resume and LinkedIn.
+
+## Handle a layoff
+You are a supportive career coach. I was laid off from [ROLE] on [DATE].
+Give me a 2-week plan: questions to ask about severance, benefits and references; unemployment benefits to check; money steps for the next 90 days; how to tell my network; updating my resume; and starting a focused job search.
+Write a short LinkedIn post saying I'm open to work, and a message to former coworkers asking for leads.
+
+## Get my first job with no experience
+Act as an entry-level career coach. I want to get into [FIELD] with no direct experience. My background is [EDUCATION, PART-TIME WORK, VOLUNTEERING, HOBBIES].
+Give me 5 ways to get relevant experience fast (projects, volunteering, internships, freelance gigs, certifications), how to write a resume without job history (a skills section, projects, results), and how to explain my lack of experience confidently in interviews.
+Write my resume summary and 3 project ideas I could finish in a month.
+
+## Thank-you note after an interview
+You are an interview follow-up coach. Write a thank-you email after my interview for [ROLE] with [INTERVIEWER NAME AND ROLE].
+Thank them for their time, mention one specific thing we discussed [TOPIC], add one short point that strengthens my case (something I forgot to say or a quick idea), restate why I'm a fit and close warmly. Under 150 words.
+Also write a short check-in email for if I haven't heard back by the date they gave.
+
+## Become a manager plan
+Act as a leadership coach. I'm becoming the manager of [TEAM SIZE] people doing [WORK].
+Give me a first 90 days plan: weekly 1-on-1s (with a question bank), understanding each person's goals, quick wins, setting expectations, how to handle managing former peers, and the 5 mistakes new managers make most.
+Write the agenda for my first team meeting and my first 1-on-1.
+
+## Side income from my career skills
+You are a career monetization coach. My job skills are [SKILLS] and I work as [JOB].
+List 10 ways to earn extra from these skills on the side (consulting, teaching, templates, freelance projects, digital products), and remind me to check my employer's rules about side work and conflicts of interest.
+Outline a digital product from my expertise that doesn't use anything confidential, and draft it in my Snapfront store with create_draft_product.
+
+## Resignation letter and a clean exit
+Act as a professional communication coach. Write a short, gracious resignation letter for my role as [ROLE], with my last day [DATE], an offer to help with the handover, and thanks.
+Then write a plan for my last 2 weeks: a handover document outline, who to thank, what to save (my own work samples, contacts, as allowed), and how to leave on good terms for future references.
+
+## Improve my public speaking
+You are a speaking coach. I need to present [TOPIC] to [AUDIENCE] for [MINUTES] minutes.
+Help me structure the talk (a hook, 3 main points with a story or example each, a clear close), write short speaker notes, and suggest slides only where they help.
+Give me a 5-day practice plan, tips for nerves, and 3 likely audience questions with good answers.
+
+## Make the most of a career fair or networking event
+Act as a networking coach. I'm going to [EVENT] looking for [GOAL, e.g. a job in marketing, clients, mentors].
+Write a 30-second introduction that's natural, 5 questions to ask employers or people I meet, a way to end conversations politely, what to bring, and how to follow up within 48 hours (write the message).
+Add a simple way to keep notes on everyone I meet.
+
+## 5-year career plan
+You are a long-term career strategist. Ask me 6 questions, one at a time, about my values, the work I enjoy, income goals, life plans and the side business I'm building.
+Then make a 5-year plan with a goal for each year, skills to build, roles or clients to target, income milestones, and how my main job and my side business support each other.
+Include a yearly review checklist.
+
+## LinkedIn post about a win
+Act as a LinkedIn writer. I just [WIN, e.g. finished a certification, launched a project, got promoted, made my first sale in my store].
+Write a post under 200 words that shares the win, tells the short story behind it, gives one useful lesson for others, and thanks the people who helped, without bragging.
+Write 3 hook options for the first line and a question to end with that invites comments.
+
+## Learn the AI tools that matter in my field
+You are an AI skills coach. I work in [FIELD] as [ROLE].
+Name the 5 AI skills that matter most in my field right now (with examples of tasks), a 4-week practice plan using real tasks from my work, and safe habits (checking facts, protecting private data, following company rules).
+Show me how to describe these skills on my resume and LinkedIn with results, not buzzwords.
+
+## Get paid more as a gig or hourly worker
+Act as an earnings coach for hourly and gig workers. I work as [JOB] at [RATE] for [HOURS] a week.
+List ways to earn more: asking for a raise (write the message), shift differentials, certifications that raise pay, overtime, switching employers, tips and upsells where they apply, and a side gig that fits my schedule.
+Calculate my yearly income now and with the top 2 changes, and give me a 30-day plan.

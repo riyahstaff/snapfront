@@ -1,0 +1,268 @@
+# category: Short videos and social content
+# blurb: Hooks, scripts, captions and content plans for TikTok, Reels, Shorts, Pinterest and more, including faceless videos Snapfront can make for you.
+
+## 30 days of content in one prompt
+You are a short-form content strategist. My niche is [NICHE], I sell [PRODUCTS] (use get_store in Snapfront to read them), and I post on [PLATFORMS].
+Make a 30-day content calendar with one post a day. Mix 4 types: teach something (40%), show the product in use (25%), behind the scenes or story (20%), and a direct offer (15%).
+For each day give: the hook (first line or first 2 seconds), the format (talking, faceless, carousel, screen recording), 3 talking points, the call to action and the product it points to.
+Mark the 4 days where a faceless video made with make_faceless_video would work best.
+
+## 50 scroll-stopping hooks for my niche
+Act as a viral hook writer. My niche is [NICHE] and my viewer is [WHO]. Write 50 hooks in 10 styles (5 each): mistake, myth, number list, before and after, question, bold opinion, "nobody tells you", tiny tutorial, story opener, and price or value reveal.
+Each hook is under 12 words and must be something I can actually deliver in the video. Mark the 10 strongest.
+
+## Turn one idea into 10 posts
+Here is one idea or tip I want to share: [IDEA].
+Act as a content repurposing expert. Turn it into: a 30-second video script, a 60-second video script, a 7-slide carousel, a Pinterest pin title and description, a thread or long caption, a story poll, an email paragraph, a quote graphic line, a FAQ answer, and a faceless video script.
+Keep the core message the same and adapt it to each format. If it relates to one of my Snapfront products, end each with a soft call to action.
+
+## Faceless TikTok script that sells without being salesy
+You are a faceless content creator. Use get_product in Snapfront for [PRODUCT NAME].
+Write a 25-second faceless script with 4 scenes using the "show, don't sell" style: a relatable moment, a small tip, the product appearing naturally as part of the tip, and a soft call to action.
+Spoken lines must sound natural read aloud. Then make it with make_faceless_video, check get_video, and give me the caption, 5 hashtags, and the best time to post for my audience.
+
+## Carousel that teaches and sells
+Act as an Instagram carousel designer. Topic: [TOPIC] for [AUDIENCE].
+Write a 7-slide carousel: slide 1 is a bold promise or question, slides 2 to 6 each teach one clear point with an example, slide 7 is a recap and call to action to [PRODUCT OR LINK].
+Give the exact text for each slide (under 25 words per slide) and a caption under 150 words with a question to spark comments.
+
+## Pinterest plan for my store
+You are a Pinterest marketing strategist. Use get_store in Snapfront to read my products.
+For each product, write 3 pin titles (under 100 characters) with search keywords, 3 pin descriptions (under 500 characters), and 3 pin image ideas.
+Suggest 5 board names that match how my buyers search. Give me a pinning schedule for 4 weeks and explain why Pinterest works for evergreen products.
+
+## YouTube Shorts series plan
+Act as a YouTube Shorts producer. My channel is about [TOPIC] for [AUDIENCE], and I can film [FACE ON CAMERA / FACELESS / SCREEN RECORDINGS].
+Plan a 20-episode Shorts series: a series name, the format that repeats every episode (so viewers know what to expect), and each episode's hook, 3 beats and payoff. Shorts should run 20 to 45 seconds.
+Suggest on-screen text for each hook, how each episode can point viewers to [PRODUCT OR STORE] without hurting watch time, and which 3 episodes to post first.
+
+## Write my bio for every platform
+You are a profile optimizer. I sell [WHAT YOU SELL] to [WHO]. Use get_store in Snapfront for details about my store and products.
+Write bios for TikTok (80 characters), Instagram (150 characters), YouTube (channel description), Pinterest and X. Each should say who I help, how, and give a reason to tap my link.
+Write 3 versions of each (clear, playful, authority) and mark the best. Add a short line I can use as the link title in my link-in-bio page.
+
+## Comment replies that turn into sales
+Here are comments and DMs I've received: [PASTE COMMENTS].
+Act as a community manager. Write a friendly reply for each one. For questions about my product, answer honestly and point them to the product (use get_product in Snapfront for accurate details). For negative comments, stay calm and helpful.
+Then pick the 3 comments that would make great videos and write a reply-video script for each.
+
+## Story sequence for a launch day
+Act as an Instagram Stories strategist. I'm launching [PRODUCT] today.
+Write a 10-frame story sequence: a teaser, the problem, a behind-the-scenes look, the product reveal, what's inside, a poll, a question box, a quick demo, a FAQ answer, and the link sticker with a clear call to action.
+Give the on-screen text and what to show visually for each frame. Use get_product in Snapfront for accurate details, and suggest 3 follow-up stories for the next day.
+
+## Hook rewrite clinic
+Here are hooks from my videos that didn't perform, with their views if I have them: [PASTE HOOKS].
+Act as a hook doctor. For each one, explain in one line why it may be weak (too slow, too vague, no tension, no clear payoff, sounds like an ad), then write 3 stronger versions in different styles.
+Finish with 5 hook rules for my niche [NICHE] based on what you saw, and 10 fresh hooks that follow those rules for my next videos.
+
+## Video scripts from my product's FAQ
+Use get_product in Snapfront for [PRODUCT NAME] and read its FAQ.
+Turn each FAQ into a 15 to 25 second video script: the question as the hook (worded the way a real buyer would ask it), a quick honest answer, a visual idea, and a call to action.
+Show me all scripts, then make the two strongest as faceless videos with make_faceless_video after I approve, check them with get_video, and give me a caption for each.
+
+## "Day in the life" content for a small shop owner
+Act as a lifestyle content coach. I run a small shop selling [PRODUCTS] and I work on it [WHEN, e.g. evenings after my 9-to-5, during school hours].
+Write 5 "day in the life" video outlines that feel real: the shots to film in order, the voiceover lines, and one moment in each where a product appears naturally.
+Keep it honest: no fake money screenshots or income claims. Add on-screen text for each video and a caption that invites questions.
+
+## Turn reviews into content
+Here are real customer reviews or messages, shared with permission: [PASTE REVIEWS].
+Act as a social proof strategist. Turn them into: 3 short video scripts (a reaction, a "you asked, they said", and a before-and-after), 3 quote graphics, and 1 carousel.
+Don't change what customers said (you can shorten it), use first names only if I confirm I have permission, and point each piece to the right product in my Snapfront store (use get_store).
+
+## Trend adapter
+Here's a trend, sound or format going around right now: [DESCRIBE THE TREND AND AN EXAMPLE].
+Act as a trend strategist. Give me 5 ways to use it for my niche [NICHE] and my product [PRODUCT], from the most obvious to the most creative.
+For each idea, write the on-screen text, the shot plan and a caption. Tell me honestly which ones fit my brand and which might feel forced, and how fast I need to post before the trend fades.
+
+## Educational series that builds authority
+You are a content strategist for experts. My expertise is [EXPERTISE] and my audience is [WHO].
+Plan a 12-part educational series called [SERIES NAME, or suggest one] that takes a beginner from zero to their first win.
+For each part give a hook, the lesson in 3 points, a takeaway and the best format. The last 2 parts should introduce my product [PRODUCT] as an honest next step. Add a series cover idea and a pinned post that explains the series.
+
+## Email newsletter for my shop
+Act as an email marketer for small shops. Use get_store in Snapfront to read my store and products.
+Write a weekly newsletter template with: a personal opener, one helpful tip, one featured product, one story or behind-the-scenes moment, and a sign-off.
+Then write the first 4 issues in full (under 300 words each), with subject lines and preview text. Use only real product details, and suggest which product to feature each week and why.
+
+## Content pillars for my brand
+You are a brand strategist. My brand sells [WHAT] to [WHO] and stands for [VALUES].
+Define 4 content pillars. For each, explain why it matters to my buyer, list 10 post ideas, the best format and how it connects back to products in my Snapfront store (use get_store).
+Finish with a weekly posting mix (how many posts of each pillar) and a simple way to track which pillar brings the most sales.
+
+## Write captions that get saves and shares
+Act as a caption writer. Here are 5 post ideas: [LIST].
+For each, write a caption with: a first line that stops the scroll, a short useful body, a line that invites saving or sharing ("send this to a friend who..."), and a call to action.
+Keep each under 120 words and add 5 relevant hashtags. Then explain the 3 caption patterns you used so I can write my own.
+
+## Faceless video: 3 reasons to love it
+Use get_product in Snapfront for [PRODUCT NAME]. Write a faceless script in the "3 reasons to love it" style: a hook, reason one, reason two, reason three and a call to action.
+Each reason must be a real feature or benefit from the product page, and spoken lines should sound natural read aloud (numbers written as words).
+Make it with make_faceless_video, check it with get_video, and give me a caption, hashtags and 2 alternate hooks to test.
+
+## Faceless video: how to use it
+Use get_product in Snapfront for [PRODUCT NAME]. Write a faceless "how to use it" script in 4 scenes: the problem, step one, step two, and the result, using only real details from the page.
+Keep each spoken line under 15 words and easy to follow.
+Make it with make_faceless_video and check it with get_video. Then write 2 variations of the hook I can test on the same video, and a caption that answers one common question.
+
+## Faceless video: gift idea
+Use get_product in Snapfront for [PRODUCT NAME]. Write a 20-second faceless gift-idea script: who it's perfect for, why it's a thoughtful gift, and how fast they can get it (instant download for digital, or the delivery time for physical, only if I confirm it).
+Make it with make_faceless_video and check it with get_video.
+Write a holiday caption and a birthday caption for it, and suggest the best weeks to post it.
+
+## Short-form video for a product I can't film
+I sell [DIGITAL PRODUCT] and I can't film it in use. Act as a creative director.
+Give me 8 video ideas that show a digital product well: screen-recording flips, before and after, "what's inside" scroll, mockups, a voiceover tip with the product on screen, a reaction to a common mistake.
+Write 2 of them in full, and make one as a faceless video with make_faceless_video using the product photos.
+
+## Content plan for zero followers
+I have zero or very few followers. Act as a growth coach for brand-new accounts.
+Give me a 14-day plan to get my first 1,000 views per video: the niche angle, the 3 video formats to repeat, posting times, how to use search keywords in captions and on-screen text, and what to do in the first hour after posting.
+Include 14 specific video ideas tied to my products: [PRODUCTS].
+
+## Turn my long video into shorts
+Here's the transcript or outline of a long video, livestream or podcast I made: [PASTE].
+Act as a clip editor. Find the 8 best moments for shorts. For each, give the start line, end line, a new hook to put on screen, a caption and why it works on its own.
+Rank them by how likely they are to be shared, and tell me which ones could link to a product in my Snapfront store.
+
+## Write a UGC-style script for my product
+Use get_product in Snapfront for [PRODUCT NAME]. Write 3 UGC-style scripts (like a real customer talking to their phone) for a creator to film: an unboxing or first look, a "this fixed my problem" story, and a quick review.
+Keep it natural and honest; no claims the page doesn't support. Include shot notes and a 1-line brief I can send to a creator.
+
+## LinkedIn posts for a side business
+Act as a LinkedIn ghostwriter. I have a side business selling [PRODUCTS] and a full-time job as [JOB].
+Write 5 LinkedIn posts that share lessons from building the business without breaking any work rules: a lesson learned, a mistake, a small win, a process I use, and a question for my network.
+Keep each under 200 words, end with a question, and remind me to check my employer's social media and side-work policies.
+
+## X / Threads thread that drives store visits
+Act as a thread writer. My topic is [TOPIC] for [AUDIENCE].
+Write a 10-post thread: a strong opener that promises something specific, 8 useful posts (each valuable on its own), and a last post that points to my Snapfront product [PRODUCT] as a resource.
+Keep each post under 280 characters. Give me 3 alternative openers and a short reply I can post under the thread with the link.
+
+## Content batching day plan
+You are a productivity coach for creators. I have [HOURS] hours on [DAY] to batch a week of content.
+Plan the session hour by hour: scripting, filming, editing, captions and scheduling. List the 7 videos to make (hooks and outlines) for my products [PRODUCTS], and which ones can be faceless videos made in Snapfront.
+Include a checklist of what to prepare before I start.
+
+## Live stream plan to sell
+Act as a live shopping host coach. I'm going live on [PLATFORM] for [LENGTH] to sell [PRODUCTS].
+Write a run of show: warm-up, introduction, product segments with talking points, a Q&A, an honest limited-time offer and the close. Include 10 questions to ask the audience to keep chat active, and what to do if nobody's commenting.
+Use get_store in Snapfront for accurate product details and links.
+
+## Video ad script for my best seller
+Use get_product in Snapfront for [PRODUCT NAME]. Write three 15-second video ad scripts for TikTok or Meta using these frameworks: problem-agitate-solve, before and after, and a direct demo.
+Each script has the on-screen text, the voiceover and a shot list. Add a headline and primary text for each ad.
+No exaggerated claims: every claim must match the product page. Tell me which one to test first and why.
+
+## Build a content series people follow
+Act as a format designer. Invent 5 repeatable series formats for my niche [NICHE] (like "Rating your ___", "One tool a day", "Fixing your ___", "Things under $20").
+For each, give the name, the structure, 5 episode ideas and how it connects to my products.
+Recommend the one to start with, write its first 3 episodes in full, and explain how to name and pin the series so new viewers find the rest.
+
+## Repurpose my product into free content
+Use get_product in Snapfront for [PRODUCT NAME]. Act as a content strategist.
+Pull out 10 small, useful pieces I can give away as free posts without giving away the whole product (a tip, a checklist item, a mistake to avoid, a before and after, a mini example).
+Write each post with a hook, the value and a call to action that points to the product, and mark which ones would work best as faceless videos.
+
+## Content for slow seasons
+Sales are slow right now. Act as a content strategist for small shops.
+Give me 15 content ideas that build trust and keep my audience warm without heavy selling: tips, behind the scenes, polls, stories, customer wins, "what I'm working on" and planning content for the next busy season.
+Include 3 posts that gently mention products in my Snapfront store (use get_store), and a 2-week posting schedule.
+
+## Write hooks for my exact product
+Use get_product in Snapfront for [PRODUCT NAME] and think about who buys it, what problem they had and what they hoped would change.
+Write 20 hooks specific to this product and its buyer, in 4 styles: problem, curiosity, result and identity ("If you're a ___ who ___").
+Mark the 5 best and explain why each works, then pair each of the 5 with an opening shot or on-screen visual. Avoid any promise the product page can't back up.
+
+## Caption-to-sale funnel
+Act as a social selling expert. Write a simple, friendly funnel for my product [PRODUCT]: a post that asks people to comment a keyword, the DM reply that answers and shares the link, a follow-up message 24 hours later, and a final helpful reminder.
+Keep it friendly and not pushy, and make sure it follows the platform's rules about automated messages.
+Use get_product in Snapfront for the link and details, and tell me which keyword to use.
+
+## Video scripts for every product in my store
+Use get_store in Snapfront. For each product, write one 20-second faceless script with a hook, a key benefit, one specific detail and a call to action. Keep spoken lines natural and honest.
+Show me all the scripts in a list. When I approve, make the first 3 with make_faceless_video, check them with get_video, and give me a posting schedule and captions.
+
+## Write on-screen text for my videos
+Here are my video ideas or rough scripts: [PASTE]. Act as an on-screen text editor.
+Write the text overlays for each video: the hook (under 8 words), 3 to 5 beat captions and the closing call to action. Each screen should be readable in under 2 seconds.
+Suggest where to place text so it isn't covered by the app's buttons, and which words to highlight.
+
+## Pinterest pins for a digital product
+Use get_product in Snapfront for [DIGITAL PRODUCT]. Act as a Pinterest strategist.
+Write 10 pin ideas: a title with search keywords (under 100 characters), a description (under 500 characters) and an image concept for each (mockups, page previews, "what's inside", quote pins, before and after).
+Suggest the board to save each to, and a 4-week schedule for publishing them.
+
+## Content plan for a product launch
+You are a launch content producer. I'm launching [PRODUCT] on [DATE]. Plan 2 weeks of content: 7 days of warm-up (problem awareness, sneak peeks, waitlist), launch day, and 6 days after (results, FAQs, last call).
+For each day give the post type, hook and call to action. Make 2 faceless videos in Snapfront for the launch after I approve the scripts.
+
+## Turn my story into content
+Ask me 5 questions, one at a time, about my story: where I started, why I started selling, a hard moment, a turning point and what I'm building now.
+Then write 5 short story videos from my answers, each with a hook, 3 beats, a lesson and a soft link to my Snapfront store.
+Keep it true: don't add drama, numbers or details I didn't share. Tell me which story to post first and the best format for each (talking to camera, voiceover over b-roll, or text on screen).
+
+## Write posts for Facebook groups
+Act as a community-first marketer. I'm in Facebook groups about [TOPIC].
+Write 5 helpful posts that fit typical group rules: share a useful tip or resource first, ask a real question, and mention my product only if the group allows it.
+Write a version of each for groups that don't allow links, and tips for becoming a trusted member before ever promoting.
+
+## Product demo script for a screen recording
+I'm recording a screen demo of [DIGITAL PRODUCT, e.g. a Notion template, a spreadsheet, a planner PDF].
+Write a 45-second script: the problem, a quick tour of the 3 best features, one "wow" moment and the call to action. Include exactly what to click or scroll at each step and the on-screen text.
+Also write a 15-second cut-down version and a caption that mentions where to buy it.
+
+## Weekly content review
+Here are last week's posts with views, likes, saves, shares, comments and link clicks: [PASTE STATS].
+Act as a content analyst. Tell me which hooks, formats and topics worked, which didn't, and the likely reasons. Look for patterns, not one-off flukes.
+Give me 5 ideas for next week that double down on what worked, and one experiment to try something new.
+
+## Write a YouTube video for search
+Act as a YouTube SEO strategist. My topic is [TOPIC] for [AUDIENCE].
+Give me 5 video titles people actually search for, then a full outline for the best one: a hook, the intro, 5 sections, a mid-video mention of my product [PRODUCT], and an ending that leads to another video.
+Write the description with keywords, chapters, a link line for my Snapfront store and 3 thumbnail text ideas.
+
+## Make content in my brand voice
+Here are 3 posts I wrote that sound like me: [PASTE]. Learn my voice: sentence length, words I use, humor, how I start and end posts, and what I never say.
+Then write 10 new posts for my niche [NICHE] in the same voice, with hooks, bodies and calls to action, mixing tips, stories and product posts.
+List the voice rules you followed so I can paste them into my assistant's instructions for next time.
+
+## Faceless video: problem then solution
+Use get_product in Snapfront for [PRODUCT NAME]. Write a faceless script in the problem-then-solution style with 4 scenes: the problem, why it's frustrating, the product as the fix with one real detail, and the call to action.
+Keep spoken lines under 15 words each, and make no claims the page doesn't support.
+Make it with make_faceless_video, check it with get_video, then give me 3 alternate first lines to test.
+
+## Content ideas from my store data
+Here's what's selling and what people look at in my store: [PASTE NUMBERS OR NOTES]. Use get_store in Snapfront to see the products.
+Act as a content strategist. Suggest 10 posts that push the products people already want, and 5 posts that test interest in the products nobody looks at.
+For each, give the hook and format, and tell me what result would mean a product deserves more attention.
+
+## Hashtag and keyword research for my niche
+Act as a social search researcher. My niche is [NICHE] and my products are [PRODUCTS].
+Give me 30 phrases people type into TikTok, Instagram, YouTube and Pinterest search for this niche, grouped by intent (learning, comparing, buying).
+Show me how to use them in on-screen text, captions, spoken words and video titles, and give me a short hashtag set for each content pillar.
+
+## Partnership pitch to a creator
+Act as an influencer outreach manager. I want to work with a creator in [NICHE] with [FOLLOWER SIZE]. Write a short, respectful DM and an email pitch offering [OFFER, e.g. free product, affiliate commission, flat fee].
+Include a simple brief: what I'd like them to make, the product link (use get_product in Snapfront) and what I won't ask them to say (no fake claims).
+
+## Content calendar for a holiday
+The holiday is [HOLIDAY] on [DATE]. Use get_store in Snapfront to read my products.
+Make a 3-week content calendar leading up to it: gift ideas, last-day-to-order reminders (with my real shipping cutoff), behind the scenes and last-minute digital gifts.
+Write the hooks and captions, and pick 2 videos to make as faceless videos with make_faceless_video after I approve the scripts.
+
+## "Things I wish I knew" series
+Act as a content writer. Write 10 "things I wish I knew before [STARTING X]" posts for my niche, each with a hook, the lesson and a short story or example. Ask me for my real stories first instead of inventing them.
+Point the last 2 posts honestly to my product as a shortcut, without overselling.
+Suggest the best format for each (talking video, carousel or faceless video) and a posting order that builds up to the product.
+
+## Myth-busting content
+Act as an expert educator in [NICHE]. List 10 common myths people in my audience believe.
+For each, write a 20-second script: the myth, why it's wrong in plain words, and what to do instead. Keep it respectful (no mocking people who believed it) and accurate, and flag anything I should double-check with a reliable source.
+Suggest which myths connect naturally to products in my Snapfront store, and a carousel version for the strongest 3.
+
+## Content that answers buyer objections
+Use get_product in Snapfront for [PRODUCT NAME]. List the top 6 reasons someone might not buy it (price, trust, time, "I can find it free", "not for me", "I'll do it later").
+Write one video or post for each that answers the objection honestly, with a hook, the answer and a call to action.
+Then suggest one FAQ to add to the product page for the most common objection, and add it with update_product after I approve.

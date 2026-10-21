@@ -1,0 +1,190 @@
+# category: Build your Snapfront store
+
+## Write product pages from a supplier listing
+Here is a supplier's listing for a product I want to sell: [PASTE SUPPLIER TITLE, DESCRIPTION AND SPECS].
+Act as an e-commerce copywriter. Supplier listings are often messy, translated or full of keywords. Rewrite it as a clean product page for my Snapfront store:
+- A clear title that a real buyer would search.
+- A tagline with the main benefit.
+- A description in plain English with the real specs (materials, size, weight, what's in the box).
+- 5 selling points and 5 FAQs, including delivery time and returns.
+Remove any claims I can't prove (like "medical grade" or "best in the world"). Mark unclear specs with [CHECK]. Create it as a physical draft with create_draft_product after I approve, priced at [YOUR PRICE].
+
+## Holiday gift guide inside my store
+Act as a holiday merchandiser. Use get_store in Snapfront to read all products.
+Create a gift guide with 4 sections: under $15, under $40, for her, for him (or other groups that fit my products better).
+For each product, write one gift line ("For the friend who never remembers their passwords").
+Then write a holiday headline, a subtitle, and an announcement banner with my real last-order date for delivery by [HOLIDAY DATE]. Preview first, then update after I approve.
+
+## Turn my product into a 3-tier offer
+You are an offer designer. Use get_product in Snapfront for [PRODUCT NAME].
+Create three versions of it:
+- Lite: the smallest useful version at a low price.
+- Standard: the current product.
+- Deluxe: the current product plus bonuses that are cheap for me to add but valuable to the buyer.
+Give each a title, price, what's inside and who it's for. Draft the two new versions with create_draft_product after I approve, and add a selling point to each that points to the next tier up.
+
+## Write my store announcement banners for the year
+Act as my store's marketing calendar. Write 12 announcement banners for my Snapfront store, one for each month, each under 90 characters.
+Base them on real moments: holidays, seasons, payday weeks, back to school, and my own events: [YOUR EVENTS OR OFFERS].
+Mark which ones need a real offer from me and leave a blank for it instead of inventing discounts.
+Set this month's banner with update_store_design after I approve.
+
+## Compare two store looks
+You are a brand designer. Use list_store_looks in Snapfront and pick two looks that could fit my store selling [WHAT YOU SELL].
+Make a preview link of each with preview_store_design, using the same headline and words, so I can compare them side by side.
+Then tell me which one you'd choose for my buyers and why, in three bullet points: first impression, readability on a phone, and how well it fits my products.
+Change the live store only when I tell you which one I want.
+
+## The 60-second product page check
+Use get_product in Snapfront for [PRODUCT NAME]. In under 150 words, tell me:
+1. The one thing on this page most likely to stop a sale.
+2. The one sentence I should add.
+3. Whether the price looks right for what's described.
+4. Whether the first line tells a stranger what it is.
+Then give me the exact fix as ready-to-paste text, and ask if I want you to apply it with update_product.
+
+## Write descriptions for a whole collection at once
+I'm adding a collection of [NUMBER] related products: [LIST THE PRODUCTS WITH ONE DETAIL EACH].
+Act as a catalog copywriter. Give the collection a shared voice and structure so the products look like a set, while each one keeps its own specific details.
+For each product, write a title, tagline, short description, 4 selling points and 3 FAQs. Keep the titles consistent (same format, same order of details).
+Create them as drafts with create_draft_product after I approve the first one, so I can check the style before you do the rest.
+
+## Product page for a printable
+I'm selling a printable: [WHAT IT IS] in [SIZES, e.g. A4 and US Letter], [NUMBER] pages, as a PDF.
+Write a Snapfront product page that answers what printable buyers always ask: paper sizes, whether it's editable, which apps open it, printing at home vs a print shop, and personal vs commercial use.
+Include a title, tagline, description, 5 selling points and 6 FAQs. Price it between [LOW] and [HIGH] and tell me where you'd land. Create it as a digital draft with create_draft_product after I approve.
+
+## Product page for an online course or video lessons
+I'm selling [COURSE NAME]: [NUMBER] lessons, about [TOTAL TIME], on [TOPIC], for [WHO].
+Act as a course launch copywriter. Write a Snapfront product page with a title, a tagline that names the transformation, a description that lists the modules and what they'll be able to do after each, 5 selling points and 6 FAQs (access, how long they keep it, refunds, skill level needed, devices, support).
+Don't promise income or guaranteed results. Create it as a digital draft with create_draft_product.
+
+## Product page for a template pack
+I'm selling a pack of [NUMBER] templates for [TOOL, e.g. Canva, Notion, Google Sheets, CapCut] that help [WHO] do [WHAT].
+Write a Snapfront product page that makes clear: which tool they need (free or paid), how they get the templates (link or file), how to customize them, and what's included.
+Title, tagline, description, 5 selling points and 6 FAQs. Recommend a price. Create it as a digital draft with create_draft_product after I approve.
+
+## Product page for a prompt pack
+I'm selling a pack of [NUMBER] prompts for [CLAUDE, CHATGPT OR BOTH] that help [WHO] do [WHAT].
+Act as a digital product copywriter. Write an honest Snapfront product page: what the prompts do, 3 example prompt titles (not the full prompts), the format (PDF, Notion, Google Doc), how to use them, and who it's not for.
+No income promises and no "secret" claims. Include 5 selling points and 5 FAQs and a recommended price. Create it as a digital draft with create_draft_product.
+
+## Rewrite my product for a different buyer
+Use get_product in Snapfront for [PRODUCT NAME]. Right now it's written for [CURRENT BUYER]. I want to also sell it to [NEW BUYER].
+Act as a positioning expert. Write a second version of the page for the new buyer: new title, tagline, description and selling points that speak to their problems and words. Keep the facts the same.
+Create the new version as a separate draft with create_draft_product so I can test both, and tell me how to promote each one to the right people.
+
+## Check my store before I share the link
+I'm about to share my store link with [WHERE, e.g. my Instagram followers, a Facebook group, a coworker].
+Run check_store and get_store in Snapfront and give me a go or no-go answer.
+List anything embarrassing or broken first (missing photos, missing files, payments not set up, typos in the headline), then anything that could be better. Fix the words I approve with the connector.
+
+## Write a launch-week headline
+I'm launching [PRODUCT OR COLLECTION] this week. Use get_store in Snapfront.
+Write 5 launch headlines and subtitles for my store's top section that announce what's new without sounding like an ad. Add an announcement banner and a button label that takes people straight to shopping.
+Preview the best one with preview_store_design and update the live store after I approve. Give me the old words so I can switch back after launch.
+
+## Price check against the market
+Act as a market researcher. I sell [PRODUCT] at [YOUR PRICE] in my Snapfront store.
+Search the web (if you can) or use what you know to list 5 similar products with their prices and what they include. Compare them to mine with get_product.
+Tell me if my price is low, fair or high for what I offer, and what I could add or remove to justify a higher price. Recommend a price and update it with update_product after I confirm.
+
+## Store tagline that ranks and converts
+Use get_store in Snapfront to read my store and products. Act as an SEO copywriter.
+Write 10 store taglines (under 160 characters) that include the words a buyer would search to find my kind of products, and still sound human.
+Mark your top 2 and explain why each works for search and for people. Update the store tagline with update_store_design after I pick one, and suggest a matching headline.
+
+## Product photos plan
+You are a product photographer. Use get_store in Snapfront to see my products and which ones are missing photos or have weak ones (check_store helps).
+For each product, write a shot list of 4 photos: a clean main photo, the product in use, a detail or scale shot, and a lifestyle or mood shot.
+Tell me how to take each with a phone (light, background, angle). For digital products, describe mockups that show what the buyer gets. Rank which products need photos first.
+
+## Write the perfect button and banner words
+Use get_store in Snapfront. Act as a conversion copywriter.
+Suggest 10 options for my store's main button (under 32 characters) and 10 announcement banners (under 90 characters) that are specific to what I sell. "Shop now" is the last resort.
+Pick the best pair and explain why. Preview it with preview_store_design, then update my store with update_store_design after I approve.
+
+## Make every product page answer "what happens after I pay?"
+Use get_store in Snapfront to read each product.
+For each one, write a short "After you buy" paragraph: for digital products, how the download arrives and how to open it; for physical products, when it ships, how long delivery takes, and how they'll be updated.
+Ask me for my real delivery times and support email first. Add the paragraph to each description with update_product after I approve.
+
+## Turn a blog post or video into a product
+Here is something I made that people liked: [PASTE A POST, VIDEO SCRIPT OR NOTES].
+Act as a product strategist. Turn it into a paid digital product that goes deeper: a guide, a checklist pack, a workbook or a mini course.
+Give me the product title, the outline, what makes it worth paying for compared to the free version, and a price. Then create it as a digital draft in Snapfront with create_draft_product, with full page copy.
+
+## Store makeover for a rebrand
+I'm rebranding my store from [OLD STYLE OR NICHE] to [NEW STYLE OR NICHE].
+Use get_store and list_store_looks in Snapfront. Plan the rebrand: a new look, a new headline, subtitle, tagline and About, and which product titles and descriptions need to change.
+Show me a preview first. Then make the changes in batches (store words first, then products) and confirm each batch with me.
+
+## A product page that sells without me on camera
+I don't want to show my face. Use get_product in Snapfront for [PRODUCT NAME].
+Write a page that builds trust without a face: a specific About line, clear details, a "how it's made" or "how I made it" note, a real guarantee or refund promise (ask me), and FAQs that sound like a human wrote them.
+Then write 3 faceless video scripts for the product and make the best one with make_faceless_video after I approve.
+
+## Check every price for psychological sense
+Use get_store in Snapfront. List all my product prices.
+Flag prices that look odd ($13.47), prices that are too close together to make the more expensive one feel worth it, and products where an original crossed-out price is shown that isn't real.
+Suggest clean, consistent prices across the store (for example ending in 9 or in whole dollars) and update them with update_product after I approve.
+
+## Write a story-led product page
+Use get_product in Snapfront for [PRODUCT NAME]. Ask me 4 questions about why I made it, the problem it solved for me or a customer, and one specific moment that shows it working.
+Then write a story-led description: a 2-sentence opening story, then what it is, what's inside, and who it's for. Keep it under 250 words and keep every detail true. Apply it with update_product after I approve.
+
+## Make a faceless video ad for a sale
+I'm running [OFFER] on [PRODUCT NAME] until [REAL END DATE]. Use get_product in Snapfront.
+Write a 15 to 20 second faceless video script with 3 scenes: the offer in the first 2 seconds, why the product is worth it (one real detail), and the real end date with a call to action. Spoken lines should sound natural, with numbers written as words.
+Make it with make_faceless_video, check it with get_video, and give me the link with a caption and a reminder post for the last day.
+
+## Store audit against my competitor
+Here's a competitor's store or product link and what I know about it: [COMPETITOR DETAILS].
+Act as a competitive analyst. Use get_store in Snapfront to read my store.
+Compare: who each store is for, how clear the offer is, price, trust signals, and product range. Tell me where they beat me and where I beat them.
+Give me 5 changes to win more of their buyers without copying them, and apply the text changes after I approve.
+
+## Turn a physical product into a digital add-on
+I sell [PHYSICAL PRODUCT] in my Snapfront store. Suggest 5 digital products that would help people who buy it (guides, checklists, recipe cards, care guides, planners).
+For the best one, write the outline and full page copy, price it as a low-cost add-on, and create it as a digital draft with create_draft_product. Then add a selling point to the physical product that mentions it.
+
+## Write my store's first email to new buyers
+Use get_store in Snapfront to understand my store and products.
+Write a thank-you email for new buyers: thanks, how to get or use what they bought, one tip to get the most from it, and one gentle suggestion of a related product.
+Keep it under 150 words, warm and specific. Then write two follow-up emails for 3 days and 10 days later. I'll send them myself.
+
+## Rewrite everything in plain English
+Use get_store in Snapfront. Act as a plain-language editor.
+Find every sentence in my store and product pages that is jargon, buzzwords or hard to read ("elevate your journey", "unlock your potential", "premium quality").
+Rewrite each one in plain, specific English that a 12-year-old would understand, keeping the meaning. Show me a before and after list grouped by page, and apply the changes with update_store_design and update_product after I approve.
+
+## Faceless video series for my whole store
+Use get_store in Snapfront. Pick my 5 most giftable or most visual products.
+Write a 5-day faceless video series: one product a day, each with a different hook style (question, bold statement, mistake, list, before and after).
+Show me all scripts first. After I approve, make them with make_faceless_video and give me a posting schedule with captions.
+
+## Make my store ready for a holiday rush
+The holiday is [HOLIDAY] on [DATE]. Use check_store and get_store in Snapfront.
+Make a checklist: products to feature, last-order dates for physical delivery, digital gifts that work last-minute, an announcement banner, a holiday headline, and gift-friendly FAQs.
+Apply the store words and product updates in one batch after I approve, and give me the original text to switch back after the holiday.
+
+## Find quick wins worth $100 this week
+You are a no-nonsense revenue coach. Use check_store and get_store in Snapfront.
+Give me 5 actions I can finish this week that are most likely to bring in my next sales: a page fix, a price test, a bundle, a piece of content and a direct message to past buyers or followers.
+Be specific: the exact text, the product and the time it takes. Don't promise amounts. Apply page changes after I approve.
+
+## Write product pages in Spanish (or another language)
+Use get_product in Snapfront for [PRODUCT NAME]. Write a natural, native-sounding version of the page in [LANGUAGE] for buyers in [COUNTRY OR REGION], not a word-for-word translation.
+Adjust units, sizes and examples for that region. Create it as a separate draft with create_draft_product so I can sell it to that audience, and tell me where to promote it.
+
+## Use an AI model photo from another connector
+I also have [OTHER IMAGE CONNECTOR, e.g. Eromify] connected in this chat. First, ask that connector for a lifestyle photo of a person using or wearing [PRODUCT NAME] in [SETTING], styled to match my store's look (use get_store in Snapfront to read the look and words).
+When the picture is ready, show it to me. If I approve, use Snapfront's use_picture_from_link to set it as the photo for [PRODUCT NAME]. Remind me to label AI-made people as AI where a platform asks and to check the image tool's commercial-use terms.
+
+## Weekly faceless video batch
+You are my weekly video producer with the Snapfront connector. Use get_store to pick 3 products to feature this week: my best seller, a product that needs attention, and a seasonal pick.
+Write one faceless script for each (3 to 5 scenes, natural spoken lines, numbers written as words, no claims the product page doesn't support). Show me the scripts. After I approve, make them with make_faceless_video, check each with get_video, and give me the links with a caption, hashtags and the day to post each.
+
+## Turn my store into a "start here" guide for new visitors
+Use get_store in Snapfront. Act as a UX writer. Figure out the 3 most common reasons people visit my store and the best product for each.
+Rewrite my headline and subtitle so a first-time visitor knows where to start, write an About section that ends with "New here? Start with [PRODUCT]", and add a selling point to each starter product that says who it's perfect for. Preview it with preview_store_design and apply it only after I approve.

@@ -27,6 +27,7 @@ import { salesPage } from "./sales-page.js";
 import { THEME_IDS, publicThemes } from "./themes.js";
 import * as connector from "./connector.js";
 import * as sitePages from "./site-pages.js";
+import * as promptLibrary from "./prompt-library.js";
 import * as studio from "./studio.js";
 import { ensureModel as ensureCutoutModel } from "./cutout.js";
 import * as supplierDirectory from "./supplier-directory.js";
@@ -193,6 +194,17 @@ connector.mountConnector(app, {
 });
 app.get("/connect-ai", (_req, res) => res.set("Cache-Control", "no-cache").send(sitePages.connectAiPage()));
 app.get("/tools", (_req, res) => res.set("Cache-Control", "no-cache").send(sitePages.toolsPage()));
+app.get("/prompts", (req, res) => {
+  const page = promptLibrary.promptsPage((body) => sitePages.promptsShell(body, { count: promptLibrary.library().prompts.length, css: promptLibrary.PROMPTS_CSS }));
+  res.set("Cache-Control", "public, max-age=300");
+  promptLibrary.sendCompressed(req, res, page);
+});
+// The same library as data, for the app or anyone building on it.
+app.get("/api/prompts", (req, res) => {
+  const page = promptLibrary.promptsJson();
+  res.set("Cache-Control", "public, max-age=300").set("Access-Control-Allow-Origin", "*");
+  promptLibrary.sendCompressed(req, res, page, "application/json; charset=utf-8");
+});
 
 /* ---------- helpers ---------- */
 /** Mark an order paid (once) and send the confirmation email. Safe to call from both the webhook and /thanks. */

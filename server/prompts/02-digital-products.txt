@@ -1,0 +1,260 @@
+# category: Digital products that sell
+# blurb: Find, outline, write and package digital products: guides, planners, templates, printables, courses and more. Most end by drafting the product in Snapfront.
+
+## 15 digital product ideas from one skill
+You are a digital product strategist. My skill is [YOUR SKILL], my experience level is [BEGINNER / INTERMEDIATE / EXPERT], and the people I could help are [AUDIENCE].
+Give me 15 digital product ideas. For each one list: who buys it, the problem it solves, the format (PDF guide, template, checklist, workbook, mini course, spreadsheet), how hard it is to make (1 to 5), how fast I could launch it, and a fair price range.
+Rank them by "easiest to make and most likely to sell". Then ask me which one to build, and when I pick, outline it and draft it in my Snapfront store with create_draft_product.
+
+## Mine my own knowledge for products
+Before suggesting anything, interview me. Ask me 10 questions, one at a time, about: things friends ask me for help with, problems I've solved for myself, tools and routines I use daily, mistakes I made and fixed, and topics I could talk about for an hour.
+After the interview, give me 10 digital product ideas based only on my answers, each with a title, who it's for, the format and a price. Mark the 3 strongest and say why.
+
+## The product ladder
+You are a product ecosystem strategist. My skill or niche is [NICHE], my audience size is [ROUGH AUDIENCE SIZE], and the main transformation I help with is [RESULT].
+Design a 4-step product ladder:
+1. A low-priced starter ($5 to $15)
+2. A core product ($27 to $97)
+3. A premium offer ($150+, like a course, a done-for-you pack or a coaching add-on)
+4. A recurring option (a membership, monthly templates or a club)
+For each step give the title, format, promise, price and what naturally leads the buyer to the next step. Then draft the starter product in Snapfront with create_draft_product.
+
+## Validate demand before I build
+Act as a market validation researcher. My product idea is [IDEA] for [AUDIENCE].
+Score it from 1 to 10 on: how painful the problem is, how often people search for it, whether people already pay for solutions, how easy it is to reach these buyers, and how quickly I can make it.
+Then give me 3 ways to test demand in 7 days without building the full product (for example a waitlist post, a pre-sale, a poll or a free sample) with the exact text for each test. Tell me what result would mean "build it" and what would mean "drop it".
+
+## Outline an e-book that people finish
+You are a nonfiction editor. Help me outline an e-book on [TOPIC] for [READER], who wants to [RESULT].
+Give me: a title and subtitle (5 options each), the promise in one sentence, 6 to 10 chapters with 3 key points each, a quick win in the first chapter, one exercise or checklist per chapter, and a closing chapter that tells them what to do next.
+Keep it practical, no filler. Suggest a page count and price. When I approve, draft the product page in Snapfront with create_draft_product.
+
+## Write a chapter of my e-book
+You are a clear, practical writer. Write chapter [NUMBER]: [CHAPTER TITLE] of my e-book [BOOK TITLE] for [READER].
+Use this outline: [PASTE CHAPTER POINTS].
+Rules: short paragraphs, real examples, one step-by-step section, one common mistake and how to avoid it, and a 5-point checklist at the end. Around [WORD COUNT] words. Write like a helpful friend who knows the topic, not a textbook. Ask me for any personal stories or numbers you need instead of making them up.
+
+## Design a printable planner
+Act as a planner designer. I want to sell a printable planner for [WHO, e.g. busy moms, nursing students, small business owners] that helps them [RESULT].
+Give me: the planner name, the page list (cover, yearly, monthly, weekly, daily, trackers, notes) with what goes on each page, the number of pages, sizes to offer (A4, US Letter, A5), a style direction (fonts, colors, layout), and 3 bonus pages that make it feel premium.
+Then write the Snapfront product page and draft it with create_draft_product as a digital product.
+
+## Habit tracker pack
+You are a productivity product designer. Create a habit tracker pack for [AUDIENCE] with 8 different tracker layouts (monthly grid, 30-day challenge, weekly, mood plus habit, water and sleep, reading log, savings, workout).
+For each tracker, describe the layout, labels and how to use it. Suggest a price for the pack and 3 ways to make it different from free trackers online. Then draft the product page in Snapfront.
+
+## Notion template people actually pay for
+Act as a Notion template designer. My template idea is [IDEA, e.g. a freelance client tracker] for [WHO].
+Design it: the main dashboard, the databases (with properties), the views, the automations or buttons, and a "start here" page with instructions.
+Tell me what makes it worth paying for compared to free templates. Write a product page with a title, tagline, description, selling points and FAQs (Notion free plan OK? how do I duplicate it?) and draft it in Snapfront with create_draft_product.
+
+## Spreadsheet product: budget or tracker
+You are a spreadsheet product designer. Build the plan for a [GOOGLE SHEETS / EXCEL] template that helps [WHO] [DO WHAT, e.g. track a wedding budget].
+List the tabs, columns, formulas (in plain words), charts and a setup guide tab. Include sample data rows so it looks good in screenshots.
+Then write the formulas exactly for the main calculations, and write a Snapfront product page for it, priced between $9 and $29. Draft it with create_draft_product.
+
+## Mini course in a weekend
+Act as an instructional designer. I want to make a mini course on [TOPIC] for [AUDIENCE] that I can record this weekend with my phone or screen recordings.
+Give me 5 to 7 lessons (under 10 minutes each), the outline and talking points for each lesson, a worksheet for each lesson, and a final action plan.
+Suggest a price, a course name and a promise that doesn't overpromise. Write the Snapfront product page and draft it with create_draft_product.
+
+## Workbook that turns advice into action
+You are a coaching workbook designer. Turn my topic [TOPIC] into a fill-in workbook for [WHO].
+Include: an intro page, 6 sections, each with a short explanation, 3 to 5 reflection questions, one exercise, and a progress check. End with a 30-day action plan page.
+Write the actual questions and exercises. Then create the Snapfront product page and draft it as a digital product.
+
+## Checklist pack that saves people hours
+Act as a process expert. Create a pack of 10 checklists for [WHO] doing [TASK AREA, e.g. moving house, launching a podcast, starting a cleaning business].
+Each checklist has 10 to 20 specific steps in order, with time estimates where useful. Name each checklist clearly.
+Then write the product page (what's included, the format, how to use it) and draft it in my Snapfront store with a price you recommend.
+
+## Swipe file product for creators
+You are a copywriting coach. Create a swipe file of 50 [HOOKS / CAPTIONS / EMAIL SUBJECT LINES / CTAs] for [NICHE] creators, grouped into 5 styles with 10 each.
+Each one should be fill-in-the-blank and ready to use. Add a one-line tip for each style on when to use it.
+Then write a product page for the swipe file and draft it in Snapfront with create_draft_product.
+
+## Recipe e-book with a hook
+Act as a cookbook editor. I want to sell a recipe e-book for [WHO, e.g. busy parents, high-protein vegetarians, college students] with [NUMBER] recipes.
+Give me: a title with a clear angle, the chapters, a shopping list template, a weekly meal plan page, and the recipe page format (ingredients, steps, time, cost, servings). Write 3 sample recipes in full.
+Write the Snapfront product page and draft it. No health claims beyond what the recipes are (for example "high protein" only if true).
+
+## Kids' activity printables
+You are an early-education product designer. Create a printable activity pack for kids aged [AGE RANGE] on [THEME, e.g. dinosaurs, Halloween, learning letters].
+List 15 pages: coloring, tracing, mazes, matching, counting, cut-and-paste, and a reward chart. Describe each page and the skill it practices.
+Write a product page for parents and teachers, with FAQs about printing and classroom use. Draft it in Snapfront as a digital product.
+
+## Wedding or event planner bundle
+Act as an event planning product designer. Create a printable [WEDDING / BABY SHOWER / BIRTHDAY] planner bundle: checklist timeline, budget sheet, guest list, vendor contacts, day-of schedule, seating chart, and thank-you tracker.
+Describe each page and write the timeline checklist in full. Write the product page and draft it in my Snapfront store at a price you recommend.
+
+## Social media template pack
+You are a social media designer. Create a plan for a pack of [NUMBER] [CANVA] templates for [NICHE] accounts: quote posts, carousel templates, story templates, and promo posts.
+For each template type, describe the layout and give 3 example texts to fill it with. Name the pack and write the product page with FAQs (do they need Canva Pro? can they change colors?). Draft it in Snapfront.
+
+## Digital product from my job experience
+I work as [JOB TITLE] in [INDUSTRY]. Act as a career product strategist.
+List 10 digital products I could make from what I know at work without sharing anything confidential: templates, guides for new hires, interview prep, checklists, scripts.
+Pick the 3 with the biggest buyer group and the easiest path to reach them. Outline the best one and draft it in Snapfront.
+
+## Turn a hobby into a product line
+My hobby is [HOBBY] and I've been doing it for [TIME]. Act as a hobby-business coach.
+Suggest 10 digital products and 5 physical products I could sell to other people into this hobby: beginners, gift buyers and enthusiasts. For each, give the price, the buyer and how hard it is to make (1 to 5).
+Then plan a 3-product launch that starts with the easiest one, and draft the first product in my Snapfront store with create_draft_product, with a full product page.
+
+## Guide for a life event
+Act as a practical guide writer. Create a guide for people going through [LIFE EVENT, e.g. a first apartment, a new baby, a divorce, retirement, caring for a parent].
+Give me the chapters, the checklists, the scripts for hard conversations and the common money mistakes to avoid. Keep the tone kind and practical.
+Suggest where these buyers look for help online. Write the product page and draft it in Snapfront. Add a note that it's not legal, medical or financial advice where that applies.
+
+## Study guide or exam prep pack
+You are an exam prep designer. Create a study pack for [EXAM OR SUBJECT] for [STUDENT TYPE].
+Include: a study schedule (4 or 8 weeks), topic summaries, memory aids, 50 practice questions with answers and explanations, and a test-day checklist. Write 10 of the practice questions in full as a sample.
+Write a product page and draft it in Snapfront. Don't claim a guaranteed pass.
+
+## Digital product titles that sell
+I made a digital product about [TOPIC] for [WHO]. Act as a title expert.
+Write 25 titles in 5 styles: the result, the method, the number ("The 7-Day..."), the identity ("The Busy Nurse's..."), and the problem. Add a subtitle for the top 5.
+Tell me which title is the most searchable and which is the most clickable, and update my Snapfront product title with update_product when I pick one.
+
+## Package my product so it feels premium
+Act as a product packaging designer for digital goods. My product is [PRODUCT].
+Suggest how to package it so it feels worth more: a welcome page, a quick-start guide, a bonus, a clean file name system, a certificate or progress tracker, and a thank-you note with next steps.
+Write the welcome page and quick-start guide in full. Then update my Snapfront product description with update_product to mention what's included.
+
+## Bonus ideas that cost me nothing
+My product is [PRODUCT] for [WHO]. Give me 10 bonus ideas I can add that cost me little time but feel valuable to buyers: checklists, templates, cheat sheets, swipe files, a short video, a calendar, a resource list.
+Pick the 3 best and write one of them in full. Update the product's selling points in Snapfront to mention the bonuses after I approve.
+
+## Write the content for my digital product, section by section
+You are my writing partner for [PRODUCT TITLE], a [FORMAT] for [WHO]. Here is the outline: [PASTE OUTLINE].
+Write section [NUMBER] now. Match this tone: [TONE]. Use examples from [WHERE MY BUYERS LIVE OR WORK]. After the section, list what I need to check or add personally (stories, numbers, photos).
+When we finish all sections, write a final "what to do next" page and the Snapfront product page.
+
+## Budget planner product for a niche
+Create a budget planner product for [NICHE, e.g. single moms, gig workers, couples paying off debt, teens with first jobs].
+Include: a monthly budget page, a bill tracker, a debt payoff tracker, a savings goals page, a no-spend challenge, and a "money date" weekly check-in page. Explain each page and the method behind it in plain English.
+Write a product page with a clear promise (no promises of getting rich) and draft it in Snapfront.
+
+## Lead magnet that sells the paid product
+Act as a funnel strategist. My paid product is [PRODUCT]. Create a free lead magnet that solves a small piece of the same problem and makes the paid product the natural next step.
+Give me the lead magnet title, its 1 to 3 page content (write it), and the last page that introduces the paid product.
+Then write the Snapfront product page for the paid product so the two connect, and a $0 or very low-price version if I want to give the lead magnet through my store.
+
+## Digital product for teachers
+You are a teacher-resource designer. Create a resource for [GRADE] teachers teaching [SUBJECT OR SKILL].
+Include a lesson plan, a slide outline, 2 worksheets, an answer key, an exit ticket and a rubric. Write the lesson plan and one worksheet in full.
+Write a product page with FAQs about classroom use and licensing (one teacher vs a whole school). Draft it in Snapfront.
+
+## Template pack for small businesses
+Act as a small-business operations consultant. Create a template pack for [BUSINESS TYPE, e.g. cleaning businesses, hair salons, food trucks].
+Include: an invoice, a quote, a booking form, a client intake form, a price list, a social media plan and a monthly expense tracker. Describe each and write the intake form questions in full.
+Write the product page and draft it in Snapfront at a business-friendly price.
+
+## Make my product better than the free stuff
+My product is [PRODUCT]. Free versions of this exist on [WHERE]. Act as a product improvement strategist.
+List 10 ways my paid version can be clearly better: depth, specificity, done-for-you parts, better design, examples, support, updates, or a niche focus.
+Pick the 5 that matter most to buyers and rewrite my Snapfront product's selling points to show them, using update_product after I approve.
+
+## Seasonal digital product drop
+Act as a seasonal product planner. The next season or holiday is [SEASON / HOLIDAY]. My niche is [NICHE].
+Give me 10 seasonal digital product ideas I could make in under a week (planners, printables, gift tags, menus, challenges, party games).
+Pick the best 3, outline them and draft the best one in Snapfront with a launch date and price. Remind me of the last good date to start promoting it.
+
+## Journal with prompts
+You are a journal designer. Create a guided journal for [WHO] focused on [THEME, e.g. gratitude, grief, sobriety, new moms, career change, faith].
+Give me 60 thoughtful prompts in 6 sections, a short introduction, and how to use the journal. Keep the tone [TONE].
+Write the product page and draft it in Snapfront as a printable or digital journal. If the theme is sensitive, add a gentle note pointing to professional support.
+
+## Price my digital product
+Act as a digital pricing expert. My product is [PRODUCT], about [SIZE, e.g. 40 pages, 12 templates, 2 hours of video], for [WHO]. Similar products sell for [WHAT YOU'VE SEEN].
+Compare low, mid and premium pricing with pros and cons for each. Recommend a starting price, a launch price and a plan to raise it after [NUMBER] sales or reviews.
+Update the product in Snapfront with update_product after I confirm.
+
+## Digital product for pet owners
+Create 8 digital product ideas for [DOG / CAT / OTHER PET] owners: training plans, care trackers, homemade treat recipes, new-puppy checklists, travel checklists, vet visit logs, pet-sitter instruction sheets and memorial journals.
+Pick the strongest one for [WHO, e.g. first-time owners, busy owners, rescue adopters], write the outline and the first section in full, then write the product page and draft it in Snapfront.
+Avoid medical claims, and add "check with your vet" where health or diet is involved.
+
+## Fitness or wellness program as a PDF
+You are a certified-trainer-style program writer (I'll check it). Create a [4 / 8 / 12]-week program for [WHO] who want to [GOAL] with [EQUIPMENT OR NONE].
+Give the weekly plan, each workout with sets and reps, how to progress, rest days, and a tracker page. Add safety notes and a "check with your doctor" line.
+Write a product page with honest results language and draft it in Snapfront.
+
+## Digital product for side hustlers
+Create a digital product for people starting [SIDE HUSTLE, e.g. pet sitting, reselling, freelance editing, a cleaning business].
+Include: a startup checklist, pricing calculator steps, client scripts, a simple contract outline, and a 30-day getting-started plan. Write the startup checklist and client scripts in full.
+Write the product page and draft it in Snapfront. Add a note that legal requirements vary by location.
+
+## Turn my product into an audio or video version
+My product is [PRODUCT], a [FORMAT] about [TOPIC]. Act as a multimedia producer.
+Plan an audio or video version: the episode or lesson list that follows the product's sections, the script for the first one in full, and how to record and edit it cheaply with a phone or laptop.
+Suggest how to sell both versions in Snapfront (separate products, a bundle, or a premium tier with the price for each), and draft the new version with create_draft_product.
+
+## Product refresh for year two
+My product [PRODUCT] launched [WHEN]. Use get_product in Snapfront.
+Act as a product manager. Suggest what to update for this year: outdated info, new sections, better examples, new bonuses and a refreshed title or cover idea.
+Write the new sections list and the updated product page, and apply the page update after I approve. Suggest how to tell past buyers about the update.
+
+## Make digital products from AI images responsibly
+I want to sell digital products made with AI images, like [WALL ART / CLIP ART / COLORING PAGES / STICKERS].
+Act as a careful product advisor. Tell me which product types sell, how to make the images unique and useful (not generic), what file sizes and formats buyers need, and how to describe them honestly as AI-assisted.
+Remind me to check the image tool's commercial-use terms and to avoid copying artists, brands or characters. Draft one product page in Snapfront.
+
+## Coloring book product
+Act as a coloring book designer. Create a [NUMBER]-page coloring book for [ADULTS / KIDS AGED X] on [THEME].
+List each page idea with a short description, the line style (thick and simple or fine and detailed), a cover concept and a title with a subtitle.
+Tell me whether to sell it as a printable PDF, printed copies, or both, and what file size and paper settings to use. Write the product page with printing FAQs and draft it in Snapfront. If I use AI to make the line art, remind me to check the tool's commercial-use terms and clean up the lines by hand.
+
+## Digital product idea finder from Reddit and comments
+Here are questions and complaints I collected from Reddit threads, comments or groups in my niche: [PASTE THEM].
+Act as a product researcher. Group them into problems, rank the problems by how often and how strongly people mention them, and suggest a digital product for each of the top 5.
+For the best one, outline it, price it and draft it in Snapfront.
+
+## Write the "How to use this" page
+My product is [PRODUCT] in [FORMAT, e.g. a PDF, a Notion template, a spreadsheet, a video course].
+Write a friendly "Start here" page that tells buyers how to open it on phone and computer, how to use it step by step, how long it takes, one quick win they can do today, common problems and fixes, and where to get help.
+Then add a short version of it to my Snapfront product description with update_product, so buyers know what to expect before they pay.
+
+## Membership or monthly drop idea
+Act as a subscription product strategist. My niche is [NICHE]. Design a monthly digital drop that people pay for every month: what they get each month, a 12-month content calendar, a price, and how to keep people subscribed.
+Write the first month's content outline and a product page for the first month as a single product in Snapfront, so I can test demand before going recurring.
+
+## Make my product accessible
+My product is [PRODUCT]. Act as an accessibility advisor for digital products.
+Check my plan for: readable fonts and sizes, color contrast, alt text for images, a plain-text version, screen-reader-friendly PDFs and captions for videos. Give me a checklist and fixes.
+Add a line to my Snapfront product page about accessibility features I really include, with update_product.
+
+## Planner for a profession
+Create a planner made for [PROFESSION, e.g. real estate agents, nurses, teachers, truck drivers, hairstylists].
+Include pages that match their real workday: shifts or appointments, clients, mileage or tips, goals, continuing education and self-care. Explain each page and why that profession needs it.
+Use the words people in that job actually use, write the product page and FAQs, and draft it in Snapfront. Suggest 3 places those workers gather online to promote it.
+
+## Digital product that solves a 5-minute problem
+Act as a micro-product strategist. List 20 small, annoying problems people in [NICHE] have that a tiny digital product could fix in 5 minutes: a template, a script, a calculator, a checklist, a cheat sheet.
+Price each at $3 to $9, and rank them by how often people hit the problem.
+Pick the 5 best, write the first one in full, and create it as a draft in Snapfront with a short, clear product page.
+
+## Turn a digital product into a course
+I already sell [PRODUCT] in my Snapfront store. Act as a course designer.
+Turn it into a short video course: lessons that follow the product's sections, a worksheet per lesson, a final project, and an optional community or Q&A option.
+Price it above the product and explain why it's worth more. Write the course page, draft it in Snapfront with create_draft_product, and add a selling point to the original product that mentions the course.
+
+## Write the description for an "everything" bundle
+Use get_store in Snapfront. Act as a bundle copywriter and create an "everything bundle" of all my digital products.
+Write the bundle title, a tagline, a description that lists everything inside with what each piece does, the total value at full price, a fair bundle price, 5 selling points and 5 FAQs (how files arrive, what if I already own one, updates).
+Draft it with create_draft_product, and suggest how to promote it to past buyers.
+
+## Make a sample or free preview
+My product is [PRODUCT]. Act as a sampling strategist.
+Pick the 10% of it that best shows its value and make a free preview: which pages or parts to include, a short intro, and a last page that leads to the full product with what they'll get.
+Write the preview's intro and last page in full, add a line to my Snapfront product description that mentions the free sample, and suggest where to share the preview.
+
+## Digital product for a local niche
+I live in [CITY OR REGION]. Act as a local market researcher.
+Suggest 10 digital products local people or businesses here would buy: local guides, event planners, business templates, tourist guides, school-district checklists, moving-to-town guides.
+Pick the best one, outline it, write the product page and draft it in Snapfront. Suggest where to promote it locally (groups, businesses, events) and a partner who might share it.
+
+## My product's sequel
+My product [PRODUCT] sells well. Act as a product strategist. First ask me 3 questions about what buyers do after using it and what they ask me for.
+Then suggest 5 follow-up products (a part two, an advanced version, a companion, a refill or a tool) with prices.
+Outline the best one, draft it in Snapfront, and write the message to offer it to past buyers.
