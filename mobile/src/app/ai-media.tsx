@@ -68,7 +68,7 @@ export default function AiMediaScreen() {
   const left = a ? Math.max(0, a.limits[mode] - a.usage[mode]) : null;
   const videoLocked = mode === "video" && a?.plan !== "pro";
   return (
-    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, paddingHorizontal: space.xl, gap: space.lg, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
       <Segmented value={mode} onChange={(v) => { setMode(v); setPreset(null); }} options={[{ value: "scene", label: "Lifestyle photo" }, { value: "video", label: "Video clip" }]} />
       <Body muted>{mode === "scene"
         ? "Put your product in a real-life scene, with people if you like: a mirror routine, in someone’s hand, on a café table."

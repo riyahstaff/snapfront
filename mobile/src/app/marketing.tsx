@@ -143,14 +143,14 @@ function MarketingContent({ me, storeId, storeRevision, initialProductId, imageU
   const publishingPanel = <SocialPublishing storeId={storeId} storeRevision={storeRevision} renderedPost={result} caption={caption} format={resultFormat} disabled={!!busy} onReviewChange={setPublishingReviewOpen} />;
 
   if (!opts || !products) return (
-    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }}>
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, paddingHorizontal: space.xl, gap: space.xl, paddingBottom: space.xxl }}>
       <View style={{ gap: space.md }}><H2>Marketing</H2><Notice text={msg?.text ?? null} tone={msg?.tone} /><ActivityIndicator color={c.accent} /></View>
       {publishingPanel}
     </PageScroll>
   );
 
   if (!products.length) return (
-    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }}>
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, paddingHorizontal: space.xl, gap: space.xl, paddingBottom: space.xxl }}>
       <View style={{ gap: space.md }}>
         <H2>Add a product first</H2>
         <Body muted>Posts are made from your product photos. Snap or add a product, then come back here.</Body>
@@ -163,7 +163,7 @@ function MarketingContent({ me, storeId, storeRevision, initialProductId, imageU
 
   const left = me ? Math.max(0, me.account.limits.post - me.account.usage.post) : null;
   return (
-    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, paddingHorizontal: space.xl, gap: space.xl, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
       <Step n={1} title="Pick a product">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
           {products.map((candidate) => (

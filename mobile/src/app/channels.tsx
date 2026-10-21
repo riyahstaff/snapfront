@@ -44,7 +44,7 @@ export default function ChannelsScreen() {
   );
 
   return (
-    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, paddingHorizontal: space.xl, gap: space.xl, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
 
       <View style={{ gap: space.md }}>

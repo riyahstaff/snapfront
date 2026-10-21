@@ -32,7 +32,7 @@ export default function AssistantScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
-      <PageScroll ref={scroll} contentContainerStyle={{ padding: space.lg, gap: space.lg, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+      <PageScroll ref={scroll} contentContainerStyle={{ padding: space.lg, paddingHorizontal: space.xl, gap: space.lg, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         {locked && turns.length === 0 ? (
           <View style={{ gap: space.lg, flex: 1, justifyContent: "flex-end" }}>
             <View style={{ gap: space.sm }}>
@@ -73,7 +73,7 @@ export default function AssistantScreen() {
         ) : turns.map((t) => <Bubble key={t.id} turn={t} />)}
       </PageScroll>
 
-      {locked ? null : <View style={{ padding: space.md, borderTopWidth: 1, borderColor: c.line, backgroundColor: c.surface }}><View style={[{ flexDirection: "row", alignItems: "flex-end", gap: space.sm }, column]}>
+      {locked ? null : <View style={{ padding: space.md, paddingHorizontal: Platform.OS === "web" ? space.xl : space.md, borderTopWidth: 1, borderColor: c.line, backgroundColor: c.surface }}><View style={[{ flexDirection: "row", alignItems: "flex-end", gap: space.sm }, column]}>
         <TextInput
           value={text} onChangeText={setText} placeholder={busy ? "Working on it…" : "Ask your store assistant"} placeholderTextColor={c.muted}
           multiline editable={!busy} accessibilityLabel="Message"

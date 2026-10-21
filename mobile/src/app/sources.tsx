@@ -24,7 +24,7 @@ export default function SourcesScreen() {
     </Pressable>
   );
   return (
-    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }}>
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, paddingHorizontal: space.xl, gap: space.lg, paddingBottom: space.xxl }}>
       <View style={{ gap: space.sm }}>
         <Text style={[type.body, { color: c.ink }]}>Places to find products to sell, from huge catalogs to US warehouses and print on demand. Snapfront already plugs into the ones marked Built in.</Text>
         <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start", backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.md, padding: space.md }}>
