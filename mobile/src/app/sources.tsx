@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
-import { Notice, Pill } from "@/components/ui";
+import { Notice, Pill, PageScroll } from "@/components/ui";
 import { api, ApiError, type SourceDirectory, type SourceSupplier } from "@/lib/api";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
 
@@ -24,7 +24,7 @@ export default function SourcesScreen() {
     </Pressable>
   );
   return (
-    <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }}>
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }}>
       <View style={{ gap: space.sm }}>
         <Text style={[type.body, { color: c.ink }]}>Places to find products to sell, from huge catalogs to US warehouses and print on demand. Snapfront already plugs into the ones marked Built in.</Text>
         <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start", backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.md, padding: space.md }}>
@@ -45,7 +45,7 @@ export default function SourcesScreen() {
         </View>
       ))}
       <Text style={[type.small, { color: c.muted }]}>Prices and terms as of {dir.updated}. They change, so check each site before you sign up.</Text>
-    </ScrollView>
+    </PageScroll>
   );
 }
 

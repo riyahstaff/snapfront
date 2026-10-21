@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { account, useMe } from "@/lib/account-store";
 import { api } from "@/lib/api";
 import { alpha, fonts, theme, useColors } from "@/lib/theme";
+import { PAGE_MAX, type PageWidth } from "@/lib/page-width";
 
 // Keep the marketing funnel separate from the signed-in merchant workspace.
 export const NAV: { label: string; href: Href; match: (p: string) => boolean }[] = [
@@ -138,11 +139,11 @@ function NavLink({ label, href, active }: { label: string; href: Href; active: b
 }
 
 /** Page title bar for inner pages: back link, title and any page actions, aligned with the content. */
-export function PageHeader({ title, canGoBack, onBack, right }: { title: string; canGoBack: boolean; onBack: () => void; right?: React.ReactNode }) {
+export function PageHeader({ title, canGoBack, onBack, right, width = "full" }: { title: string; canGoBack: boolean; onBack: () => void; right?: React.ReactNode; width?: PageWidth }) {
   const c = useColors();
   return (
     <View style={{ backgroundColor: c.bg }}>
-      <View style={{ width: "100%", maxWidth: PAGE_WIDTH, alignSelf: "center", paddingHorizontal: 24, paddingTop: 22, paddingBottom: 4, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 66 }}>
+      <View style={{ width: "100%", maxWidth: PAGE_MAX[width] ?? PAGE_WIDTH, alignSelf: "center", paddingHorizontal: 24, paddingTop: 22, paddingBottom: 4, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 66 }}>
         {canGoBack ? (
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onBack}
             style={(s: Hover): ViewStyle => ({ width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: c.line, alignItems: "center", justifyContent: "center", backgroundColor: s.hovered ? c.sunk : "transparent" })}>

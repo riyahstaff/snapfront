@@ -1,12 +1,12 @@
 // Earn with Snapfront: anyone can share their own Snapfront link and earn a commission on each
 // Lifetime sale it brings in. Stats, payouts and a ready-made kit for TikTok and Instagram.
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Share, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Pressable, Share, Text, View, useWindowDimensions } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
-import { Button, Field, Notice, Pill } from "@/components/ui";
+import { Button, Field, Notice, Pill, PageScroll } from "@/components/ui";
 import { Card, CopyLink, Tile, Toggle, count, money, when } from "@/components/panel";
 import { ApiError, partners, type PartnerView } from "@/lib/api";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
@@ -20,9 +20,9 @@ export default function EarnScreen() {
   useFocusEffect(useCallback(() => { partners.me().then(setData).catch((e) => setError(errText(e, "Couldn't load the partner program."))); }, []));
   if (!data) return <View style={{ flex: 1, backgroundColor: c.bg, padding: space.xl }}>{error ? <Notice text={error} tone="error" /> : <ActivityIndicator color={c.accent} />}</View>;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">
+    <PageScroll style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">
       {data.joined ? <Dashboard data={data} onChange={setData} /> : <Join data={data} onJoined={setData} />}
-    </ScrollView>
+    </PageScroll>
   );
 }
 

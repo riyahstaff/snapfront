@@ -1,9 +1,9 @@
 // Snapfront Academy: short narrated lessons, grouped into modules, with progress.
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Notice, Pill } from "@/components/ui";
+import { Button, Notice, Pill, PageScroll } from "@/components/ui";
 import { academy, ApiError, type AcademyCatalog } from "@/lib/api";
 import { PresenterCard } from "@/components/academy-presenter";
 import { radius, space, type, useColors } from "@/lib/theme";
@@ -17,7 +17,7 @@ export default function AcademyScreen() {
   const pct = data.total ? Math.round((data.done / data.total) * 100) : 0;
   const next = data.modules.flatMap((m) => m.lessons).find((l) => !l.done && !l.locked);
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }}>
+    <PageScroll style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }}>
       <View style={{ gap: space.sm }}>
         <Text style={[type.body, { color: c.muted }]}>Short video lessons on building your store, making content, going live and earning more. Each one ends with a button that opens the tool to do it.</Text>
         <View style={{ height: 8, borderRadius: 4, backgroundColor: c.sunk, overflow: "hidden" }}>
@@ -47,6 +47,6 @@ export default function AcademyScreen() {
           </View>
         </View>
       ))}
-    </ScrollView>
+    </PageScroll>
   );
 }

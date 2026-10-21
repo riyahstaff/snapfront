@@ -13,6 +13,7 @@ import { useColors } from "@/lib/theme";
 import { onUpgradeNeeded } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
 import { startBilling } from "@/lib/billing";
+import { pageWidthFor } from "@/lib/page-width";
 import { PAGE_WIDTH, PageHeader, WebNav } from "./web-nav";
 
 const TITLES: Record<string, string> = {
@@ -27,7 +28,7 @@ const TITLES: Record<string, string> = {
 function Header({ options, route, back, navigation }: NativeStackHeaderProps) {
   const title = typeof options.title === "string" && options.title ? options.title : TITLES[route.name] ?? "";
   const right = options.headerRight?.({ canGoBack: Boolean(back), tintColor: undefined });
-  return <PageHeader title={title} canGoBack={Boolean(back) || route.name === "ugc"} onBack={() => (navigation.canGoBack() ? navigation.goBack() : router.replace(route.name === "ugc" ? "/(tabs)/store" : "/"))} right={right} />;
+  return <PageHeader width={pageWidthFor(route.name)} title={title} canGoBack={Boolean(back) || route.name === "ugc"} onBack={() => (navigation.canGoBack() ? navigation.goBack() : router.replace(route.name === "ugc" ? "/(tabs)/store" : "/"))} right={right} />;
 }
 
 export default function WebRootLayout() {

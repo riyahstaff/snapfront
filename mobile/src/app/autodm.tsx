@@ -1,9 +1,9 @@
 // Instagram AutoDM: when someone comments or messages a keyword ("LINK", "PRICE"), the seller's
 // Instagram replies by DM with a link, and can answer the comment publicly too.
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { Button, Field, Notice, Pill } from "@/components/ui";
+import { Button, Field, Notice, Pill, PageScroll } from "@/components/ui";
 import { Card, ChipRow, TextAction, Toggle, count, when } from "@/components/panel";
 import { api, ApiError, autodm, type AutoDmRule, type AutoDmRuleInput, type AutoDmStatus, type Product } from "@/lib/api";
 import { radius, space, type, useColors } from "@/lib/theme";
@@ -27,7 +27,7 @@ export default function AutoDmScreen() {
   const b = data.blocker ? BLOCKERS[data.blocker] : null;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">
+    <PageScroll style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">
       <Text style={[type.body, { color: c.muted }]}>Post “Comment LINK and I’ll DM it to you.” When someone does, your Instagram sends them the link straight away, even while you sleep.</Text>
       {b ? (
         <Card title={b.title}>
@@ -83,7 +83,7 @@ export default function AutoDmScreen() {
         </Card>
       ) : null}
       <Text style={[type.small, { color: c.muted }]}>Each person gets a reply once a day per keyword. Instagram allows replies to comments within 7 days.</Text>
-    </ScrollView>
+    </PageScroll>
   );
 }
 

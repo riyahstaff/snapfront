@@ -5,7 +5,7 @@ import { Image } from "expo-image";
 import * as Clipboard from "expo-clipboard";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Ionicons } from "@expo/vector-icons";
-import { Body, Button, Field, H2, Notice, Segmented } from "@/components/ui";
+import { Body, Button, Field, H2, Notice, Segmented, PageScroll } from "@/components/ui";
 import { SocialPublishing } from "@/components/social-publishing";
 import { api, ApiError, type MarketingOptions, type Me, type PostCopy, type PostFormat, type PostKind, type Product, type RenderedPost } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
@@ -143,14 +143,14 @@ function MarketingContent({ me, storeId, storeRevision, initialProductId, imageU
   const publishingPanel = <SocialPublishing storeId={storeId} storeRevision={storeRevision} renderedPost={result} caption={caption} format={resultFormat} disabled={!!busy} onReviewChange={setPublishingReviewOpen} />;
 
   if (!opts || !products) return (
-    <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }}>
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }}>
       <View style={{ gap: space.md }}><H2>Marketing</H2><Notice text={msg?.text ?? null} tone={msg?.tone} /><ActivityIndicator color={c.accent} /></View>
       {publishingPanel}
-    </ScrollView>
+    </PageScroll>
   );
 
   if (!products.length) return (
-    <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }}>
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }}>
       <View style={{ gap: space.md }}>
         <H2>Add a product first</H2>
         <Body muted>Posts are made from your product photos. Snap or add a product, then come back here.</Body>
@@ -158,12 +158,12 @@ function MarketingContent({ me, storeId, storeRevision, initialProductId, imageU
         <Notice text={msg?.text ?? null} tone={msg?.tone} />
       </View>
       {publishingPanel}
-    </ScrollView>
+    </PageScroll>
   );
 
   const left = me ? Math.max(0, me.account.limits.post - me.account.usage.post) : null;
   return (
-    <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
       <Step n={1} title="Pick a product">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
           {products.map((candidate) => (
@@ -242,7 +242,7 @@ function MarketingContent({ me, storeId, storeRevision, initialProductId, imageU
         </View>
       ) : null}
       {publishingPanel}
-    </ScrollView>
+    </PageScroll>
   );
 }
 

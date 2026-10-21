@@ -1,9 +1,9 @@
 // Ad pixels: paste the IDs from Meta, TikTok, Google Analytics and Pinterest, and the store reports
 // views, add-to-carts, checkouts, purchases and sign-ups to them, so ads can find more buyers.
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { Button, Field, Notice } from "@/components/ui";
+import { Button, Field, Notice, PageScroll } from "@/components/ui";
 import { Card } from "@/components/panel";
 import { ApiError, pixels, type PixelKey, type PixelsView } from "@/lib/api";
 import { space, type, useColors } from "@/lib/theme";
@@ -40,7 +40,7 @@ export default function PixelsScreen() {
 
   if (!data) return <View style={{ flex: 1, backgroundColor: c.bg, padding: space.xl }}>{msg ? <Notice text={msg.text} tone="error" /> : <ActivityIndicator color={c.accent} />}</View>;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">
+    <PageScroll style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">
       <Text style={[type.body, { color: c.muted }]}>Running ads? Add your pixel IDs so Meta, TikTok, Google and Pinterest can see who buys, measure your ads and find more people like your customers.</Text>
       {!data.allowed ? (
         <Card title="Ad pixels come with Snapfront Pro">
@@ -64,6 +64,6 @@ export default function PixelsScreen() {
         ))}
         <Text style={[type.small, { color: c.muted }]}>Pixels never load in previews or theme demos, so testing your store doesn&apos;t count as visits or sales.</Text>
       </Card>
-    </ScrollView>
+    </PageScroll>
   );
 }

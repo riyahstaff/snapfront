@@ -2,9 +2,9 @@
 // brings in. The seller sets the commission, approves people, sees clicks and sales per affiliate,
 // and marks payouts once they've paid them.
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Alert, Linking, Pressable, Text, View, useWindowDimensions } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { Button, Field, Notice, Pill } from "@/components/ui";
+import { Button, Field, Notice, Pill, PageScroll } from "@/components/ui";
 import { Card, CopyLink, Line, TextAction, Tile, Toggle, count, money, when } from "@/components/panel";
 import { affiliates, ApiError, business, type Affiliate, type AffiliateOverview } from "@/lib/api";
 import { radius, space, type, useColors } from "@/lib/theme";
@@ -91,7 +91,7 @@ export default function AffiliatesScreen() {
 }
 
 function ScrollPage({ children }: { children: React.ReactNode }) {
-  return <ScrollView contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">{children}</ScrollView>;
+  return <PageScroll contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">{children}</PageScroll>;
 }
 
 function SettingsCard({ data, onSaved }: { data: AffiliateOverview; onSaved: (d: AffiliateOverview) => void }) {

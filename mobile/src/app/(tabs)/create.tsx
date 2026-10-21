@@ -76,7 +76,7 @@ export default function CreateScreen() {
           const on = t.id === typeForGeneration;
           return (
             <Pressable key={t.id} disabled={Boolean(templateId)} onPress={() => setType(t.id)} accessibilityRole="radio" accessibilityState={{ selected: on, disabled: Boolean(templateId) }}
-              style={{ ...(Platform.OS === "web" ? { flexGrow: 1, flexBasis: 220, minHeight: 92 } : null), flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.md, borderWidth: on ? 2 : 1, borderColor: on ? c.accent : c.line, backgroundColor: c.surface, opacity: templateId && !on ? 0.45 : 1 }}>
+              style={{ ...(Platform.OS === "web" ? { flexGrow: 1, flexBasis: 180, minHeight: 92 } : null), flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, borderRadius: radius.md, borderWidth: on ? 2 : 1, borderColor: on ? c.accent : c.line, backgroundColor: c.surface, opacity: templateId && !on ? 0.45 : 1 }}>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={[type.heading, { color: c.ink }]}>{t.name}</Text>
                 <Text style={[type.small, { color: c.muted }]}>{t.sub}</Text>

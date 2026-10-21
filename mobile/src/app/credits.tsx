@@ -1,10 +1,10 @@
 // Credits: the balance, the packs (sold on the website only, like memberships) and the history.
 // Credits pay for avatar videos and talking avatars; failed generations always get them back.
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Platform, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Platform, Text, View, useWindowDimensions } from "react-native";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Notice, Pill } from "@/components/ui";
+import { Button, Notice, Pill, PageScroll } from "@/components/ui";
 import { Card } from "@/components/panel";
 import { api, ApiError, type CreditPack, type CreditsView } from "@/lib/api";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
@@ -44,7 +44,7 @@ export default function CreditsScreen() {
   if (!data) return <View style={{ flex: 1, backgroundColor: c.bg, padding: space.xl }}>{msg ? <Notice text={msg.text} tone="error" /> : <ActivityIndicator color={c.accent} />}</View>;
   const cols = width >= 900 ? 4 : width >= 560 ? 2 : 1;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }}>
+    <PageScroll style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }}>
       <View style={{ gap: 4 }}>
         <Text style={[type.small, { color: c.muted, textTransform: "uppercase", letterSpacing: 1.4, fontFamily: fonts.bodyBold }]}>Your credits</Text>
         <View style={{ flexDirection: "row", alignItems: "baseline", gap: 10 }}>
@@ -96,6 +96,6 @@ export default function CreditsScreen() {
           </View>
         )) : <Text style={[type.body, { color: c.muted }]}>Nothing yet. Credits you buy and spend show up here.</Text>}
       </Card>
-    </ScrollView>
+    </PageScroll>
   );
 }

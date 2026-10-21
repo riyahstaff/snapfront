@@ -7,12 +7,13 @@ import { router, Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts, useColors } from "@/lib/theme";
 import { assistant } from "@/lib/assistant-store";
+import { pageWidthFor } from "@/lib/page-width";
 import { PAGE_WIDTH, PageHeader } from "./web-nav";
 
 type HeaderProps = { options: { headerTitle?: unknown; title?: string; headerRight?: (p: { canGoBack: boolean }) => React.ReactNode }; route: { name: string } };
 function Header({ options, route }: HeaderProps) {
   const title = typeof options.headerTitle === "string" ? options.headerTitle : options.title ?? route.name;
-  return <PageHeader title={title} canGoBack={false} onBack={() => router.replace("/")} right={options.headerRight?.({ canGoBack: false })} />;
+  return <PageHeader width={pageWidthFor(route.name)} title={title} canGoBack={false} onBack={() => router.replace("/")} right={options.headerRight?.({ canGoBack: false })} />;
 }
 
 export default function WebTabsLayout() {

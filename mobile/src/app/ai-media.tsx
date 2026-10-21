@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { Image } from "expo-image";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Ionicons } from "@expo/vector-icons";
-import { Body, Button, Field, H2, Notice, Pill, Segmented } from "@/components/ui";
+import { Body, Button, Field, H2, Notice, Pill, Segmented, PageScroll } from "@/components/ui";
 import { EnginePicker } from "@/components/engine-picker";
 import { api, ApiError, type AiJob, type AiPresets, type Product } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
@@ -68,7 +68,7 @@ export default function AiMediaScreen() {
   const left = a ? Math.max(0, a.limits[mode] - a.usage[mode]) : null;
   const videoLocked = mode === "video" && a?.plan !== "pro";
   return (
-    <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
       <Segmented value={mode} onChange={(v) => { setMode(v); setPreset(null); }} options={[{ value: "scene", label: "Lifestyle photo" }, { value: "video", label: "Video clip" }]} />
       <Body muted>{mode === "scene"
         ? "Put your product in a real-life scene, with people if you like: a mirror routine, in someone’s hand, on a café table."
@@ -117,7 +117,7 @@ export default function AiMediaScreen() {
 
       {jobs.length ? <H2>Your creations</H2> : null}
       {jobs.map((j) => <JobCard key={j.id} job={j} product={product} onMsg={setMsg} />)}
-    </ScrollView>
+    </PageScroll>
   );
 }
 

@@ -6,6 +6,8 @@ import { assistant, useAssistant, type Turn } from "@/lib/assistant-store";
 import { money } from "@/lib/api";
 import { useMe } from "@/lib/account-store";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
+import { PageScroll, usePageWidth } from "@/components/ui";
+import { PAGE_MAX } from "@/lib/page-width";
 
 const SUGGESTIONS = [
   "What should I sell this month?",
@@ -21,6 +23,8 @@ export default function AssistantScreen() {
   const locked = me != null && me.account.plan !== "pro";
   const [text, setText] = useState("");
   const scroll = useRef<ScrollView>(null);
+  const max = PAGE_MAX[usePageWidth()];
+  const column = max ? { width: "100%" as const, maxWidth: max, alignSelf: "center" as const } : null;
 
   useEffect(() => { const t = setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50); return () => clearTimeout(t); }, [turns]);
 
@@ -28,7 +32,7 @@ export default function AssistantScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
-      <ScrollView ref={scroll} contentContainerStyle={{ padding: space.lg, gap: space.lg, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+      <PageScroll ref={scroll} contentContainerStyle={{ padding: space.lg, gap: space.lg, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         {locked && turns.length === 0 ? (
           <View style={{ gap: space.lg, flex: 1, justifyContent: "flex-end" }}>
             <View style={{ gap: space.sm }}>
@@ -67,9 +71,9 @@ export default function AssistantScreen() {
             </View>
           </View>
         ) : turns.map((t) => <Bubble key={t.id} turn={t} />)}
-      </ScrollView>
+      </PageScroll>
 
-      {locked ? null : <View style={{ flexDirection: "row", alignItems: "flex-end", gap: space.sm, padding: space.md, borderTopWidth: 1, borderColor: c.line, backgroundColor: c.surface }}>
+      {locked ? null : <View style={{ padding: space.md, borderTopWidth: 1, borderColor: c.line, backgroundColor: c.surface }}><View style={[{ flexDirection: "row", alignItems: "flex-end", gap: space.sm }, column]}>
         <TextInput
           value={text} onChangeText={setText} placeholder={busy ? "Working on it…" : "Ask your store assistant"} placeholderTextColor={c.muted}
           multiline editable={!busy} accessibilityLabel="Message"
@@ -79,7 +83,7 @@ export default function AssistantScreen() {
           style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.accent, alignItems: "center", justifyContent: "center", opacity: busy || !text.trim() ? 0.5 : 1 }}>
           {busy ? <ActivityIndicator color={c.onAccent} /> : <Ionicons name="arrow-up" size={22} color={c.onAccent} />}
         </Pressable>
-      </View>}
+      </View></View>}
     </KeyboardAvoidingView>
   );
 }

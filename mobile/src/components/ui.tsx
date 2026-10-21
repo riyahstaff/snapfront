@@ -5,19 +5,52 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import { usePathname } from "expo-router";
 import { fonts, radius, space, type, useColors } from "@/lib/theme";
+import { PAGE_MAX, isColumn, pageWidthFor, type PageWidth } from "@/lib/page-width";
 
-export function Screen({ children, scroll = true, onScroll, onLayout }: { children: React.ReactNode; scroll?: boolean; onScroll?: ScrollViewProps["onScroll"]; onLayout?: ScrollViewProps["onLayout"] }) {
+/** The page's layout on the website: in a focused column, fields and buttons share the column's edges. */
+const Layout = React.createContext<PageWidth>("full");
+export const usePageLayout = () => React.useContext(Layout);
+
+export function Screen({ children, scroll = true, onScroll, onLayout, width }: { children: React.ReactNode; scroll?: boolean; onScroll?: ScrollViewProps["onScroll"]; onLayout?: ScrollViewProps["onLayout"]; width?: PageWidth }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+  const kind: PageWidth = Platform.OS === "web" ? width ?? pageWidthFor(pathname) : "full";
+  const max = PAGE_MAX[kind];
+  const column = max ? { width: "100%" as const, maxWidth: max, alignSelf: "center" as const } : null;
   const pad = { paddingHorizontal: space.xl, paddingTop: space.lg, paddingBottom: insets.bottom + space.xxl };
-  if (!scroll) return <View style={[{ flex: 1, backgroundColor: c.bg }, pad]}>{children}</View>;
+  if (!scroll) return <Layout.Provider value={kind}><View style={[{ flex: 1, backgroundColor: c.bg }, pad, column]}>{children}</View></Layout.Provider>;
   return (
-    <ScrollView onScroll={onScroll} onLayout={onLayout} scrollEventThrottle={onScroll ? 64 : undefined} style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={[pad, { gap: space.xl }]} keyboardShouldPersistTaps="handled">
-      {children}
-    </ScrollView>
+    <Layout.Provider value={kind}>
+      <ScrollView onScroll={onScroll} onLayout={onLayout} scrollEventThrottle={onScroll ? 64 : undefined} style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={[pad, { gap: space.xl }, column]} keyboardShouldPersistTaps="handled">
+        {children}
+      </ScrollView>
+    </Layout.Provider>
   );
 }
+
+/** The width this page uses on the website ("full" in the phone app). */
+export function usePageWidth(width?: PageWidth): PageWidth {
+  const pathname = usePathname();
+  return Platform.OS === "web" ? width ?? pageWidthFor(pathname) : "full";
+}
+
+/**
+ * A ScrollView for pages that lay themselves out: on the website its content sits in the
+ * same centered column as the page title, so every page shares one left edge.
+ */
+export const PageScroll = React.forwardRef<ScrollView, ScrollViewProps & { width?: PageWidth }>(function PageScroll({ width, contentContainerStyle, children, ...rest }, ref) {
+  const kind = usePageWidth(width);
+  const max = PAGE_MAX[kind];
+  const column = max ? { width: "100%" as const, maxWidth: max, alignSelf: "center" as const } : null;
+  return (
+    <Layout.Provider value={kind}>
+      <ScrollView ref={ref} {...rest} contentContainerStyle={[contentContainerStyle, column]}>{children}</ScrollView>
+    </Layout.Provider>
+  );
+});
 
 export function H1({ children }: { children: React.ReactNode }) {
   const c = useColors();
@@ -43,6 +76,7 @@ type ButtonProps = {
 };
 export function Button({ label, onPress, variant = "primary", loading, disabled, icon, style }: ButtonProps) {
   const c = useColors();
+  const focus = isColumn(usePageLayout());
   const palette = {
     primary: { bg: c.accent, fg: c.onAccent, border: c.accent },
     secondary: { bg: c.surface, fg: c.ink, border: c.line },
@@ -60,6 +94,7 @@ export function Button({ label, onPress, variant = "primary", loading, disabled,
       style={({ pressed }) => [
         styles.button,
         WEB && variant === "ghost" ? { paddingHorizontal: 2, minWidth: 0, minHeight: 40 } : null,
+        WEB && focus ? (variant === "ghost" ? { alignSelf: "center" } : { alignSelf: "stretch" }) : null,
         { backgroundColor: palette.bg, borderColor: palette.border, opacity: off ? 0.5 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] },
         style,
       ]}
@@ -73,8 +108,9 @@ export function Button({ label, onPress, variant = "primary", loading, disabled,
 
 export function Field({ label, hint, ...props }: TextInputProps & { label: string; hint?: string }) {
   const c = useColors();
+  const focus = isColumn(usePageLayout());
   return (
-    <View style={{ gap: 6, ...(WEB ? { width: "100%", maxWidth: props.multiline ? 820 : 640 } : {}) }}>
+    <View style={{ gap: 6, ...(WEB && !focus ? { width: "100%", maxWidth: props.multiline ? 820 : 640 } : {}) }}>
       <Text style={[type.label, { color: c.ink }]}>{label}</Text>
       {hint ? <Text style={[type.small, { color: c.muted }]}>{hint}</Text> : null}
       <TextInput
@@ -94,8 +130,9 @@ export function Field({ label, hint, ...props }: TextInputProps & { label: strin
 
 export function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
   const c = useColors();
+  const focus = isColumn(usePageLayout());
   return (
-    <View style={[styles.seg, { backgroundColor: c.sunk }]} accessibilityRole="radiogroup">
+    <View style={[styles.seg, { backgroundColor: c.sunk }, focus ? { maxWidth: "100%" as const } : null]} accessibilityRole="radiogroup">
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -111,7 +148,9 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 
 /** Actions side by side on the website (they wrap when there isn't room); stacked full-width on the phone. */
 export function ButtonRow({ children }: { children: React.ReactNode }) {
+  const focus = isColumn(usePageLayout());
   if (Platform.OS !== "web") return <View style={{ gap: space.xl }}>{children}</View>;
+  if (focus) return <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.md }}>{React.Children.map(children, (ch) => (ch ? <View style={{ flexGrow: 1, flexBasis: 200 }}>{ch}</View> : null))}</View>;
   return <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.md, alignItems: "center" }}>{children}</View>;
 }
 
@@ -129,10 +168,11 @@ export function Columns({ left, right, gap = space.xl }: { left: React.ReactNode
 
 export function Notice({ text, tone = "info" }: { text: string | null; tone?: "info" | "error" | "ok" }) {
   const c = useColors();
+  const focus = isColumn(usePageLayout());
   if (!text) return null;
   const color = tone === "error" ? c.bad : tone === "ok" ? c.good : c.ink;
   return (
-    <View accessibilityLiveRegion="polite" style={[styles.notice, { backgroundColor: c.sunk }]}>
+    <View accessibilityLiveRegion="polite" style={[styles.notice, { backgroundColor: c.sunk }, focus ? { maxWidth: "100%" as const } : null]}>
       <Text style={[type.small, { color }]}>{text}</Text>
     </View>
   );

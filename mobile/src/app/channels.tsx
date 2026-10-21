@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Pressable, Switch, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Image } from "expo-image";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
-import { Body, Button, Field, H2, Notice } from "@/components/ui";
+import { Body, Button, Field, H2, Notice, PageScroll } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { account, useMe } from "@/lib/account-store";
 import { saveToPhone, shareFile } from "@/lib/media";
@@ -44,7 +44,7 @@ export default function ChannelsScreen() {
   );
 
   return (
-    <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
+    <PageScroll style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxl }} keyboardShouldPersistTaps="handled">
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
 
       <View style={{ gap: space.md }}>
@@ -104,6 +104,6 @@ export default function ChannelsScreen() {
         </View>
         {!pro ? <Button label="Comes with Pro" variant="ghost" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} /> : null}
       </View>
-    </ScrollView>
+    </PageScroll>
   );
 }

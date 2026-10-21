@@ -1,11 +1,11 @@
 // Faceless videos: pick a product and a style, let the AI write the script (edit it if you like),
 // choose a voice, and Snapfront makes a vertical video with your photos, captions and voiceover.
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import * as Clipboard from "expo-clipboard";
-import { Button, Field, Notice, Pill } from "@/components/ui";
+import { Button, Field, Notice, Pill, PageScroll } from "@/components/ui";
 import { Card, ChipRow, TextAction, when } from "@/components/panel";
 import { api, ApiError, facelessApi, type FacelessJob, type FacelessScript, type Product } from "@/lib/api";
 import { saveToPhone, shareFile } from "@/lib/media";
@@ -58,7 +58,7 @@ export default function FacelessScreen() {
 
   if (!products) return <View style={{ flex: 1, backgroundColor: c.bg, padding: space.xl }}><ActivityIndicator color={c.accent} /></View>;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">
+    <PageScroll style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">
       <Text style={[type.body, { color: c.muted }]}>Grow without showing your face: your product photos, big captions and a natural voiceover, ready for TikTok, Reels and Shorts.</Text>
       {!products.length ? (
         <Card title="Add a product first"><Text style={[type.body, { color: c.muted }]}>Faceless videos use your product photos.</Text><Button label="Snap a product" onPress={() => router.push("/snap")} /></Card>
@@ -91,7 +91,7 @@ export default function FacelessScreen() {
       ) : null}
       {jobs.length ? <Text accessibilityRole="header" style={[type.title, { color: c.ink, fontSize: 21 }]}>Your videos</Text> : null}
       {jobs.map((j) => <JobCard key={j.id} job={j} onRemoved={load} onMsg={setMsg} />)}
-    </ScrollView>
+    </PageScroll>
   );
 }
 
