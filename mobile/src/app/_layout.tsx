@@ -21,6 +21,9 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
   if (Math.min(width, height) < 600) ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
 }
 
+// A page that crashes shows a friendly screen instead, and the crash is reported (Sentry, via the server).
+export { CrashScreen as ErrorBoundary } from "@/components/crash-screen";
+
 export default function RootLayout() {
   const c = useColors();
   const [loaded, error] = useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold, Figtree_400Regular, Figtree_500Medium, Figtree_700Bold });
@@ -81,6 +84,8 @@ export default function RootLayout() {
         <Stack.Screen name="academy" options={{ title: "Snapfront Academy" }} />
         <Stack.Screen name="prompts" options={{ title: "Bonus: 1k Prompts" }} />
         <Stack.Screen name="youtube" options={{ title: "YouTube Shorts" }} />
+        <Stack.Screen name="support" options={{ title: "Help & support" }} />
+        <Stack.Screen name="support-inbox" options={{ title: "Support inbox" }} />
         <Stack.Screen name="prompt/[id]" options={{ title: "Prompt" }} />
         <Stack.Screen name="lesson/[id]" options={{ title: "Lesson" }} />
         <Stack.Screen name="start" options={{ title: "Start here" }} />

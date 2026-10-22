@@ -77,6 +77,7 @@ export const APP_PAGES = [
   ["Bonus: 1k Prompts", "/prompts", "1,000 prompts to send to Claude or ChatGPT: pick one, fill in your details, then tap Open in Claude or Open in ChatGPT and it opens with the prompt typed in"],
   ["UGC creator kit", "/ugc", "Find brand work and manage creator deals"],
   ["Faceless videos", "/faceless", "Create videos without appearing on camera"],
+  ["Help & support", "/support", "Chat with SnapCare, Snapfront's support assistant: it checks your account and fixes common problems, and passes anything else to the team"],
   ["YouTube Shorts", "/youtube", "A $24.99 a month add-on that posts your own uploaded videos (up to 3 minutes) and your finished faceless and avatar videos straight to your own YouTube channel as Shorts"],
   ["AI avatars", "/avatars", "Create avatar videos"],
   ["AI photos & video", "/ai-media", "Generate images and video"],
@@ -101,7 +102,7 @@ const money = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 export function knowledgeText() {
   const out = ["SNAPFRONT HELP AND SITE GUIDE",
     "This is everything Vierra knows about Snapfront. It is built from the live help page (snapfront.app/help) and the live app. If something isn't here, Vierra doesn't know it.", ""];
-  out.push("WHERE THINGS ARE", "The web app is at app.snapfront.app. The website is snapfront.app. The menu at the top of the web app has My store, Create, Digital products, Marketing, Academy and Bonus: 1k Prompts, and there's a search box for every tool. These are the app's pages:");
+  out.push("WHERE THINGS ARE", "The web app is at app.snapfront.app. The website is snapfront.app. The menu at the top of the web app has My store, Create, Digital products, Marketing, YouTube Shorts (a paid add-on, locked until it's paid), Academy and Bonus: 1k Prompts, and there's a search box for every tool. The Help button at the bottom corner of every page opens SnapCare, the support chat. These are the app's pages:");
   for (const [name, path, what] of APP_PAGES) out.push(`- ${name} (app.snapfront.app${path}): ${what}.`);
   out.push("- Website pages: Help and FAQ (snapfront.app/help), Use Snapfront with Claude or ChatGPT (snapfront.app/connect-ai), Tools that work with Snapfront (snapfront.app/tools), Privacy, Terms, and Delete account.", "");
   const life = webbilling.PLANS.lifetime.cents, month = webbilling.PLANS.pro.cents, year = webbilling.PLANS.yearly.cents, pro = PLANS.pro, free = PLANS.free;
@@ -123,7 +124,7 @@ export function knowledgeText() {
   }
   out.push("GLOSSARY");
   for (const [t, d] of GLOSSARY) out.push(`- ${t}: ${d}`);
-  out.push("", "SUPPORT", "Email support@snapfront.app with the store's address, what the person was doing and what happened. A screenshot helps.");
+  out.push("", "SUPPORT", "Tap Help (bottom corner of every page in the app) to chat with SnapCare, Snapfront's support assistant. It can check your account, videos, orders, credits and membership, fix common problems, and pass anything else to the Snapfront team, who reply by email and in the chat. You can also email support@snapfront.app with the store's address, what you were doing and what happened.");
   return out.join("\n");
 }
 

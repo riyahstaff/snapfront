@@ -95,7 +95,7 @@ export const SECTIONS = [
   { id: "account", name: "Account, privacy and support", items: [
     { q: "How do I delete my account or one store?", a: "In Settings, under About, tap Delete my account. That removes your account and every store, product and photo for good. Your Stripe account and past payouts aren't affected. To remove just one store, tap Delete this store only. You can also delete your account from the website at snapfront.app/delete-account.", where: ["Settings", "/settings"] },
     { q: "What do you do with my data?", a: "Snapfront keeps what it needs to run your store, and it never sells your data. The privacy policy says exactly what's stored and which services are used (for example Stripe for payments and Resend for emails).", link: ["Privacy policy", "/privacy"] },
-    { q: "How do I get help?", a: "Email support@snapfront.app with your store's address and what happened (a screenshot helps). For how-to questions, the Academy and this page are the fastest answers." },
+    { q: "How do I get help?", a: "In the app, tap Help in the bottom corner of any page to chat with SnapCare, Snapfront's support assistant. It checks your account, videos, orders, credits and membership, fixes common problems right away, and passes anything else to the Snapfront team, who reply by email and in the chat. You can also email support@snapfront.app with your store's address and what happened (a screenshot helps)." },
   ] },
 ];
 

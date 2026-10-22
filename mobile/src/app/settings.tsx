@@ -149,7 +149,9 @@ export default function SettingsScreen() {
           <View style={{ gap: space.sm, marginTop: space.lg }}>
             <H2>About</H2>
             <ReleaseInfo detailed />
+            <Button label="Chat with SnapCare (help & support)" onPress={() => router.push("/support")} />
             <Button label="Help and FAQ" variant="secondary" onPress={() => WebBrowser.openBrowserAsync(api.siteUrl("help"))} />
+            {seller?.owner ? <Button label="Support inbox (owner)" variant="secondary" onPress={() => router.push("/support-inbox")} /> : null}
             <Button label="Privacy policy" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("privacy"))} />
             <Button label="Terms of use" variant="ghost" onPress={() => WebBrowser.openBrowserAsync(api.legalUrl("terms"))} />
             {confirm ? (

@@ -133,6 +133,7 @@ export default function StoreScreen() {
         <GrowTile icon={seller?.addons?.youtube ? "logo-youtube" : "lock-closed-outline"} label="YouTube Shorts" sub={seller?.addons?.youtube ? "Post your videos to your channel" : "Add-on, $24.99 a month"} onPress={() => router.push("/youtube")} />
         <GrowTile icon="sparkles-outline" label="Credits" sub="For avatar videos" onPress={() => router.push("/credits")} />
         <GrowTile icon="aperture-outline" label="UGC creator kit" sub="Get paid by brands" onPress={() => router.push("/ugc")} />
+        <GrowTile icon="help-buoy-outline" label="Help & support" sub="SnapCare checks and fixes problems" onPress={() => router.push("/support")} />
         <GrowTile icon="chatbubbles-outline" label="Community" sub="Discord, Whop, live coaching" onPress={() => router.push("/community")} />
         <GrowTile icon="cash-outline" label="Earn with Snapfront" sub="40% per Lifetime sale" onPress={() => router.push("/earn")} />
         <GrowTile icon="sparkles-outline" label="AI photos & video" sub="Lifestyle shots and clips" onPress={() => router.push("/ai-media")} />

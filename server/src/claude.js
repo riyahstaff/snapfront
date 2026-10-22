@@ -8,6 +8,9 @@ function anthropic() {
   return client;
 }
 
+/** The Anthropic client, for features that run their own conversation (SnapCare). */
+export const claudeClient = () => anthropic();
+
 export function httpError(status, message, extra) {
   const e = new Error(message);
   e.status = status;

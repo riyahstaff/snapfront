@@ -64,6 +64,8 @@ import * as digitalIdeas from "./digital-ideas.js";
 import * as imageAssistant from "./image-assistant.js";
 import * as backup from "./backup.js";
 import * as youtube from "./youtube.js";
+import * as monitoring from "./monitoring.js";
+import * as snapcare from "./snapcare.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, affiliateJoinPage, affiliatePortalPage, ugcPage, esc } from "./render.js";
 import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
@@ -443,7 +445,7 @@ app.post("/api/sellers", signupLimit, (req, res) => {
 const me = (req) => {
   const account = plans.getAccount(req.account.id);
   // Paid add-ons, so the menu can show which pages are unlocked.
-  return { ...store.publicSeller(plans.storesOf(req.account.id).find((s) => s.id === req.seller.id)), account: plans.publicAccount(account, req.seller.id), addons: { youtube: youtube.hasAddon(account) } };
+  return { ...store.publicSeller(plans.storesOf(req.account.id).find((s) => s.id === req.seller.id)), account: plans.publicAccount(account, req.seller.id), addons: { youtube: youtube.hasAddon(account) }, owner: credits.isOwner(account) };
 };
 const storefrontPreviews = new Map();
 /** A private 30-minute preview of a store with a design patch applied; the live store is untouched. */
@@ -618,6 +620,7 @@ function deleteAccount(accountId) {
   for (const st of stores) if (st.custom_domain_id) domains.removeDomain(st).catch(() => {});
   webbilling.cancelAll(accountId).catch((e) => console.warn("[webbilling] cancel on delete", e.message));
   youtube.cancelAll(accountId).catch((e) => console.warn("[youtube] cancel on delete", e.message));
+  snapcare.deleteAccountData(accountId);
   purgeStores(stores.map((st) => st.id));
   db.prepare("DELETE FROM accounts WHERE id = ?").run(accountId);
   removeFiles(rows);
@@ -1018,6 +1021,46 @@ app.get("/academy-media/:file", (req, res) => {
   const file = academy.videoFile(req.params.file, req.query.e, req.query.s);
   if (!file) return res.status(403).send("This video link has expired. Open the lesson again.");
   res.set("Cache-Control", "private, max-age=3600").type("video/mp4").sendFile(file);
+});
+/* ---------- SnapCare: the support assistant, and the owner's support inbox ---------- */
+const careHits = new Map();
+function careLimit(req, _res, next) {   // a burst limit on top of SnapCare's daily one
+  const now = Date.now(), list = (careHits.get(req.account.id) || []).filter((t) => now - t < 60_000);
+  if (list.length >= (Number(process.env.SNAPCARE_BURST) || 8)) return next(httpError(429, "Slow down a little: SnapCare is still reading your last messages."));
+  list.push(now); careHits.set(req.account.id, list); next();
+}
+app.get("/api/snapcare", auth, (req, res) => res.json(snapcare.view(req.account, req.seller, req.query.chat)));
+app.post("/api/snapcare/messages", auth, careLimit, wrap(async (req, res) => res.json(await snapcare.send(req.account, req.seller, req.body || {}))));
+app.post("/api/snapcare/new", auth, (req, res) => res.json(snapcare.fresh(req.account, req.seller)));
+app.get("/api/support/tickets", auth, (req, res) => res.json(snapcare.inbox(req.account, req.query.status)));
+app.get("/api/support/tickets/:id", auth, (req, res) => res.json(snapcare.ticket(req.account, req.params.id)));
+app.post("/api/support/tickets/:id/reply", auth, wrap(async (req, res) => res.json(await snapcare.reply(req.account, req.params.id, req.body || {}))));
+app.patch("/api/support/tickets/:id", auth, (req, res) => res.json(snapcare.setStatus(req.account, req.params.id, req.body?.status)));
+app.post("/api/support/tickets/:id/github", auth, wrap(async (req, res) => res.json(await snapcare.toGithub(req.account, req.params.id))));
+
+/* ---------- error monitoring (Sentry) ---------- */
+// The web app reports its own crashes here (no browser SDK, nothing extra for the browser to load).
+// Anyone can call it, so it's small, rate-limited and scrubbed; it never stores anything.
+const clientErrorHits = new Map();
+app.post("/api/client-error", (req, res) => {
+  const ip = String(req.ip || "?"), now = Date.now();
+  const list = (clientErrorHits.get(ip) || []).filter((t) => now - t < 60_000);
+  if (list.length >= 10) return res.status(429).end();
+  list.push(now); clientErrorHits.set(ip, list);
+  if (clientErrorHits.size > 5000) clientErrorHits.clear();
+  const b = req.body || {};
+  const text = [String(b.message || "").slice(0, 500), String(b.stack || "").slice(0, 3000)].filter(Boolean).join("\n");
+  if (!text) return res.status(400).end();
+  const id = monitoring.message(`Web app: ${text}`, "error", { source: "web", page: String(b.path || "").replace(/[?#].*/, "").slice(0, 100), app: req.get("x-snapfront-app") || "web" });
+  res.json({ reported: Boolean(id) });
+});
+// Owner only: send one test error so the owner can see Sentry is connected.
+app.post("/api/admin/sentry-test", auth, (req, res) => {
+  if (!credits.isOwner(req.account)) throw httpError(403, "Only Snapfront's owner can do this.");
+  if (!monitoring.enabled()) return res.json({ ok: false, message: "Sentry isn't connected yet. Add SENTRY_DSN in Render, then try again." });
+  const id = monitoring.report(new Error("Snapfront test error: Sentry is connected (sent from the owner's test button)"), { source: "test" });
+  monitoring.flush().catch(() => {});
+  res.json({ ok: true, event_id: id, message: "Test error sent. It shows in Sentry under Issues within a minute." });
 });
 app.get("/api/admin/academy", adminOnly, (_req, res) => res.json(academy.buildStatus()));
 // A finished film for a lesson (tools/ugc-film): owner only, MP4, up to 400 MB.
@@ -1642,7 +1685,13 @@ app.get("/api/trends", (_req, res) => res.json(store.TRENDS));
 /* ---------- errors ---------- */
 app.use((err, req, res, _next) => {
   const status = err.status || err.statusCode || (err.type === "StripeInvalidRequestError" ? 400 : 500);
-  if (status >= 500) console.error(err);
+  if (status >= 500) {
+    console.error(err);
+    // Our own expected failures (an AI service busy, Stripe down) carry a status; only real crashes go to Sentry.
+    const sentryId = !err.status ? monitoring.report(err, { route: req.route?.path || "unmatched", method: req.method }) : null;
+    // Kept two days for this member's SnapCare bug reports (scrubbed of personal details).
+    if (req.account?.id) snapcare.noteError(req.account.id, `${req.method} ${req.route?.path || req.path}`, err.message, sentryId);
+  }
   let message = status >= 500 && !err.status ? "Something went wrong on our side. Try again." : err.message;
   // Memberships are sold on the website only: the phone app's "needs Pro" messages name no prices.
   if (status === 402 && req.get("x-snapfront-app")) message = plans.appWording(message);
@@ -1650,6 +1699,7 @@ app.use((err, req, res, _next) => {
 });
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+  monitoring.start();
   app.listen(config.port, () => console.log(`Snapfront API on ${config.publicUrl} (port ${config.port})${config.standby ? ", as the backup copy" : ""}`));
   if (config.standby) backup.startStandbyWorker();
   else startBackgroundWork();
@@ -1691,6 +1741,7 @@ function startBackgroundWork() {
   setInterval(() => webbilling.sweep().catch((e) => console.error("[webbilling] sweep", e.message)), 30 * 60e3).unref();
   setInterval(() => credits.sweep().catch((e) => console.error("[credits] sweep", e.message)), 10 * 60e3).unref();
   setInterval(() => youtube.sweep().catch((e) => console.error("[youtube] sweep", e.message)), 30 * 60e3).unref();
+  setInterval(() => { try { snapcare.sweep(); } catch (e) { console.error("[snapcare] sweep", e.message); } }, 6 * 3600e3).unref();
   setTimeout(() => reconcileStripe().catch((e) => console.error("[reconcile]", e.message)), 45e3).unref();
   setInterval(() => reconcileStripe().catch((e) => console.error("[reconcile]", e.message)), 15 * 60e3).unref();
   setInterval(() => feed.emailDigests().catch((e) => console.error("[community email]", e.message)), 10 * 60e3).unref();

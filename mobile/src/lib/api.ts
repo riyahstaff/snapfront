@@ -265,7 +265,7 @@ export type SupplierState = {
 export type Suppliers = Record<SupplierId, SupplierState>;
 /** What each supplier needs from the seller to connect. */
 export type SupplierConnectInput = { api_key?: string; token?: string; app_key?: string; app_secret?: string; auto_pay?: boolean };
-export type Me = Seller & { account: Account; addons?: { youtube: boolean } };
+export type Me = Seller & { account: Account; addons?: { youtube: boolean }; owner?: boolean };
 export type PriceMatch = { title: string; link: string; thumbnail: string | null; price: number; in_stock: boolean | null; store: string; store_name: string };
 export type PriceCheck = {
   image_url: string;
@@ -970,4 +970,23 @@ export const facelessApi = {
   make: (b: { product_id: string; voice: string; script: Omit<FacelessScript, "product_id" | "style"> }) => request<FacelessJob>("POST", "/api/faceless/videos", b),
   job: (id: string) => request<FacelessJob>("GET", `/api/faceless/videos/${encodeURIComponent(id)}`),
   remove: (id: string) => request<void>("DELETE", `/api/faceless/videos/${encodeURIComponent(id)}`),
+};
+
+/* ---------- SnapCare (support chat) and the owner's support inbox ---------- */
+export type CareMessage = { id: number; role: "user" | "assistant" | "team"; content: string; actions: string[]; created_at: string };
+export type CareChat = { id: string; status: "open" | "handed_off" | "closed"; ticket: { id: string; kind: "help" | "bug"; status: string } | null; greeting: string; enabled: boolean; messages: CareMessage[] };
+export const snapcareApi = {
+  view: () => request<CareChat>("GET", "/api/snapcare"),
+  send: (chat_id: string, message: string) => request<CareChat>("POST", "/api/snapcare/messages", { chat_id, message }, undefined, 120_000),
+  fresh: () => request<CareChat>("POST", "/api/snapcare/new"),
+};
+export type SupportTicketRow = { id: string; kind: "help" | "bug"; summary: string; status: "open" | "answered" | "closed"; email: string | null; github_url: string | null; created_at: string };
+export type SupportTicket = SupportTicketRow & { details: string; stores: { name: string; address: string }[]; errors: { route: string; message: string; sentry_id: string | null; created_at: string }[]; messages: CareMessage[]; bug_report: string; emailed?: boolean };
+export const supportApi = {
+  list: (status: "open" | "answered" | "closed" | "all") => request<{ tickets: SupportTicketRow[]; counts: Record<string, number>; github: boolean }>("GET", `/api/support/tickets?status=${status}`),
+  get: (id: string) => request<SupportTicket>("GET", `/api/support/tickets/${encodeURIComponent(id)}`),
+  reply: (id: string, message: string, close = false) => request<SupportTicket>("POST", `/api/support/tickets/${encodeURIComponent(id)}/reply`, { message, close }),
+  setStatus: (id: string, status: "open" | "answered" | "closed") => request<SupportTicket>("PATCH", `/api/support/tickets/${encodeURIComponent(id)}`, { status }),
+  github: (id: string) => request<SupportTicket>("POST", `/api/support/tickets/${encodeURIComponent(id)}/github`),
+  sentryTest: () => request<{ ok: boolean; message: string; event_id?: string }>("POST", "/api/admin/sentry-test"),
 };
