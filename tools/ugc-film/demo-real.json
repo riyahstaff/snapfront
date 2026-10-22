@@ -1,0 +1,39 @@
+{
+  "photo": {
+    "title": "Lavender Soy Candle in Amber Glass",
+    "tagline": "Hand-poured soy wax with a wooden wick, in a reusable amber jar",
+    "description": "A calm, cosy candle for slow evenings. It's hand-poured with soy wax and topped with a wooden wick, in an amber glass jar you can reuse once the candle is done.\n\nLight it while you read, take a bath or wind down after work. Trim the wick before each burn for a clean, steady flame.",
+    "bullets": ["Hand-poured soy wax", "Wooden wick", "Reusable amber glass jar", "Lavender scent", "Gift-ready kraft label"],
+    "suggested_price": 24,
+    "category": "Home fragrance",
+    "tags": ["candle", "soy", "lavender", "amber", "gift"],
+    "faq": [
+      { "q": "When will my candle ship?", "a": "Orders ship within 2 to 3 business days. You'll get an email with tracking once it's on the way." },
+      { "q": "How do I get the best burn?", "a": "Let the top melt all the way to the edge the first time you light it, and trim the wick before each burn." },
+      { "q": "Can I return it?", "a": "Unused candles can be returned within 30 days. Message us and we'll help." }
+    ],
+    "alt_text": "Soy candle in an amber glass jar with a wooden wick on a kitchen counter next to dried lavender",
+    "seo_description": "Hand-poured lavender soy candle with a wooden wick in a reusable amber glass jar."
+  },
+  "copy": {
+    "headline": "Your glow, simplified",
+    "subline": "One serum for your morning routine",
+    "bullets": ["Lightweight daily serum", "Layers under SPF and makeup", "Part of a simple routine"],
+    "cta": "Shop now",
+    "caption": "Mornings are busy. Your skincare doesn't have to be. ✨ The Glow Serum is a lightweight daily serum that fits right into a simple routine: cleanse, serum, SPF, done. Tap the link in bio to shop.",
+    "hashtags": ["skincare", "glowingskin", "skincareroutine", "simpleskincare", "serum", "morningroutine", "selfcare", "glowlab"]
+  },
+  "faceless": {
+    "hook": "Your routine has too many steps",
+    "scenes": [
+      { "text": "Your routine has too many steps", "say": "If your skincare routine has more steps than your morning has minutes, this is for you." },
+      { "text": "One serum. Every morning.", "say": "The Glow Serum is one lightweight serum for your daily routine." },
+      { "text": "Cleanse. Serum. SPF.", "say": "Cleanse, add a few drops of serum, then your SPF. That's it." },
+      { "text": "Simple can still feel special", "say": "A simple routine you'll actually stick to." },
+      { "text": "Link in bio", "say": "The Glow Serum from Glow Lab is forty six dollars. The link is in the bio." }
+    ],
+    "cta": "Shop Glow Serum",
+    "caption": "A simpler morning routine: cleanse, Glow Serum, SPF. Link in bio. ✨",
+    "hashtags": ["skincare", "skincareroutine", "simpleskincare", "serum", "glowlab", "morningroutine"]
+  }
+}

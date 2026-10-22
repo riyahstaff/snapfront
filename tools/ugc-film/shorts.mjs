@@ -1,19 +1,22 @@
-// Cuts the promo Shorts (scenes-promo.mjs) into vertical 1080×1920 videos:
-//   opener: Juniper's clip, full screen, with a caption pill and an "AI presenter" label
+// Cuts the promo Shorts (scenes-promo.mjs, or FILM=real for scenes-real.mjs) into vertical 1080×1920 videos:
+//   opener: the presenter's clip, full screen, with a caption pill and an "AI presenter" label
+//           (a talking clip plays at its own speed with its line in sync; others are slowed to fit)
 //   beats:  the app recording in a phone frame, a headline above it and a caption pill below
 //   end:    the Snapfront end card
 // Cecily's voice runs over a quiet music bed that ducks under her.
-//   node shorts.mjs [key …]   →  out-promo/final/<key>.mp4
+//   [FILM=real] node shorts.mjs [key …]   →  out-<film>/final/snapfront-short-<key>.mp4
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { SHORTS, END } from "./scenes-promo.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
-const OUT = path.join(here, "out-promo"), WORK = path.join(OUT, "edit"), FINAL = path.join(OUT, "final");
+const FILM = (process.env.FILM || "promo").replace(/[^a-z0-9-]/gi, "");
+const { SHORTS, END, SCENES } = await import(`./scenes-${FILM}.mjs`);
+const OUT = path.join(here, `out-${FILM}`), WORK = path.join(OUT, "edit"), FINAL = path.join(OUT, "final");
+const talks = new Set(SCENES.filter((x) => x.talk).map((x) => x.key));
 for (const d of [WORK, FINAL]) fs.mkdirSync(d, { recursive: true });
 const { chromium } = createRequire(path.join(root, "tools/academy-screens/package.json"))("playwright-core");
 const W = 1080, H = 1920, FPS = 30, PRE = 0.25, POST = 0.5, XF = 0.3;
@@ -64,18 +67,23 @@ async function make(page, s, n) {
   const g = (i) => GRADS[(n + i) % GRADS.length];
   const parts = [], voices = [];
   let t = 0;
-  const add = (file, len, voice) => { parts.push({ file, len, start: t }); if (voice) voices.push({ voice, at: t + PRE }); t += len - XF; };
+  const add = (file, len, voice, lead = PRE) => { parts.push({ file, len, start: t }); if (voice) voices.push({ voice, at: t + lead }); t += len - XF; };
   const enc = ["-c:v", "libx264", "-crf", "16", "-preset", "fast", "-r", FPS, "-pix_fmt", "yuv420p", "-an"];
 
   // Opener: Juniper full screen.
   const v0 = path.join(OUT, "voice", `${s.key}-0.wav`);
-  const len0 = Math.max(3.2, PRE + dur(v0) + POST);
-  const ov0 = await draw(page, `<div class="tag">AI presenter</div>${BUG}<div class="cap big"><span style="--g:${g(0)}">${esc(s.opener.caption)}</span></div>`, path.join(WORK, `${s.key}-o0.png`));
   const clip = path.join(OUT, "raw", `${s.key}-clip.mp4`);
-  const slow = Math.max(1, (len0 + 0.1) / dur(clip));
+  const talking = talks.has(`${s.key}-clip`);
+  // A talking clip is the line itself: play it as made, voice from its first frame, and hold the last frame briefly.
+  const len0 = talking ? dur(clip) + 0.45 : Math.max(3.2, PRE + dur(v0) + POST);
+  const ov0 = await draw(page, `<div class="tag">AI presenter</div>${BUG}<div class="cap big"><span style="--g:${g(0)}">${esc(s.opener.caption)}</span></div>`, path.join(WORK, `${s.key}-o0.png`));
+  const slow = talking ? 1 : Math.max(1, (len0 + 0.1) / dur(clip));
+  // Talking clips come back small (832×464 whatever size is asked): scale up gently, sharpen a little and add
+  // a touch of sensor grain so it reads like phone footage.
+  const look = talking ? ",unsharp=5:5:0.7:5:5:0,noise=alls=5:allf=t,tpad=stop_mode=clone:stop_duration=1" : "";
   const o0 = path.join(WORK, `${s.key}-0.mp4`);
-  ff("-i", clip, "-i", ov0, "-filter_complex", `[0:v]setpts=${slow.toFixed(4)}*PTS,scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H},fps=${FPS},trim=duration=${len0.toFixed(3)},setpts=PTS-STARTPTS[v];[v][1:v]overlay=0:0:shortest=0,trim=duration=${len0.toFixed(3)}[o]`, "-map", "[o]", ...enc, o0);
-  add(o0, len0, v0);
+  ff("-i", clip, "-i", ov0, "-filter_complex", `[0:v]setpts=${slow.toFixed(4)}*PTS,scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}${look},fps=${FPS},trim=duration=${len0.toFixed(3)},setpts=PTS-STARTPTS[v];[v][1:v]overlay=0:0:shortest=0,trim=duration=${len0.toFixed(3)}[o]`, "-map", "[o]", ...enc, o0);
+  add(o0, len0, v0, talking ? 0 : PRE);
 
   // Beats: the app in a phone.
   const mask = path.join(WORK, "phone-mask.png");
@@ -89,7 +97,10 @@ async function make(page, s, n) {
     const bg = await draw(page, `<div class="bg">${BLOBS(n * 3 + i)}</div><div class="frame"></div>`, path.join(WORK, `${s.key}-b${i + 1}.png`));
     const top = await draw(page, `${BUG}<div class="head">${esc(b.headline)}</div><div class="cap"><span style="--g:${g(i + 1)}">${esc(b.caption)}</span></div>`, path.join(WORK, `${s.key}-t${i + 1}.png`));
     const rec = path.join(OUT, b.rec.startsWith("../") ? `${b.rec}.mp4` : `screens/${b.rec}.mp4`);
-    const from = b.from || 0;
+    // `from`: seconds, or a moment the recorder marked (<rec>.marks.json).
+    const marks = path.join(OUT, `screens/${b.rec}.marks.json`);
+    const from = typeof b.from === "string" ? JSON.parse(fs.readFileSync(marks, "utf8"))[b.from] : b.from || 0;
+    if (from == null) throw new Error(`${s.key}: no mark "${b.from}" in ${b.rec}`);
     const out = path.join(WORK, `${s.key}-${i + 1}.mp4`);
     // The recording holds its last frame if the line runs longer than it.
     ff("-i", bg, "-ss", from, "-i", rec, "-i", mask, "-i", top, "-filter_complex",
@@ -101,11 +112,12 @@ async function make(page, s, n) {
   }
 
   // End card.
-  const ve = path.join(OUT, "voice", "end.wav");
+  const own = path.join(OUT, "voice", `end-${s.key}.wav`);
+  const ve = fs.existsSync(own) ? own : path.join(OUT, "voice", "end.wav");
   const lenE = PRE + dur(ve) + 1.6;
   const face = b64(path.join(OUT, "stills", `${s.key}-still.jpg`));
   const endPng = await draw(page, `<div class="bg">${BLOBS(n + 7)}</div><div class="end"><div class="face" style="background-image:url(data:image/jpeg;base64,${face})"></div>
-    <div class="logo"><img src="data:image/png;base64,${MARK}"><b>snapfront</b></div><div class="url">snapfront.app</div><div class="pill">Start free</div><small>Juniper is an AI presenter. App shown with demo data.</small></div>`, path.join(WORK, `${s.key}-end.png`));
+    <div class="logo"><img src="data:image/png;base64,${MARK}"><b>snapfront</b></div><div class="url">snapfront.app</div><div class="pill">Start free</div><small>${esc(s.presenter || "Juniper")} is an AI presenter. App shown with demo data.</small></div>`, path.join(WORK, `${s.key}-end.png`));
   const oe = path.join(WORK, `${s.key}-end.mp4`);
   ff("-loop", 1, "-framerate", FPS, "-t", lenE.toFixed(3), "-i", endPng, "-vf", `format=yuv420p,zoompan=z='1+0.0006*on':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=${W}x${H}:fps=${FPS}`, ...enc, oe);
   add(oe, lenE, ve);

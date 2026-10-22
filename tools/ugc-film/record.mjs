@@ -28,6 +28,7 @@ Object.assign(process.env, {
 });
 const { app } = await import(path.join(serverDir, "src/index.js"));
 const { db } = await import(path.join(serverDir, "src/db.js"));
+const { config } = await import(path.join(serverDir, "src/config.js"));
 const youtube = await import(path.join(serverDir, "src/youtube.js"));
 const credits = await import(path.join(serverDir, "src/credits.js"));
 const serverRequire = createRequire(path.join(serverDir, "package.json"));
@@ -39,7 +40,9 @@ await new Promise((ok) => server.once("listening", ok));
 const local = `http://127.0.0.1:${PORT}`;
 
 async function api(method, url, body, token, type = "application/json") {
-  const r = await fetch(local + url, { method, headers: { "Content-Type": type, ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body == null ? undefined : type === "application/json" ? JSON.stringify(body) : body });
+  const opts = { method, headers: { "Content-Type": type, ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body == null ? undefined : type === "application/json" ? JSON.stringify(body) : body };
+  // A reused local connection is sometimes reset: try once more.
+  const r = await fetch(local + url, opts).catch(() => new Promise((ok) => setTimeout(ok, 300)).then(() => fetch(local + url, opts)));
   const text = await r.text();
   if (!r.ok) throw new Error(`${method} ${url} ${r.status} ${text.slice(0, 200)}`);
   return text ? JSON.parse(text) : null;
@@ -56,7 +59,7 @@ async function demoStore() {
     const file = `${title.toLowerCase().replace(/\W+/g, "-")}.jpg`;
     // Real-looking product photos when the films have made them (out-shorts, out-promo stills).
     const photo = { "Glow Serum": productPhoto, "Daily SPF Mist": path.join(here, "out-promo", "stills", "mist.jpg"), "Silk Sleep Mask": path.join(here, "out-promo", "stills", "mask.jpg") }[title];
-    fs.writeFileSync(path.join(data, "images", file), ["shorts", "promo"].includes(FILM) && photo && fs.existsSync(photo)
+    fs.writeFileSync(path.join(data, "images", file), ["shorts", "promo", "real"].includes(FILM) && photo && fs.existsSync(photo)
       ? await sharp(photo).resize(1200, 1200).jpeg({ quality: 90 }).toBuffer()
       : await sharp({ create: { width: 900, height: 900, channels: 3, background: color } }).jpeg().toBuffer());
     db.prepare("INSERT INTO seller_media (image_file, seller_id) VALUES (?,?)").run(file, me.id);
@@ -80,6 +83,7 @@ async function demoStore() {
   }
   if (FILM === "shorts") await shortsDemo(s.token, me);
   if (FILM === "promo") await careDemo(s.token, me);
+  if (FILM === "real") await realDemo(s.token, me);
   return s.token;
 }
 
@@ -139,17 +143,65 @@ async function careDemo(token, me) {
   });
 }
 
+/** The real-people Shorts: a live Bloom store, a finished faceless video, an email list with a sent
+ *  email and the welcome email on, and a partner account. The AI answers are prepared (demo-real.json):
+ *  the private server has no AI key, so each AI request gets its prepared answer (see FAKE_AI). */
+const realFakes = fs.existsSync(path.join(here, "demo-real.json")) ? JSON.parse(fs.readFileSync(path.join(here, "demo-real.json"), "utf8")) : {};
+async function realDemo(token, me) {
+  db.prepare("UPDATE products SET status = 'live' WHERE seller_id = ?").run(me.id);
+  db.prepare("UPDATE sellers SET theme = 'bloom', signup_enabled = 1, mail_address = '100 Example Street, Austin, TX 78701' WHERE id = ?").run(me.id);
+  const serum = db.prepare("SELECT id FROM products WHERE seller_id = ? AND title = 'Glow Serum'").get(me.id).id;
+  // A finished faceless video for Glow Serum, drawn with the app's own slide maker (VP9: Chromium can't play H.264).
+  const faceless = await import(path.join(serverDir, "src/faceless.js"));
+  const f = realFakes.faceless;
+  const photos = ["glow-serum.jpg", "daily-spf-mist.jpg", "silk-sleep-mask.jpg"].map((x) => path.join(data, "images", x));
+  const frames = [];
+  for (const [i, sc] of f.scenes.slice(0, 4).entries()) {
+    const png = path.join(data, `fl-${i}.png`);
+    fs.writeFileSync(png, await faceless.slide(photos[i === 0 ? 0 : i % photos.length], i, sc.text, { big: i === 0 }));
+    frames.push(png);
+  }
+  fs.mkdirSync(path.join(data, "media"), { recursive: true });
+  const clip = path.join(data, "media", "demo-faceless.mp4");
+  const ins = frames.flatMap((p) => ["-i", p]);   // one picture each; zoompan makes 66 frames (2.2 s) from it
+  const fc = frames.map((_, i) => `[${i}:v]scale=720:1280,zoompan=z='1+0.0012*on':d=66:s=720x1280:fps=30,setsar=1[v${i}]`).join(";") + ";" + frames.map((_, i) => `[v${i}]`).join("") + `concat=n=${frames.length}:v=1:a=0[o]`;
+  ff(...ins, "-filter_complex", fc, "-map", "[o]", "-c:v", "libvpx-vp9", "-b:v", "2M", "-deadline", "realtime", "-cpu-used", "8", "-pix_fmt", "yuv420p", "-movflags", "+faststart", clip);
+  db.prepare("INSERT INTO faceless_jobs (id, seller_id, product_id, status, script, voice, file, seconds, created_at) VALUES ('fvid_demo', ?, ?, 'done', ?, 'af_heart', 'demo-faceless.mp4', 24, datetime('now','-1 day'))")
+    .run(me.id, serum, JSON.stringify({ hook: f.hook, scenes: f.scenes, cta: f.cta, caption: f.caption, hashtags: f.hashtags }));
+  // The email list: people who signed up in the store or opted in at checkout (example addresses).
+  const names = ["Ava", "Ben", "Chloe", "Dev", "Elena", "Femi", "Grace", "Hugo", "Isla", "Jon", "Kemi", "Leo", "Maya", "Nina", "Omar", "Pia", "Quinn", "Rosa", "Sam", "Tara", "Uma", "Vic", "Wren", "Yara", "Zane"];
+  const sub = db.prepare("INSERT INTO subscribers (id, seller_id, email, name, source, created_at) VALUES (?,?,?,?,?, datetime('now', ?))");
+  names.forEach((n, i) => sub.run(`sub_demo_${i}`, me.id, `${n.toLowerCase()}@example.com`, n, i % 3 === 0 ? "checkout" : "form", `-${i * 26 + 3} hours`));
+  db.prepare("INSERT INTO email_campaigns (id, seller_id, subject, preheader, body, cta_label, audience, status, recipients, created_at, send_at) VALUES ('cmp_demo', ?, 'The Glow Serum is back in stock', 'Your skin will thank you', 'Hi {name},\n\nGood news: the Glow Serum is back.', 'Shop now', 'all', 'sent', 22, datetime('now','-3 days'), datetime('now','-3 days'))").run(me.id);
+  try { db.prepare("UPDATE email_campaigns SET sent_at = datetime('now','-3 days') WHERE id = 'cmp_demo'").run(); } catch { /* older schema */ }
+  const send = db.prepare("INSERT INTO email_sends (id, seller_id, campaign_id, subscriber_id, email, status, sent_at, opened_at, clicked_at) VALUES (?,?, 'cmp_demo', ?, ?, 'sent', datetime('now','-3 days'), ?, ?)");
+  names.slice(0, 22).forEach((n, i) => send.run(`snd_demo_${i}`, me.id, `sub_demo_${i}`, `${n.toLowerCase()}@example.com`, i % 2 === 0 || i % 5 === 1 ? "2026-10-19 10:00:00" : null, i % 4 === 0 ? "2026-10-19 10:05:00" : null));
+  await api("PUT", "/api/email/flows/welcome", { enabled: true }, token);
+  // The partner program: joined, with a link.
+  await api("POST", "/api/partners/join", { agree: true }, token).catch((e) => console.error("partner join:", e.message));
+  Object.assign(ids, { product: serum });
+}
+
 /* ---------- the browser (as in tools/academy-screens) ---------- */
 const demoScript = fs.readFileSync(path.join(here, "demo-script.json"), "utf8");
+const FAKE_AI = [[/\/api\/ai\/product-from-photo$/, "photo"], [/\/api\/marketing\/copy$/, "copy"], [/\/api\/faceless\/script$/, "faceless"]];
 async function routeApi(context) {
   const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS" };
   await context.route(/^https:\/\/snapfront\.app\//, async (route) => {
     const req = route.request();
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
     if (req.method() === "POST" && /\/api\/ugc\/script$/.test(req.url())) { await new Promise((r) => setTimeout(r, 1400)); return route.fulfill({ status: 200, headers: { ...cors, "content-type": "application/json" }, body: demoScript }); }
+    // Prepared AI answers: the server runs its real route (saving the photo, checking the product, cleaning
+    // the answer) with the app's test hook handing askJson the prepared JSON.
+    const fake = req.method() === "POST" && FAKE_AI.find(([re]) => re.test(req.url()));
+    if (fake) { await new Promise((r) => setTimeout(r, 1600)); process.env.SNAPFRONT_FAKE_AI = JSON.stringify(realFakes[fake[1]]); }
+    // Graphics print the store's address: draw them with the live one (glow-lab.snapfront.app), not the test server's.
+    const live = /\/api\/marketing\/render$/.test(req.url());
+    if (live) config.storeDomain = "snapfront.app";
     const url = req.url().replace(/^https:\/\/snapfront\.app/, local);
     const headers = { ...req.headers() }; delete headers.host; delete headers.origin;
-    const res = await fetch(url, { method: req.method(), headers, body: ["GET", "HEAD"].includes(req.method()) ? undefined : req.postDataBuffer() });
+    const res = await fetch(url, { method: req.method(), headers, body: ["GET", "HEAD"].includes(req.method()) ? undefined : req.postDataBuffer() })
+      .finally(() => { if (fake) delete process.env.SNAPFRONT_FAKE_AI; if (live) config.storeDomain = "sf.localhost"; });
     let body = Buffer.from(await res.arrayBuffer());
     if (/json/.test(res.headers.get("content-type") || "")) body = Buffer.from(body.toString("utf8").replace(/http:\/\/([a-z0-9-]+\.)?sf\.localhost(:\d+)?/g, "https://$1snapfront.app").replace(/sf\.localhost(:\d+)?/g, "snapfront.app"));
     const h = Object.fromEntries([...res.headers.entries()].filter(([k]) => !["content-encoding", "content-length", "transfer-encoding"].includes(k)));
@@ -158,8 +210,20 @@ async function routeApi(context) {
 }
 const helpers = fs.readFileSync(path.join(root, "tools/academy-screens/record.mjs"), "utf8").match(/const HELPERS = `([\s\S]*?)`;/)[1];
 const find = (page, t) => (typeof t === "string" ? page.getByText(t, { exact: true }).first() : page.getByLabel(t.label, { exact: true }).first());
+const marks = {};
 async function step(page, [kind, target]) {
   if (kind === "wait") return page.waitForTimeout(Number(target) * 1000);
+  if (kind === "mark") { marks[target] = Date.now(); return; }
+  // Start the page's videos (muted, so the browser allows it).
+  if (kind === "play") return page.evaluate(() => { for (const v of document.querySelectorAll("video")) { v.muted = true; v.loop = true; v.play().catch(() => {}); } });
+  // Tap the photo frame, pick "Choose from library" and hand the file picker the demo photo.
+  if (kind === "photo") {
+    await step(page, ["tap", target]);
+    await page.waitForTimeout(700);
+    const [chooser] = await Promise.all([page.waitForEvent("filechooser", { timeout: 15000 }), step(page, ["tap", "Choose from library"])])
+      .catch(async (e) => { await page.screenshot({ path: path.join(OUT, "photo-step-failed.png") }); throw e; });
+    return chooser.setFiles(path.join(FILM_OUT, "stills", "candle.jpg"));
+  }
   if (kind === "type") return page.keyboard.type(String(target), { delay: 70 });
   const el = find(page, target);
   await el.waitFor({ state: "visible", timeout: 15000 });
@@ -191,7 +255,10 @@ async function record(browser, token, s) {
   await find(page, s.screen.ready).waitFor({ state: "visible", timeout: 30000 });
   await page.waitForTimeout(1200);
   const start = (Date.now() - t0) / 1000 + 0.5;
+  for (const k of Object.keys(marks)) delete marks[k];
   for (const st of s.screen.steps) await step(page, st);
+  // Where each marked moment falls in the finished recording (a beat's `from` can name one).
+  fs.writeFileSync(path.join(OUT, `${s.key}.marks.json`), JSON.stringify(Object.fromEntries(Object.entries(marks).map(([k, t]) => [k, Math.max(0, (t - t0) / 1000 - start)]))));
   const video = page.video(); await context.close();
   const out = path.join(OUT, `${s.key}.mp4`);
   ff("-ss", start.toFixed(2), "-i", await video.path(), "-vf", "scale=860:1864:flags=lanczos,setsar=1,fps=30", "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-an", "-movflags", "+faststart", out);

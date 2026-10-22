@@ -3,6 +3,9 @@
 //   node make.mjs stills [key …]    first frames (Seedream, 16:9) → out/stills/<key>.jpg
 //   node make.mjs animate [key …]   clips from those frames (Vidu/Seedance) → out/raw/<key>.mp4
 //   node make.mjs voice [key …]     Cecily's line for each scene (ElevenLabs) → out/voice/<key>.wav
+//                                   (a scene's own `voice` wins, e.g. each presenter in the real-people Shorts)
+//   node make.mjs talk [key …]      talking clips: a still saying a voiced line (InfiniteTalk) → out/raw/<key>.mp4
+//                                   (run voice first: the line's audio link lasts two hours)
 //   node make.mjs sheet             contact sheet of the stills → out/sheet.jpg
 // Then `python3 edit.py` cuts everything into the finished video.
 // Needs STUDIO_TOKEN. API defaults to https://snapfront.app.
@@ -69,13 +72,25 @@ async function animate(s) {
   state[s.key] = { ...state[s.key], video_url: url }; save();
   console.log("video", s.key);
 }
+async function talk(s) {
+  const image = state[s.still_of]?.still_url; if (!image) throw new Error(`${s.key}: make ${s.still_of} first`);
+  const line = state[s.talk.line];
+  if (!line?.voice_url || Date.now() - line.voice_at > 100 * 60e3) throw new Error(`${s.key}: voice ${s.talk.line} first (its audio link has expired)`);
+  const url = await run("infinitetalk", { prompt: s.talk.prompt, image, audio: line.voice_url, size: "720p", enable_safety_checker: true }, s.key);
+  const file = path.join(OUT, "raw", `${s.key}.mp4`); keep(file);
+  await download(url, file);
+  state[s.key] = { ...state[s.key], video_url: url }; save();
+  console.log("talk", s.key);
+}
 async function voice(s) {
   const parts = Array.isArray(s.say) ? s.say : [s.say];
   const files = [];
   for (const [i, text] of parts.entries()) {
     if (text.length > 300) throw new Error(`${s.key}: part ${i} is ${text.length} characters (300 at most)`);
-    const { url } = await call("POST", "/api/academy-presenter/voice-sample", { voice: VOICE, text });
+    const { url } = await call("POST", "/api/academy-presenter/voice-sample", { voice: s.voice || VOICE, text });
     const f = path.join(OUT, "voice", `${s.key}.${i}.wav`); await download(url, f); files.push(f);
+    // The public link (kept two hours on the server) is what a talking clip lip-syncs to.
+    if (parts.length === 1) { state[s.key] = { ...state[s.key], voice_url: url, voice_at: Date.now() }; save(); }
   }
   const file = path.join(OUT, "voice", `${s.key}.wav`); keep(file);
   if (files.length === 1) fs.renameSync(files[0], file);
@@ -101,11 +116,11 @@ function sheet() {
 const [cmd, ...keys] = process.argv.slice(2);
 if (cmd === "sheet") sheet();
 else {
-  const job = { stills: still, animate, voice }[cmd];
-  if (!job) { console.error("usage: node make.mjs stills|animate|voice|sheet [key …]"); process.exit(1); }
+  const job = { stills: still, animate, voice, talk }[cmd];
+  if (!job) { console.error("usage: node make.mjs stills|animate|voice|talk|sheet [key …]"); process.exit(1); }
   if (!TOKEN) { console.error("Set STUDIO_TOKEN"); process.exit(1); }
-  const list = pick(keys, cmd !== "voice");
-  const results = await Promise.allSettled(list.filter((s) => cmd !== "voice" || s.say).filter((s) => cmd !== "animate" || s.motion).filter((s) => cmd !== "stills" || s.still).map((s) => job(s)));
+  const list = pick(keys, cmd !== "voice").filter((s) => ({ voice: s.say, animate: s.motion, talk: s.talk, stills: s.still }[cmd]));
+  const results = await Promise.allSettled(list.map((s) => job(s)));
   results.forEach((r, i) => { if (r.status === "rejected") console.error("FAILED", list[i].key, r.reason.message); });
   process.exit(results.some((r) => r.status === "rejected") ? 1 : 0);
 }
