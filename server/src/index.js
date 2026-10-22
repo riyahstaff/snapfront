@@ -1096,7 +1096,7 @@ app.put("/api/academy-presenter/screens/:lesson/:slide", ownerOrStudio, express.
   wrap(async (req, res) => res.json(await academyPresenter.saveScreen(req.params.lesson, req.params.slide, req.body))));
 /* ---------- Studio: Runpod jobs for Snapfront's own site artwork (the home page's tool cards). Owner or studio token only. ---------- */
 const STUDIO_EPS = () => new Set(["qwen-image-t2i", "qwen-image-edit-2511", "nano-banana-pro-edit", "google-nano-banana-2-edit", "seedream-v4-edit", "seedream-v4-t2i",
-  ...avatarVideos.MODELS.map((m) => m.endpoint())]);
+  ...avatarVideos.MODELS.map((m) => m.endpoint()), avatarVideos.TALK.endpoint()]);
 const studioEp = (req) => { if (!STUDIO_EPS().has(req.params.ep)) throw httpError(404, "Unknown studio model."); return req.params.ep; };
 // Owner-only: Runpod's own reason comes back with a failure (e.g. out of balance), to fix it quickly.
 const withRunpodReason = (e) => { if (e.runpod) e.extra = { ...(e.extra || {}), runpod: e.runpod }; throw e; };
