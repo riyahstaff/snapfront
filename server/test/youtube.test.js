@@ -134,6 +134,81 @@ test("posting sends only the member's own finished videos, and avatar videos are
   assert.equal((await call(m.token, "GET", "/api/youtube")).json.posts[0].url, "https://www.youtube.com/watch?v=abc123");
 });
 
+const ffmpegPath = (await import("ffmpeg-static")).default;
+const { spawnSync } = await import("node:child_process");
+function makeVideo(name, seconds, size, ext = "mp4") {
+  const file = path.join(tmp, `${name}.${ext}`);
+  const r = spawnSync(ffmpegPath, ["-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", `testsrc=size=${size}:rate=5`, "-t", String(seconds),
+    ...(ext === "webm" ? ["-c:v", "libvpx-vp9", "-b:v", "50k"] : ["-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p"]), file]);
+  assert.equal(r.status, 0, String(r.stderr));
+  return fs.readFileSync(file);
+}
+const putChunk = (token, id, offset, buf) => fetch(`${base}/api/youtube/uploads/${id}/chunk?offset=${offset}`, { method: "PUT", headers: { "Content-Type": "application/octet-stream", Authorization: `Bearer ${token}` }, body: buf });
+async function upload(token, buf, name, type = "video/mp4") {
+  const st = await call(token, "POST", "/api/youtube/uploads", { name, size: buf.length, type });
+  if (st.status !== 201) return st;
+  const half = Math.ceil(buf.length / 2);
+  assert.equal((await putChunk(token, st.json.upload_id, 0, buf.subarray(0, half))).status, 200);
+  assert.equal((await (await putChunk(token, st.json.upload_id, 0, buf.subarray(0, half))).json()).received, half, "a repeated piece is ignored");
+  assert.equal((await putChunk(token, st.json.upload_id, half, buf.subarray(half))).status, 200);
+  return call(token, "POST", `/api/youtube/uploads/${st.json.upload_id}/finish`);
+}
+
+test("members can upload a video of their own in pieces and post it", async () => {
+  const vid = makeVideo("snapfront-promo", 2, "180x320");
+  const r = await upload(m.token, vid, "snapfront_promo.mp4");
+  assert.equal(r.status, 201, JSON.stringify(r.json));
+  assert.deepEqual([r.json.source, r.json.title, r.json.vertical], ["upload", "snapfront promo", true]);
+  assert.match(r.json.url, /^https:\/\/yt\.test\/media\/ytu-[a-f0-9]{24}\.mp4$/);
+  const file = path.join(tmp, "media", r.json.url.split("/").pop());
+  assert.ok(fs.existsSync(file));
+  assert.equal(fs.readdirSync(path.join(tmp, "media")).filter((f) => f.endsWith(".part")).length, 0, "no leftovers");
+  assert.ok((await call(m.token, "GET", "/api/youtube")).json.videos.some((v) => v.source === "upload" && v.id === r.json.id));
+  const p = await call(m.token, "POST", "/api/youtube/posts", { source: "upload", id: r.json.id, title: "What Snapfront does", visibility: "unlisted" });
+  assert.equal(p.status, 201, JSON.stringify(p.json));
+  assert.equal(calls.findLast((c) => c.route === "/posts").body.mediaItems[0].url, r.json.url);
+  // Someone else can neither post it nor delete it.
+  const other = await member();
+  db.prepare("INSERT INTO youtube_subs (session_id, account_id, status) VALUES ('cs_other', ?, 'active')").run(other.account.id);
+  db.prepare("INSERT INTO youtube_links (account_id, profile_id, zernio_account_id) VALUES (?, 'prof_o', 'zacc_o')").run(other.account.id);
+  assert.equal((await call(other.token, "POST", "/api/youtube/posts", { source: "upload", id: r.json.id, title: "Not mine" })).status, 404);
+  assert.equal((await call(other.token, "DELETE", `/api/youtube/uploads/${r.json.id}`)).status, 404);
+  assert.equal((await call(m.token, "DELETE", `/api/youtube/uploads/${r.json.id}`)).status, 200);
+  assert.ok(!fs.existsSync(file));
+});
+
+test("uploads are checked: other people's uploads, sizes, non-videos and videos over 3 minutes", async () => {
+  const vid = makeVideo("short", 1, "180x320");
+  const st = (await call(m.token, "POST", "/api/youtube/uploads", { name: "a.mp4", size: vid.length, type: "video/mp4" })).json;
+  const stranger = await member();
+  db.prepare("INSERT INTO youtube_subs (session_id, account_id, status) VALUES ('cs_str', ?, 'active')").run(stranger.account.id);
+  assert.equal((await putChunk(stranger.token, st.upload_id, 0, vid)).status, 404, "not their upload");
+  assert.equal((await call(stranger.token, "POST", `/api/youtube/uploads/${st.upload_id}/finish`)).status, 404);
+  assert.equal((await call(m.token, "POST", `/api/youtube/uploads/${st.upload_id}/finish`)).status, 400, "not complete yet");
+  assert.equal((await call(m.token, "POST", "/api/youtube/uploads", { name: "big.mp4", size: 301 * 1024 * 1024 })).status, 413);
+  assert.equal((await call(m.token, "POST", "/api/youtube/uploads", { name: "x.pdf", size: 10, type: "application/pdf" })).status, 415);
+  const free = await member(false);
+  assert.equal((await call(free.token, "POST", "/api/youtube/uploads", { name: "a.mp4", size: 10 })).status, 402);
+  const junk = Buffer.from("this is not a video at all".repeat(40));
+  assert.equal((await upload(m.token, junk, "fake.mp4")).status, 400);
+  const long = makeVideo("long", 182, "64x112");
+  const r = await upload(m.token, long, "long.mp4");
+  assert.equal(r.status, 400);
+  assert.match(r.json.error, /3 minutes or less/);
+  // A WebM is converted to MP4; a wide video is flagged as not vertical.
+  const w = await upload(m.token, makeVideo("wide", 1, "320x180", "webm"), "wide.webm", "video/webm");
+  assert.equal(w.status, 201, JSON.stringify(w.json));
+  assert.equal(w.json.vertical, false);
+  assert.match(w.json.url, /\.mp4$/);
+  const wfile = path.join(tmp, "media", w.json.url.split("/").pop());
+  assert.match(spawnSync(ffmpegPath, ["-hide_banner", "-i", wfile]).stderr.toString(), /Video: h264/, "converted to H.264");
+});
+
+test("phone rotation is read when deciding whether a video is vertical", () => {
+  const probe = youtube.readProbe("  Duration: 00:00:12.50, start\n  Stream #0:0[0x1](und): Video: h264 (High), yuv420p, 1920x1080, 30 fps\n    Side data:\n      displaymatrix: rotation of -90.00 degrees\n");
+  assert.deepEqual(probe, { seconds: 12.5, width: 1080, height: 1920, hasVideo: true, vcodec: "h264", acodec: null });
+});
+
 test("disconnecting forgets the channel; deleting the account stops the add-on", async () => {
   assert.equal((await call(m.token, "DELETE", "/api/youtube/connection")).json.connected, null);
   assert.equal((await call(m.token, "POST", "/api/youtube/posts", { source: "faceless", id: "fv1", title: "After disconnect" })).status, 409);

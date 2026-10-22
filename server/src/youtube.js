@@ -8,9 +8,15 @@
 // connected is always read back from Zernio, never taken from the browser.
 //
 // Videos are sent by their public address on snapfront.app (/media/<random name>.mp4). YouTube treats a
-// vertical video of 3 minutes or less as a Short. Avatar videos are always labelled as AI-made
+// vertical video of 3 minutes or less as a Short. Members can also upload a video of their own (an MP4,
+// MOV or WebM of up to 3 minutes), which is checked and saved as an MP4. Avatar videos are always labelled as AI-made
 // (YouTube's "altered or synthetic content"); for faceless videos the member decides.
-import { config } from "./config.js";
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import { spawn } from "node:child_process";
+import ffmpegPath from "ffmpeg-static";
+import { config, dirs } from "./config.js";
 import { db, newId } from "./db.js";
 import { httpError } from "./claude.js";
 import * as plans from "./plans.js";
@@ -59,6 +65,17 @@ CREATE TABLE IF NOT EXISTS youtube_posts (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS youtube_posts_account ON youtube_posts (account_id, created_at);
+CREATE TABLE IF NOT EXISTS youtube_uploads (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL,
+  file TEXT NOT NULL,
+  title TEXT NOT NULL,
+  seconds REAL NOT NULL,
+  width INTEGER,
+  height INTEGER,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS youtube_uploads_account ON youtube_uploads (account_id, created_at);
 `);
 
 /* ---------- Zernio ---------- */
@@ -132,6 +149,7 @@ export async function confirm(account, sessionId) {
 }
 /** Background check: renewals, cancellations; unfinished checkouts are dropped after a day. */
 export async function sweep() {
+  try { pruneUploads(); } catch (e) { console.warn("[youtube] prune uploads", e.message); }
   if (!webbilling.enabled()) return 0;
   const due = db.prepare(`SELECT * FROM youtube_subs WHERE (status = 'pending' AND checked_at < datetime('now','-10 minutes') AND created_at > datetime('now','-1 day'))
     OR (status = 'active' AND (expires_at IS NULL OR julianday(expires_at) < julianday('now','+1 hour')) AND checked_at < datetime('now','-30 minutes'))`).all();
@@ -147,6 +165,7 @@ export async function cancelAll(accountId) {
   db.prepare("DELETE FROM youtube_subs WHERE account_id = ?").run(accountId);
   db.prepare("DELETE FROM youtube_links WHERE account_id = ?").run(accountId);
   db.prepare("DELETE FROM youtube_posts WHERE account_id = ?").run(accountId);
+  for (const u of db.prepare("SELECT id FROM youtube_uploads WHERE account_id = ?").all(accountId)) removeUpload({ id: accountId }, u.id);
 }
 
 /* ---------- connecting the channel ---------- */
@@ -202,9 +221,123 @@ export async function disconnect(account) {
   return { connected: null };
 }
 
+/* ---------- the member's own videos (uploads) ---------- */
+export const UPLOAD_MAX_BYTES = 300 * 1024 * 1024;   // a 3-minute 1080p phone video is usually well under this
+const UPLOAD_MAX_SECONDS = 180;
+const UPLOADS_KEPT = 12;                              // the newest 12 per account; older ones are removed
+const UPLOADS_PER_DAY = 20;
+const UPLOAD_DAYS = 30;                               // uploads are removed after 30 days
+const UPLOAD_TYPES = /^(video\/(mp4|quicktime|webm|x-m4v)|application\/octet-stream)$/i;
+
+function ffmpeg(args, timeout) {
+  return new Promise((resolve, reject) => {
+    const p = spawn(ffmpegPath, args, { stdio: ["ignore", "ignore", "pipe"] });
+    let err = "";
+    p.stderr.on("data", (d) => { err = (err + d).slice(-6000); });
+    const t = setTimeout(() => { p.kill("SIGKILL"); reject(new Error("ffmpeg took too long")); }, timeout);
+    p.on("close", (code) => { clearTimeout(t); resolve({ code, err }); });
+    p.on("error", (e) => { clearTimeout(t); reject(e); });
+  });
+}
+/** Length, picture size (as shown, after any phone rotation) and whether there's a picture at all. */
+export function readProbe(err) {
+  const dur = /Duration: (\d+):(\d+):([\d.]+)/.exec(err);
+  const seconds = dur ? Number(dur[1]) * 3600 + Number(dur[2]) * 60 + Number(dur[3]) : 0;
+  const video = /Stream #\S+.*Video: [^\n]*?(\d{2,5})x(\d{2,5})/.exec(err);
+  let width = video ? Number(video[1]) : 0, height = video ? Number(video[2]) : 0;
+  const rot = /rotation of (-?[\d.]+) degrees|rotate\s*:\s*(-?\d+)/.exec(err);
+  if (rot && Math.abs(Math.round(Number(rot[1] ?? rot[2]))) % 180 === 90) [width, height] = [height, width];
+  const vcodec = (/Stream #\S+.*Video: (\w+)/.exec(err) || [])[1] || null;
+  const acodec = (/Stream #\S+.*Audio: (\w+)/.exec(err) || [])[1] || null;
+  return { seconds, width, height, hasVideo: Boolean(video), vcodec, acodec };
+}
+/* Uploads arrive in pieces of up to 8 MB (start → chunks in order → finish), so no proxy size limit or
+ * slow connection gets in the way, and nothing large is held in memory. Unfinished uploads are dropped after an hour. */
+export const CHUNK_BYTES = 8 * 1024 * 1024;
+const pending = new Map();   // upload id → { account, part, bytes, size, name, started }
+function dropStale() {
+  for (const [id, u] of pending) if (Date.now() - u.started > 3600_000) { fs.rmSync(u.part, { force: true }); pending.delete(id); }
+}
+export function startUpload(account, b = {}) {
+  needAddon(account);
+  dropStale();
+  const size = Number(b.size), type = String(b.type || "").split(";")[0].trim();
+  if (type && !UPLOAD_TYPES.test(type)) throw httpError(415, "Upload an MP4, MOV or WebM video.");
+  if (!Number.isInteger(size) || size <= 0) throw httpError(400, "Pick a video to upload.");
+  if (size > UPLOAD_MAX_BYTES) throw httpError(413, "That video is too big. Upload one under 300 MB.");
+  if (db.prepare("SELECT COUNT(*) AS n FROM youtube_uploads WHERE account_id = ? AND created_at >= datetime('now','-1 day')").get(account.id).n >= UPLOADS_PER_DAY)
+    throw httpError(429, `That's ${UPLOADS_PER_DAY} uploads today. Upload more tomorrow.`);
+  if ([...pending.values()].filter((u) => u.account === account.id).length >= 2) throw httpError(429, "Wait for your other upload to finish.");
+  fs.mkdirSync(dirs.media, { recursive: true });
+  const id = `ytu-${crypto.randomBytes(12).toString("hex")}`;
+  const part = path.join(dirs.media, `${id}.part`);
+  fs.writeFileSync(part, Buffer.alloc(0), { flag: "wx" });
+  pending.set(id, { account: account.id, part, bytes: 0, size, name: String(b.name || ""), started: Date.now() });
+  return { upload_id: id, chunk_bytes: CHUNK_BYTES };
+}
+const pendingFor = (account, id) => {
+  const u = pending.get(String(id));
+  if (!u || u.account !== account.id) throw httpError(404, "That upload has expired. Start it again.");
+  return u;
+};
+export function appendChunk(account, id, offset, chunk) {
+  const u = pendingFor(account, id);
+  if (!Buffer.isBuffer(chunk) || !chunk.length || chunk.length > CHUNK_BYTES) throw httpError(400, "That piece of the video didn't arrive. Try again.");
+  if (Number(offset) !== u.bytes) return { received: u.bytes };   // a repeated piece: tell the app where to carry on
+  if (u.bytes + chunk.length > u.size) throw httpError(400, "That video is bigger than expected. Start the upload again.");
+  fs.appendFileSync(u.part, chunk);
+  u.bytes += chunk.length;
+  return { received: u.bytes };
+}
+/** All pieces are in: check the video and keep it as an MP4. */
+export async function finishUpload(account, id) {
+  const u = pendingFor(account, id);
+  if (u.bytes !== u.size) throw httpError(400, "The upload isn't complete yet. Try again.");
+  pending.delete(String(id));
+  const raw = u.part, out = path.join(dirs.media, `${id}.mp4`);
+  try {
+    const probe = readProbe((await ffmpeg(["-hide_banner", "-i", raw], 60_000)).err);
+    if (!probe.hasVideo || !probe.seconds) throw httpError(400, "That file isn't a video we can read. Upload an MP4, MOV or WebM.");
+    if (probe.seconds > UPLOAD_MAX_SECONDS + 0.5) throw httpError(400, `That video is ${Math.round(probe.seconds)} seconds long. YouTube Shorts are 3 minutes or less, so trim it first.`);
+    // Repackage without re-encoding when it's already H.264/HEVC with AAC/MP3 sound (most phones); otherwise convert.
+    const copyable = ["h264", "hevc"].includes(probe.vcodec) && (!probe.acodec || ["aac", "mp3"].includes(probe.acodec));
+    let r = copyable ? await ffmpeg(["-y", "-hide_banner", "-loglevel", "error", "-i", raw, "-map", "0:v:0", "-map", "0:a:0?", "-c", "copy", "-movflags", "+faststart", "-f", "mp4", out], 120_000) : { code: 1 };
+    if (r.code !== 0) {
+      fs.rmSync(out, { force: true });
+      r = await ffmpeg(["-y", "-hide_banner", "-loglevel", "error", "-i", raw, "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", "-f", "mp4", out], 600_000);
+      if (r.code !== 0) throw httpError(400, "That video couldn't be converted. Export it as an MP4 and try again.");
+    }
+    const title = line(u.name.replace(/\.[a-z0-9]{2,4}$/i, "").replace(/[_-]+/g, " "), 100) || "My video";
+    db.prepare("INSERT INTO youtube_uploads (id, account_id, file, title, seconds, width, height) VALUES (?,?,?,?,?,?,?)")
+      .run(id, account.id, `${id}.mp4`, title, Math.round(probe.seconds * 10) / 10, probe.width || null, probe.height || null);
+    for (const old of db.prepare("SELECT id FROM youtube_uploads WHERE account_id = ? ORDER BY created_at DESC, rowid DESC LIMIT -1 OFFSET ?").all(account.id, UPLOADS_KEPT)) removeUpload(account, old.id);
+    return uploadView(db.prepare("SELECT * FROM youtube_uploads WHERE id = ?").get(id));
+  } catch (e) {
+    fs.rmSync(out, { force: true });
+    throw e;
+  } finally {
+    fs.rmSync(raw, { force: true });
+  }
+}
+const uploadView = (u) => ({ source: "upload", id: u.id, title: u.title, description: "#Shorts", seconds: u.seconds, created_at: u.created_at, ai: false,
+  vertical: !(u.width && u.height) || u.height >= u.width, url: `${config.publicUrl}/media/${u.file}` });
+export function removeUpload(account, id) {
+  const u = db.prepare("SELECT * FROM youtube_uploads WHERE id = ? AND account_id = ?").get(String(id), account.id);
+  if (!u) throw httpError(404, "That video is already gone.");
+  if (/^ytu-[a-f0-9]{24}\.mp4$/.test(u.file)) fs.rmSync(path.join(dirs.media, u.file), { force: true });
+  db.prepare("DELETE FROM youtube_uploads WHERE id = ?").run(u.id);
+  return { ok: true };
+}
+/** Uploads older than 30 days (and those of deleted accounts) are removed. */
+function pruneUploads() {
+  for (const u of db.prepare("SELECT id, account_id FROM youtube_uploads WHERE created_at < datetime('now', ?)").all(`-${UPLOAD_DAYS} days`)) {
+    try { removeUpload({ id: u.account_id }, u.id); } catch { /* already gone */ }
+  }
+}
+
 /* ---------- the videos and posting ---------- */
 /** The member's finished videos that can go to YouTube, newest first. */
-export function videos(seller) {
+export function videos(seller, account) {
   const faceless = db.prepare("SELECT id, file, seconds, created_at, script FROM faceless_jobs WHERE seller_id = ? AND status = 'done' AND file IS NOT NULL ORDER BY created_at DESC LIMIT 30").all(seller.id)
     .map((v) => {
       let sc = {}; try { sc = JSON.parse(v.script) || {}; } catch { /* old rows */ }
@@ -214,15 +347,17 @@ export function videos(seller) {
     });
   const avatar = db.prepare("SELECT id, file, duration, created_at, prompt FROM avatar_videos WHERE seller_id = ? AND status = 'done' AND file IS NOT NULL ORDER BY created_at DESC LIMIT 30").all(seller.id)
     .map((v) => ({ source: "avatar", id: v.id, title: String(v.prompt || "Avatar video").slice(0, 100), description: "#Shorts", seconds: v.duration, created_at: v.created_at, ai: true, file: v.file }));
-  return [...faceless, ...avatar].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-    .map(({ file, ...v }) => ({ ...v, url: `${config.publicUrl}/media/${file}` }));
+  const made = [...faceless, ...avatar].map(({ file, ...v }) => ({ ...v, url: `${config.publicUrl}/media/${file}` }));
+  const uploads = account ? db.prepare("SELECT * FROM youtube_uploads WHERE account_id = ? ORDER BY created_at DESC LIMIT ?").all(account.id, UPLOADS_KEPT).map(uploadView) : [];
+  return [...uploads, ...made].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
 }
 // YouTube refuses "<" and ">" in titles and descriptions.
 const line = (s, n) => String(s ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
 const VISIBILITY = ["public", "unlisted", "private"];
-function videoFor(seller, source, id) {
+function videoFor(account, seller, source, id) {
   const row = source === "faceless" ? db.prepare("SELECT file FROM faceless_jobs WHERE id = ? AND seller_id = ? AND status = 'done'").get(String(id), seller.id)
-    : source === "avatar" ? db.prepare("SELECT file FROM avatar_videos WHERE id = ? AND seller_id = ? AND status = 'done'").get(String(id), seller.id) : null;
+    : source === "avatar" ? db.prepare("SELECT file FROM avatar_videos WHERE id = ? AND seller_id = ? AND status = 'done'").get(String(id), seller.id)
+    : source === "upload" ? db.prepare("SELECT file FROM youtube_uploads WHERE id = ? AND account_id = ?").get(String(id), account.id) : null;
   if (!row?.file || !/^[\w-]+\.mp4$/.test(row.file)) throw httpError(404, "Pick one of your finished videos.");
   return `${config.publicUrl}/media/${row.file}`;
 }
@@ -241,9 +376,9 @@ export async function post(account, seller, b = {}) {
   const link = db.prepare("SELECT * FROM youtube_links WHERE account_id = ?").get(account.id);
   if (!link?.zernio_account_id) throw httpError(409, "Connect your YouTube channel first.");
   if (db.prepare("SELECT COUNT(*) AS n FROM youtube_posts WHERE account_id = ? AND created_at >= datetime('now','-1 day')").get(account.id).n >= DAILY_POSTS) throw httpError(429, `That's ${DAILY_POSTS} videos to YouTube today. Post more tomorrow.`);
-  const source = b.source === "avatar" ? "avatar" : b.source === "faceless" ? "faceless" : null;
+  const source = ["avatar", "faceless", "upload"].includes(b.source) ? b.source : null;
   if (!source) throw httpError(400, "Pick one of your videos.");
-  const url = videoFor(seller, source, b.id);
+  const url = videoFor(account, seller, source, b.id);
   const title = line(b.title, 100);
   if (title.length < 3) throw httpError(400, "Give the video a title (up to 100 characters).");
   const description = String(b.description ?? "").replace(/\r/g, "").replace(/[<>]/g, "").trim().slice(0, 5000);
@@ -279,7 +414,7 @@ export async function status(account, seller) {
   return {
     enabled: enabled(), price: money(cents()), member: isMember(account), subscribed: hasAddon(account), owner: credits.isOwner(account),
     connected: link?.zernio_account_id ? { username: link.username || "Your channel" } : null,
-    videos: videos(seller),
+    videos: videos(seller, account),
     posts: db.prepare("SELECT * FROM youtube_posts WHERE account_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 20").all(account.id).map(publicPost),
   };
 }

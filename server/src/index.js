@@ -1127,6 +1127,12 @@ app.post("/api/youtube/sync", auth, wrap(async (req, res) => {
   res.json(!found && credits.isOwner(req.account) ? { ...st, diagnostic: youtube.diagnostic(req.account.id) } : st);
 }));
 app.delete("/api/youtube/connection", auth, wrap(async (req, res) => { await youtube.disconnect(req.account); res.json(await youtube.status(req.account, req.seller)); }));
+// A video of the member's own (MP4, MOV or WebM, up to 300 MB and 3 minutes), sent in pieces of up to 8 MB.
+app.post("/api/youtube/uploads", auth, (req, res) => res.status(201).json(youtube.startUpload(req.account, req.body || {})));
+app.put("/api/youtube/uploads/:id/chunk", auth, express.raw({ type: "application/octet-stream", limit: "9mb" }),
+  (req, res) => res.json(youtube.appendChunk(req.account, req.params.id, req.query.offset, req.body)));
+app.post("/api/youtube/uploads/:id/finish", auth, wrap(async (req, res) => res.status(201).json(await youtube.finishUpload(req.account, req.params.id))));
+app.delete("/api/youtube/uploads/:id", auth, (req, res) => res.json(youtube.removeUpload(req.account, req.params.id)));
 app.post("/api/youtube/posts", auth, wrap(async (req, res) => res.status(201).json(await youtube.post(req.account, req.seller, req.body || {}))));
 app.get("/api/faceless", auth, (req, res) => res.json(faceless.jobs(req.seller)));
 app.post("/api/faceless/script", auth, aiLimit, wrap(async (req, res) => res.json(await faceless.writeScript(req.account, req.seller, req.body || {}))));

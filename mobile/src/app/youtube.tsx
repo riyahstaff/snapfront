@@ -1,9 +1,10 @@
 // YouTube Shorts: a paid add-on ($24.99 a month) that posts the member's finished Snapfront videos
-// (faceless videos and avatar videos) straight to their own YouTube channel. Three steps on one
+// (faceless videos, avatar videos, or a video they upload) straight to their own YouTube channel. Three steps on one
 // screen: switch it on, connect the channel, post a video. Subscribing happens on the website; the
 // phone app sends people there.
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, Notice, Segmented } from "@/components/ui";
@@ -70,6 +71,27 @@ export default function YoutubeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the list first arrives
   }, [st]);
   function choose(v: YoutubeVideo) { setPick(v); setTitle(v.title); setDesc(v.description); setAi(v.ai); }
+  const [progress, setProgress] = useState<number | null>(null);
+  const uploadVideo = () => act("upload", async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["videos"], allowsEditing: false, quality: 1 });
+    const a = res.canceled ? null : res.assets?.[0];
+    if (!a) return;
+    if (a.duration && a.duration > 180_500) throw new ApiError(`That video is ${Math.round(a.duration / 1000)} seconds long. YouTube Shorts are 3 minutes or less, so trim it first.`, 400);
+    const web = (a as { file?: File }).file;
+    const blob: Blob = web ?? await (await fetch(a.uri)).blob();
+    setProgress(0);
+    try {
+      const v = await youtubeApi.upload(blob, a.fileName || web?.name || "My video.mp4", setProgress);
+      setProgress(1);
+      setSt(await youtubeApi.status());
+      choose(v);
+      setMsg({ text: v.vertical === false ? "Uploaded. It's wider than it is tall, so YouTube will post it as a regular video, not a Short." : "Uploaded. Add a title and post it.", tone: v.vertical === false ? "info" : "ok" });
+    } finally { setProgress(null); }
+  }, "Couldn't upload the video. Try again.");
+  const removeUpload = (v: YoutubeVideo) => {
+    const go = () => act("remove", async () => { await youtubeApi.removeUpload(v.id); if (pick?.id === v.id) setPick(null); setSt(await youtubeApi.status()); }, "Couldn't remove the video.");
+    if (Platform.OS === "web") go(); else Alert.alert("Remove this video from Snapfront?", "Anything already posted stays on YouTube.", [{ text: "Cancel", style: "cancel" }, { text: "Remove", style: "destructive", onPress: go }]);
+  };
 
   async function act(key: string, fn: () => Promise<void>, fail: string) {
     setBusy(key); setMsg(null);
@@ -130,15 +152,15 @@ export default function YoutubeScreen() {
       </Card>
 
       <Card title="Post a video" right={step(3, st.posts.some((p) => p.status === "published"))}>
-        {!st.videos.length ? (
-          <View style={{ gap: space.sm }}>
-            <Body muted>No finished videos yet. Make a faceless video or an avatar video first.</Body>
-            <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
-              <Button label="Faceless videos" variant="secondary" onPress={() => router.push("/faceless")} />
-              <Button label="AI avatars" variant="secondary" onPress={() => router.push("/avatars")} />
-            </View>
+        <View style={{ gap: space.sm }}>
+          <Body muted>Upload a video of your own (MP4, MOV or WebM, up to 3 minutes and 300 MB), or post one you made in Snapfront.</Body>
+          <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap", alignItems: "center" }}>
+            <Button label={progress !== null ? (progress >= 1 ? "Checking the video…" : `Uploading ${Math.round(progress * 100)}%`) : "Upload a video"} loading={busy === "upload"} disabled={!st.subscribed || busy !== null} onPress={uploadVideo} />
+            <Button label="Faceless videos" variant="ghost" onPress={() => router.push("/faceless")} />
+            <Button label="AI avatars" variant="ghost" onPress={() => router.push("/avatars")} />
           </View>
-        ) : (
+        </View>
+        {!st.videos.length ? null : (
           <View style={{ gap: space.md }}>
             <View style={{ gap: 8 }}>
               {st.videos.slice(0, 12).map((v) => {
@@ -146,11 +168,12 @@ export default function YoutubeScreen() {
                 return (
                   <Pressable key={`${v.source}-${v.id}`} onPress={() => choose(v)} accessibilityRole="radio" accessibilityState={{ checked: on }}
                     style={{ flexDirection: "row", alignItems: "center", gap: space.md, padding: 12, borderRadius: radius.md, borderWidth: on ? 2 : 1, borderColor: on ? c.accent : c.line, backgroundColor: c.bg }}>
-                    <Ionicons name={v.source === "avatar" ? "person-circle-outline" : "videocam-outline"} size={22} color={c.muted} />
+                    <Ionicons name={v.source === "avatar" ? "person-circle-outline" : v.source === "upload" ? "cloud-upload-outline" : "videocam-outline"} size={22} color={c.muted} />
                     <View style={{ flex: 1 }}>
                       <Text style={[type.label, { color: c.ink }]} numberOfLines={1}>{v.title}</Text>
-                      <Text style={[type.small, { color: c.muted }]}>{v.source === "avatar" ? "Avatar video" : "Faceless video"}{v.seconds ? ` · ${v.seconds}s` : ""}</Text>
+                      <Text style={[type.small, { color: c.muted }]}>{v.source === "avatar" ? "Avatar video" : v.source === "upload" ? "Your upload" : "Faceless video"}{v.seconds ? ` · ${Math.round(v.seconds)}s` : ""}{v.vertical === false ? " · wide, posts as a regular video" : ""}</Text>
                     </View>
+                    {v.source === "upload" ? <Button label="Remove" variant="ghost" disabled={busy !== null} onPress={() => removeUpload(v)} /> : null}
                   </Pressable>
                 );
               })}

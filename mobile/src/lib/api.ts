@@ -918,7 +918,7 @@ export const ugcApi = {
 };
 
 /* ---------- YouTube Shorts add-on (Zernio) ---------- */
-export type YoutubeVideo = { source: "faceless" | "avatar"; id: string; title: string; description: string; seconds: number | null; created_at: string; ai: boolean; url: string };
+export type YoutubeVideo = { source: "faceless" | "avatar" | "upload"; id: string; title: string; description: string; seconds: number | null; created_at: string; ai: boolean; url: string; vertical?: boolean };
 export type YoutubePost = { id: string; source: string; source_id: string; title: string; status: "sending" | "scheduled" | "published" | "failed"; url: string | null; error: string | null; created_at: string };
 export type YoutubeStatus = { enabled: boolean; price: string; member: boolean; subscribed: boolean; owner: boolean; connected: { username: string } | null; videos: YoutubeVideo[]; posts: YoutubePost[] };
 export const youtubeApi = {
@@ -929,6 +929,33 @@ export const youtubeApi = {
   sync: (accountId?: string) => request<YoutubeStatus & { diagnostic?: Record<string, number | boolean> }>("POST", "/api/youtube/sync", accountId ? { account_id: accountId } : {}),
   disconnect: () => request<YoutubeStatus>("DELETE", "/api/youtube/connection"),
   post: (b: { source: string; id: string; title: string; description: string; visibility: "public" | "unlisted" | "private"; ai: boolean; made_for_kids: boolean }) => request<YoutubePost>("POST", "/api/youtube/posts", b, undefined, 120000),
+  /** Upload a video of your own in pieces (so big phone videos get through), then have it checked. */
+  async upload(video: Blob, name: string, onProgress?: (share: number) => void): Promise<YoutubeVideo> {
+    const start = await request<{ upload_id: string; chunk_bytes: number }>("POST", "/api/youtube/uploads", { name, size: video.size, type: video.type || "video/mp4" });
+    let offset = 0;
+    while (offset < video.size) {
+      const piece = video.slice(offset, Math.min(video.size, offset + start.chunk_bytes));
+      let tries = 0;
+      for (;;) {
+        try {
+          const res = await fetch(`${API_URL}/api/youtube/uploads/${encodeURIComponent(start.upload_id)}/chunk?offset=${offset}`, {
+            method: "PUT", headers: { "Content-Type": "application/octet-stream", Authorization: `Bearer ${await token()}`, ...APP_HEADER }, body: piece,
+          });
+          const data = await res.json().catch(() => ({})) as { received?: number; error?: string };
+          if (!res.ok) throw new ApiError(data.error || "The upload stopped. Try again.", res.status);
+          offset = Number(data.received);
+          break;
+        } catch (e) {
+          // A dropped connection gets three more tries; the server ignores a piece it already has.
+          if ((e instanceof ApiError && e.status !== 0 && e.status < 500) || ++tries > 3) throw e instanceof ApiError ? e : new ApiError("The upload stopped. Check your connection and try again.", 0);
+          await new Promise((r) => setTimeout(r, 1500 * tries));
+        }
+      }
+      onProgress?.(offset / video.size);
+    }
+    return request<YoutubeVideo>("POST", `/api/youtube/uploads/${encodeURIComponent(start.upload_id)}/finish`, undefined, undefined, 15 * 60_000);
+  },
+  removeUpload: (id: string) => request<{ ok: boolean }>("DELETE", `/api/youtube/uploads/${encodeURIComponent(id)}`),
 };
 
 /* ---------- faceless videos ---------- */

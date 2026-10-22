@@ -66,6 +66,7 @@ export function PhotoComposer() {
       <Field label="Price (USD)" hint="Leave blank for a suggested price." value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="e.g. 24" />
       <Notice text={error} tone="error" />
       <Button label={busy ? "Writing your page…" : "Build product page"} onPress={build} loading={busy} disabled={!photo} />
+      {!photo ? <Body muted>Add a photo first: tap the frame above. For a digital product, a screenshot or cover image works.</Body> : null}
       <Button label="Check market price first" variant="ghost" onPress={() => {
         if (photo) priceCheckPhoto.set(photo);
         router.push("/price-check");
