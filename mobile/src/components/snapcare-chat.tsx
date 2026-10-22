@@ -10,15 +10,16 @@ import { fonts, radius, space, type, useColors } from "@/lib/theme";
 const SUGGESTIONS = ["My avatar video seems stuck", "A buyer didn't get their download", "I paid but my plan didn't change", "How do I post to YouTube Shorts?"];
 const URL_RE = /(https?:\/\/[^\s)]+)/;
 
+/** Plain text with working links and **bold** (SnapCare bolds button and page names). */
 function Linked({ text, color }: { text: string; color: string }) {
   const c = useColors();
-  const parts = text.split(URL_RE);
+  const parts = text.replace(/^#{1,6}\s+/gm, "").split(URL_RE);
   return (
     <Text style={[type.body, { color, lineHeight: 22 }]} selectable>
       {/* split() with a capture group puts each link at an odd index */}
       {parts.map((p, i) => (i % 2 === 1
         ? <Text key={i} style={{ color: c.accent, textDecorationLine: "underline" }} onPress={() => Linking.openURL(p).catch(() => {})}>{p}</Text>
-        : <Text key={i}>{p}</Text>))}
+        : p.split(/\*\*(.+?)\*\*/g).map((q, j) => (j % 2 === 1 ? <Text key={`${i}-${j}`} style={{ fontFamily: fonts.bodyBold }}>{q}</Text> : <Text key={`${i}-${j}`}>{q}</Text>))))}
     </Text>
   );
 }
