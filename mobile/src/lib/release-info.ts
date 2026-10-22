@@ -1,6 +1,6 @@
 import * as Application from "expo-application";
 
-export const RELEASE_NAME = "New UGC lesson · founding Lifetime · cleaner home";
+export const RELEASE_NAME = "YouTube Shorts add-on · SnapCare help chat · video flow";
 
 /** Native values identify the binary actually installed, not a Play Console track or JS config. */
 export function installedRelease() {
