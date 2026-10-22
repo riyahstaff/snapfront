@@ -94,6 +94,16 @@ export default function ProductScreen() {
         <Button label="Product Photo Cleanup" variant="secondary" icon={<Ionicons name="color-wand-outline" size={18} color={c.ink} />}
           onPress={() => router.push({ pathname: "/studio", params: { target: p.id, image_file: p.image_file!, image_url: p.image_url ?? "" } })} />
       ) : null}
+      {p.image_file ? (
+        <View style={{ gap: space.sm }}>
+          <H2>Make a video</H2>
+          <Body muted>Turn this product into a short video for YouTube Shorts, TikTok and Reels. When it’s ready, post it to YouTube straight from the video.</Body>
+          <Button label="Make a video with an AI avatar" variant="secondary" icon={<Ionicons name="person-circle-outline" size={18} color={c.ink} />} disabled={busy !== null}
+            onPress={() => router.push({ pathname: "/avatars", params: { product: p.id } })} />
+          <Button label="Make a faceless video" variant="secondary" icon={<Ionicons name="videocam-outline" size={18} color={c.ink} />} disabled={busy !== null}
+            onPress={() => router.push({ pathname: "/faceless", params: { product: p.id } })} />
+        </View>
+      ) : null}
       <View style={{ gap: space.md }}>
         <H2>Words</H2>
         <Field label="Title" value={words.title} onChangeText={(title) => setWords({ ...words, title })} maxLength={120} />

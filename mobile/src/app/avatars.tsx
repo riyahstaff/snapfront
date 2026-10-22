@@ -6,7 +6,7 @@
 //   3. Make a video          (inside the open photo; its videos show in the same card)
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, Notice, Pill, Segmented } from "@/components/ui";
@@ -30,6 +30,7 @@ export default function AvatarsScreen() {
   const scroller = useRef<ScrollView>(null);
   const stepY = useRef<Record<Area, number>>({ avatar: 0, photo: 0, video: 0 });
   const [studio, setStudio] = useState<AvatarStudio | null>(null);
+  const { product: wantedProduct } = useLocalSearchParams<{ product?: string }>();
   const [products, setProducts] = useState<Product[]>([]);
   // Messages show in the step they belong to, next to what the seller just did.
   // "where" pins a video message to the photo (or portrait) the video belongs to.
@@ -70,8 +71,9 @@ export default function AvatarsScreen() {
   useEffect(() => {
     load();
     loadVideos();
-    api.products().then((list) => { const w = list.filter((p) => p.image_file); setProducts(w); setProductId((x) => x ?? w[0]?.id ?? null); }).catch(() => {});
-  }, [load, loadVideos]);
+    // Opened from a product ("Make a video with an AI avatar"): that product is picked for the photo.
+    api.products().then((list) => { const w = list.filter((p) => p.image_file); setProducts(w); setProductId((x) => x ?? (w.some((p) => p.id === wantedProduct) ? String(wantedProduct) : w[0]?.id) ?? null); }).catch(() => {});
+  }, [load, loadVideos, wantedProduct]);
   // Check videos still being made (they take a few minutes).
   useEffect(() => {
     if (vtimer.current) clearInterval(vtimer.current);
@@ -80,6 +82,9 @@ export default function AvatarsScreen() {
     vtimer.current = setInterval(async () => {
       const fresh = await Promise.all(running.map((v) => api.avatarVideo(v.id).catch(() => v)));
       setVstudio((st) => st && ({ ...st, videos: st.videos.map((v) => fresh.find((f) => f.id === v.id) ?? v) }));
+      // A video that just finished: point to the next step, right where the video is.
+      const done = fresh.find((f) => f.status === "done");
+      if (done) setNote({ at: "video", where: done.shot_id ?? `portrait:${done.avatar_id}`, msg: { text: "Your video is ready. Tap Post to YouTube Shorts under it, or save it to your phone.", tone: "ok" } });
       if (fresh.some((f) => f.status === "failed")) api.avatarVideos().then((s) => setVstudio((st) => st && ({ ...st, balance: s.balance }))).catch(() => {});
     }, 6000);
     return () => { if (vtimer.current) clearInterval(vtimer.current); };

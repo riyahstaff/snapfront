@@ -2,7 +2,7 @@
 // choose a voice, and Snapfront makes a vertical video with your photos, captions and voiceover.
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import * as Clipboard from "expo-clipboard";
 import { Button, Field, Notice, Pill, PageScroll } from "@/components/ui";
@@ -15,6 +15,7 @@ const errText = (e: unknown, f: string) => (e instanceof ApiError ? e.message : 
 
 export default function FacelessScreen() {
   const c = useColors();
+  const { product: wanted } = useLocalSearchParams<{ product?: string }>();
   const [products, setProducts] = useState<Product[] | null>(null);
   const [voices, setVoices] = useState<{ id: string; name: string; accent: string }[]>([]);
   const [styles, setStyles] = useState<{ id: string; name: string }[]>([]);
@@ -31,8 +32,8 @@ export default function FacelessScreen() {
   }, []);
   useFocusEffect(useCallback(() => {
     load();
-    api.products().then((p) => { const live = p.filter((x) => x.status === "live" || x.image_url); setProducts(live); setProduct((cur) => cur || live[0]?.id || ""); }).catch(() => setProducts([]));
-  }, [load]));
+    api.products().then((p) => { const live = p.filter((x) => x.status === "live" || x.image_url); setProducts(live); setProduct((cur) => cur || (live.some((x) => x.id === wanted) ? String(wanted) : live[0]?.id) || ""); }).catch(() => setProducts([]));
+  }, [load, wanted]));
   // Check back while a video is being made.
   useEffect(() => {
     if (!jobs.some((j) => j.status === "queued" || j.status === "working")) return;

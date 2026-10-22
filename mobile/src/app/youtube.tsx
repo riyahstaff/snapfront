@@ -2,7 +2,7 @@
 // (faceless videos, avatar videos, or a video they upload) straight to their own YouTube channel. Three steps on one
 // screen: switch it on, connect the channel, post a video. Subscribing happens on the website; the
 // phone app sends people there.
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -29,6 +29,8 @@ export default function YoutubeScreen() {
   const [visibility, setVisibility] = useState<"public" | "unlisted" | "private">("public");
   const [ai, setAi] = useState(false);
   const [kids, setKids] = useState(false);
+  const scroller = useRef<ScrollView>(null);
+  const postY = useRef(0);
   const [progress, setProgress] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [alts, setAlts] = useState<string[]>([]);
@@ -70,7 +72,11 @@ export default function YoutubeScreen() {
   useEffect(() => {
     if (!st || pick) return;
     const v = st.videos.find((x) => x.source === q.source && x.id === q.id) ?? null;
-    if (v) choose(v);
+    if (v) {
+      choose(v);
+      // Straight to the post form, below the steps that are already done.
+      setTimeout(() => scroller.current?.scrollTo({ y: Math.max(0, postY.current - 12), animated: true }), 350);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the list first arrives
   }, [st]);
   function choose(v: YoutubeVideo) { setPick(v); setTitle(v.title); setDesc(v.description); setAi(v.ai); setAlts([]); }
@@ -126,7 +132,7 @@ export default function YoutubeScreen() {
   );
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64, width: "100%", maxWidth: 760, alignSelf: "center" }} keyboardShouldPersistTaps="handled">
+    <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64, width: "100%", maxWidth: 760, alignSelf: "center" }} keyboardShouldPersistTaps="handled">
       <View style={{ gap: space.sm }}>
         <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>YouTube Shorts</Text>
         <Body muted>Post your Snapfront videos straight to your own YouTube channel. Vertical videos of 3 minutes or less become Shorts.</Body>
@@ -159,6 +165,7 @@ export default function YoutubeScreen() {
         )}
       </Card>
 
+      <View onLayout={(e) => { postY.current = e.nativeEvent.layout.y; }}>
       <Card title="Post a video" right={step(3, st.posts.some((p) => p.status === "published"))}>
         <View style={{ gap: space.sm }}>
           <Body muted>Upload a video of your own (MP4, MOV or WebM, up to 3 minutes and 300 MB), or post one you made in Snapfront.</Body>
@@ -217,6 +224,7 @@ export default function YoutubeScreen() {
           </View>
         )}
       </Card>
+      </View>
 
       {st.posts.length ? (
         <Card title="Posted">
