@@ -211,7 +211,7 @@ export type VideoVoice = { id: string; name: string; accent: string; gender?: st
 export type AvatarVideoStudio = { enabled: boolean; balance: number; free?: boolean; models: VideoModel[]; motions: { id: string; name: string }[];
   voiceover?: { chars_per_second: number; voices: VideoVoice[] };
   premium_voice?: { name: string; per_1k_chars: number; min: number; step: number } | null;
-  talk: { resolutions: string[]; prices: Record<string, number>; max_chars: number; styles: string[]; voices: VideoVoice[] }; videos: AvatarVideo[] };
+  talk: { price: number; max_chars: number; styles: string[]; voices: VideoVoice[] }; videos: AvatarVideo[] };
 export type AvatarStudio = { enabled: boolean; max_avatars: number; engines?: PhotoEngine[]; styles: { id: string; name: string; blurb: string }[]; poses: { id: string; name: string }[]; avatars: Avatar[]; shots: AvatarShot[];
   /** "Use my photo" and "Blend two photos" are switched on. */
   from_photos?: boolean; mixes?: { id: string; name: string }[] };

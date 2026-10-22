@@ -84,7 +84,10 @@ export const MODELS = [
 const OLD_NAMES = { kling: "Kling O1" };
 /** About how many characters of voiceover fit a video of this length (Kokoro speaks ~15 a second). */
 export const voiceoverChars = (seconds) => Math.max(40, Math.floor(seconds * 15));
-export const TALK = { id: "talk", name: "InfiniteTalk", endpoint: () => ep("RUNPOD_EP_TALK", "infinitetalk"), resolutions: ["480p", "720p"], usd: (r) => (r === "720p" ? 0.5 : 0.25), max_chars: 450 };
+// One quality for talking videos. Runpod's InfiniteTalk asks for a size but returns the same video (832×464)
+// whichever is sent, while billing its larger size at double, so Snapfront always sends the smaller one
+// and members get the model's best video at its lowest price. `size` is Runpod's input, never shown to members.
+export const TALK = { id: "talk", name: "InfiniteTalk", endpoint: () => ep("RUNPOD_EP_TALK", "infinitetalk"), size: "480p", usd: () => 0.25, max_chars: 450 };
 // Styles with a face that can lip-sync (including avatars from real photos). The others are faceless by design.
 const TALKING_STYLES = new Set(["soft3d", "illustrated", "mascot", "photo", "blend"]);
 export const MOTIONS = [
@@ -96,7 +99,7 @@ export const MOTIONS = [
 ];
 
 export const priceOf = (model, duration, resolution) => credits.creditsFor(model.usd(duration, resolution));
-export const talkPrice = (resolution) => credits.creditsFor(TALK.usd(resolution));
+export const talkPrice = () => credits.creditsFor(TALK.usd());
 const MAX_RUNNING = 3;
 const clean = (s, n) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
 const img = (file) => `${config.publicUrl}/img/${file}`;
@@ -111,8 +114,9 @@ export async function options(account) {
     free: credits.isOwner(account),
     models: MODELS.map((m) => ({ id: m.id, name: m.name, badge: m.badge, blurb: m.blurb, durations: m.durations, resolutions: m.resolutions, sound: m.sound, sound_default: m.sound_default,
       prices: Object.fromEntries(m.durations.flatMap((d) => m.resolutions.map((r) => [`${d}|${r}`, priceOf(m, d, r)]))) })),
-    talk: { resolutions: TALK.resolutions, prices: Object.fromEntries(TALK.resolutions.map((r) => [r, talkPrice(r)])), max_chars: TALK.max_chars,
-      styles: [...TALKING_STYLES], voices },
+    talk: { price: talkPrice(), max_chars: TALK.max_chars, styles: [...TALKING_STYLES], voices,
+      // For app builds before 1.5.6: no choice to show, and the price under the key they look it up by.
+      resolutions: [], prices: { "720p": talkPrice() } },
     motions: MOTIONS.map(({ id, name }) => ({ id, name })),
     voiceover: { chars_per_second: 15, voices },
     // Premium (ElevenLabs) voices cost extra: this many credits for a given script length.
@@ -198,8 +202,7 @@ async function startMotion(account, seller, b) {
 }
 
 async function startTalk(account, seller, b) {
-  const resolution = b.resolution || "720p";
-  if (!TALK.resolutions.includes(resolution)) throw httpError(400, "Pick 480p or 720p.");
+  // Older app builds still send a resolution: there's only one, so it's ignored.
   const src = source(seller, b);
   if (!TALKING_STYLES.has(src.avatar.style)) throw httpError(400, "This avatar is faceless by design, so it can't lip-sync. Talking works with Soft 3D, Illustrated, Mascot and photo avatars.");
   const script = clean(b.script, TALK.max_chars);
@@ -207,12 +210,12 @@ async function startTalk(account, seller, b) {
   if (asksForLikeness(script)) throw httpError(400, "Write the script in your avatar's own voice, not as a real person.");
   const { voice, extra } = await pickVoice(b.voice, script);
   busy(seller);
-  const price = talkPrice(resolution) + extra;
+  const price = talkPrice() + extra;
   const id = newId("vid");
   const prompt = "The character speaks naturally to the camera with lively expressions and small, natural gestures, matching the voice. Keep the character exactly as in the image. " + NO_TEXT;
   db.prepare(`INSERT INTO avatar_videos (id, seller_id, account_id, avatar_id, shot_id, kind, model, resolution, sound, prompt, script, voice, credits, voice_credits)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, seller.id, account.id, src.avatar.id, src.shot?.id || null, "talk", "talk", resolution, 1, prompt, script, voice, price, extra);
-  try { credits.spend(account, price, id, `Talking avatar, ${resolution}${extra ? " + premium voice" : ""}`); }
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, seller.id, account.id, src.avatar.id, src.shot?.id || null, "talk", "talk", "", 1, prompt, script, voice, price, extra);
+  try { credits.spend(account, price, id, `Talking avatar${extra ? " + premium voice" : ""}`); }
   catch (e) { db.prepare("DELETE FROM avatar_videos WHERE id = ?").run(id); throw e; }
   kick();
   return view(get(seller, id));
@@ -314,7 +317,7 @@ async function voiceAndSubmit(row) {
     const src = row.shot_id ? db.prepare("SELECT image_file FROM avatar_shots WHERE id = ?").get(row.shot_id)?.image_file
       : db.prepare("SELECT image_file FROM avatars WHERE id = ?").get(row.avatar_id)?.image_file;
     if (!src) throw new Error("The avatar photo is gone.");
-    const r = await aimedia.runpod(`${TALK.endpoint()}/run`, { input: { prompt: row.prompt, image: img(src), audio: `${config.publicUrl}/media/${name}`, size: row.resolution, enable_safety_checker: true } });
+    const r = await aimedia.runpod(`${TALK.endpoint()}/run`, { input: { prompt: row.prompt, image: img(src), audio: `${config.publicUrl}/media/${name}`, size: TALK.size, enable_safety_checker: true } });
     db.prepare("UPDATE avatar_videos SET status='running', runpod_id=?, audio_file=?, updated_at=datetime('now') WHERE id=?").run(r.id, name, row.id);
   } catch (e) {
     console.warn("[avatar-videos] talk", row.id, e.message);

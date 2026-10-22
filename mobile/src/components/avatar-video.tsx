@@ -34,7 +34,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
   const [voiceover, setVoiceover] = useState("");
   const model = studio.models.find((m) => m.id === modelId) ?? studio.models[0];
   const [duration, setDuration] = useState(model?.durations[0] ?? 5);
-  const [resolution, setResolution] = useState(mode === "talk" ? "720p" : model?.resolutions[0] ?? "720p");
+  const [resolution, setResolution] = useState(model?.resolutions[0] ?? "720p");
   const [sound, setSound] = useState(model?.sound_default ?? true);
   const [motion, setMotion] = useState<string | null>(studio.motions[0]?.id ?? null);
   const [prompt, setPrompt] = useState("");
@@ -50,7 +50,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
     if (!m.resolutions.includes(resolution)) setResolution(m.resolutions[0]);
     setSound(m.sound_default ?? true);
   };
-  const base = mode === "talk" ? studio.talk.prices[resolution] : model?.prices[`${duration}|${resolution}`];
+  const base = mode === "talk" ? studio.talk.price : model?.prices[`${duration}|${resolution}`];
   // A premium (ElevenLabs) voice adds credits by script length, priced exactly like the server.
   const spoken = (mode === "talk" ? script : voiceover).trim();
   const pv = studio.premium_voice;
@@ -65,7 +65,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
     setBusy(true); setMsg(null);
     try {
       const v = await api.startAvatarVideo(mode === "talk"
-        ? { kind: "talk", shot_id: shotId, avatar_id: shotId ? undefined : avatarId, script: script.trim(), voice, resolution }
+        ? { kind: "talk", shot_id: shotId, avatar_id: shotId ? undefined : avatarId, script: script.trim(), voice }
         : { kind: "motion", shot_id: shotId, model: model.id, duration, resolution, sound, motion: motion ?? undefined, prompt: motion ? undefined : prompt.trim(),
           voiceover: voiceover.trim().slice(0, voMax) || undefined, voice: voiceover.trim() ? voice : undefined });
       onStarted(v, studio.free ? studio.balance : studio.balance - v.credits);
@@ -121,9 +121,6 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
           <Text style={[type.label, { color: c.ink }]}>Voice</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
             <VoicePicker voices={studio.talk.voices} value={voice} onChange={setVoice} premiumName={pv?.name} />
-          </View>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-            {studio.talk.resolutions.map((r) => <Chip key={r} label={r} sub={`${studio.talk.prices[r]} cr`} on={r === resolution} onPress={() => setResolution(r)} />)}
           </View>
         </>
       )}

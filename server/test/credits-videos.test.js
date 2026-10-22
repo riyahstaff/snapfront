@@ -88,8 +88,8 @@ test("prices: credits follow the provider's cost with the markup, rounded to 5",
   assert.equal(videos.priceOf(by.seedance, 5, "1080p"), 285);
   assert.equal(videos.priceOf(by.sora, 4, "720p"), 75);
   assert.equal(videos.priceOf(by.sora, 12, "1080p"), 375);
-  assert.equal(videos.talkPrice("720p"), 35);
-  assert.equal(videos.talkPrice("480p"), 20);
+  // Talking videos have one quality: Runpod returns the same video whatever size is asked, so the cheaper one is sent.
+  assert.equal(videos.talkPrice(), 20);
 });
 
 test("no credits, no video: the app is told what's needed", async () => {
@@ -226,6 +226,14 @@ test("a failed video gives its credits back, exactly once", async () => {
   assert.equal(list.balance, credits.balance(accountId()));
 });
 
+test("talking avatar options: one price, no quality choice (older app builds still find their price)", async () => {
+  const o = (await call("GET", "/api/avatar-videos")).body;
+  assert.equal(o.talk.price, videos.talkPrice());
+  assert.deepEqual(o.talk.resolutions, []);
+  assert.equal(o.talk.prices["720p"], videos.talkPrice());
+  assert.doesNotMatch(JSON.stringify(o.talk), /480p/);
+});
+
 test("talking avatar: Snapfront's voice reads the script, InfiniteTalk lip-syncs it", async () => {
   status = "IN_PROGRESS";
   const before = credits.balance(accountId());
@@ -233,16 +241,17 @@ test("talking avatar: Snapfront's voice reads the script, InfiniteTalk lip-syncs
   const visor = await call("POST", "/api/avatar-videos", { kind: "talk", shot_id: "shot_visor", script: "Hi, meet my favorite serum." });
   assert.equal(visor.status, 400);
   assert.match(visor.body.error, /faceless by design/);
+  // An app build before 1.5.6 still sends resolution "720p": it's ignored, and the member pays the one price.
   const r = await call("POST", "/api/avatar-videos", { kind: "talk", avatar_id: "avt_nova", script: "Hi! This is the serum I use every single morning.", voice: "bf_emma", resolution: "720p" });
   assert.equal(r.status, 201, JSON.stringify(r.body));
-  assert.equal(r.body.credits, 35);
-  assert.equal(credits.balance(accountId()), before - 35);
+  assert.equal(r.body.credits, 20);
+  assert.equal(credits.balance(accountId()), before - 20);
   for (let i = 0; i < 50 && !rp.at(-1).url.includes("infinitetalk"); i++) await new Promise((s) => setTimeout(s, 20));
   const job = rp.at(-1);
   assert.match(job.url, /infinitetalk\/run$/);
   assert.equal(job.body.input.image, "https://cv.test/img/nova.jpg");
   assert.match(job.body.input.audio, /^https:\/\/cv\.test\/media\/[\w-]+\.wav$/);
-  assert.equal(job.body.input.size, "720p");
+  assert.equal(job.body.input.size, videos.TALK.size);
   const wavFile = job.body.input.audio.split("/").pop();
   const served = await fetch(`${base}/media/${wavFile}`);
   assert.equal(served.status, 200);
@@ -331,7 +340,7 @@ test("premium ElevenLabs voices: stock voices only, priced by length, used for t
     const script = "Hi! This is the serum I use every single morning.";
     const r = await call("POST", "/api/avatar-videos", { kind: "talk", avatar_id: "avt_nova", script, voice: "el:EXAVITQu4vr4xnSDxMaL", resolution: "720p" });
     assert.equal(r.status, 201, JSON.stringify(r.body));
-    assert.equal(r.body.credits, videos.talkPrice("720p") + elevenlabs.priceFor(script.length));
+    assert.equal(r.body.credits, videos.talkPrice() + elevenlabs.priceFor(script.length));
     assert.equal(r.body.premium_voice, true);
     assert.equal(credits.balance(accountId()), before - r.body.credits);
     for (let i = 0; i < 100 && !rp.at(-1).url.includes("infinitetalk"); i++) await new Promise((s) => setTimeout(s, 20));

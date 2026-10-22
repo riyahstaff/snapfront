@@ -197,7 +197,7 @@ async function talkingHead(avatar, voice, text) {
   try {
     const r = await aimedia.runpod(`${TALK.endpoint()}/run`, { input: {
       prompt: "The person teaches an online lesson, speaking naturally and warmly to the camera with lively expressions and small natural hand gestures. Keep the person exactly as in the image.",
-      image: `${config.publicUrl}/img/${avatar.image_file}`, audio: `${config.publicUrl}/media/${pub}`, size: "480p", enable_safety_checker: true } });
+      image: `${config.publicUrl}/img/${avatar.image_file}`, audio: `${config.publicUrl}/media/${pub}`, size: TALK.size, enable_safety_checker: true } });
     const started = Date.now();
     for (;;) {
       await new Promise((ok) => setTimeout(ok, 8000));
@@ -341,7 +341,7 @@ export async function view(status = {}) {
     voices: [...VOICES.map(({ id, name, accent }) => ({ id, name, accent, premium: false })), ...premium],
     lessons: LESSONS.map((l) => { const p = presenter(l.id); const on = appliesTo(l.id); return { id: l.id, title: l.title, slides: l.slides.length, avatar_id: on ? p.avatar.id : null, voice: on ? p.voice : null, own: Boolean(on && p.own) }; }),
     screens: screenList(),
-    cost_per_slide_usd: TALK.usd("480p"),
+    cost_per_slide_usd: TALK.usd(),
     ...status,
     // Which lesson is being made and how far along (the build status only says yes or no).
     building: progress.lesson ? { ...progress } : null,
