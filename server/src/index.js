@@ -48,6 +48,7 @@ import * as autodm from "./autodm.js";
 import * as partners from "./partners.js";
 import * as academy from "./academy.js";
 import * as academyPresenter from "./academy-presenter.js";
+import * as academyRestore from "./academy-restore.js";
 import * as daily from "./daily.js";
 import * as community from "./community.js";
 import * as feed from "./community-feed.js";
@@ -1074,6 +1075,10 @@ function ownerOrStudio(req, res, next) {
   if (studio.length >= 24 && t && sameSecret(t, studio)) return next();
   auth(req, res, (err) => (err ? next(err) : credits.isOwner(req.account) ? next() : next(httpError(403, "Only Snapfront's owner can change the Academy presenter."))));
 }
+// Bring the Academy presenter (setting, avatars, lesson videos) back from the other host. Owner only;
+// adds what's missing and never replaces anything this server has (academy-restore.js).
+app.post("/api/admin/restore-academy", ownerOrStudio, (req, res) => res.status(202).json(academyRestore.start(db, { force: req.body?.force === true })));
+app.get("/api/admin/restore-academy", ownerOrStudio, (_req, res) => res.json(academyRestore.status()));
 app.get("/api/academy-presenter", ownerOrStudio, wrap(async (_req, res) => res.json(await academyPresenter.view(academy.buildStatus()))));
 app.put("/api/academy-presenter", ownerOrStudio, wrap(async (req, res) => {
   await academyPresenter.setSettings(req.body || {});

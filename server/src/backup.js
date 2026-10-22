@@ -133,7 +133,7 @@ function writeState(dataDir, patch) {
   return next;
 }
 
-async function fromPrimary(route, { primaryUrl, token, timeoutMs }) {
+export async function fromPrimary(route, { primaryUrl, token, timeoutMs }) {
   if (!/^https?:\/\//.test(primaryUrl || "")) throw new Error("PRIMARY_URL isn't set");
   if (!tokenOk(token)) throw new Error("BACKUP_TOKEN isn't set (32+ characters)");
   const res = await fetch(`${primaryUrl}${route}`, { headers: { authorization: `Bearer ${token}` }, redirect: "error", signal: AbortSignal.timeout(timeoutMs) });
