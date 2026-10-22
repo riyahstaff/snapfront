@@ -3,7 +3,7 @@
     "name": "Snapfront",
     "slug": "snapfront",
     "scheme": "snapfront",
-    "version": "1.5.4",
+    "version": "1.5.5",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -82,7 +82,15 @@
         }
       ],
       "expo-iap",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
