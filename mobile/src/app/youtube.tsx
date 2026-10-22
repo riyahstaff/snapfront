@@ -36,7 +36,7 @@ export default function YoutubeScreen() {
     // Deferred a tick so the screen renders first (and the lint rule against setState in effects holds).
     const t = setTimeout(() => {
     // Zernio's return link carries error (and error_message) when connecting failed: check that first.
-    if (q.error) setMsg({ text: q.error_message ? `YouTube wasn't connected: ${String(q.error_message).slice(0, 160)}` : "YouTube wasn't connected. Try again, and pick the channel you want to post to.", tone: "error" });
+    if (q.error) setMsg({ text: q.error_message ? `YouTube wasn't connected: ${String(q.error_message).slice(0, 400)}` : "YouTube wasn't connected. Try again, and pick the channel you want to post to.", tone: "error" });
     else if (q.checkout === "done" && q.session_id) {
       setBusy("confirm");
       youtubeApi.confirm(String(q.session_id)).then((s) => { setSt(s); setMsg(s.subscribed ? { text: "YouTube posting is on. Next, connect your channel.", tone: "ok" } : { text: "Payment received. It can take a minute to switch on; reload this page shortly.", tone: "info" }); })
