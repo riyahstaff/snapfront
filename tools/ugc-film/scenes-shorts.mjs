@@ -61,7 +61,7 @@ export const SCENES = [
   { key: "video", type: "screen",
     say: "Step three: turn the photo into a video. Tap Make a video and choose how it moves, or Make it talk, with a voice and a short script. It takes one to five minutes, and videos use credits.",
     captions: [["Step 3: make the video", "Step three"], ["Move or talk", "choose how"]],
-    screen: { route: "/avatars?product={product}", ready: "Choose your avatar", steps: [["wait", 0.6], ["scroll", "Turn this photo into a video"], ["wait", 1], ["highlight", "Make a video"], ["wait", 2], ["highlight", "Make it talk"], ["wait", 3]] } },
+    screen: { route: "/avatars?product={product}", ready: "Choose your avatar", steps: [["scroll", "Videos from this photo (1)"], ["wait", 3], ["scroll", "Turn this photo into a video"], ["wait", 1], ["highlight", "Make a video"], ["wait", 2], ["highlight", "Make it talk"], ["wait", 3]] } },
   { key: "ready", type: "screen",
     say: "When your video is ready, it shows up right under the photo. Watch it, then tap Post to YouTube Shorts.",
     captions: [["Ready in a few minutes", "When your"], ["Post to YouTube Shorts", "tap Post"]],
