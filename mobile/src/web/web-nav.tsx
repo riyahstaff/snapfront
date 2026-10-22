@@ -12,11 +12,14 @@ import { alpha, fonts, theme, useColors } from "@/lib/theme";
 import { PAGE_MAX, type PageWidth } from "@/lib/page-width";
 
 // Keep the marketing funnel separate from the signed-in merchant workspace.
-export const NAV: { label: string; href: Href; match: (p: string) => boolean }[] = [
+// `addon`: a paid add-on page; the link shows a lock until it's paid (the page itself stays locked too).
+type NavItem = { label: string; href: Href; match: (p: string) => boolean; addon?: "youtube" };
+export const NAV: NavItem[] = [
   { label: "My store", href: "/store", match: (p) => p.startsWith("/store") || p.startsWith("/looks") },
   { label: "Create", href: "/snap", match: (p) => p.startsWith("/snap") || p.startsWith("/draft") },
   { label: "Digital products", href: "/create", match: (p) => p.startsWith("/create") || p.startsWith("/digital") },
   { label: "Marketing", href: "/marketing", match: (p) => p.startsWith("/marketing") },
+  { label: "YouTube Shorts", href: "/youtube", match: (p) => p.startsWith("/youtube"), addon: "youtube" },
   { label: "Academy", href: "/academy", match: (p) => p.startsWith("/academy") },
   { label: "Bonus: 1k Prompts", href: "/prompts", match: (p) => p.startsWith("/prompt") },
 ];
@@ -33,12 +36,13 @@ export function WebNav() {
   const me = useMe();
   const path = usePathname() || "/";
   const { width } = useWindowDimensions();
-  // The full row of links needs about 1300px next to the membership button; narrower gets the menu.
-  const wide = width >= Math.max(WIDE, 1260);
+  // The full row of links needs about 1420px next to the membership button; narrower gets the menu.
+  const wide = width >= Math.max(WIDE, 1420);
+  const locked = (n: NavItem) => Boolean(n.addon && !me?.addons?.[n.addon]);
   const [open, setOpen] = useState(false);
   const plan = me?.account.plan ?? "free";
   const signedIn = Boolean(me?.account.email);
-  const menu: { label: string; href: Href; match: (p: string) => boolean }[] = signedIn ? [
+  const menu: NavItem[] = signedIn ? [
     { label: "Home", href: "/", match: (p) => p === "/" }, ...NAV,
     { label: "Find products", href: "/find", match: (p) => p.startsWith("/find") },
     { label: "Affiliates & UGC", href: "/ugc", match: (p) => p.startsWith("/ugc") || p.startsWith("/affiliates") },
@@ -79,7 +83,7 @@ export function WebNav() {
         </Pressable>
         {wide ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1 }}>
-            {(signedIn ? NAV : [{ label: "Explore features", href: "/" as Href, match: (p: string) => p === "/" }, { label: "Pricing", href: "/plans" as Href, match: (p: string) => p.startsWith("/plans") }]).map((n) => <NavLink key={n.label} label={n.label} href={n.href} active={n.match(path)} />)}
+            {(signedIn ? NAV : [{ label: "Explore features", href: "/" as Href, match: (p: string) => p === "/" }, { label: "Pricing", href: "/plans" as Href, match: (p: string) => p.startsWith("/plans") }]).map((n) => <NavLink key={n.label} label={n.label} href={n.href} active={n.match(path)} locked={locked(n)} />)}
           </View>
         ) : <View style={{ flex: 1 }} />}
         <View style={{ flexDirection: "row", alignItems: "center", gap: wide ? 10 : 4 }}>
@@ -113,7 +117,12 @@ export function WebNav() {
             <Pressable key={n.label} accessibilityRole="link" onPress={() => { setOpen(false); go(n.href); }}
               style={{ paddingVertical: 14, paddingHorizontal: 8, borderBottomWidth: 1, borderColor: c.sunk, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <Text style={{ fontFamily: n.match(path) ? fonts.bodyBold : fonts.bodyMedium, fontSize: 17, color: n.match(path) ? c.ink : c.muted }}>{n.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color={c.line} />
+              {locked(n) ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: c.muted }}>Add-on</Text>
+                  <Ionicons name="lock-closed" size={16} color={c.muted} />
+                </View>
+              ) : <Ionicons name="chevron-forward" size={18} color={c.line} />}
             </Pressable>
           ))}
           {signedIn ? (
@@ -129,12 +138,15 @@ export function WebNav() {
   );
 }
 
-function NavLink({ label, href, active }: { label: string; href: Href; active: boolean }) {
+function NavLink({ label, href, active, locked }: { label: string; href: Href; active: boolean; locked?: boolean }) {
   const c = useColors();
   return (
-    <Pressable accessibilityRole="link" onPress={() => go(href)}
-      style={(s: Hover): ViewStyle => ({ paddingHorizontal: 12, height: 36, borderRadius: 10, justifyContent: "center", backgroundColor: active ? c.sunk : s.hovered ? alpha(c.sunk, 0.7) : "transparent" })}>
-      {(s: Hover) => <Text style={{ fontFamily: active ? fonts.bodyBold : fonts.bodyMedium, fontSize: 15, color: active || s.hovered ? c.ink : c.muted }}>{label}</Text>}
+    <Pressable accessibilityRole="link" accessibilityLabel={locked ? `${label}, paid add-on` : label} onPress={() => go(href)}
+      style={(s: Hover): ViewStyle => ({ paddingHorizontal: 12, height: 36, borderRadius: 10, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: active ? c.sunk : s.hovered ? alpha(c.sunk, 0.7) : "transparent" })}>
+      {(s: Hover) => <>
+        <Text style={{ fontFamily: active ? fonts.bodyBold : fonts.bodyMedium, fontSize: 15, color: active || s.hovered ? c.ink : c.muted }}>{label}</Text>
+        {locked ? <Ionicons name="lock-closed" size={13} color={c.muted} /> : null}
+      </>}
     </Pressable>
   );
 }

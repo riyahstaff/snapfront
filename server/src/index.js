@@ -440,7 +440,11 @@ app.post("/api/sellers", signupLimit, (req, res) => {
   res.status(201).json({ token, seller: store.publicSeller(seller), account: plans.publicAccount(account, seller.id) });
 });
 
-const me = (req) => ({ ...store.publicSeller(plans.storesOf(req.account.id).find((s) => s.id === req.seller.id)), account: plans.publicAccount(plans.getAccount(req.account.id), req.seller.id) });
+const me = (req) => {
+  const account = plans.getAccount(req.account.id);
+  // Paid add-ons, so the menu can show which pages are unlocked.
+  return { ...store.publicSeller(plans.storesOf(req.account.id).find((s) => s.id === req.seller.id)), account: plans.publicAccount(account, req.seller.id), addons: { youtube: youtube.hasAddon(account) } };
+};
 const storefrontPreviews = new Map();
 /** A private 30-minute preview of a store with a design patch applied; the live store is untouched. */
 function createStorefrontPreview(seller, patch) {

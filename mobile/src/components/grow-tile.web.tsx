@@ -5,7 +5,7 @@ import { ToolCard } from "@/web/tool-card";
 const artwork: Record<string, string> = {
   "Sales & profit": "sales-profit", "Email marketing": "email", "Marketing posts": "marketing",
   "Instagram AutoDM": "autodm", "Affiliates": "affiliates", "Ad pixels": "pixels",
-  "Academy": "academy", "Faceless videos": "faceless", "AI avatars": "avatars",
+  "Academy": "academy", "Faceless videos": "faceless", "AI avatars": "avatars", "YouTube Shorts": "faceless",
   "Credits": "credits", "UGC creator kit": "ugc", "Community": "community",
   "Earn with Snapfront": "earn", "AI photos & video": "ai-media", "Get more buyers": "buyers",
   "Insights": "insights", "Reviews": "reviews", "Suppliers": "suppliers",

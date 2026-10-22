@@ -133,6 +133,42 @@ export default function YoutubeScreen() {
     </View>
   );
 
+  // Locked until the add-on is paid: only the offer shows, nothing else on the page opens.
+  if (!st.subscribed) {
+    const perks = ["Post straight to your own YouTube channel", "Write with AI: a title, description and hashtags from your video", "Post avatar videos, faceless videos or your own uploads", "Avatar videos are labelled as AI-made, as YouTube asks"];
+    return (
+      <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64, width: "100%", maxWidth: 640, alignSelf: "center" }}>
+        <View style={{ gap: space.sm }}>
+          <Text accessibilityRole="header" style={[type.hero, { color: c.ink }]}>YouTube Shorts</Text>
+          <Body muted>A paid add-on. Subscribe to open this page and post your Snapfront videos to YouTube.</Body>
+        </View>
+        <Notice text={busy === "confirm" ? "Checking your payment…" : msg?.text ?? null} tone={busy === "confirm" ? "info" : msg?.tone} />
+        {!st.enabled ? <Notice text="YouTube posting is being switched on. Check back soon." /> : null}
+        <Card title="Unlock YouTube Shorts" right={<Ionicons name="lock-closed" size={20} color={c.muted} />}>
+          <Text style={{ color: c.ink }}><Text style={[type.hero, { fontSize: 36 }]}>{st.price}</Text><Text style={[type.body, { color: c.muted }]}>  a month, cancel any time</Text></Text>
+          <View style={{ gap: 10 }}>
+            {perks.map((p) => (
+              <View key={p} style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+                <Ionicons name="checkmark-circle" size={20} color={c.good} />
+                <Text style={[type.body, { color: c.ink, flex: 1 }]}>{p}</Text>
+              </View>
+            ))}
+          </View>
+          {st.member ? (
+            <Button label={Platform.OS === "web" ? `Subscribe for ${st.price}/month` : "Subscribe on the website"} icon={<Ionicons name="logo-youtube" size={18} color={c.onAccent} />}
+              loading={busy === "checkout" || busy === "confirm"} disabled={!st.enabled || busy !== null} onPress={subscribe} />
+          ) : (
+            <>
+              <Body muted>The add-on is for Snapfront members. Become a member first, then add YouTube Shorts.</Body>
+              <Button label="Become a member" onPress={() => router.push("/plans")} />
+            </>
+          )}
+          <Text style={[type.small, { color: c.muted }]}>Billed monthly through Stripe. Cancel any time in Membership, under Manage subscription.</Text>
+        </Card>
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 64, width: "100%", maxWidth: 760, alignSelf: "center" }} keyboardShouldPersistTaps="handled">
       <View style={{ gap: space.sm }}>

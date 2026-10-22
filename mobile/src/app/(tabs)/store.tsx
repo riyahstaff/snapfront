@@ -130,6 +130,7 @@ export default function StoreScreen() {
         <GrowTile icon="school-outline" label="Academy" sub="Video lessons, TikTok LIVE" onPress={() => router.push("/academy")} />
         <GrowTile icon="videocam-outline" label="Faceless videos" sub="Voiceover + your photos" onPress={() => router.push("/faceless")} />
         <GrowTile icon="person-circle-outline" label="AI avatars" sub="Characters, your photo, blends, videos" onPress={() => router.push("/avatars")} />
+        <GrowTile icon={seller?.addons?.youtube ? "logo-youtube" : "lock-closed-outline"} label="YouTube Shorts" sub={seller?.addons?.youtube ? "Post your videos to your channel" : "Add-on, $24.99 a month"} onPress={() => router.push("/youtube")} />
         <GrowTile icon="sparkles-outline" label="Credits" sub="For avatar videos" onPress={() => router.push("/credits")} />
         <GrowTile icon="aperture-outline" label="UGC creator kit" sub="Get paid by brands" onPress={() => router.push("/ugc")} />
         <GrowTile icon="chatbubbles-outline" label="Community" sub="Discord, Whop, live coaching" onPress={() => router.push("/community")} />

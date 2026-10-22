@@ -63,11 +63,31 @@ test("the add-on needs a membership and a Stripe subscription at $24.99 a month"
   assert.equal(s.line_items[0].price_data.unit_amount, 2499);
   assert.deepEqual(s.line_items[0].price_data.recurring, { interval: "month" });
   assert.equal(s.metadata.snapfront_addon, "youtube");
+  // Locked until paid: no videos or posts come back, and the account summary says it isn't unlocked.
+  assert.deepEqual([st.videos, st.posts], [[], []]);
+  assert.equal((await call(m.token, "GET", "/api/me")).json.addons.youtube, false);
   Object.assign(s, { status: "complete", subscription: "sub_yt" });
   subs.set("sub_yt", { id: "sub_yt", status: "active", current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400 });
   st = (await call(m.token, "POST", "/api/youtube/confirm", { session_id: s.id })).json;
   assert.equal(st.subscribed, true);
   assert.equal((await call(m.token, "POST", "/api/youtube/checkout")).status, 409, "no second subscription");
+  assert.equal((await call(m.token, "GET", "/api/me")).json.addons.youtube, true);
+});
+
+test("checkout uses the YouTube Shorts price in Stripe, but only if it's $24.99 a month", async () => {
+  const buyer = await member();
+  const prices = [{ id: "price_wrong", unit_amount: 999, currency: "usd", recurring: { interval: "month" } }];
+  pay.setStripeClient({ ...pay.stripeClient(), prices: { async list(q) { assert.deepEqual(q.lookup_keys, [youtube.PRICE_LOOKUP]); return { data: prices }; } } });
+  youtube.resetPriceCache();
+  await call(buyer.token, "POST", "/api/youtube/checkout");
+  assert.ok([...sessions.values()].at(-1).line_items[0].price_data, "a wrong price in Stripe is ignored");
+  prices[0] = { id: "price_yt", unit_amount: 2499, currency: "usd", recurring: { interval: "month" } };
+  youtube.resetPriceCache();
+  const other = await member();
+  await call(other.token, "POST", "/api/youtube/checkout");
+  const li = [...sessions.values()].at(-1).line_items[0];
+  assert.deepEqual([li.price, li.price_data], ["price_yt", undefined]);
+  youtube.resetPriceCache();
 });
 
 test("someone else's checkout can't switch it on", async () => {

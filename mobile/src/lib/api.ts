@@ -265,7 +265,7 @@ export type SupplierState = {
 export type Suppliers = Record<SupplierId, SupplierState>;
 /** What each supplier needs from the seller to connect. */
 export type SupplierConnectInput = { api_key?: string; token?: string; app_key?: string; app_secret?: string; auto_pay?: boolean };
-export type Me = Seller & { account: Account };
+export type Me = Seller & { account: Account; addons?: { youtube: boolean } };
 export type PriceMatch = { title: string; link: string; thumbnail: string | null; price: number; in_stock: boolean | null; store: string; store_name: string };
 export type PriceCheck = {
   image_url: string;

@@ -107,6 +107,24 @@ export function hasAddon(account, now = Date.now()) {
   return db.prepare("SELECT expires_at FROM youtube_subs WHERE account_id = ? AND status = 'active'").all(account.id)
     .some((r) => !r.expires_at || Date.parse(r.expires_at) > now);
 }
+/* The add-on is a real product in Stripe ("Snapfront YouTube Shorts", price lookup key
+ * snapfront_youtube_shorts_monthly), so it shows by name in Stripe, receipts and the billing portal.
+ * YOUTUBE_STRIPE_PRICE can name another price. Without either, checkout makes the price inline. */
+export const PRICE_LOOKUP = "snapfront_youtube_shorts_monthly";
+let priceCache = { id: null, at: 0 };
+async function stripePrice() {
+  const set = String(process.env.YOUTUBE_STRIPE_PRICE || "").trim();
+  if (/^price_\w+$/.test(set)) return set;
+  if (priceCache.at > Date.now() - 10 * 60_000) return priceCache.id;
+  try {
+    const list = await stripeClient().prices.list({ lookup_keys: [PRICE_LOOKUP], active: true, limit: 1 });
+    const p = list?.data?.[0];
+    // Only a monthly price for the add-on's amount is used, so a mistake in Stripe can't change what members pay.
+    priceCache = { id: p && p.unit_amount === cents() && p.recurring?.interval === "month" && p.currency === "usd" ? p.id : null, at: Date.now() };
+  } catch (e) { console.warn("[youtube] price lookup", e.message); return null; }
+  return priceCache.id;
+}
+export const resetPriceCache = () => { priceCache = { id: null, at: 0 }; };
 export async function startCheckout(account) {
   if (!webbilling.enabled()) throw httpError(503, "Payments aren't set up yet.");
   if (!isMember(account)) throw httpError(402, "YouTube posting is an add-on for Snapfront members. Become a member first.", { upgrade: "pro" });
@@ -116,7 +134,7 @@ export async function startCheckout(account) {
     mode: "subscription",
     customer: await webbilling.customerFor(account),
     client_reference_id: account.id,
-    line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: a.cents, recurring: { interval: "month" }, product_data: { name: a.name, description: a.description } } }],
+    line_items: [{ quantity: 1, ...(await stripePrice().then((price) => (price ? { price } : null)) ?? { price_data: { currency: "usd", unit_amount: a.cents, recurring: { interval: "month" }, product_data: { name: a.name, description: a.description } } }) }],
     metadata: { snapfront_addon: "youtube", snapfront_account: account.id },
     subscription_data: { metadata: { snapfront_addon: "youtube", snapfront_account: account.id } },
     success_url: `${webAppUrl()}/youtube?checkout=done&session_id={CHECKOUT_SESSION_ID}`,
@@ -469,7 +487,8 @@ export async function status(account, seller) {
   return {
     enabled: enabled(), price: money(cents()), member: isMember(account), subscribed: hasAddon(account), owner: credits.isOwner(account),
     connected: link?.zernio_account_id ? { username: link.username || "Your channel" } : null,
-    videos: videos(seller, account),
-    posts: db.prepare("SELECT * FROM youtube_posts WHERE account_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 20").all(account.id).map(publicPost),
+    // The page stays locked until the add-on is paid: only subscribers get their videos and posts here.
+    videos: hasAddon(account) ? videos(seller, account) : [],
+    posts: hasAddon(account) ? db.prepare("SELECT * FROM youtube_posts WHERE account_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 20").all(account.id).map(publicPost) : [],
   };
 }
