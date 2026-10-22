@@ -258,11 +258,16 @@ test("Lifetime is for the first LIFETIME_LIMIT members, then Yearly ($499 a year
     const home = (await req("shopdomain.test", "GET", "/")).text;
     assert.match(home, /plans\?buy=yearly">Join for \$499 a year</);
     assert.doesNotMatch(home, /FOUNDING 500/);
+    assert.doesNotMatch(home, /Pay your way at checkout/, "pay-later badges are for the one-time Lifetime price only");
     assert.match((await req("shopdomain.test", "GET", "/join")).text, /Get Yearly for \$499/);
   } finally { delete process.env.LIFETIME_LIMIT; }
   const home = (await req("shopdomain.test", "GET", "/")).text;
   assert.match(home, /FOUNDING 500/);
   assert.match(home, /founding spots left/);
+  assert.match(home, /Pay your way at checkout/);
+  for (const name of ["Klarna", "Afterpay", "Cash App Pay", "Apple Pay"]) assert.ok(home.includes(`>${name}</li>`), name);
+  assert.doesNotMatch(home, />Affirm</, "Affirm isn't available on the Stripe account yet");
+  assert.match(home, /4 payments of \$124\.75 with Klarna or Afterpay, if you're approved/);
 });
 
 test("search engines get robots.txt, a sitemap, canonical links and structured data", async () => {

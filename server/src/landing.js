@@ -2,7 +2,7 @@
 // app's Liquid Chrome look (graphite, platinum, the silver aperture mark and the chrome gateway art).
 import { vierraTag } from "./vierra-widget.js";
 import { PLANS } from "./plans.js";
-import { PLANS as PRICES, longPlan, lifetimeLeft, LIFETIME_LIMIT } from "./webbilling.js";
+import { PLANS as PRICES, PAY_OPTIONS, longPlan, lifetimeLeft, LIFETIME_LIMIT } from "./webbilling.js";
 import { THEMES, publicThemes } from "./themes.js";
 import { config } from "./config.js";
 import { QUESTIONS } from "./start-plan.js";
@@ -33,6 +33,14 @@ function structuredData() {
       thumbnailUrl: [`${base}/site/promo/promo.jpg`], contentUrl: `${base}/site/promo/promo-1080.mp4`, uploadDate: "2026-10-18T12:00:00-04:00", duration: "PT1M23S", publisher: { "@id": `${base}/#org` } },
   ];
   return JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replace(/</g, "\\u003c");
+}
+
+/** Under the Lifetime price: the ways to pay at checkout, and the pay-in-4 split (approval is up to the provider). */
+function payBadges(cents) {
+  const later = PAY_OPTIONS.filter((o) => o.later).map((o) => o.name);
+  const quarter = usd(Math.ceil(cents / 4));
+  return `<div class="pay"><p class="pay-title">Pay your way at checkout</p><ul class="pay-list" aria-label="Ways to pay">${PAY_OPTIONS.map((o) => `<li class="pay-${o.id}">${o.name}</li>`).join("")}</ul>`
+    + (later.length ? `<p class="pay-note">Or split it into 4 payments of ${quarter} with ${later.join(" or ")}, if you're approved.</p>` : "") + `</div>`;
 }
 
 export function landingPage() {
@@ -193,6 +201,13 @@ html{scroll-behavior:smooth;scroll-padding-top:96px}body{overflow-x:hidden}
  .hero:after{animation:drift 18s ease-in-out infinite alternate}@keyframes drift{from{transform:translate(0,0)}to{transform:translate(-6%,8%)}}
 }
 @media(prefers-reduced-motion:reduce){.steps li:hover,.capability-grid>div:hover,.learn-card:hover{transform:none}.card-art video{transition:none}}
+.pay{display:grid;gap:8px;margin-top:6px;padding-top:14px;border-top:1px solid var(--line)}
+.pay-title{margin:0;font-size:13px;font-weight:700;color:var(--muted)}
+.plan .pay-list{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0}.plan .pay-list li{margin:0}
+.pay-list li{font-size:13px;font-weight:700;padding:5px 10px;border-radius:8px;background:#20252d;border:1px solid #3a414c;color:#e7ebf1}
+.pay-list .pay-klarna{background:#FFB3C7;border-color:#FFB3C7;color:#17120f}.pay-list .pay-afterpay{background:#B2FCE4;border-color:#B2FCE4;color:#0b1f19}
+.pay-list .pay-cashapp{background:#00D64F;border-color:#00D64F;color:#04150a}
+.pay-note{margin:0;font-size:13px;color:var(--muted)}
 ${PROMO_CSS}</style></head><body>
 <header><div class="wrap"><a class="brand" href="/"><img src="/site/mark.png" alt="" width="32" height="32">snapfront</a>
 <nav><a href="#features">Features</a><a href="#ai-team">AI team</a><a href="#themes">Themes</a><a href="#learn">Learn &amp; earn</a><a href="#pricing">Pricing</a><a href="${web}/sign-in">Sign in</a><a class="btn small" href="#pricing">Unlock Snapfront</a></nav></div></header>
@@ -269,7 +284,7 @@ ${promoSection()}
   <div class="vault-heading"><div class="vault-emblem" aria-hidden="true">✦<span>🔒</span></div><div><p class="eyebrow">Your access key</p><h2>Unlock the full studio.<br><span class="soft">Everything is waiting inside.</span></h2></div></div><p class="sub">Peek inside with a verified free account. Open the vault with ${isLife ? "Lifetime" : "Yearly"} or Monthly to unlock the full Pro allowances, live storefront selling, the complete Academy and the connected business toolkit.</p>
   <p class="sub">Buyers pay you directly through Stripe. Stripe’s standard processing fees apply.</p>
   <div class="plans">
-    <div class="plan pro">${isLife ? `<span class="badge">FOUNDING 500</span>` : ""}<h3>${isLife ? "Lifetime" : "Yearly"}</h3><div class="price">${usd(PRICES[long].cents)} <small>${isLife ? "once, for life" : "a year"}</small></div>${isLife ? `<div class="spots"><div class="spots-bar" role="img" aria-label="${limit - left} of ${limit} founding Lifetime memberships taken"><i style="width:${taken}%"></i></div><small><b>${left} of ${limit}</b> founding spots left. After that, Lifetime is replaced by Yearly at ${usd(PRICES.yearly.cents)} a year.</small></div>` : ""}<ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>The Snapfront Android app, free</li><li>Academy lessons, daily post ideas and the members’ community</li><li>Bonus: 1,000 prompts for Claude and ChatGPT</li><li>Works with Claude and ChatGPT through the Snapfront connector</li><li>Every new feature we add</li>${isLife ? "<li>No monthly bill, ever</li>" : "<li>Billed once a year, cancel any time</li>"}</ul><a class="btn small" href="${web}/plans?buy=${long}">Join for ${usd(PRICES[long].cents)}${isLife ? "" : " a year"}</a></div>
+    <div class="plan pro">${isLife ? `<span class="badge">FOUNDING 500</span>` : ""}<h3>${isLife ? "Lifetime" : "Yearly"}</h3><div class="price">${usd(PRICES[long].cents)} <small>${isLife ? "once, for life" : "a year"}</small></div>${isLife ? `<div class="spots"><div class="spots-bar" role="img" aria-label="${limit - left} of ${limit} founding Lifetime memberships taken"><i style="width:${taken}%"></i></div><small><b>${left} of ${limit}</b> founding spots left. After that, Lifetime is replaced by Yearly at ${usd(PRICES.yearly.cents)} a year.</small></div>` : ""}<ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>The Snapfront Android app, free</li><li>Academy lessons, daily post ideas and the members’ community</li><li>Bonus: 1,000 prompts for Claude and ChatGPT</li><li>Works with Claude and ChatGPT through the Snapfront connector</li><li>Every new feature we add</li>${isLife ? "<li>No monthly bill, ever</li>" : "<li>Billed once a year, cancel any time</li>"}</ul><a class="btn small" href="${web}/plans?buy=${long}">Join for ${usd(PRICES[long].cents)}${isLife ? "" : " a year"}</a>${isLife ? payBadges(PRICES.lifetime.cents) : ""}</div>
     <div class="plan"><h3>Monthly</h3><div class="price">${usd(PRICES.pro.cents)} <small>a month</small></div><ul><li>Up to ${PLANS.pro.liveStores} live stores, 0% Snapfront fees</li><li>${PLANS.pro.photo} AI product pages and ${PLANS.pro.product} AI digital products a month</li><li>AI photos and video, marketing posts</li><li>Email marketing, affiliates and Instagram AutoDM</li><li>Sales &amp; profit, ad pixels, the store assistant</li><li>The Snapfront Android app, free</li><li>Academy lessons, daily post ideas and the members’ community</li><li>Bonus: 1,000 prompts for Claude and ChatGPT</li><li>Works with Claude and ChatGPT through the Snapfront connector</li><li>Cancel any time</li></ul><a class="btn ghost small" href="${web}/plans?buy=pro">Join for ${usd(PRICES.pro.cents)} a month</a></div>
   </div>
   <p class="note">Pay here with Stripe, then get the Snapfront app free on Android and sign in with the same email. All sales are final.</p>

@@ -18,6 +18,16 @@ export const PLANS = {
   pro: { name: "Snapfront Pro", cents: cents("PRO_PRICE_CENTS", 9900), mode: "subscription", interval: "month", grants: "pro", description: "Everything in Snapfront, billed monthly. Cancel any time." },
   yearly: { name: "Snapfront Yearly", cents: cents("YEARLY_PRICE_CENTS", 49900), mode: "subscription", interval: "year", grants: "pro", description: "Everything in Snapfront, billed once a year. Cancel any time." },
 };
+/**
+ * Ways to pay for Lifetime at Stripe Checkout, shown as badges on the home page. Only methods Stripe
+ * reports as available on Snapfront's account (Settings > Payment methods); checkout shows each one
+ * only to buyers it applies to. Affirm is switched on but not available yet, so it isn't listed.
+ */
+export const PAY_OPTIONS = [
+  { id: "klarna", name: "Klarna", later: true }, { id: "afterpay", name: "Afterpay", later: true },
+  { id: "cashapp", name: "Cash App Pay" }, { id: "apple_pay", name: "Apple Pay" }, { id: "amazon_pay", name: "Amazon Pay" },
+  { id: "link", name: "Link" }, { id: "card", name: "All major cards" }, { id: "crypto", name: "USDC" },
+];
 /** How many Lifetime memberships are sold before Lifetime closes (LIFETIME_LIMIT, default 500). */
 export const LIFETIME_LIMIT = () => {
   const raw = String(process.env.LIFETIME_LIMIT ?? "").trim(), n = Number(raw);
