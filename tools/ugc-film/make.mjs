@@ -9,10 +9,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { SCENES, LOOK } from "./scenes.mjs";
+import { SCENES, LOOK, OUT } from "./film.mjs";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
-const OUT = path.join(here, "out");
 const API = process.env.API || "https://snapfront.app";
 const TOKEN = process.env.STUDIO_TOKEN || process.env.ACADEMY_STUDIO_TOKEN;
 const VOICE = process.env.VOICE || "el:NQMJRVvPew6HsaebYnZj";   // Cecily, the Academy narrator
@@ -45,17 +44,23 @@ async function run(ep, input, label) {
 }
 async function download(url, file) { const r = await fetch(url); if (!r.ok) throw new Error(`download ${r.status}`); fs.writeFileSync(file, Buffer.from(await r.arrayBuffer())); }
 const keep = (file) => { if (fs.existsSync(file)) fs.renameSync(file, file.replace(/(\.\w+)$/, `.${Date.now()}$1`)); };
-const pick = (keys, ai = false) => (keys.length ? SCENES.filter((s) => keys.includes(s.key)) : SCENES).filter((s) => !ai || s.type === "ai");
+// "asset" scenes are pictures and clips the demo store uses (made like "ai" scenes, never shown on their own).
+const pick = (keys, ai = false) => (keys.length ? SCENES.filter((s) => keys.includes(s.key)) : SCENES).filter((s) => !ai || s.type === "ai" || s.type === "asset");
 
 async function still(s) {
-  const url = await run("seedream-v4-t2i", { prompt: `${s.still} ${s.look ?? LOOK}`, size: "2560*1440", seed: -1, enable_safety_checker: true }, s.key);
+  if (!s.still) return;
+  // `from`: an edit of other scenes' pictures (e.g. the avatar holding the product), not a new picture.
+  const images = (s.from || []).map((k) => { const u = state[k]?.still_url; if (!u) throw new Error(`${s.key}: make ${k} first`); return u; });
+  const url = images.length
+    ? await run("seedream-v4-edit", { prompt: s.still, images, size: s.size || "1024*1280", enable_safety_checker: true }, s.key)
+    : await run("seedream-v4-t2i", { prompt: `${s.still} ${s.look ?? LOOK}`, size: s.size || "2560*1440", seed: -1, enable_safety_checker: true }, s.key);
   const file = path.join(OUT, "stills", `${s.key}.jpg`); keep(file);
   await download(url, file);
   state[s.key] = { ...state[s.key], still_url: url }; save();
   console.log("still", s.key);
 }
 async function animate(s) {
-  const image = state[s.key]?.still_url; if (!image) throw new Error(`${s.key}: make the still first`);
+  const image = state[s.still_of || s.key]?.still_url; if (!image) throw new Error(`${s.key}: make the still first`);
   const m = VIDEO[process.env.MODEL || s.model];
   const prompt = `${s.motion}. Smooth, cinematic, mesmerising motion with vivid colour; keep people, faces and objects consistent with the first frame. No text appears.`;
   const url = await run(m.ep, m.input(image, prompt, s.duration), s.key);
@@ -100,7 +105,7 @@ else {
   if (!job) { console.error("usage: node make.mjs stills|animate|voice|sheet [key …]"); process.exit(1); }
   if (!TOKEN) { console.error("Set STUDIO_TOKEN"); process.exit(1); }
   const list = pick(keys, cmd !== "voice");
-  const results = await Promise.allSettled(list.map((s) => job(s)));
+  const results = await Promise.allSettled(list.filter((s) => cmd !== "voice" || s.say).filter((s) => cmd !== "animate" || s.motion).filter((s) => cmd !== "stills" || s.still).map((s) => job(s)));
   results.forEach((r, i) => { if (r.status === "rejected") console.error("FAILED", list[i].key, r.reason.message); });
   process.exit(results.some((r) => r.status === "rejected") ? 1 : 0);
 }

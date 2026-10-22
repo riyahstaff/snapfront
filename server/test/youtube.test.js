@@ -214,10 +214,14 @@ test("AI writes the title and description from frames of the member's own video"
   assert.equal(seen.filter((c) => c.type === "image").length, 4, "four frames from the video");
   assert.ok(seen.every((c) => c.type !== "image" || (c.source.media_type === "image/jpeg" && c.source.data.length > 100)));
   assert.match(seen.at(-1).text, /my lavender candle, 8 oz/);
+  assert.doesNotMatch(seen.at(-1).text, /AI avatar presenting/, "an upload isn't described as an avatar video");
   assert.equal(d.json.title, "How I pour soy candles at home", "no angle brackets");
   assert.match(d.json.description, /^Soy candles, start to finish\.\nFollow for more\.\n\n#candles #SoyCandle #Shorts$/);
   assert.deepEqual(d.json.alt_titles, ["Pouring candles"]);
   assert.equal(fs.readdirSync(path.join(tmp, "media")).filter((f) => f.startsWith("frame-")).length, 0, "frames are cleaned up");
+  // For an avatar video, the writer is told the avatar never claims personal use or results.
+  assert.equal((await call(m.token, "POST", "/api/youtube/describe", { source: "avatar", id: "avv1" })).status, 200);
+  assert.match(seen.at(-1).text, /never write as if the presenter \(or anyone\) personally uses it/);
   // Only for the member's own videos, and only with the add-on.
   const stranger = await member();
   db.prepare("INSERT INTO youtube_subs (session_id, account_id, status) VALUES ('cs_desc', ?, 'active')").run(stranger.account.id);

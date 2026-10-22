@@ -12,21 +12,24 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { SCENES } from "./scenes.mjs";
+import { SCENES, OUT as FILM_OUT, FILM } from "./film.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
 const serverDir = path.join(root, "server");
 const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : null; };
-const OUT = path.join(here, "out", "screens");
+const OUT = path.join(FILM_OUT, "screens");
 const PORT = 18000 + Math.floor(Math.random() * 1000);
 const data = fs.mkdtempSync(path.join(os.tmpdir(), "ugc-film-"));
 Object.assign(process.env, {
   DATA_DIR: data, PORT: String(PORT), PUBLIC_URL: "https://snapfront.app", STORE_DOMAIN: "sf.localhost",
   ACADEMY_AUTOBUILD: "false", ADMIN_TOKEN: "", ANTHROPIC_API_KEY: "", RUNPOD_API_KEY: "demo-only-never-called", ELEVENLABS_API_KEY: "", STRIPE_SECRET_KEY: "", OWNER_EMAILS: "",
+  ZERNIO_API_KEY: "demo-only-never-called",
 });
 const { app } = await import(path.join(serverDir, "src/index.js"));
 const { db } = await import(path.join(serverDir, "src/db.js"));
+const youtube = await import(path.join(serverDir, "src/youtube.js"));
+const credits = await import(path.join(serverDir, "src/credits.js"));
 const serverRequire = createRequire(path.join(serverDir, "package.json"));
 const sharp = serverRequire("sharp");
 const ffmpegPath = serverRequire("ffmpeg-static");
@@ -48,9 +51,12 @@ async function demoStore() {
   const s = await api("POST", "/api/sellers", { store_name: "Glow Lab" });
   const me = await api("PATCH", "/api/me", { store_name: "Glow Lab", store_slug: "glow-lab" }, s.token);
   db.prepare("UPDATE accounts SET plan = 'pro', email = 'demo@example.com' WHERE id = (SELECT account_id FROM sellers WHERE id = ?)").run(me.id);
+  const productPhoto = path.join(FILM_OUT, "stills", "product.jpg");   // the shorts film's real-looking product photo
   for (const [title, color, price] of [["Glow Serum", "#E9D6C4", 46], ["Silk Sleep Mask", "#CFC6E6", 28], ["Daily SPF Mist", "#F2E2B8", 32]]) {
     const file = `${title.toLowerCase().replace(/\W+/g, "-")}.jpg`;
-    fs.writeFileSync(path.join(data, "images", file), await sharp({ create: { width: 900, height: 900, channels: 3, background: color } }).jpeg().toBuffer());
+    fs.writeFileSync(path.join(data, "images", file), title === "Glow Serum" && FILM === "shorts" && fs.existsSync(productPhoto)
+      ? await sharp(productPhoto).resize(1200, 1200).jpeg({ quality: 90 }).toBuffer()
+      : await sharp({ create: { width: 900, height: 900, channels: 3, background: color } }).jpeg().toBuffer());
     db.prepare("INSERT INTO seller_media (image_file, seller_id) VALUES (?,?)").run(file, me.id);
     await api("POST", "/api/products", { title, tagline: "Loved by our customers", price, kind: "physical", image_file: file, description: "A demo product." }, s.token);
   }
@@ -70,7 +76,35 @@ async function demoStore() {
     const d = await api("POST", "/api/ugc/deals", { brand, amount, status: "pitched" }, s.token);
     if (status !== "pitched") await api("PATCH", `/api/ugc/deals/${d.id}`, { status }, s.token).catch(() => {});
   }
+  if (FILM === "shorts") await shortsDemo(s.token, me);
   return s.token;
+}
+
+/** The video flow: an avatar, its photo with the Glow Serum, the finished video, and a connected YouTube channel. */
+const ids = {};
+async function shortsDemo(token, me) {
+  const acct = db.prepare("SELECT account_id FROM sellers WHERE id = ?").get(me.id).account_id;
+  const product = db.prepare("SELECT id FROM products WHERE seller_id = ? AND title = 'Glow Serum'").get(me.id).id;
+  const copy = (from, dir, name) => { fs.mkdirSync(path.join(data, dir), { recursive: true }); fs.copyFileSync(path.join(FILM_OUT, from), path.join(data, dir, name)); return name; };
+  const avatarImg = copy("stills/avatar.jpg", "images", "demo-avatar-juniper.jpg");
+  const shotImg = copy("stills/shot.jpg", "images", "demo-shot-juniper-serum.jpg");
+  const clip = path.join(data, "media", "demo-avatar-video.mp4");
+  fs.mkdirSync(path.dirname(clip), { recursive: true });
+  ff("-i", path.join(FILM_OUT, "raw", "clip.mp4"), "-an", "-c:v", "libx264", "-crf", "22", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-movflags", "+faststart", clip);
+  db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, look, status, image_file, source) VALUES ('av_demo_juniper', ?, ?, 'Juniper', 'soft3d', 'copper bob, freckles, mustard sweater', 'done', ?, 'ai')").run(me.id, acct, avatarImg);
+  db.prepare("INSERT INTO avatar_shots (id, seller_id, account_id, avatar_id, product_id, pose, prompt, status, image_file) VALUES ('sh_demo_serum', ?, ?, 'av_demo_juniper', ?, 'present', 'holding the product up toward the viewer', 'done', ?)").run(me.id, acct, product, shotImg);
+  db.prepare("INSERT INTO avatar_videos (id, seller_id, account_id, avatar_id, shot_id, kind, model, duration, resolution, prompt, credits, status, file) VALUES ('avv_demo_serum', ?, ?, 'av_demo_juniper', 'sh_demo_serum', 'motion', 'vidu', 6, '1080p', 'Show it off', 30, 'done', 'demo-avatar-video.mp4')").run(me.id, acct);
+  credits.grant(acct, 120, "Demo credits");
+  db.prepare("INSERT INTO youtube_subs (session_id, account_id, status, expires_at) VALUES ('cs_demo_yt', ?, 'active', datetime('now','+30 days'))").run(acct);
+  db.prepare("INSERT INTO youtube_links (account_id, profile_id, zernio_account_id, username, connected_at) VALUES (?, 'demo-profile', 'demo-account', 'Glow Lab', datetime('now'))").run(acct);
+  // No real posting or AI: Zernio and the writer answer with what the live ones returned for this video.
+  youtube.setZernio(async (method, route) => {
+    if (method === "POST" && route === "/posts") return { post: { _id: "demo_post", status: "published", platforms: [{ platform: "youtube", status: "published", platformPostUrl: "https://www.youtube.com/shorts/demo" }] } };
+    return {};
+  });
+  const written = JSON.parse(fs.readFileSync(path.join(here, "demo-describe.json"), "utf8"));
+  youtube.setDescriber(async () => { await new Promise((r) => setTimeout(r, 1600)); return written; });
+  Object.assign(ids, { product, video: "avv_demo_serum" });
 }
 
 /* ---------- the browser (as in tools/academy-screens) ---------- */
@@ -111,7 +145,9 @@ async function step(page, [kind, target]) {
   throw new Error(`unknown step ${kind}`);
 }
 const V = { width: 430, height: 932 };
-const urlFor = (screen) => (screen.store ? `http://glow-lab.sf.localhost:${PORT}${screen.route}` : `http://app.sf.localhost:${PORT}${screen.route}`);
+// Routes can name the demo's product and video: /product/{product}, ?id={video}.
+const fill = (route) => route.replace(/\{(\w+)\}/g, (_, k) => encodeURIComponent(ids[k] ?? ""));
+const urlFor = (screen) => (screen.store ? `http://glow-lab.sf.localhost:${PORT}${fill(screen.route)}` : `http://app.sf.localhost:${PORT}${fill(screen.route)}`);
 async function record(browser, token, s) {
   const dir = fs.mkdtempSync(path.join(data, "rec-"));
   const context = await browser.newContext({ viewport: V, deviceScaleFactor: 2, recordVideo: { dir, size: { width: V.width * 2, height: V.height * 2 } }, colorScheme: "dark" });

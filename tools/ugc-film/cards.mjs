@@ -10,11 +10,11 @@ import path from "node:path";
 import { execFileSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { SCENES } from "./scenes.mjs";
+import { SCENES as ALL, OUT, META } from "./film.mjs";
+const SCENES = ALL.filter((s) => s.type !== "asset");
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
-const OUT = path.join(here, "out");
 const { chromium } = createRequire(path.join(root, "tools/academy-screens/package.json"))("playwright-core");
 const W = 1920, H = 1080, FPS = 30;
 export const PRE = 0.45, POST = 1.3, XF = 0.5, END_HOLD = 5.5;
@@ -107,20 +107,20 @@ const LOOPS = [{ x: 150, y: 250, w: 520, h: 520 }, { x: 710, y: 250, w: 520, h: 
 
 function body(s, row) {
   const c = s.card || {}, at = (i) => row.reveals[i] ?? row.vstart, st = row.start;
-  const head = (title, eyebrow = "SNAPFRONT ACADEMY · UGC") => `<p class="eyebrow">${eyebrow}</p><h1>${esc(title)}</h1>`;
+  const head = (title, eyebrow = META.eyebrow) => `<p class="eyebrow">${eyebrow}</p><h1>${esc(title)}</h1>`;
   if (s.type === "screen" || s.type === "loop") {
     const caps = row.captions.map((cp) => `<div class="item" style="${delay(cp.at, st)}">${esc(cp.text)}</div>`).join("");
     const frame = s.type === "screen"
       ? `<div class="phone" style="left:${PHONE.x - 18}px;top:${PHONE.y - 18}px;width:${PHONE.w + 36}px;height:${PHONE.h + 36}px"></div>`
       : LOOPS.map((b) => `<div class="slot" style="left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px"></div>`).join("");
-    return `${BG}${frame}<div class="side" style="${s.type === "loop" ? "left:1300px;width:560px" : ""}"><p class="eyebrow" style="margin:0">SNAPFRONT ACADEMY · UGC</p>${caps}</div>`;
+    return `${BG}${frame}<div class="side" style="${s.type === "loop" ? "left:1300px;width:560px" : ""}"><p class="eyebrow" style="margin:0">${esc(META.eyebrow)}</p>${caps}</div>`;
   }
   if (c.kind === "tiles") return `${BG}<div class="wrap">${head(c.title)}<div class="tiles">${c.items.map((x, i) => `<div class="tile item" style="${delay(at(i), st)}"><span class="n grad">${i + 1}</span><b>${esc(x)}</b></div>`).join("")}</div></div>`;
   if (c.kind === "quotes") return `${BG}<div class="wrap">${head(c.title)}<div class="quotes">${c.items.map((x, i) => `<div class="q item" style="${delay(at(i), st)}">${esc(x)}</div>`).join("")}</div><div class="foot" style="${delay(at(3), st)}">${esc(c.foot)}</div></div>`;
   if (c.kind === "steps") return `${BG}<div class="wrap">${head(c.title)}<div class="flow">${c.items.map((x, i) => `<div class="st item" style="${delay(at(i), st)}"><div class="dot">${i + 1}</div><b>${esc(x)}</b>${i < c.items.length - 1 ? `<div class="line" style="${delay(at(i + 1) - 0.3, st)}"></div>` : ""}</div>`).join("")}</div><div class="foot" style="${delay(at(5), st)};margin-top:70px">${esc(c.foot)}</div></div>`;
-  if (c.kind === "rules") return `${BG}<div class="wrap">${head(c.title)}<div class="rules">${c.items.map((x, i) => `<div class="rule item" style="${delay(at(i), st)}"><i class="${i === 0 || i === 3 ? "ok" : "no"}">${i === 0 || i === 3 ? "✓" : "✕"}</i>${esc(x)}</div>`).join("")}</div></div>`;
+  if (c.kind === "rules") { const ok = (i) => (c.marks ? c.marks[i] === "ok" : i === 0 || i === 3); return `${BG}<div class="wrap">${head(c.title)}<div class="rules">${c.items.map((x, i) => `<div class="rule item" style="${delay(at(i), st)}"><i class="${ok(i) ? "ok" : "no"}">${ok(i) ? "✓" : "✕"}</i>${esc(x)}</div>`).join("")}</div></div>`; }
   if (c.kind === "rates") return `${BG}<div class="wrap">${head(c.title)}<div class="rates">${c.rows.map(([a, b], i) => `<div class="row item" style="${delay(at(i), st)}"><span>${esc(a)}</span><span class="grad">${esc(b)}</span></div>`).join("")}</div><div class="foot soft" style="${delay(at(0) + 0.6, st)}">${esc(c.foot)}</div></div>`;
-  if (c.kind === "note") return `${BG}<div class="wrap">${head(c.title, "ANOTHER WAY TO EARN")}<div class="note">${c.items.map((x, i) => `<div class="item" style="${delay(at(i), st)}">${i ? "<i></i>" : ""}<span class="${i ? "" : "grad"}">${esc(x)}</span></div>`).join("")}</div><div class="foot soft" style="${delay(at(3), st)}">${esc(c.foot)}</div></div>`;
+  if (c.kind === "note") return `${BG}<div class="wrap">${head(c.title, c.eyebrow || "ANOTHER WAY TO EARN")}<div class="note">${c.items.map((x, i) => `<div class="item" style="${delay(at(i), st)}">${i ? "<i></i>" : ""}<span class="${i ? "" : "grad"}">${esc(x)}</span></div>`).join("")}</div><div class="foot soft" style="${delay(at(3), st)}">${esc(c.foot)}</div></div>`;
   throw new Error(`${s.key}: unknown card`);
 }
 
@@ -150,7 +150,7 @@ const GRADS = ["#FF7A59,#FF3CAC", "#FFB347,#FF7A59", "#9B8CFF,#5B6CFF", "#2EC4B6
 
 fs.mkdirSync(path.join(OUT, "cards"), { recursive: true });
 fs.mkdirSync(path.join(OUT, "overlays"), { recursive: true });
-fs.writeFileSync(path.join(OUT, "timing.json"), JSON.stringify({ total, fps: FPS, PRE, POST, XF, phone: PHONE, loops: LOOPS, scenes: timing }, null, 1));
+fs.writeFileSync(path.join(OUT, "timing.json"), JSON.stringify({ total, fps: FPS, PRE, POST, XF, phone: PHONE, loops: LOOPS, meta: META, scenes: timing }, null, 1));
 console.log(`total ${total.toFixed(1)}s`);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium" });
 const page = await browser.newPage({ viewport: { width: W, height: H } });
@@ -159,9 +159,9 @@ for (const [i, s] of SCENES.entries()) {
   if (s.type === "ai") for (const [k, cp] of (timing[i].captions).entries()) { const g = GRADS[n++ % GRADS.length]; await shot(page, `<div class=cap style='--g:${g}'>${esc(cp.text)}</div>`, `cap-${s.key}-${k}`); }
 }
 await shot(page, `<div class=logo><img src='data:image/png;base64,${MARK}'><span>snapfront</span></div>`, "end-logo");
-await shot(page, "<div class=tag>Get paid for UGC videos.</div>", "end-tag");
+await shot(page, `<div class=tag>${esc(META.tag)}</div>`, "end-tag");
 await shot(page, "<div style='width:1300px;height:900px;background:radial-gradient(closest-side,rgba(0,0,0,.82),rgba(0,0,0,.55) 55%,rgba(0,0,0,0))'></div>", "end-shade");
-await shot(page, "<div class=cta>Open the UGC creator kit &rarr;</div>", "end-cta");
+await shot(page, `<div class=cta>${esc(META.cta)} &rarr;</div>`, "end-cta");
 await shot(page, `<div class=bug><img src='data:image/png;base64,${MARK}'><span>snapfront</span></div>`, "bug");
 for (const [i, s] of SCENES.entries()) {
   if (!["card", "screen", "loop"].includes(s.type) || (ONLY.length && !ONLY.includes(s.key))) continue;

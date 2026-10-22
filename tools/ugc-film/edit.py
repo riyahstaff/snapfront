@@ -9,10 +9,13 @@ from PIL import Image, ImageDraw
 
 HERE = pathlib.Path(__file__).parent
 ROOT = HERE.parent.parent
-OUT = HERE / "out"; WORK = OUT / "edit"; FINAL = OUT / "final"
+import os
+FILM = "".join(ch for ch in os.environ.get("FILM", "ugc") if ch.isalnum() or ch == "-")
+OUT = HERE / ("out" if FILM == "ugc" else f"out-{FILM}"); WORK = OUT / "edit"; FINAL = OUT / "final"
 for d in (WORK, FINAL): d.mkdir(parents=True, exist_ok=True)
 T = json.loads((OUT / "timing.json").read_text())
-scenes, FPS, XF, TOTAL = T["scenes"], T["fps"], T["XF"], T["total"]
+scenes, FPS, XF, TOTAL, META = T["scenes"], T["fps"], T["XF"], T["total"], T["meta"]
+NAME = META["name"]
 W, H = 1920, 1080
 TRANSITIONS = ["fade", "smoothleft", "fade", "circleopen", "fade", "smoothup", "fade", "radial"]
 def dur(f): return float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(f)]).decode())
@@ -102,16 +105,14 @@ if not EXPORT_ONLY: ff(*ins, "-filter_complex", ";".join(fc), "-map", prev, "-ma
 
 # ---- exports ---------------------------------------------------------------------------------
 web = ["-movflags", "+faststart", "-pix_fmt", "yuv420p"]
-ff("-i", master, "-c:v", "libx264", "-preset", "medium", "-crf", "22", "-profile:v", "high", "-maxrate", "6M", "-bufsize", "12M", *web, "-c:a", "aac", "-b:a", "192k", FINAL / "ugc-film-1080.mp4")
-ff("-i", master, "-vf", "scale=1280:720:flags=lanczos", "-c:v", "libx264", "-preset", "medium", "-crf", "25", "-maxrate", "2.2M", "-bufsize", "4.4M", *web, "-c:a", "aac", "-b:a", "128k", FINAL / "ugc-film-720.mp4")
-ff("-ss", f"{scenes[0]['vstart'] + 2.2:.2f}", "-i", master, "-frames:v", "1", "-vf", "scale=1280:720:flags=lanczos", "-q:v", "3", FINAL / "ugc-film.jpg")
+ff("-i", master, "-c:v", "libx264", "-preset", "medium", "-crf", "22", "-profile:v", "high", "-maxrate", "6M", "-bufsize", "12M", *web, "-c:a", "aac", "-b:a", "192k", FINAL / f"{NAME}-1080.mp4")
+ff("-i", master, "-vf", "scale=1280:720:flags=lanczos", "-c:v", "libx264", "-preset", "medium", "-crf", "25", "-maxrate", "2.2M", "-bufsize", "4.4M", *web, "-c:a", "aac", "-b:a", "128k", FINAL / f"{NAME}-720.mp4")
+ff("-ss", f"{scenes[0]['vstart'] + 2.2:.2f}", "-i", master, "-frames:v", "1", "-vf", "scale=1280:720:flags=lanczos", "-q:v", "3", FINAL / f"{NAME}.jpg")
 def ts(x): return f"{int(x // 3600):02d}:{int(x % 3600 // 60):02d}:{x % 60:06.3f}"
 vtt = ["WEBVTT", ""]
 for i, s in enumerate(scenes, start=1): vtt += [str(i), f"{ts(s['vstart'])} --> {ts(s['vstart'] + s['vdur'] + 0.2)}", s["say"], ""]
-(FINAL / "ugc-film.vtt").write_text("\n".join(vtt))
-CH = [("hook", "What UGC is and how you get paid"), ("two-ways", "Two ways: you on camera, or an AI avatar"), ("gear", "Gear: your phone is enough"), ("formats", "Formats brands buy"),
-      ("hooks", "Hooks: win the first 3 seconds"), ("scripts", "Scripts in Snapfront"), ("shoot", "Filming tips"), ("avatar", "AI avatars in Snapfront"), ("avatar-rules", "Avatar rules: label it, no fake claims"),
-      ("portfolio", "Your UGC portfolio page"), ("rates", "What to charge"), ("find", "Finding brands and pitching"), ("deliver", "Delivering like a pro"), ("amazon", "Amazon Influencer Program"), ("end", "Your first step")]
+(FINAL / f"{NAME}.vtt").write_text("\n".join(vtt))
+CH = [tuple(c) for c in META["chapters"]]
 start = {s["key"]: s["start"] for s in scenes}
-(FINAL / "chapters.txt").write_text("\n".join(f"{int((0 if k == 'hook' else start[k]) // 60)}:{int((0 if k == 'hook' else start[k]) % 60):02d} {t}" for k, t in CH) + "\n")
+(FINAL / "chapters.txt").write_text("\n".join(f"{int((0 if k == CH[0][0] else start[k]) // 60)}:{int((0 if k == CH[0][0] else start[k]) % 60):02d} {t}" for k, t in CH) + "\n")
 for f in sorted(FINAL.iterdir()): print(f.name, f"{f.stat().st_size / 1e6:.1f} MB")

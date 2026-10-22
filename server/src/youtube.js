@@ -392,7 +392,7 @@ export async function describe(account, seller, b = {}) {
   const { frames, seconds } = await framesOf(file);
   const prompt = `You write titles and descriptions for YouTube Shorts that get found in YouTube search and get watched.
 Write them for this ${Math.round(seconds) || ""}-second vertical video${frames.length ? ", shown in the frames above (taken from the start, middle and end)" : ""}.
-${source === "avatar" ? "It was made with an AI avatar.\n" : ""}What we know about it:
+${source === "avatar" ? "It was made with an AI avatar presenting the product. The avatar isn't a real customer: never write as if the presenter (or anyone) personally uses it, loves it, or got results from it (no \"I use\", \"my go-to\", \"I tried\", \"changed my skin\"). The seller may call it their product (\"my serum\" is fine).\n" : ""}What we know about it:
 - Made by: ${line(seller.store_name, 80) || "a Snapfront creator"}${seller.tagline ? ` (${line(seller.tagline, 120)})` : ""}
 - Working title: ${line(known?.title, 100) || "(none)"}
 ${known?.description && known.description !== "#Shorts" ? `- Notes from when it was made: ${line(known.description, 600)}\n` : ""}${notes ? `- What the creator says it's about: ${notes}\n` : ""}
@@ -400,7 +400,8 @@ How to write it:
 - Title: 40 to 70 characters, at most 100. Lead with what a viewer would search for or a curiosity hook. Plain words, at most one emoji, no clickbait that the video doesn't deliver, no ALL CAPS.
 - Description: 2 to 4 short lines. The first line restates the main keyword naturally. Then what the viewer gets, then one call to action (follow, comment, or the link in the channel).
 - Hashtags: 3 to 5, relevant and specific, always including #Shorts.
-- Only say what the frames, the title or the notes support. Don't invent prices, discounts, results, income, health claims or guarantees.
+- Only say what the frames, the title or the notes support. Don't invent prices, discounts, results, income, health claims, guarantees or personal experiences.
+- Don't mention how long the video is, or that it's a clip, an animation or AI-made (YouTube's AI label covers that).
 - Never use the characters < or >.
 
 Return this JSON object:
