@@ -51,14 +51,16 @@ async function demoStore() {
   const s = await api("POST", "/api/sellers", { store_name: "Glow Lab" });
   const me = await api("PATCH", "/api/me", { store_name: "Glow Lab", store_slug: "glow-lab" }, s.token);
   db.prepare("UPDATE accounts SET plan = 'pro', email = 'demo@example.com' WHERE id = (SELECT account_id FROM sellers WHERE id = ?)").run(me.id);
-  const productPhoto = path.join(FILM_OUT, "stills", "product.jpg");   // the shorts film's real-looking product photo
+  const productPhoto = path.join(here, "out-shorts", "stills", "product.jpg");   // the shorts film's real-looking product photo
   for (const [title, color, price] of [["Glow Serum", "#E9D6C4", 46], ["Silk Sleep Mask", "#CFC6E6", 28], ["Daily SPF Mist", "#F2E2B8", 32]]) {
     const file = `${title.toLowerCase().replace(/\W+/g, "-")}.jpg`;
-    fs.writeFileSync(path.join(data, "images", file), title === "Glow Serum" && FILM === "shorts" && fs.existsSync(productPhoto)
-      ? await sharp(productPhoto).resize(1200, 1200).jpeg({ quality: 90 }).toBuffer()
+    // Real-looking product photos when the films have made them (out-shorts, out-promo stills).
+    const photo = { "Glow Serum": productPhoto, "Daily SPF Mist": path.join(here, "out-promo", "stills", "mist.jpg"), "Silk Sleep Mask": path.join(here, "out-promo", "stills", "mask.jpg") }[title];
+    fs.writeFileSync(path.join(data, "images", file), ["shorts", "promo"].includes(FILM) && photo && fs.existsSync(photo)
+      ? await sharp(photo).resize(1200, 1200).jpeg({ quality: 90 }).toBuffer()
       : await sharp({ create: { width: 900, height: 900, channels: 3, background: color } }).jpeg().toBuffer());
     db.prepare("INSERT INTO seller_media (image_file, seller_id) VALUES (?,?)").run(file, me.id);
-    await api("POST", "/api/products", { title, tagline: "Loved by our customers", price, kind: "physical", image_file: file, description: "A demo product." }, s.token);
+    await api("POST", "/api/products", { title, tagline: "Simple daily skincare", price, kind: "physical", image_file: file, description: "A demo product." }, s.token);
   }
   // Sample portfolio videos: vertical cuts of the web app's own tool animations.
   for (const loop of ["ugc", "faceless", "avatars"]) {
@@ -77,6 +79,7 @@ async function demoStore() {
     if (status !== "pitched") await api("PATCH", `/api/ugc/deals/${d.id}`, { status }, s.token).catch(() => {});
   }
   if (FILM === "shorts") await shortsDemo(s.token, me);
+  if (FILM === "promo") await careDemo(s.token, me);
   return s.token;
 }
 
@@ -106,6 +109,34 @@ async function shortsDemo(token, me) {
   const written = JSON.parse(fs.readFileSync(path.join(here, "demo-describe.json"), "utf8"));
   youtube.setDescriber(async () => { await new Promise((r) => setTimeout(r, 700)); return written; });
   Object.assign(ids, { product, video: "avv_demo_serum" });
+}
+
+/** SnapCare fixing a buyer's download: a paid digital order, and the assistant's answers (scripted:
+ *  the private server has no AI key). The tools it calls are the real ones. */
+async function careDemo(token, me) {
+  // A finished-looking store for the Shorts: products published, and the Bloom (beauty) look.
+  db.prepare("UPDATE products SET status = 'live' WHERE seller_id = ?").run(me.id);
+  db.prepare("UPDATE sellers SET theme = 'bloom' WHERE id = ?").run(me.id);
+  const snapcare = await import(path.join(serverDir, "src/snapcare.js"));
+  snapcare.setMailer(async () => true);
+  db.prepare("INSERT INTO products (id, seller_id, slug, title, tagline, price_cents, kind, status) VALUES ('p_demo_planner', ?, 'glow-routine-planner', 'Glow Routine Planner', 'A 30-day skincare planner', 1200, 'digital', 'live')").run(me.id);
+  db.prepare("INSERT INTO orders (id, seller_id, status, items, subtotal_cents, total_cents, email, paid_at) VALUES ('ord_7Q2K', ?, 'paid', ?, 1200, 1200, 'jordan@example.com', datetime('now','-2 hours'))")
+    .run(me.id, JSON.stringify([{ kind: "digital", title: "Glow Routine Planner", product_id: "p_demo_planner", quantity: 1 }]));
+  let turn = 0;
+  snapcare.setReplier(async ({ messages }) => {
+    turn++;
+    if (turn === 1) return { stop_reason: "tool_use", content: [{ type: "tool_use", id: "c1", name: "recent_activity", input: { kind: "orders" } }] };
+    if (turn === 2) return { stop_reason: "tool_use", content: [{ type: "tool_use", id: "c2", name: "order_download_links", input: { order_id: "ord_7Q2K" } }] };
+    if (turn === 3) {
+      let link = "";
+      try { link = JSON.parse(messages.at(-1).content[0].content).links[0].url; } catch { /* shown without a link */ }
+      await new Promise((r) => setTimeout(r, 900));
+      return { stop_reason: "end_turn", content: [{ type: "text", text: `I found it: order ord_7Q2K from jordan@example.com, paid 2 hours ago, for **Glow Routine Planner**.\n\nHere's a fresh download link, good for 7 days:\n${link}\n\nSend it to your buyer, or I can resend their order email now.` }] };
+    }
+    if (turn === 4) return { stop_reason: "tool_use", content: [{ type: "tool_use", id: "c3", name: "create_ticket", input: { kind: "help", summary: "Wants payouts checked", details: "Member asked the team to check their Stripe payouts." } }] };
+    await new Promise((r) => setTimeout(r, 900));
+    return { stop_reason: "end_turn", content: [{ type: "text", text: "Payouts are handled in your Stripe account, so I've passed this to the Snapfront team. They'll reply by email and right here in this chat." }] };
+  });
 }
 
 /* ---------- the browser (as in tools/academy-screens) ---------- */
