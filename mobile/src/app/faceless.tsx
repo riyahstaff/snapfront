@@ -109,6 +109,7 @@ function JobCard({ job, onRemoved, onMsg }: { job: FacelessJob; onRemoved: () =>
         {job.status === "done" && job.download_url ? <>
           <TextAction label="Save" onPress={async () => { try { await saveToPhone([job.download_url!]); onMsg({ text: "Saved.", tone: "ok" }); } catch { onMsg({ text: "Couldn't save the video.", tone: "error" }); } }} />
           <TextAction label="Share" onPress={() => shareFile(job.url!).catch(() => {})} />
+          <TextAction label="Post to YouTube" onPress={() => router.push(`/youtube?source=faceless&id=${encodeURIComponent(job.id)}`)} />
         </> : null}
         {job.status !== "working" ? <TextAction label="Delete" tone="bad" onPress={() => Alert.alert("Delete this video?", undefined, [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: async () => { await facelessApi.remove(job.id).catch(() => {}); onRemoved(); } }])} /> : null}
       </View>

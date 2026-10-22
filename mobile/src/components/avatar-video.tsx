@@ -191,6 +191,7 @@ export function VideoCard({ video, width, onDelete, onMsg }: { video: AvatarVide
             }} />
             <Button label="Share" variant="secondary" style={{ flex: 1 }} onPress={() => shareFile(video.url!).catch(() => {})} />
           </View>
+          <Button label="Post to YouTube Shorts" variant="secondary" onPress={() => router.push(`/youtube?source=avatar&id=${encodeURIComponent(video.id)}`)} />
         </>
       ) : null}
       {video.status === "done" || video.status === "failed" ? (

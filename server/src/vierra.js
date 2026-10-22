@@ -77,6 +77,7 @@ export const APP_PAGES = [
   ["Bonus: 1k Prompts", "/prompts", "1,000 prompts to send to Claude or ChatGPT: pick one, fill in your details, then tap Open in Claude or Open in ChatGPT and it opens with the prompt typed in"],
   ["UGC creator kit", "/ugc", "Find brand work and manage creator deals"],
   ["Faceless videos", "/faceless", "Create videos without appearing on camera"],
+  ["YouTube Shorts", "/youtube", "A $24.99 a month add-on that posts your finished faceless and avatar videos straight to your own YouTube channel as Shorts"],
   ["AI avatars", "/avatars", "Create avatar videos"],
   ["AI photos & video", "/ai-media", "Generate images and video"],
   ["Credits", "/credits", "Check and buy generation credits"],

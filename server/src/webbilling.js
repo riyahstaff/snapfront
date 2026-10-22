@@ -99,7 +99,7 @@ export const lifetimeOpen = () => lifetimeLeft() > 0;
 export const longPlan = () => (lifetimeOpen() ? "lifetime" : "yearly");
 export const hasLifetime = (accountId) => Boolean(db.prepare("SELECT 1 FROM stripe_plan_purchases WHERE account_id = ? AND plan = 'lifetime' AND status = 'active'").get(accountId)) || playbilling.hasLifetime(accountId);
 
-async function customerFor(account) {
+export async function customerFor(account) {
   const known = db.prepare("SELECT customer_id FROM stripe_plan_customers WHERE account_id = ?").get(account.id)?.customer_id;
   if (known) return known;
   const c = await stripeClient().customers.create({ email: account.email || undefined, metadata: { snapfront_account: account.id } });

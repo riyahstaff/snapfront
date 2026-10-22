@@ -63,6 +63,7 @@ import * as digitalDesigns from "./digital-designs.js";
 import * as digitalIdeas from "./digital-ideas.js";
 import * as imageAssistant from "./image-assistant.js";
 import * as backup from "./backup.js";
+import * as youtube from "./youtube.js";
 import { suggestStorefrontCopy } from "./storefront-copy.js";
 import { storePage, productPage, cartPage, orderPage, notePage, taxSetupPage, linksPage, reviewPage, affiliateJoinPage, affiliatePortalPage, ugcPage, esc } from "./render.js";
 import { themeGalleryPage, themeDemoPage, themeDemoProduct, themeDemoCart } from "./theme-gallery.js";
@@ -611,6 +612,7 @@ function deleteAccount(accountId) {
   const stores = plans.storesOf(accountId);
   for (const st of stores) if (st.custom_domain_id) domains.removeDomain(st).catch(() => {});
   webbilling.cancelAll(accountId).catch((e) => console.warn("[webbilling] cancel on delete", e.message));
+  youtube.cancelAll(accountId).catch((e) => console.warn("[youtube] cancel on delete", e.message));
   purgeStores(stores.map((st) => st.id));
   db.prepare("DELETE FROM accounts WHERE id = ?").run(accountId);
   removeFiles(rows);
@@ -1112,6 +1114,14 @@ app.patch("/api/ugc/deals/:id", auth, (req, res) => res.json(ugc.updateDeal(req.
 app.delete("/api/ugc/deals/:id", auth, (req, res) => { ugc.deleteDeal(req.seller, req.params.id); res.status(204).end(); });
 
 /* ---------- faceless videos ---------- */
+/* ---------- YouTube Shorts add-on (Zernio): post finished videos to the member's own channel ---------- */
+app.get("/api/youtube", auth, wrap(async (req, res) => res.json(await youtube.status(req.account, req.seller))));
+app.post("/api/youtube/checkout", auth, wrap(async (req, res) => res.json(await youtube.startCheckout(req.account))));
+app.post("/api/youtube/confirm", auth, wrap(async (req, res) => { await youtube.confirm(req.account, req.body?.session_id); res.json(await youtube.status(req.account, req.seller)); }));
+app.post("/api/youtube/connect", auth, wrap(async (req, res) => res.json(await youtube.connectUrl(req.account))));
+app.post("/api/youtube/sync", auth, wrap(async (req, res) => { await youtube.sync(req.account); res.json(await youtube.status(req.account, req.seller)); }));
+app.delete("/api/youtube/connection", auth, wrap(async (req, res) => { await youtube.disconnect(req.account); res.json(await youtube.status(req.account, req.seller)); }));
+app.post("/api/youtube/posts", auth, wrap(async (req, res) => res.status(201).json(await youtube.post(req.account, req.seller, req.body || {}))));
 app.get("/api/faceless", auth, (req, res) => res.json(faceless.jobs(req.seller)));
 app.post("/api/faceless/script", auth, aiLimit, wrap(async (req, res) => res.json(await faceless.writeScript(req.account, req.seller, req.body || {}))));
 app.post("/api/faceless/videos", auth, (req, res) => res.status(201).json(faceless.start(req.seller, req.body || {})));
@@ -1661,6 +1671,7 @@ function startBackgroundWork() {
   // Website plans (Stripe): notice renewals, cancellations and refunds.
   setInterval(() => webbilling.sweep().catch((e) => console.error("[webbilling] sweep", e.message)), 30 * 60e3).unref();
   setInterval(() => credits.sweep().catch((e) => console.error("[credits] sweep", e.message)), 10 * 60e3).unref();
+  setInterval(() => youtube.sweep().catch((e) => console.error("[youtube] sweep", e.message)), 30 * 60e3).unref();
   setTimeout(() => reconcileStripe().catch((e) => console.error("[reconcile]", e.message)), 45e3).unref();
   setInterval(() => reconcileStripe().catch((e) => console.error("[reconcile]", e.message)), 15 * 60e3).unref();
   setInterval(() => feed.emailDigests().catch((e) => console.error("[community email]", e.message)), 10 * 60e3).unref();

@@ -898,6 +898,20 @@ export const ugcApi = {
   deleteDeal: (id: string) => request<void>("DELETE", `/api/ugc/deals/${encodeURIComponent(id)}`),
 };
 
+/* ---------- YouTube Shorts add-on (Zernio) ---------- */
+export type YoutubeVideo = { source: "faceless" | "avatar"; id: string; title: string; description: string; seconds: number | null; created_at: string; ai: boolean; url: string };
+export type YoutubePost = { id: string; source: string; source_id: string; title: string; status: "sending" | "scheduled" | "published" | "failed"; url: string | null; error: string | null; created_at: string };
+export type YoutubeStatus = { enabled: boolean; price: string; member: boolean; subscribed: boolean; owner: boolean; connected: { username: string } | null; videos: YoutubeVideo[]; posts: YoutubePost[] };
+export const youtubeApi = {
+  status: () => request<YoutubeStatus>("GET", "/api/youtube"),
+  checkout: () => request<{ url: string }>("POST", "/api/youtube/checkout"),
+  confirm: (session_id: string) => request<YoutubeStatus>("POST", "/api/youtube/confirm", { session_id }),
+  connect: () => request<{ url: string }>("POST", "/api/youtube/connect"),
+  sync: () => request<YoutubeStatus>("POST", "/api/youtube/sync"),
+  disconnect: () => request<YoutubeStatus>("DELETE", "/api/youtube/connection"),
+  post: (b: { source: string; id: string; title: string; description: string; visibility: "public" | "unlisted" | "private"; ai: boolean; made_for_kids: boolean }) => request<YoutubePost>("POST", "/api/youtube/posts", b, undefined, 120000),
+};
+
 /* ---------- faceless videos ---------- */
 export type FacelessScene = { text: string; say: string };
 export type FacelessScript = { product_id: string; style: string; hook: string; scenes: FacelessScene[]; cta: string; caption: string; hashtags: string[] };
