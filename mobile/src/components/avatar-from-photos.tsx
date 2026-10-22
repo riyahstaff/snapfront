@@ -39,13 +39,15 @@ export function PhotoAvatarMaker({ mode, studio, full, onMade, onMsg }: {
     finally { setUploading(null); }
   }
 
-  const ready = photos.slice(0, slots).every(Boolean) && consent && !full;
+  // "Use my photo" asks the question; for a blend, the note under the button says it and pressing Blend counts.
+  const agreed = mode === "blend" || consent;
+  const ready = photos.slice(0, slots).every(Boolean) && agreed && !full;
   async function make() {
     setBusy(true); onMsg(null);
     try {
       const made = mode === "photo"
         ? await api.avatarFromPhoto({ photo: photos[0]!.id, name: name.trim() || undefined, consent })
-        : await api.blendAvatar({ photos: [photos[0]!.id, photos[1]!.id], mix, name: name.trim() || undefined, look: look.trim() || undefined, consent });
+        : await api.blendAvatar({ photos: [photos[0]!.id, photos[1]!.id], mix, name: name.trim() || undefined, look: look.trim() || undefined, consent: true });
       onMade(made);
       setPhotos([null, null]); setName(""); setLook(""); setConsent(false);
       onMsg(mode === "photo" ? { text: `${made.name} is ready. Pick a product below to put yourself in a photo.`, tone: "ok" } : { text: "Blending the two photos. It takes about 30 seconds.", tone: "info" });
@@ -88,13 +90,13 @@ export function PhotoAvatarMaker({ mode, studio, full, onMade, onMsg }: {
       ) : null}
       <Field label="Name (optional)" value={name} onChangeText={setName} maxLength={30} placeholder={mode === "photo" ? "Me" : "Jordan"} />
       {mode === "blend" ? <Field label="Styling (optional)" hint="Outfit, hair or background for the new person." value={look} onChangeText={setLook} maxLength={200} placeholder="denim jacket, warm studio background" /> : null}
-      <Pressable onPress={() => setConsent(!consent)} accessibilityRole="checkbox" accessibilityState={{ checked: consent }}
-        style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start", paddingVertical: 4 }}>
-        <Ionicons name={consent ? "checkbox" : "square-outline"} size={22} color={consent ? c.accent : c.muted} />
-        <Text style={[type.small, { color: c.ink, flex: 1 }]}>
-          {mode === "photo" ? "This is a photo of me, or the person in it agreed to be my avatar." : "Both people are adults who agreed to have their photos blended into an avatar."}
-        </Text>
-      </Pressable>
+      {mode === "photo" ? (
+        <Pressable onPress={() => setConsent(!consent)} accessibilityRole="checkbox" accessibilityState={{ checked: consent }}
+          style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start", paddingVertical: 4 }}>
+          <Ionicons name={consent ? "checkbox" : "square-outline"} size={22} color={consent ? c.accent : c.muted} />
+          <Text style={[type.small, { color: c.ink, flex: 1 }]}>This is a photo of me, or the person in it agreed to be my avatar.</Text>
+        </Pressable>
+      ) : null}
       <Button label={mode === "photo" ? "Use this photo" : "Blend them"} icon={<Ionicons name={mode === "photo" ? "person-circle-outline" : "git-merge-outline"} size={18} color={c.onAccent} />}
         loading={busy} disabled={!ready} onPress={make} />
       <Text style={[type.small, { color: c.muted }]}>Photos are checked first: one person per photo, adults only. Photos of other people need their permission.</Text>
