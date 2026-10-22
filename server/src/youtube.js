@@ -18,7 +18,7 @@ import { spawn } from "node:child_process";
 import ffmpegPath from "ffmpeg-static";
 import { config, dirs } from "./config.js";
 import { db, newId } from "./db.js";
-import { httpError } from "./claude.js";
+import { askJson, httpError } from "./claude.js";
 import * as plans from "./plans.js";
 import * as credits from "./credits.js";
 import * as webbilling from "./webbilling.js";
@@ -354,12 +354,66 @@ export function videos(seller, account) {
 // YouTube refuses "<" and ">" in titles and descriptions.
 const line = (s, n) => String(s ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
 const VISIBILITY = ["public", "unlisted", "private"];
-function videoFor(account, seller, source, id) {
+function fileFor(account, seller, source, id) {
   const row = source === "faceless" ? db.prepare("SELECT file FROM faceless_jobs WHERE id = ? AND seller_id = ? AND status = 'done'").get(String(id), seller.id)
     : source === "avatar" ? db.prepare("SELECT file FROM avatar_videos WHERE id = ? AND seller_id = ? AND status = 'done'").get(String(id), seller.id)
     : source === "upload" ? db.prepare("SELECT file FROM youtube_uploads WHERE id = ? AND account_id = ?").get(String(id), account.id) : null;
   if (!row?.file || !/^[\w-]+\.mp4$/.test(row.file)) throw httpError(404, "Pick one of your finished videos.");
-  return `${config.publicUrl}/media/${row.file}`;
+  return row.file;
+}
+const videoFor = (account, seller, source, id) => `${config.publicUrl}/media/${fileFor(account, seller, source, id)}`;
+
+/* ---------- AI title and description ---------- */
+/** Four frames from across the video, small JPEGs, so the AI can see what it shows. */
+async function framesOf(file) {
+  const full = path.join(dirs.media, file);
+  const { seconds } = readProbe((await ffmpeg(["-hide_banner", "-i", full], 30_000)).err);
+  const out = [];
+  for (const share of [0.08, 0.35, 0.62, 0.9]) {
+    const jpg = path.join(dirs.media, `frame-${crypto.randomBytes(8).toString("hex")}.jpg`);
+    try {
+      const r = await ffmpeg(["-y", "-hide_banner", "-loglevel", "error", "-ss", (Math.max(0, seconds * share)).toFixed(2), "-i", full, "-frames:v", "1", "-vf", "scale=512:512:force_original_aspect_ratio=decrease", "-q:v", "5", jpg], 30_000);
+      if (r.code === 0 && fs.existsSync(jpg)) out.push(fs.readFileSync(jpg).toString("base64"));
+    } finally { fs.rmSync(jpg, { force: true }); }
+  }
+  return { frames: out, seconds };
+}
+let describeImpl = null;
+/** Tests replace the AI call: fn(content) → JSON. */
+export const setDescriber = (fn) => { describeImpl = fn; };
+/** Write a YouTube Shorts title, description and hashtags for one of the member's videos, from what it shows. */
+export async function describe(account, seller, b = {}) {
+  needAddon(account);
+  const source = ["avatar", "faceless", "upload"].includes(b.source) ? b.source : null;
+  if (!source) throw httpError(400, "Pick one of your videos.");
+  const file = fileFor(account, seller, source, b.id);
+  const known = videos(seller, account).find((v) => v.source === source && v.id === String(b.id));
+  const notes = String(b.notes ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 600);
+  const { frames, seconds } = await framesOf(file);
+  const prompt = `You write titles and descriptions for YouTube Shorts that get found in YouTube search and get watched.
+Write them for this ${Math.round(seconds) || ""}-second vertical video${frames.length ? ", shown in the frames above (taken from the start, middle and end)" : ""}.
+${source === "avatar" ? "It was made with an AI avatar.\n" : ""}What we know about it:
+- Made by: ${line(seller.store_name, 80) || "a Snapfront creator"}${seller.tagline ? ` (${line(seller.tagline, 120)})` : ""}
+- Working title: ${line(known?.title, 100) || "(none)"}
+${known?.description && known.description !== "#Shorts" ? `- Notes from when it was made: ${line(known.description, 600)}\n` : ""}${notes ? `- What the creator says it's about: ${notes}\n` : ""}
+How to write it:
+- Title: 40 to 70 characters, at most 100. Lead with what a viewer would search for or a curiosity hook. Plain words, at most one emoji, no clickbait that the video doesn't deliver, no ALL CAPS.
+- Description: 2 to 4 short lines. The first line restates the main keyword naturally. Then what the viewer gets, then one call to action (follow, comment, or the link in the channel).
+- Hashtags: 3 to 5, relevant and specific, always including #Shorts.
+- Only say what the frames, the title or the notes support. Don't invent prices, discounts, results, income, health claims or guarantees.
+- Never use the characters < or >.
+
+Return this JSON object:
+{"title": string, "description": string (the lines, separated by newlines, without hashtags), "hashtags": [strings starting with #], "alt_titles": [2 other title options]}`;
+  const content = [...frames.map((data) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } })), { type: "text", text: prompt }];
+  return plans.withAllowance(account, "post", async () => {
+    const out = (describeImpl ? await describeImpl(content) : await askJson(content, 1200)) || {};
+    const tags = [...new Set([...(Array.isArray(out.hashtags) ? out.hashtags : []), "#Shorts"].map((t) => `#${String(t).replace(/^#+/, "").replace(/[^\p{L}\p{N}_]/gu, "")}`).filter((t) => t.length > 1))].slice(0, 6);
+    const title = line(out.title, 100);
+    if (title.length < 3) throw httpError(502, "The AI's answer came back empty. Try again.");
+    const text = String(out.description ?? "").replace(/\r/g, "").replace(/[<>]/g, "").split("\n").map((l) => l.trim()).filter(Boolean).join("\n").slice(0, 4000);
+    return { title, description: [text, tags.join(" ")].filter(Boolean).join("\n\n").slice(0, 5000), alt_titles: (Array.isArray(out.alt_titles) ? out.alt_titles : []).map((t) => line(t, 100)).filter((t) => t.length >= 3).slice(0, 2) };
+  });
 }
 const publicPost = (p) => ({ id: p.id, source: p.source, source_id: p.source_id, title: p.title, status: p.status, url: p.url, error: p.error, created_at: p.created_at });
 function applyZernio(postId, zpost) {

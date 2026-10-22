@@ -29,6 +29,9 @@ export default function YoutubeScreen() {
   const [visibility, setVisibility] = useState<"public" | "unlisted" | "private">("public");
   const [ai, setAi] = useState(false);
   const [kids, setKids] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [notes, setNotes] = useState("");
+  const [alts, setAlts] = useState<string[]>([]);
 
   const load = useCallback(() => { youtubeApi.status().then(setSt).catch((e) => setMsg({ text: errText(e, "Couldn't load YouTube posting."), tone: "error" })); }, []);
   useFocusEffect(load);
@@ -70,8 +73,13 @@ export default function YoutubeScreen() {
     if (v) choose(v);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the list first arrives
   }, [st]);
-  function choose(v: YoutubeVideo) { setPick(v); setTitle(v.title); setDesc(v.description); setAi(v.ai); }
-  const [progress, setProgress] = useState<number | null>(null);
+  function choose(v: YoutubeVideo) { setPick(v); setTitle(v.title); setDesc(v.description); setAi(v.ai); setAlts([]); }
+  const write = () => act("describe", async () => {
+    if (!pick) return;
+    const d = await youtubeApi.describe({ source: pick.source, id: pick.id, notes: notes.trim() || undefined });
+    setTitle(d.title); setDesc(d.description); setAlts(d.alt_titles);
+    setMsg({ text: "Written from what's in your video. Change anything you like before posting.", tone: "ok" });
+  }, "Couldn't write the description. Try again.");
   const uploadVideo = () => act("upload", async () => {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["videos"], allowsEditing: false, quality: 1 });
     const a = res.canceled ? null : res.assets?.[0];
@@ -180,7 +188,24 @@ export default function YoutubeScreen() {
             </View>
             {pick ? (
               <View style={{ gap: space.md }}>
+                <View style={{ gap: space.sm, padding: space.md, borderRadius: radius.md, backgroundColor: c.sunk }}>
+                  <Text style={[type.label, { color: c.ink }]}>Write it with AI</Text>
+                  <Text style={[type.small, { color: c.muted }]}>Looks at your video and writes a title, description and hashtags made to be found on YouTube.</Text>
+                  <Field label="What's it about? (optional)" value={notes} onChangeText={setNotes} maxLength={600} placeholder="e.g. a quick tour of Snapfront for new sellers" />
+                  <Button label={busy === "describe" ? "Watching your video…" : "Write with AI"} variant="secondary" loading={busy === "describe"} disabled={busy !== null} onPress={write} />
+                </View>
                 <Field label="Title (up to 100 characters)" value={title} onChangeText={setTitle} maxLength={100} />
+                {alts.length ? (
+                  <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap", alignItems: "center" }}>
+                    <Text style={[type.small, { color: c.muted }]}>Other titles:</Text>
+                    {alts.map((t) => (
+                      <Pressable key={t} onPress={() => setTitle(t)} accessibilityRole="button" accessibilityLabel={`Use the title ${t}`}
+                        style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: c.line }}>
+                        <Text style={[type.small, { color: c.ink }]}>{t}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
                 <Field label="Description" value={desc} onChangeText={setDesc} multiline maxLength={5000} />
                 <Segmented value={visibility} onChange={setVisibility} options={[{ value: "public", label: "Public" }, { value: "unlisted", label: "Unlisted" }, { value: "private", label: "Private" }]} />
                 <Toggle label="Made with AI" sub={pick.ai ? "Avatar videos are always labelled, as YouTube asks." : "Turn this on if it shows realistic AI-made people, voices or scenes."} value={ai} disabled={pick.ai} onChange={setAi} />

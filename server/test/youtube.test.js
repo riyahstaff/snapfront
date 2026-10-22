@@ -204,6 +204,29 @@ test("uploads are checked: other people's uploads, sizes, non-videos and videos 
   assert.match(spawnSync(ffmpegPath, ["-hide_banner", "-i", wfile]).stderr.toString(), /Video: h264/, "converted to H.264");
 });
 
+test("AI writes the title and description from frames of the member's own video", async () => {
+  const r = await upload(m.token, makeVideo("candle", 3, "180x320"), "candle_demo.mp4");
+  assert.equal(r.status, 201);
+  let seen = null;
+  youtube.setDescriber(async (content) => { seen = content; return { title: "How I <pour> soy candles at home", description: "Soy candles, start to finish.\nFollow for more.", hashtags: ["candles", "#SoyCandle", "#Shorts"], alt_titles: ["Pouring candles", "x"] }; });
+  const d = await call(m.token, "POST", "/api/youtube/describe", { source: "upload", id: r.json.id, notes: "my lavender candle, 8 oz" });
+  assert.equal(d.status, 200, JSON.stringify(d.json));
+  assert.equal(seen.filter((c) => c.type === "image").length, 4, "four frames from the video");
+  assert.ok(seen.every((c) => c.type !== "image" || (c.source.media_type === "image/jpeg" && c.source.data.length > 100)));
+  assert.match(seen.at(-1).text, /my lavender candle, 8 oz/);
+  assert.equal(d.json.title, "How I pour soy candles at home", "no angle brackets");
+  assert.match(d.json.description, /^Soy candles, start to finish\.\nFollow for more\.\n\n#candles #SoyCandle #Shorts$/);
+  assert.deepEqual(d.json.alt_titles, ["Pouring candles"]);
+  assert.equal(fs.readdirSync(path.join(tmp, "media")).filter((f) => f.startsWith("frame-")).length, 0, "frames are cleaned up");
+  // Only for the member's own videos, and only with the add-on.
+  const stranger = await member();
+  db.prepare("INSERT INTO youtube_subs (session_id, account_id, status) VALUES ('cs_desc', ?, 'active')").run(stranger.account.id);
+  assert.equal((await call(stranger.token, "POST", "/api/youtube/describe", { source: "upload", id: r.json.id })).status, 404);
+  const free = await member(false);
+  assert.equal((await call(free.token, "POST", "/api/youtube/describe", { source: "upload", id: r.json.id })).status, 402);
+  youtube.setDescriber(null);
+});
+
 test("phone rotation is read when deciding whether a video is vertical", () => {
   const probe = youtube.readProbe("  Duration: 00:00:12.50, start\n  Stream #0:0[0x1](und): Video: h264 (High), yuv420p, 1920x1080, 30 fps\n    Side data:\n      displaymatrix: rotation of -90.00 degrees\n");
   assert.deepEqual(probe, { seconds: 12.5, width: 1080, height: 1920, hasVideo: true, vcodec: "h264", acodec: null });

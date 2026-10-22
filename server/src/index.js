@@ -1133,6 +1133,7 @@ app.put("/api/youtube/uploads/:id/chunk", auth, express.raw({ type: "application
   (req, res) => res.json(youtube.appendChunk(req.account, req.params.id, req.query.offset, req.body)));
 app.post("/api/youtube/uploads/:id/finish", auth, wrap(async (req, res) => res.status(201).json(await youtube.finishUpload(req.account, req.params.id))));
 app.delete("/api/youtube/uploads/:id", auth, (req, res) => res.json(youtube.removeUpload(req.account, req.params.id)));
+app.post("/api/youtube/describe", auth, aiLimit, wrap(async (req, res) => res.json(await youtube.describe(req.account, req.seller, req.body || {}))));
 app.post("/api/youtube/posts", auth, wrap(async (req, res) => res.status(201).json(await youtube.post(req.account, req.seller, req.body || {}))));
 app.get("/api/faceless", auth, (req, res) => res.json(faceless.jobs(req.seller)));
 app.post("/api/faceless/script", auth, aiLimit, wrap(async (req, res) => res.json(await faceless.writeScript(req.account, req.seller, req.body || {}))));

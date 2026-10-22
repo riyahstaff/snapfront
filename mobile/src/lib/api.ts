@@ -955,6 +955,8 @@ export const youtubeApi = {
     }
     return request<YoutubeVideo>("POST", `/api/youtube/uploads/${encodeURIComponent(start.upload_id)}/finish`, undefined, undefined, 15 * 60_000);
   },
+  /** AI writes a title, description and hashtags from frames of the video (and optional notes). */
+  describe: (b: { source: string; id: string; notes?: string }) => request<{ title: string; description: string; alt_titles: string[] }>("POST", "/api/youtube/describe", b, undefined, 90_000),
   removeUpload: (id: string) => request<{ ok: boolean }>("DELETE", `/api/youtube/uploads/${encodeURIComponent(id)}`),
 };
 
