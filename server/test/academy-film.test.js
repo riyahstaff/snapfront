@@ -1,5 +1,6 @@
-// Academy films: a lesson that names a film plays the uploaded MP4 instead of its narrated slides. Only the
-// owner (or the studio token) can upload one, only for a film a lesson names, and only a real MP4.
+// Academy films: a lesson that names a film plays the uploaded MP4 instead of its narrated slides, unless the
+// owner's avatar teaches it: then her version plays. Only the owner (or the studio token) can upload a film,
+// only for a film a lesson names, and only a real MP4.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import os from "node:os";
@@ -48,4 +49,30 @@ test("the UGC lesson plays the film, and the builder doesn't make slides for it"
   const list = await fetch(`${base}/api/academy-films`, { headers: { Authorization: `Bearer ${STUDIO}` } });
   assert.deepEqual((await list.json()).films, academy.FILMS());
   assert.equal((await fetch(`${base}/api/academy-films`, { headers: { Authorization: `Bearer ${s.token}` } })).status, 403);
+});
+
+test("when the owner's avatar teaches the lesson, her version plays instead of the film, and the builder makes it", async () => {
+  const owner = await (await fetch(`${base}/api/sellers`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })).json();
+  db.prepare("UPDATE accounts SET email = 'owner@example.com', plan = 'pro' WHERE id = ?").run(owner.account.id);
+  const sellerId = db.prepare("SELECT id FROM sellers WHERE account_id = ?").get(owner.account.id).id;
+  fs.mkdirSync(path.join(tmp, "images"), { recursive: true });
+  fs.writeFileSync(path.join(tmp, "images", "teacher.jpg"), Buffer.alloc(2000, 9));
+  db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, status, image_file) VALUES ('avt_teacher', ?, ?, 'Nia', 'blend', 'done', 'teacher.jpg')").run(sellerId, owner.account.id);
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('academy_presenter', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+    .run(JSON.stringify({ avatar_id: "avt_teacher", voice: "af_heart", lessons: ["ugc"] }));
+  const watch = async () => {
+    const l = await (await fetch(`${base}/api/academy/ugc`, { headers: { Authorization: `Bearer ${owner.token}` } })).json();
+    return Number((await fetch(l.video.replace("https://film.test", base))).headers.get("content-length"));
+  };
+  assert.equal(await watch(), mp4().length, "the film fills in until she has a version");
+  // Her earlier version (an older hash) plays while her current one is made.
+  fs.writeFileSync(path.join(tmp, "academy", "ugc-p0123456789a.mp4"), Buffer.alloc(150000, 2));
+  assert.equal(await watch(), 150000);
+  // The builder doesn't skip the lesson because of the film: her version is still made.
+  const ugc = { id: "ugc", ...(await import("../src/academy-content.js")).LESSONS.find((x) => x.id === "ugc") };
+  assert.equal(academy.needsBuild(ugc), true);
+  // Not taught by her: the film stands in and nothing is made.
+  db.prepare("UPDATE app_settings SET value = ? WHERE key = 'academy_presenter'").run(JSON.stringify({ avatar_id: "avt_teacher", voice: "af_heart", lessons: ["welcome"] }));
+  assert.equal(academy.needsBuild(ugc), false);
+  assert.equal(await watch(), mp4().length);
 });

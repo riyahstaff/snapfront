@@ -29,7 +29,8 @@ const hashOf = (l) => (presenter.appliesTo(l.id) ? `p${presenter.versionOf(l).sl
 const fileOf = (l) => path.join(dir(), `${l.id}-${hashOf(l)}.mp4`);
 /* ---------- films: a finished video made outside the server (tools/ugc-film), uploaded by the owner ---------- */
 // A lesson with `film: "<name>"` plays <data>/academy/films/<name>.mp4 once it's uploaded, instead of
-// the narrated slides (which are still made, so there's a video before the film arrives).
+// the narrated slides (which are still made, so there's a video before the film arrives). When the
+// owner's avatar teaches the lesson, her version plays instead; the film only fills in until it's made.
 const FILM_NAME = /^[a-z0-9-]{3,40}$/;
 const filmPath = (name) => path.join(dir(), "films", `${name}.mp4`);
 const filmOf = (l) => (l.film && FILM_NAME.test(l.film) && fs.existsSync(filmPath(l.film)) ? filmPath(l.film) : null);
@@ -48,18 +49,21 @@ export function saveFilm(name, buf, seconds) {
   return { film: name, bytes: buf.length, seconds: secs, lessons: LESSONS.filter((l) => l.film === name).map((l) => l.id) };
 }
 
-/** The newest finished video of a lesson: its film, the current one, or the previous one while a new one is made. */
+/**
+ * The video a lesson plays. Taught by the owner's avatar: her current version, else her last finished
+ * one while the new one is made, else the film, else the plain slides. Otherwise: the film, else the slides.
+ */
 function currentFile(l) {
   const film = filmOf(l);
-  if (film) return film;
+  const hers = presenter.appliesTo(l.id);
+  if (film && !hers) return film;
   if (fs.existsSync(fileOf(l))) return fileOf(l);
   try {
     const all = versionsOf(l);
-    // While the avatar teaches this lesson, show her last finished version (never the plain original)
-    // until the new one is ready, even if the new one can't be made yet.
-    if (presenter.appliesTo(l.id)) { const hers = all.find(isPresenterFile); if (hers) return hers; }
+    // Never the plain original while she teaches, even if her new version can't be made yet.
+    if (hers) { const last = all.find(isPresenterFile); if (last) return last; if (film) return film; }
     return all[0] || null;
-  } catch { return null; }
+  } catch { return film || null; }
 }
 /** Every finished video of a lesson, newest first. Avatar versions are named <lesson>-p<hash>.mp4. */
 function versionsOf(l) {
@@ -234,6 +238,8 @@ export function buildPresenterLessons() {
   if (only.length) buildMissing({ only }).catch((e) => console.error("[academy]", e.message));
   return only;
 }
+/** Whether a lesson's video still has to be made. A film stands in for the slides, but not for the avatar. */
+export const needsBuild = (l) => !fs.existsSync(fileOf(l)) && !(filmOf(l) && !presenter.appliesTo(l.id));
 /** Make any lesson videos that are missing or out of date. One at a time; safe to call again. */
 export function buildMissing({ voice = "af_heart", only = null } = {}) {
   if (building) return building;
@@ -242,7 +248,7 @@ export function buildMissing({ voice = "af_heart", only = null } = {}) {
     lastError = null;   // a new run: only this run's failures are worth showing
     let made = 0;
     for (const l of LESSONS.filter((x) => !only || only.includes(x.id))) {
-      if (fs.existsSync(fileOf(l)) || filmOf(l)) continue;
+      if (!needsBuild(l)) continue;
       try {
         const t0 = Date.now();
         const target = fileOf(l);   // worked out once: it depends on settings that can change while building
