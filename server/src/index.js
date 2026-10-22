@@ -1687,6 +1687,10 @@ app.get("/terms", legal("Terms of use", `
 /* ---------- research list shown in the app's "What's selling" tab ---------- */
 app.get("/api/trends", (_req, res) => res.json(store.TRENDS));
 
+// Tell the owner by email when Runpod runs out of money (members only see "paused for a little while").
+aimedia.onOutOfCredit(() => snapcare.notifyOwners("Snapfront: Runpod is out of money",
+  "Runpod says the balance is empty, so members' AI photos, avatars, blends and videos are failing. Add funds at runpod.io (Billing). Turning on auto-pay there stops this from happening again."));
+
 /* ---------- errors ---------- */
 app.use((err, req, res, _next) => {
   const status = err.status || err.statusCode || (err.type === "StripeInvalidRequestError" ? 400 : 500);
@@ -1697,7 +1701,7 @@ app.use((err, req, res, _next) => {
     // Kept two days for this member's SnapCare bug reports (scrubbed of personal details).
     if (req.account?.id) snapcare.noteError(req.account.id, `${req.method} ${req.route?.path || req.path}`, err.message, sentryId);
   }
-  let message = status >= 500 && !err.status ? "Something went wrong on our side. Try again." : err.message;
+  let message = status >= 500 && !err.status ? "Something went wrong on our side. Try again." : aimedia.messageFor(err, req.account);
   // Memberships are sold on the website only: the phone app's "needs Pro" messages name no prices.
   if (status === 402 && req.get("x-snapfront-app")) message = plans.appWording(message);
   res.status(status).json({ error: message, ...(err.extra || {}) });

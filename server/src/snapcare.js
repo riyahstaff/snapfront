@@ -105,6 +105,8 @@ async function sendEmail(to, subject, html) {
   if (!res?.ok) console.warn("[snapcare] email", res?.status);
   return Boolean(res?.ok);
 }
+/** Email Snapfront's owners (OWNER_EMAILS) a short notice. */
+export const notifyOwners = (subject, text) => sendEmail(config.ownerEmails, subject, `<p>${esc(text)}</p>`);
 const inboxUrl = () => (config.storeDomain ? `https://app.${config.storeDomain}/support-inbox` : `${config.publicUrl}/app/support-inbox`);
 
 /* ---------- what SnapCare can look at and do ---------- */

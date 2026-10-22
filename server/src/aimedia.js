@@ -72,6 +72,13 @@ export const photoEnginePrice = (e) => (e.usd ? credits.creditsFor(e.usd) : 0);
 export const presets = () => ({ enabled: enabled(), motions: MOTIONS.map(({ id, name }) => ({ id, name })), scenes: SCENES.map(({ id, name }) => ({ id, name })),
   engines: PHOTO_ENGINES.map((e) => ({ id: e.id, name: e.name, blurb: e.blurb, credits: photoEnginePrice(e) })) });
 
+/** What the owner sees when Runpod is out of money. */
+export const OWNER_EMPTY = "Runpod is out of money, so AI photos and videos can't be made. Add funds at runpod.io (Billing), then try again.";
+let onEmpty = null, lastEmptyAlert = 0;
+/** Called (at most every 6 hours) when Runpod says the balance is empty. */
+export function onOutOfCredit(fn) { onEmpty = fn; lastEmptyAlert = 0; }
+/** The message to show: the owner's clear one when Runpod is out of money, else the error's own. */
+export const messageFor = (e, account) => (e?.runpod?.status === 402 && credits.isOwner(account) ? OWNER_EMPTY : e?.message);
 async function rp(pathname, body) {
   if (!enabled()) throw httpError(503, "AI video isn't switched on yet.");
   let res;
@@ -83,6 +90,15 @@ async function rp(pathname, body) {
   } catch { throw httpError(502, "The AI studio didn't answer. Try again in a moment."); }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 || res.status === 403) { console.error("[runpod] key rejected"); throw httpError(503, "The AI studio isn't set up correctly. We're on it."); }
+  // Runpod's account is out of money: every AI photo and video fails until it's topped up. Members get a
+  // calm message (nothing they can do), the owner a clear one (see OWNER_EMPTY) and an email.
+  if (res.status === 402) {
+    console.error("[runpod] insufficient balance");
+    const e = httpError(503, "AI photos and videos are paused for a little while. Try again soon.");
+    e.runpod = { status: 402, error: "insufficient balance" };
+    if (onEmpty && Date.now() - lastEmptyAlert > 6 * 3600e3) { lastEmptyAlert = Date.now(); Promise.resolve().then(onEmpty).catch(() => {}); }
+    throw e;
+  }
   if (!res.ok) {
     console.warn("[runpod]", pathname, res.status, JSON.stringify(data).slice(0, 300));
     const e = httpError(502, "The AI studio had a problem. Try again.");

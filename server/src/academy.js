@@ -14,6 +14,7 @@ import { makeVideo, pngFromSvg, FONT_FILES } from "./narrated.js";
 import { wrap, familyOf } from "./fonts.js";
 import * as presenter from "./academy-presenter.js";
 import * as credits from "./credits.js";
+import * as aimedia from "./aimedia.js";
 
 db.exec(`CREATE TABLE IF NOT EXISTS academy_progress (
   account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -260,7 +261,7 @@ export function buildMissing({ voice = "af_heart", only = null } = {}) {
         prune(l);
         console.log(`[academy] made ${l.id} (${seconds}s) in ${Math.round((Date.now() - t0) / 1000)}s`);
         made++;
-      } catch (e) { lastError = `${l.id}: ${e.message}`.slice(0, 300); console.error("[academy]", l.id, e.message); }
+      } catch (e) { lastError = `${l.id}: ${e.runpod?.status === 402 ? aimedia.OWNER_EMPTY : e.message}`.slice(0, 300); console.error("[academy]", l.id, e.message); }
     }
     return made;
   })().finally(() => { building = null; });
