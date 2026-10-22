@@ -290,7 +290,8 @@ const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).cat
 function auth(req, _res, next) {
   const token = (req.get("authorization") || "").replace(/^Bearer\s+/i, "");
   const account = plans.accountForToken(token);
-  if (!account) return next(httpError(401, "Sign in again: this device isn't recognised."));
+  // The code tells the app to drop the unknown token and start a fresh visitor session.
+  if (!account) return next(httpError(401, "Sign in again: this device isn't recognised.", { code: "session_unknown" }));
   const stores = plans.storesOf(account.id);
   // The app says which of the person's stores it is working on; default to their first store.
   const wanted = req.get("x-store");

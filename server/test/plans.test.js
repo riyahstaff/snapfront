@@ -208,3 +208,11 @@ test("an account can be deleted from the web with an emailed code", async () => 
   assert.equal(plans.getAccount(C.account.id), undefined);
   assert.equal(db.prepare("SELECT COUNT(*) n FROM sellers WHERE account_id = ?").get(C.account.id).n, 0);
 });
+
+test("an unknown device token gets a 401 the app can recognise and recover from", async () => {
+  for (const token of ["not-a-real-token", ""]) {
+    const r = await call(token, "POST", "/api/auth/email/start", { email: "someone@example.com" });
+    assert.equal(r.status, 401);
+    assert.equal((await r.json()).code, "session_unknown");
+  }
+});

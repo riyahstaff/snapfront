@@ -37,7 +37,7 @@ let accountId: string | null = null;
 export const billingAvailable = () => true;
 
 /** Same sign-in as the rest of the app (the token api.ts keeps). */
-async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function call<T>(method: string, path: string, body?: unknown, retried = false): Promise<T> {
   let token = await SecureStore.getItemAsync("snapfront.token");
   if (!token) { await api.me(); token = await SecureStore.getItemAsync("snapfront.token"); }
   const res = await fetch(`${API_URL}${path}`, {
@@ -45,7 +45,14 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError((data as { error?: string }).error || "Something went wrong. Try again.", res.status);
+  if (!res.ok) {
+    // An unknown token: api.me() drops it and starts a fresh visitor session, then try once more.
+    if (res.status === 401 && (data as { code?: string }).code === "session_unknown" && !retried) {
+      await api.me().catch(() => null);
+      return call<T>(method, path, body, true);
+    }
+    throw new ApiError((data as { error?: string }).error || "Something went wrong. Try again.", res.status);
+  }
   return data as T;
 }
 

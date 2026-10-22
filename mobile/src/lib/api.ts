@@ -345,6 +345,8 @@ export function onUpgradeNeeded(fn: typeof upgradeListener) { upgradeListener = 
 
 let tokenCache: string | null = null;
 let tokenPromise: Promise<string> | null = null;
+/** A token the server said it doesn't know (e.g. one from before a server move). Never reused. */
+let forgottenToken: string | null = null;
 let storeCache: string | null | undefined;
 let selectionRevision = 0;
 async function currentStore(): Promise<string | null> {
@@ -360,7 +362,8 @@ async function token(): Promise<string> {
   return tokenPromise;
 }
 async function initializeToken(): Promise<string> {
-  tokenCache = await SecureStore.getItemAsync(TOKEN_KEY);
+  const stored = await SecureStore.getItemAsync(TOKEN_KEY);
+  tokenCache = stored && stored !== forgottenToken ? stored : null;
   if (tokenCache) return tokenCache;
   // First launch: create this device's store.
   const res = await fetch(`${API_URL}/api/sellers`, {
@@ -380,9 +383,19 @@ async function initializeToken(): Promise<string> {
 const APP_OS = Constants.platform?.android ? "android" : Constants.platform?.ios ? "ios" : null;
 const APP_HEADER: Record<string, string> = APP_OS ? { "X-Snapfront-App": APP_OS } : {};
 
+/** The server doesn't know this device's token: forget it so the next request starts a fresh visitor session. */
+async function forgetToken(stale: string) {
+  if (forgottenToken === stale) return;
+  forgottenToken = stale;
+  if (tokenCache === stale) tokenCache = null;
+  try { await SecureStore.deleteItemAsync(TOKEN_KEY); } catch { /* the in-memory guard above still applies */ }
+  await setStore(null).catch(() => {});
+}
+
 async function request<T>(method: string, path: string, body?: unknown, storeId?: string, timeoutMs?: number): Promise<T> {
   const controller = timeoutMs ? new AbortController() : null;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let retried = false;
   const work = async (): Promise<T> => {
     const store = storeId ?? await currentStore();
     const auth = await token();
@@ -395,6 +408,12 @@ async function request<T>(method: string, path: string, body?: unknown, storeId?
     if (res.status === 204) return undefined as T;
     const data = await res.json().catch((error: unknown) => { if (controller?.signal.aborted) throw error; return {}; });
     if (!res.ok) {
+      // An unknown device token (e.g. issued before a server move) would lock the person out, even of
+      // signing in. Drop it and retry once as a fresh visitor; a store picked explicitly isn't retried.
+      if (res.status === 401 && (data as { code?: string }).code === "session_unknown" && !retried) {
+        await forgetToken(auth);
+        if (!storeId) { retried = true; return work(); }
+      }
       const { error, upgrade, credits } = data as { error?: string; upgrade?: PlanId | null; credits?: { need: number; balance: number } };
       const err = new ApiError(error || "Something went wrong. Try again.", res.status, upgrade ?? null, credits ?? null);
       if (res.status === 402 && upgrade && upgradeListener) upgradeListener(upgrade, err.message);
