@@ -169,16 +169,32 @@ export async function connectUrl(account) {
   if (!/^https:\/\//.test(d?.authUrl || "")) throw httpError(502, "Couldn't start connecting YouTube. Try again.");
   return { url: d.authUrl };
 }
-/** Read the connected channel back from Zernio (after the member returns from connecting). */
-export async function sync(account) {
+const ZERNIO_ID = /^[a-f0-9]{24}$/i;
+const profileOf = (a) => (typeof a?.profileId === "string" ? a.profileId : idOf(a?.profileId));
+/** What Zernio last listed per account, as counts only: shown to Snapfront's owner to diagnose a failed connect. */
+const seenBy = new Map();
+/** Read the connected channel back from Zernio (after the member returns from connecting).
+ *  `hint` is the accountId Zernio put on the return link; it is only a hint, so the account is
+ *  still read from Zernio and must belong to this member's own profile. */
+export async function sync(account, hint) {
   const link = db.prepare("SELECT * FROM youtube_links WHERE account_id = ?").get(account.id);
   if (!link) return null;
-  const accounts = listOf(await zernio("GET", `/accounts?profileId=${encodeURIComponent(link.profile_id)}`), "accounts");
-  const yt = accounts.find((a) => a?.platform === "youtube" && (!a.profileId || a.profileId === link.profile_id || idOf(a.profileId) === link.profile_id));
+  const mine = (a) => a?.platform === "youtube" && profileOf(a) === link.profile_id;
+  // includeOverLimit: Zernio leaves accounts on over-limit profiles out of the list otherwise.
+  let accounts = listOf(await zernio("GET", `/accounts?profileId=${encodeURIComponent(link.profile_id)}&platform=youtube&includeOverLimit=true`), "accounts");
+  // This list is already filtered to the member's profile, so an account without a profileId still counts.
+  const listedMine = (a) => a?.platform === "youtube" && (!a.profileId || mine(a));
+  let yt = (ZERNIO_ID.test(hint || "") && accounts.find((a) => idOf(a) === hint && listedMine(a))) || accounts.find(listedMine);
+  if (!yt && ZERNIO_ID.test(hint || "")) {
+    accounts = listOf(await zernio("GET", `/accounts?search=${encodeURIComponent(hint)}&includeOverLimit=true`), "accounts");
+    yt = accounts.find((a) => idOf(a) === hint && mine(a));
+  }
+  seenBy.set(account.id, { listed: accounts.length, youtube: accounts.filter((a) => a?.platform === "youtube").length, onThisProfile: accounts.filter((a) => profileOf(a) === link.profile_id).length, active: accounts.filter((a) => a?.isActive !== false).length, hint: Boolean(hint) });
   db.prepare("UPDATE youtube_links SET zernio_account_id = ?, username = ?, connected_at = CASE WHEN ? IS NULL THEN NULL ELSE COALESCE(connected_at, datetime('now')) END WHERE account_id = ?")
     .run(idOf(yt), yt ? String(yt.displayName || yt.username || yt.name || "Your channel").slice(0, 80) : null, idOf(yt), account.id);
   return yt ? { username: db.prepare("SELECT username FROM youtube_links WHERE account_id = ?").get(account.id).username } : null;
 }
+export const diagnostic = (accountId) => seenBy.get(accountId) ?? null;
 export async function disconnect(account) {
   const link = db.prepare("SELECT * FROM youtube_links WHERE account_id = ?").get(account.id);
   if (link?.zernio_account_id) await zernio("DELETE", `/accounts/${encodeURIComponent(link.zernio_account_id)}`).catch((e) => console.warn("[youtube] disconnect", e.message));

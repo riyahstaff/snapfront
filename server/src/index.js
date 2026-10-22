@@ -1120,7 +1120,12 @@ app.get("/api/youtube", auth, wrap(async (req, res) => res.json(await youtube.st
 app.post("/api/youtube/checkout", auth, wrap(async (req, res) => res.json(await youtube.startCheckout(req.account))));
 app.post("/api/youtube/confirm", auth, wrap(async (req, res) => { await youtube.confirm(req.account, req.body?.session_id); res.json(await youtube.status(req.account, req.seller)); }));
 app.post("/api/youtube/connect", auth, wrap(async (req, res) => res.json(await youtube.connectUrl(req.account))));
-app.post("/api/youtube/sync", auth, wrap(async (req, res) => { await youtube.sync(req.account); res.json(await youtube.status(req.account, req.seller)); }));
+app.post("/api/youtube/sync", auth, wrap(async (req, res) => {
+  const found = await youtube.sync(req.account, typeof req.body?.account_id === "string" ? req.body.account_id : undefined);
+  const st = await youtube.status(req.account, req.seller);
+  // Snapfront's owner also sees counts (never names or ids) of what Zernio listed, to diagnose a failed connect.
+  res.json(!found && credits.isOwner(req.account) ? { ...st, diagnostic: youtube.diagnostic(req.account.id) } : st);
+}));
 app.delete("/api/youtube/connection", auth, wrap(async (req, res) => { await youtube.disconnect(req.account); res.json(await youtube.status(req.account, req.seller)); }));
 app.post("/api/youtube/posts", auth, wrap(async (req, res) => res.status(201).json(await youtube.post(req.account, req.seller, req.body || {}))));
 app.get("/api/faceless", auth, (req, res) => res.json(faceless.jobs(req.seller)));

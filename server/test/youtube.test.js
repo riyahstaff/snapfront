@@ -26,7 +26,7 @@ pay.setStripeClient({
 });
 const calls = [];
 const zState = { accounts: [] };
-youtube.setZernio(async (method, route, body) => {
+const zernioMock = async (method, route, body) => {
   calls.push({ method, route, body });
   if (method === "GET" && route.startsWith("/profiles")) return { profiles: [] };
   if (method === "POST" && route === "/profiles") return { profile: { _id: "prof_1", externalId: body.externalId } };
@@ -35,7 +35,8 @@ youtube.setZernio(async (method, route, body) => {
   if (method === "POST" && route === "/posts") return { post: { _id: "zp_1", status: "published", platforms: [{ platform: "youtube", status: "published", platformPostUrl: "https://www.youtube.com/watch?v=abc123" }] } };
   if (method === "DELETE") return {};
   throw new Error(`unexpected ${method} ${route}`);
-});
+};
+youtube.setZernio(zernioMock);
 
 let base, server;
 before(async () => { server = app.listen(0); await new Promise((r) => server.once("listening", r)); base = `http://127.0.0.1:${server.address().port}`; });
@@ -88,6 +89,27 @@ test("connecting makes one Zernio profile per account and reads the channel back
   assert.equal((await call(m.token, "POST", "/api/youtube/sync")).json.connected, null);
   zState.accounts = [{ _id: "zacc_1", platform: "youtube", displayName: "Glow Lab TV", profileId: "prof_1" }, { _id: "zacc_x", platform: "tiktok" }];
   assert.deepEqual((await call(m.token, "POST", "/api/youtube/sync")).json.connected, { username: "Glow Lab TV" });
+  assert.match(calls.findLast((c) => c.route.startsWith("/accounts")).route, /includeOverLimit=true/);
+});
+
+test("the account id on Zernio's return link is only a hint: another profile's channel is never taken", async () => {
+  const before = zState.accounts;
+  // The profile-filtered list misses it; the hint finds an account, but it belongs to someone else's profile.
+  zState.accounts = [];
+  const search = { _id: "aaaaaaaaaaaaaaaaaaaaaaaa", platform: "youtube", displayName: "Someone Else", profileId: { _id: "prof_other" } };
+  youtube.setZernio(async (method, route, body) => {
+    calls.push({ method, route, body });
+    if (route.startsWith("/accounts?search=")) return { accounts: [search] };
+    if (route.startsWith("/accounts")) return { accounts: zState.accounts };
+    throw new Error(`unexpected ${method} ${route}`);
+  });
+  assert.equal((await call(m.token, "POST", "/api/youtube/sync", { account_id: search._id })).json.connected, null);
+  // The same hint on the member's own profile is accepted.
+  search.profileId = { _id: "prof_1" };
+  assert.deepEqual((await call(m.token, "POST", "/api/youtube/sync", { account_id: search._id })).json.connected, { username: "Someone Else" });
+  zState.accounts = before;
+  youtube.setZernio(zernioMock);
+  await call(m.token, "POST", "/api/youtube/sync");
 });
 
 test("posting sends only the member's own finished videos, and avatar videos are labelled as AI", async () => {

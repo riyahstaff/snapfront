@@ -926,7 +926,7 @@ export const youtubeApi = {
   checkout: () => request<{ url: string }>("POST", "/api/youtube/checkout"),
   confirm: (session_id: string) => request<YoutubeStatus>("POST", "/api/youtube/confirm", { session_id }),
   connect: () => request<{ url: string }>("POST", "/api/youtube/connect"),
-  sync: () => request<YoutubeStatus>("POST", "/api/youtube/sync"),
+  sync: (accountId?: string) => request<YoutubeStatus & { diagnostic?: Record<string, number | boolean> }>("POST", "/api/youtube/sync", accountId ? { account_id: accountId } : {}),
   disconnect: () => request<YoutubeStatus>("DELETE", "/api/youtube/connection"),
   post: (b: { source: string; id: string; title: string; description: string; visibility: "public" | "unlisted" | "private"; ai: boolean; made_for_kids: boolean }) => request<YoutubePost>("POST", "/api/youtube/posts", b, undefined, 120000),
 };

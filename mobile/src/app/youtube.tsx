@@ -18,7 +18,7 @@ const goTo = (url: string) => (Platform.OS === "web" && typeof window !== "undef
 
 export default function YoutubeScreen() {
   const c = useColors();
-  const q = useLocalSearchParams<{ checkout?: string; session_id?: string; connected?: string; error?: string; error_message?: string; source?: string; id?: string }>();
+  const q = useLocalSearchParams<{ checkout?: string; session_id?: string; connected?: string; accountId?: string; error?: string; error_message?: string; source?: string; id?: string }>();
   const [st, setSt] = useState<YoutubeStatus | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -35,19 +35,33 @@ export default function YoutubeScreen() {
   useEffect(() => {
     // Deferred a tick so the screen renders first (and the lint rule against setState in effects holds).
     const t = setTimeout(() => {
-    if (q.checkout === "done" && q.session_id) {
+    // Zernio's return link carries error (and error_message) when connecting failed: check that first.
+    if (q.error) setMsg({ text: q.error_message ? `YouTube wasn't connected: ${String(q.error_message).slice(0, 160)}` : "YouTube wasn't connected. Try again, and pick the channel you want to post to.", tone: "error" });
+    else if (q.checkout === "done" && q.session_id) {
       setBusy("confirm");
       youtubeApi.confirm(String(q.session_id)).then((s) => { setSt(s); setMsg(s.subscribed ? { text: "YouTube posting is on. Next, connect your channel.", tone: "ok" } : { text: "Payment received. It can take a minute to switch on; reload this page shortly.", tone: "info" }); })
         .catch((e) => setMsg({ text: errText(e, "We couldn't confirm that payment yet. Reload in a minute."), tone: "error" })).finally(() => setBusy(null));
     } else if (q.checkout === "canceled") setMsg({ text: "Checkout canceled. You haven't been charged.", tone: "info" });
     else if (q.connected) {
       setBusy("sync");
-      youtubeApi.sync().then((s) => { setSt(s); setMsg(s.connected ? { text: `Connected to ${s.connected.username}.`, tone: "ok" } : { text: "We couldn't see your channel yet. Tap Connect your channel again.", tone: "error" }); })
-        .catch((e) => setMsg({ text: errText(e, "Couldn't check your channel."), tone: "error" })).finally(() => setBusy(null));
-    } else if (q.error) setMsg({ text: q.error_message ? `YouTube wasn't connected: ${String(q.error_message).slice(0, 160)}` : "YouTube wasn't connected. Try again, and pick the channel you want to post to.", tone: "error" });
+      // Zernio can take a few seconds to list a just-connected channel, so check up to 4 times.
+      const hint = typeof q.accountId === "string" ? q.accountId : undefined;
+      const attempt = async (left: number): Promise<void> => {
+        const s = await youtubeApi.sync(hint);
+        if (s.connected || left <= 1) {
+          setSt(s);
+          const seen = s.diagnostic ? ` (Zernio listed ${s.diagnostic.listed} account(s), ${s.diagnostic.youtube} YouTube, ${s.diagnostic.onThisProfile} on your profile.)` : "";
+          setMsg(s.connected ? { text: `Connected to ${s.connected.username}.`, tone: "ok" } : { text: `We couldn't see your channel yet. Tap Connect your channel again.${seen}`, tone: "error" });
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 2500));
+        return attempt(left - 1);
+      };
+      attempt(4).catch((e) => setMsg({ text: errText(e, "Couldn't check your channel."), tone: "error" })).finally(() => setBusy(null));
+    }
     }, 0);
     return () => clearTimeout(t);
-  }, [q.checkout, q.session_id, q.connected, q.error, q.error_message]);
+  }, [q.checkout, q.session_id, q.connected, q.accountId, q.error, q.error_message]);
   // Opened from a video ("Post to YouTube Shorts"): pick that video.
   useEffect(() => {
     if (!st || pick) return;
