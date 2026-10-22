@@ -1051,10 +1051,12 @@ app.put("/api/academy-presenter/screens/:lesson/:slide", ownerOrStudio, express.
 const STUDIO_EPS = () => new Set(["qwen-image-t2i", "qwen-image-edit-2511", "nano-banana-pro-edit", "google-nano-banana-2-edit", "seedream-v4-edit", "seedream-v4-t2i",
   ...avatarVideos.MODELS.map((m) => m.endpoint())]);
 const studioEp = (req) => { if (!STUDIO_EPS().has(req.params.ep)) throw httpError(404, "Unknown studio model."); return req.params.ep; };
-app.post("/api/studio/runpod/:ep/run", ownerOrStudio, wrap(async (req, res) => res.json(await aimedia.runpod(`${studioEp(req)}/run`, { input: req.body?.input || {} }))));
+// Owner-only: Runpod's own reason comes back with a failure (e.g. out of balance), to fix it quickly.
+const withRunpodReason = (e) => { if (e.runpod) e.extra = { ...(e.extra || {}), runpod: e.runpod }; throw e; };
+app.post("/api/studio/runpod/:ep/run", ownerOrStudio, wrap(async (req, res) => res.json(await aimedia.runpod(`${studioEp(req)}/run`, { input: req.body?.input || {} }).catch(withRunpodReason))));
 app.get("/api/studio/runpod/:ep/status/:id", ownerOrStudio, wrap(async (req, res) => {
   if (!/^[\w-]{6,80}$/.test(req.params.id)) throw httpError(400, "Bad job id.");
-  res.json(await aimedia.runpod(`${studioEp(req)}/status/${req.params.id}`));
+  res.json(await aimedia.runpod(`${studioEp(req)}/status/${req.params.id}`).catch(withRunpodReason));
 }));
 app.post("/api/admin/academy/build", adminOnly, (req, res) => { academy.buildMissing({ voice: req.body?.voice }).catch((e) => console.error("[academy]", e.message)); res.json(academy.buildStatus()); });
 app.get("/api/daily-prompt", auth, wrap(async (req, res) => res.json(await daily.today(req.seller, { fresh: req.query.fresh === "1" }))));

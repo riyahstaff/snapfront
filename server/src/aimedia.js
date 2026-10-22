@@ -83,7 +83,12 @@ async function rp(pathname, body) {
   } catch { throw httpError(502, "The AI studio didn't answer. Try again in a moment."); }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 || res.status === 403) { console.error("[runpod] key rejected"); throw httpError(503, "The AI studio isn't set up correctly. We're on it."); }
-  if (!res.ok) { console.warn("[runpod]", pathname, res.status, JSON.stringify(data).slice(0, 300)); throw httpError(502, "The AI studio had a problem. Try again."); }
+  if (!res.ok) {
+    console.warn("[runpod]", pathname, res.status, JSON.stringify(data).slice(0, 300));
+    const e = httpError(502, "The AI studio had a problem. Try again.");
+    e.runpod = { status: res.status, error: String(data?.error || data?.message || JSON.stringify(data)).slice(0, 300) };   // owner-only routes show this
+    throw e;
+  }
   return data;
 }
 
