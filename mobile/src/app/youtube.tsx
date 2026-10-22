@@ -31,6 +31,7 @@ export default function YoutubeScreen() {
   const [kids, setKids] = useState(false);
   const scroller = useRef<ScrollView>(null);
   const postY = useRef(0);
+  const preselected = useRef(false);   // the video named in the link is picked once, not again after posting
   const [progress, setProgress] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [alts, setAlts] = useState<string[]>([]);
@@ -70,9 +71,10 @@ export default function YoutubeScreen() {
   }, [q.checkout, q.session_id, q.connected, q.accountId, q.error, q.error_message]);
   // Opened from a video ("Post to YouTube Shorts"): pick that video.
   useEffect(() => {
-    if (!st || pick) return;
+    if (!st || pick || preselected.current) return;
     const v = st.videos.find((x) => x.source === q.source && x.id === q.id) ?? null;
     if (v) {
+      preselected.current = true;
       choose(v);
       // Straight to the post form, below the steps that are already done.
       setTimeout(() => scroller.current?.scrollTo({ y: Math.max(0, postY.current - 12), animated: true }), 350);

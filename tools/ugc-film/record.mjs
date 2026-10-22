@@ -90,7 +90,8 @@ async function shortsDemo(token, me) {
   const shotImg = copy("stills/shot.jpg", "images", "demo-shot-juniper-serum.jpg");
   const clip = path.join(data, "media", "demo-avatar-video.mp4");
   fs.mkdirSync(path.dirname(clip), { recursive: true });
-  ff("-i", path.join(FILM_OUT, "raw", "clip.mp4"), "-an", "-c:v", "libx264", "-crf", "22", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-movflags", "+faststart", clip);
+  // VP9 (in MP4): the recording browser (Chromium) can't play H.264.
+  ff("-i", path.join(FILM_OUT, "raw", "clip.mp4"), "-an", "-vf", "scale=720:-2", "-c:v", "libvpx-vp9", "-b:v", "2M", "-deadline", "realtime", "-cpu-used", "8", "-pix_fmt", "yuv420p", "-movflags", "+faststart", clip);
   db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, look, status, image_file, source) VALUES ('av_demo_juniper', ?, ?, 'Juniper', 'soft3d', 'copper bob, freckles, mustard sweater', 'done', ?, 'ai')").run(me.id, acct, avatarImg);
   db.prepare("INSERT INTO avatar_shots (id, seller_id, account_id, avatar_id, product_id, pose, prompt, status, image_file) VALUES ('sh_demo_serum', ?, ?, 'av_demo_juniper', ?, 'present', 'holding the product up toward the viewer', 'done', ?)").run(me.id, acct, product, shotImg);
   db.prepare("INSERT INTO avatar_videos (id, seller_id, account_id, avatar_id, shot_id, kind, model, duration, resolution, prompt, credits, status, file) VALUES ('avv_demo_serum', ?, ?, 'av_demo_juniper', 'sh_demo_serum', 'motion', 'vidu', 6, '1080p', 'Show it off', 30, 'done', 'demo-avatar-video.mp4')").run(me.id, acct);
@@ -103,7 +104,7 @@ async function shortsDemo(token, me) {
     return {};
   });
   const written = JSON.parse(fs.readFileSync(path.join(here, "demo-describe.json"), "utf8"));
-  youtube.setDescriber(async () => { await new Promise((r) => setTimeout(r, 1600)); return written; });
+  youtube.setDescriber(async () => { await new Promise((r) => setTimeout(r, 700)); return written; });
   Object.assign(ids, { product, video: "avv_demo_serum" });
 }
 
