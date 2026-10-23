@@ -2,7 +2,7 @@
 // On narrow screens the links fold into a ☰ menu. Web-only: the phone app keeps its tab bar.
 import React, { useState } from "react";
 import { SiteSearch } from "./site-search";
-import { Pressable, Text, View, useWindowDimensions, type PressableStateCallbackType, type ViewStyle } from "react-native";
+import { Pressable, ScrollView, Text, View, useWindowDimensions, type PressableStateCallbackType, type ViewStyle } from "react-native";
 import { router, usePathname, type Href } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,6 +18,7 @@ export const NAV: NavItem[] = [
   { label: "My store", href: "/store", match: (p) => p.startsWith("/store") || p.startsWith("/looks") },
   { label: "Create", href: "/snap", match: (p) => p.startsWith("/snap") || p.startsWith("/draft") },
   { label: "Digital products", href: "/create", match: (p) => p.startsWith("/create") || p.startsWith("/digital") },
+  { label: "Create an Avatar", href: "/avatars", match: (p) => p.startsWith("/avatars") },
   { label: "Marketing", href: "/marketing", match: (p) => p.startsWith("/marketing") },
   { label: "YouTube Shorts", href: "/youtube", match: (p) => p.startsWith("/youtube"), addon: "youtube" },
   { label: "Academy", href: "/academy", match: (p) => p.startsWith("/academy") },
@@ -35,9 +36,9 @@ export function WebNav() {
   const c = useColors();
   const me = useMe();
   const path = usePathname() || "/";
-  const { width } = useWindowDimensions();
-  // The full row of links needs about 1420px next to the membership button; narrower gets the menu.
-  const wide = width >= Math.max(WIDE, 1420);
+  const { width, height } = useWindowDimensions();
+  // Leave room for every link and the membership button; smaller screens use the menu.
+  const wide = width >= Math.max(WIDE, 1580);
   const locked = (n: NavItem) => Boolean(n.addon && !me?.addons?.[n.addon]);
   const [open, setOpen] = useState(false);
   const plan = me?.account.plan ?? "free";
@@ -115,6 +116,7 @@ export function WebNav() {
       {!wide && open ? <Pressable accessibilityLabel="Close menu" onPress={() => setOpen(false)} style={{ position: "absolute", top: signedIn ? 124 : 69, left: 0, right: 0, height: 4000, backgroundColor: c.dark ? "rgba(5,6,8,0.72)" : "rgba(15,18,23,0.35)" }} /> : null}
       {!wide && open ? (
         <View style={{ position: "absolute", top: signedIn ? 124 : 69, left: 0, right: 0, backgroundColor: c.bg, borderBottomWidth: 1, borderColor: c.line, paddingVertical: 8, paddingHorizontal: 16, boxShadow: c.dark ? "0 30px 60px rgba(0,0,0,0.5)" : "0 30px 60px rgba(15,18,23,0.12)" } as ViewStyle}>
+          <ScrollView style={{ maxHeight: Math.max(160, height - (signedIn ? 148 : 93)) }}>
           {menu.map((n) => (
             <Pressable key={n.label} accessibilityRole="link" onPress={() => { setOpen(false); go(n.href); }}
               style={{ paddingVertical: 14, paddingHorizontal: 8, borderBottomWidth: 1, borderColor: c.sunk, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -134,6 +136,7 @@ export function WebNav() {
               <Ionicons name="log-out-outline" size={18} color={c.line} />
             </Pressable>
           ) : null}
+          </ScrollView>
         </View>
       ) : null}
     </View>
