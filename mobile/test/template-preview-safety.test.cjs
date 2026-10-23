@@ -77,8 +77,8 @@ test('actual renderer body classes, trusted typefaces and server photo-slot attr
   assert.ok(wizard.includes('previewRecord?.patch === previewPatch'));
   assert.ok(wizard.includes('missingPhotos.length || sampleWords.length || saveState !== "saved"'));
   const looks = fs.readFileSync(path.join(root, 'src/app/looks.tsx'), 'utf8');
-  assert.ok(looks.includes('label="Customize this design"'));
-  assert.ok(looks.includes('params: { theme: chosen.id }'));
+  assert.ok(looks.includes('onCustomize={advanced ? undefined : (id) => router.push'));
+  assert.ok(looks.includes('pathname: "/storefront-setup", params: { theme: id }'));
   const product = fs.readFileSync(path.join(root, 'src/app/product/[id].tsx'), 'utf8');
   assert.ok(product.includes('Continue customizing my storefront'));
   assert.ok(product.includes('router.navigate("/storefront-setup")'));

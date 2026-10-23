@@ -1,3 +1,4 @@
+import * as marketingCenter from "./marketing-center.js";
 import express from "express";
 import fs from "node:fs";
 import path from "node:path";
@@ -222,11 +223,14 @@ app.get("/help", (req, res) => {
   promptLibrary.sendCompressed(req, res, page);
 });
 app.get(["/faq", "/support"], (_req, res) => res.redirect(301, "/help"));
+app.get("/blog", (_req, res) => res.set("Cache-Control", "no-cache").type("html").send(marketingCenter.blogIndex()));
+app.get("/blog/:slug", (req, res) => res.set("Cache-Control", "no-cache").type("html").send(marketingCenter.blog(req.params.slug, { countView: req.method !== "HEAD" })));
 /* ---------- search engines: robots.txt and the sitemap of the public website pages ---------- */
 app.get("/robots.txt", (_req, res) => res.type("text/plain").set("Cache-Control", "public, max-age=3600").send(
   `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /d/\nDisallow: /builds/\nDisallow: /mcp\nDisallow: /oauth/\nDisallow: /storefront-preview\n\nSitemap: ${config.publicUrl}/sitemap.xml\n`));
 app.get("/sitemap.xml", (_req, res) => {
   const pages = [["/", "weekly", "1.0"], ["/join", "weekly", "0.9"], ["/themes", "weekly", "0.8"], ["/help", "weekly", "0.8"], ["/connect-ai", "monthly", "0.7"], ["/tools", "monthly", "0.6"], ["/privacy", "yearly", "0.2"], ["/terms", "yearly", "0.2"]];
+  pages.push(["/blog", "weekly", "0.7"], ...marketingCenter.publishedBlogs().map((b) => [`/blog/${b.slug}`, "monthly", "0.6"]));
   const day = new Date().toISOString().slice(0, 10);
   res.type("application/xml").set("Cache-Control", "public, max-age=3600").send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map(([p, f, pr]) => `<url><loc>${config.publicUrl}${p}</loc><lastmod>${day}</lastmod><changefreq>${f}</changefreq><priority>${pr}</priority></url>`).join("\n")}\n</urlset>\n`);
 });
@@ -552,6 +556,18 @@ app.post("/api/vierra/session", wrap(async (req, res) => {
 function ownerOnly(req, res, next) {
   auth(req, res, (err) => (err ? next(err) : credits.isOwner(req.account) ? next() : next(httpError(403, "Only Snapfront's owner can do that."))));
 }
+const marketingBase = "/api/admin/owner/marketing";
+app.use(marketingBase, ownerOnly, (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
+app.get(marketingBase, (req, res) => res.json(marketingCenter.dashboard(req.account, req.seller)));
+app.get(`${marketingBase}/assets`, (req, res) => res.json(marketingCenter.assets(req.seller)));
+app.post(`${marketingBase}/campaigns`, (req, res) => res.status(201).json(marketingCenter.createCampaign(req.account, req.seller, req.body || {})));
+app.post(`${marketingBase}/campaigns/:id/drafts`, (req, res) => res.status(201).json(marketingCenter.createDraft(req.account, req.seller, req.params.id, req.body || {})));
+app.post(`${marketingBase}/campaigns/:id/generate`, aiLimit, wrap(async (req, res) => res.json(await marketingCenter.generate(req.account, req.seller, req.params.id))));
+app.patch(`${marketingBase}/content/:id`, (req, res) => res.json(marketingCenter.edit(req.account, req.seller, req.params.id, req.body || {})));
+app.post(`${marketingBase}/content/:id/media`, wrap(async (req, res) => res.json(await marketingCenter.attach(req.account, req.seller, req.params.id, req.body || {}))));
+app.post(`${marketingBase}/content/:id/approve`, (req, res) => res.json(marketingCenter.approve(req.account, req.seller, req.params.id, req.body || {})));
+app.post(`${marketingBase}/content/:id/cancel`, (req, res) => res.json(marketingCenter.cancel(req.account, req.seller, req.params.id, req.body || {})));
+
 app.get("/api/admin/owner/vierra", ownerOnly, (_req, res) => res.json(vierra.status()));
 app.get("/api/admin/owner/vierra/voices", ownerOnly, wrap(async (req, res) => res.json({ voices: await vierra.searchVoices(req.query || {}) })));
 app.post("/api/admin/owner/vierra/voice", ownerOnly, wrap(async (req, res) => res.json(await vierra.chooseVoice(req.body || {}))));
@@ -1716,6 +1732,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
 
 /** Everything the live server does on its own: queues, sweeps, syncs. Never on a backup copy. */
 function startBackgroundWork() {
+  marketingCenter.startWorker();
   import("./eleven-video.js").then(async (video) => {
     console.log("[eleven-video] access", JSON.stringify(await video.check()));
   }).catch(() => console.warn("[eleven-video] access check unavailable"));
