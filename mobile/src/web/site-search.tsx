@@ -23,7 +23,7 @@ const pages = [
   ["Faceless videos", "/faceless", "Create videos without appearing on camera", "youtube shorts faceless video"],
   ["Help & support", "/support", "Chat with SnapCare: it checks your account and fixes common problems", "help support problem broken bug contact snapcare chat"],
   ["YouTube Shorts", "/youtube", "Post your videos straight to your YouTube channel", "youtube shorts post upload channel publish"],
-  ["AI avatars", "/avatars", "Create avatar videos", "talking avatar spokesperson presenter"],
+  ["Create an Avatar", "/avatars", "Design your avatar and create photos or talking videos", "ai avatars talking avatar spokesperson presenter character face blend"],
   ["AI photos & video", "/ai-media", "Generate images and video", "ai image photo video generator models"],
   ["Credits", "/credits", "Check and buy generation credits", "balance top up tokens credits"],
   ["Community", "/community", "Connect with other store owners", "members discussions coaching discord whop"],
