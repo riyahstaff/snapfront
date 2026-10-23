@@ -1,3 +1,4 @@
+import { isExternal, externalPurchase } from "./purchase-method.js";
 // Server-rendered public storefront pages: plain HTML and one inline stylesheet, so stores load fast,
 // rank in search and share well from a link in bio. The look comes from the store's theme (themes.js).
 import { storeUrl } from "./urls.js";
@@ -46,16 +47,19 @@ function shipping(store) {
   return { title, where };
 }
 function storeFacts(store, products) {
-  const physical = !products.length || products.some((p) => p.kind === "physical");
-  const digital = products.some((p) => p.kind === "digital");
+  const direct = products.filter(p => !isExternal(p));
+  const canCheckout = !products.length || direct.length > 0;
+  const physical = !products.length || direct.some((p) => p.kind === "physical");
+  const digital = direct.some((p) => p.kind === "digital");
   const ship = shipping(store);
   const perks = [];
   if (physical) perks.push([ICON.truck, ship.title, ship.where || "Packed and shipped by us"]);
   if (digital) perks.push([ICON.download, "Instant download", "Your files arrive as soon as you pay"]);
-  perks.push([ICON.lock, "Secure checkout", "Payments handled safely by Stripe"]);
-  const notes = [store.announcement, physical ? `${ship.title}${ship.where ? ` · ${ship.where.replace("Ships", "ships")}` : ""}` : null, digital ? "Instant download after checkout" : null, "Secure checkout with Stripe"]
+  if (canCheckout) perks.push([ICON.lock, "Secure checkout", "Payments handled safely by Stripe"]);
+  else perks.push([ICON.lock, "Buy on the linked website", "Checkout and delivery handled by the retailer"]);
+  const notes = [store.announcement, physical ? `${ship.title}${ship.where ? ` · ${ship.where.replace("Ships", "ships")}` : ""}` : null, digital ? "Instant download after checkout" : null, canCheckout ? "Secure checkout with Stripe" : "Checkout on the linked website"]
     .filter(Boolean);
-  return { perks, notes, ship, physical };
+  return { perks, notes, ship, physical, canCheckout };
 }
 function categories(products) {
   const m = new Map();
@@ -87,6 +91,7 @@ const SALE_CSS = `
 .psave{display:inline-block;vertical-align:middle;font-family:var(--body,inherit);font-size:12px;font-weight:600;letter-spacing:.01em;line-height:1;padding:4px 7px;border-radius:999px;background:var(--accent);color:var(--on-accent,#fff);margin-left:.4em;white-space:nowrap}
 `;
 const cardPrice = (p) => {
+  if (isExternal(p)) return externalPurchase(p)?.label || "Available soon";
   const prices = (p.variants || []).map((v) => v.price_cents ?? p.price_cents);
   return priceLabel(p) + wasPrice(p, Math.min(p.price_cents, ...prices));
 };
@@ -120,11 +125,11 @@ ${canonical ? `<link rel="canonical" href="${esc(canonical)}">` : ""}<meta name=
 <style>${themeCss(t)}${module ? CATEGORY_CSS + CATEGORY_BASE_CSS + module.css : CSS}${store.id ? SIGNUP_CSS : ""}${String(body).includes('class="pwas"') ? SALE_CSS : ""}</style>${pixelTags(store)}</head><body class="${bodyClass(t)}">
 ${demo ? `<div class="pv" role="note">Illustrative ${esc(t.name)} theme demo — photos, products and prices are examples, not a live seller store. <a href="/themes" style="color:inherit">Browse all themes</a></div>` : ""}${preview ? `<div class="pv" role="note">${store._draftPreview ? "Private draft preview — your cover, words and motion are not live. Product links open your currently applied store." : `Previewing the ${esc(t.name)} look. Buyers still see your current look until you choose this one in the app.`}</div>` : ""}${ann}
 <header class="hd"><div class="wrap"><a class="brand" href="${esc(home(store))}">${esc(store.store_name)}</a><nav class="nav" aria-label="Shop">${nav}</nav>
-<div class="acts"><a class="cart" href="${esc(base(store))}/cart" aria-label="Cart">${ICON.bag}<b data-cart-count></b></a></div></div></header>
+<div class="acts">${facts?.canCheckout === false ? "" : `<a class="cart" href="${esc(base(store))}/cart" aria-label="Cart">${ICON.bag}<b data-cart-count></b></a>`}</div></div></header>
 ${CART_JS(store.store_slug)}${STORE_JS(store)}<main>${body}</main>
 ${signup && !preview && !demo ? signupSection(store) : ""}<footer class="ft"><div class="wrap top"><div><a class="brand" href="${esc(home(store))}">${esc(store.store_name)}</a>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</div>
 <nav aria-label="Shop links"><h4>Shop</h4><a href="${esc(base(store))}/#shop">All products</a>${cats.slice(0, 5).map((c) => `<a href="${esc(catHref(store, c.name))}">${esc(c.name)}</a>`).join("")}</nav>
-<nav aria-label="Help"><h4>Help</h4><a href="${esc(base(store))}/cart">Your cart</a>${store.about ? `<a href="${esc(base(store))}/#about">About us</a>` : ""}${facts?.physical !== false ? `<span>${esc(ship.title)}</span>${ship.where ? `<span>${esc(ship.where)}</span>` : ""}` : ""}<span>Secure checkout by Stripe</span></nav></div>
+<nav aria-label="Help"><h4>Help</h4>${facts?.canCheckout === false ? "" : `<a href="${esc(base(store))}/cart">Your cart</a>`}${store.about ? `<a href="${esc(base(store))}/#about">About us</a>` : ""}${facts?.physical !== false ? `<span>${esc(ship.title)}</span>${ship.where ? `<span>${esc(ship.where)}</span>` : ""}` : ""}<span>${facts?.canCheckout === false ? "Checkout on the linked website" : "Secure checkout by Stripe"}</span></nav></div>
 <div class="wrap bot"><span>© ${year} Snapfront</span></div></footer>
 ${module ? `<script>(function(){var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;document.querySelectorAll("[data-hero-motion-control]").forEach(function(btn){var hero=btn.closest(".hero");if(!hero||reduce)return;btn.addEventListener("click",function(){var paused=hero.classList.toggle("is-motion-paused");btn.setAttribute("aria-pressed",String(paused));btn.setAttribute("aria-label",paused?"Play hero motion":"Pause hero motion");btn.textContent=paused?"Play motion":"Pause motion"})})})();</script>` : `<script>(function(){if(!("IntersectionObserver" in window)||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
 var els=document.querySelectorAll(".sec-h,.pc,.cat-c,.cat-t,.perk,.feat .pic,.feat .txt,.story .pic,.story .txt,.rev,.lk,.strip a");
@@ -141,7 +146,7 @@ function card(store, p) {
   const category = CATEGORY_REGISTRY.has(store._theme || store.theme);
   const photo = p._sfPhotoSlot == null ? p.image_url : { url: p.image_url, index: p._sfPhotoSlot, preview: Boolean(store._templatePreview) };
   return `<a class="pc${category ? " product-card" : ""}" href="${esc(base(store))}/${esc(p.slug)}"><div class="im${category ? " product-image" : ""}">${img(photo, p.alt_text || p.title, ' loading="lazy"')}
-${!p.in_stock ? `<span class="tag out">Sold out</span>` : p.label ? `<span class="tag">${esc(p.label)}</span>` : p.kind === "digital" ? `<span class="tag">Digital</span>` : ""}<span class="go" aria-hidden="true">View product</span></div>
+${!isExternal(p) && !p.in_stock ? `<span class="tag out">Sold out</span>` : p.label ? `<span class="tag">${esc(p.label)}</span>` : p.kind === "digital" ? `<span class="tag">Digital</span>` : ""}<span class="go" aria-hidden="true">View product</span></div>
 <div class="bd"><h3>${esc(p.title)}</h3><span class="pr">${cardPrice(p)}</span>${r ? `<span class="rt">${stars(r.avg)} <small>${r.count}</small></span>` : ""}</div></a>`;
 }
 
@@ -218,10 +223,11 @@ ${store.about ? `<section id="about" class="sec story${aboutPic ? "" : " solo"}"
 }
 
 export function productPage(store, p, baseUrl, others = []) {
-  const sellable = p.status === "live" && store.stripe_ready;
+  const external = isExternal(p), destination = externalPurchase(p);
+  const sellable = p.status === "live" && (external ? Boolean(destination) : store.stripe_ready);
   const cats = categories([p, ...others]);
-  const facts = storeFacts(store, [p, ...others]);
-  const variants = p.variants || [];
+  const facts = storeFacts(store, external ? [p] : [p, ...others]);
+  const variants = external ? [] : (p.variants || []);
   const firstAvail = variants.find((v) => v.inventory == null || v.inventory > 0);
   const startPrice = firstAvail?.price_cents ?? variants[0]?.price_cents ?? p.price_cents;
   const opts = variants.length ? `<fieldset><legend>${esc(p.option_name || "Option")}</legend><div class="opts">${variants.map((v) => {
@@ -230,10 +236,11 @@ export function productPage(store, p, baseUrl, others = []) {
   }).join("")}</div></fieldset>` : "";
   const qty = p.kind === "physical" ? `<div class="qty" role="group" aria-label="Quantity"><button type="button" data-q="-1" aria-label="Fewer">−</button><output id="q" aria-live="polite">1</output><button type="button" data-q="1" aria-label="More">+</button></div>` : "";
   const buy = !sellable ? `<span class="buy off">Available soon</span>`
+    : external ? `<a class="buy" href="${esc(destination.url)}" target="_blank" rel="noopener noreferrer">${esc(destination.label)}</a><p class="fine">Final price and availability are shown on the linked website.</p>`
     : !p.in_stock ? `<span class="buy off">Sold out</span>`
     : `<div class="actions">${qty}<button class="buy" type="button" id="add">Add to cart</button></div><button class="buy alt" type="button" id="now">${p.billing_interval ? "Subscribe now" : "Buy it now"}</button>`;
   const item = { product_id: p.id, title: p.title, kind: p.kind, image: p.image_url || "", unit: p.price_cents, billing_interval:p.billing_interval, inventory: p.inventory };
-  const script = sellable && p.in_stock ? `<script>(function(){var P=${JSON.stringify(item).replace(/</g, "\\u003c")},OPT=${JSON.stringify(p.option_name || "Option").replace(/</g, "\\u003c")},q=1,cur=${JSON.stringify(p.currency)};
+  const script = !external && sellable && p.in_stock ? `<script>(function(){var P=${JSON.stringify(item).replace(/</g, "\\u003c")},OPT=${JSON.stringify(p.option_name || "Option").replace(/</g, "\\u003c")},q=1,cur=${JSON.stringify(p.currency)};
 var fmt=function(c){return new Intl.NumberFormat("en-US",{style:"currency",currency:cur.toUpperCase()}).format(c/100)};
 function sel(){return document.querySelector('input[name=variant]:checked')}
 function limit(){var v=sel();var s=v?v.dataset.stock:(P.inventory==null?"":String(P.inventory));return s===""?20:Math.min(20,Number(s))}
@@ -250,9 +257,10 @@ document.getElementById("now").addEventListener("click",function(){add();locatio
   const jsonLd = { "@context": "https://schema.org", "@type": "Product", name: p.title, description: p.seo_description || p.tagline, image: p.image_url || undefined, sku: p.sku || undefined,
     ...(rv.count ? { aggregateRating: { "@type": "AggregateRating", ratingValue: rv.avg, reviewCount: rv.count } } : {}),
     offers: { "@type": "Offer", price: (startPrice / 100).toFixed(2), priceCurrency: p.currency.toUpperCase(), availability: `https://schema.org/${p.in_stock ? "InStock" : "OutOfStock"}`, url: storeUrl(store.store_slug, `/${p.slug}`) } };
+  if (external) delete jsonLd.offers;
   const reviewsHtml = rv.count ? `<section class="sec tight" id="reviews"><div class="wrap"><div class="sec-h"><h2>Reviews</h2><span class="rt big">${stars(rv.avg)} ${rv.avg} · ${rv.count} ${rv.count === 1 ? "review" : "reviews"}</span></div>
 <div class="revs">${rv.list.map((r) => `<figure class="rev">${stars(r.rating)}${r.body ? `<blockquote>${esc(r.body)}</blockquote>` : ""}<figcaption>${esc(r.name)} · Verified buyer</figcaption></figure>`).join("")}</div></div></section>` : "";
-  const mini = [p.kind === "digital" ? [ICON.download, "Instant download after you pay"] : [ICON.truck, `${facts.ship.title}${facts.ship.where ? `. ${facts.ship.where}.` : ""}`], [ICON.lock, "Secure checkout by Stripe"]];
+  const mini = external ? [[ICON.lock, destination?.note || "Purchase link unavailable"]] : [p.kind === "digital" ? [ICON.download, "Instant download after you pay"] : [ICON.truck, `${facts.ship.title}${facts.ship.where ? `. ${facts.ship.where}.` : ""}`], [ICON.lock, "Secure checkout by Stripe"]];
   const related = others.filter((o) => o.id !== p.id).sort((a, b) => (b.category === p.category) - (a.category === p.category)).slice(0, 4);
   return shell({
     title: `${p.title} · ${store.store_name}`, description: p.seo_description || p.tagline, store, image: p.image_url, cats, facts,
@@ -260,15 +268,16 @@ document.getElementById("now").addEventListener("click",function(){add();locatio
     body: `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>
 <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="${esc(home(store))}">Home</a><span>/</span>${p.category ? `<a href="${esc(catHref(store, p.category))}">${esc(p.category)}</a><span>/</span>` : ""}<span aria-current="page">${esc(p.title)}</span></nav>
 <article class="pd"><div class="media"><div class="pic">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.alt_text || p.title)}" fetchpriority="high">` : ""}${p.label && p.in_stock ? `<span class="tag">${esc(p.label)}</span>` : ""}</div>${isAiImage(p.image_file) ? `<p class="fine ai">Photo created with AI. The product is shown as sold.</p>` : ""}</div>
-<div class="info"><div class="cat">${p.kind === "digital" ? "Digital download" : esc(p.category || store.store_name)}</div><h1>${esc(p.title)}</h1>${rv.count ? `<a class="rt" href="#reviews">${stars(rv.avg)} ${rv.avg} (${rv.count})</a>` : ""}
-${p.compare_at_cents ? `<div class="price"><span id="price">${money(startPrice, p.currency)}${p.billing_interval ? ` / ${esc(p.billing_interval)}` : ""}</span><span id="was"${p.compare_at_cents > startPrice ? "" : " hidden"}>${wasPrice(p, startPrice, true)}</span></div>` : `<div class="price" id="price">${money(startPrice, p.currency)}${p.billing_interval ? ` / ${esc(p.billing_interval)}` : ""}</div>`}${p.billing_interval ? `<p class="fine">Renews automatically ${p.billing_interval === "year" ? "yearly" : "monthly"} until canceled. Access lasts through your paid period. Manage or cancel from your order confirmation.</p>` : ""}${p.bundle_items?.length ? `<section aria-label="Included products"><h2>What's included</h2><ul>${p.bundle_items.map((item)=>`<li>${esc(item.title)}</li>`).join("")}</ul></section>` : ""}${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}${opts}${buy}<div id="stock" class="stock" aria-live="polite"></div>
+<div class="info"><div class="cat">${external ? "Buy on the linked website" : p.kind === "digital" ? "Digital download" : esc(p.category || store.store_name)}</div><h1>${esc(p.title)}</h1>${rv.count ? `<a class="rt" href="#reviews">${stars(rv.avg)} ${rv.avg} (${rv.count})</a>` : ""}
+${external ? "" : p.compare_at_cents ? `<div class="price"><span id="price">${money(startPrice, p.currency)}${p.billing_interval ? ` / ${esc(p.billing_interval)}` : ""}</span><span id="was"${p.compare_at_cents > startPrice ? "" : " hidden"}>${wasPrice(p, startPrice, true)}</span></div>` : `<div class="price" id="price">${money(startPrice, p.currency)}${p.billing_interval ? ` / ${esc(p.billing_interval)}` : ""}</div>`}${p.billing_interval ? `<p class="fine">Renews automatically ${p.billing_interval === "year" ? "yearly" : "monthly"} until canceled. Access lasts through your paid period. Manage or cancel from your order confirmation.</p>` : ""}${p.bundle_items?.length ? `<section aria-label="Included products"><h2>What's included</h2><ul>${p.bundle_items.map((item)=>`<li>${esc(item.title)}</li>`).join("")}</ul></section>` : ""}${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}${opts}${buy}<div id="stock" class="stock" aria-live="polite"></div>
 <div class="mini">${mini.map(([i, t]) => `<div>${i}<span>${esc(t)}</span></div>`).join("")}</div>
 ${p.description ? `<div class="desc">${linkedDescription(p.description)}</div>` : ""}
 ${p.bullets.length ? `<ul class="b">${p.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
-<div>${p.faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}${p.kind === "physical" ? `<details><summary>Shipping</summary><p>${esc(facts.ship.title)}.${facts.ship.where ? ` ${esc(facts.ship.where)}.` : ""} You'll see the shipping cost before you pay.</p></details>` : ""}</div>
+<div>${p.faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}${!external && p.kind === "physical" ? `<details><summary>Shipping</summary><p>${esc(facts.ship.title)}.${facts.ship.where ? ` ${esc(facts.ship.where)}.` : ""} You'll see the shipping cost before you pay.</p></details>` : ""}</div>
 ${p.tags.length ? `<div class="tags">${p.tags.map((t) => `<span>#${esc(t)}</span>`).join("")}</div>` : ""}</div></article></div>
 ${related.length ? `<section class="sec feat"><div class="wrap" style="display:block"><div class="sec-h"><h2>You may also like</h2><a class="more" href="${esc(base(store))}/#shop">Shop all</a></div><div class="grid">${related.map((o) => card(store, o)).join("")}</div></div></section>` : ""}
 ${reviewsHtml}
+${external ? `<script>sfCart.write(sfCart.read().filter(function(l){return l.product_id!==${JSON.stringify(p.id).replace(/</g,"\\u003c")}}));</script>` : ""}
 <div class="toast" id="toast" role="status" hidden>Added to your cart <a href="${esc(base(store))}/cart">View cart</a></div>${script}${store.id ? `\n<script>window.sfTrack&&sfTrack("view",${JSON.stringify({ id: p.id, name: p.title, value: startPrice / 100 }).replace(/</g, "\\u003c")})</script>` : ""}`, signup: true,
   });
 }

@@ -74,7 +74,7 @@ export const presets = () => ({ enabled: enabled(), motions: MOTIONS.map(({ id, 
   engines: PHOTO_ENGINES.map((e) => ({ id: e.id, name: e.name, blurb: e.blurb, credits: photoEnginePrice(e) })) });
 
 /** What the owner sees when Runpod is out of money. */
-export const OWNER_EMPTY = "Runpod is out of money. Add funds at runpod.io (Billing) to restore all AI tools. Eligible videos can use the ElevenLabs backup when it is enabled and has credits.";
+export const OWNER_EMPTY = "Runpod is out of money. Creating avatar images, photo edits and blends still requires Runpod funds. Add funds at runpod.io (Billing). The ElevenLabs backup covers talking-avatar videos and eligible short motion videos, not creating the initial avatar image.";
 let onEmpty = null, lastEmptyAlert = 0;
 /** Called (at most every 6 hours) when Runpod says the balance is empty. */
 export function onOutOfCredit(fn) { onEmpty = fn; lastEmptyAlert = 0; }
