@@ -4,11 +4,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 
-test('the 50-design library is a full primary Create action, separate from storefront themes', () => {
+test('Create leads with topics and retains custom ideas and visual designs', () => {
   const source = fs.readFileSync(path.join(root, 'src/app/(tabs)/create.tsx'), 'utf8');
-  assert.ok(source.includes('"Browse 50 editable designs"} variant={templateId ? "secondary" : "primary"}'));
+  assert.ok(source.includes('<DigitalIdeaPicker'));
+  assert.ok(source.includes('I already have my own idea'));
   assert.ok(source.includes('router.push("/digital-designs")'));
-  assert.ok(source.includes('10 e-book designs · 10 checklists · 10 content packs · 10 quote prints · 10 planners'));
+  assert.ok(source.includes('Explore visual designs'));
 });
 
 test('the digital Studio shortcut supplies the editor required id and initiating storeId', () => {
