@@ -1689,7 +1689,7 @@ app.get("/api/trends", (_req, res) => res.json(store.TRENDS));
 
 // Tell the owner by email when Runpod runs out of money (members only see "paused for a little while").
 aimedia.onOutOfCredit(() => snapcare.notifyOwners("Snapfront: Runpod is out of money",
-  "Runpod says the balance is empty, so members' AI photos, avatars, blends and videos are failing. Add funds at runpod.io (Billing). Turning on auto-pay there stops this from happening again."));
+  "Runpod says the balance is empty. AI photos, avatar images and blends need a top-up at runpod.io (Billing). Eligible video requests can use the ElevenLabs backup when enabled, within its credit reserve and daily limit. Longer motion videos still need Runpod funds."));
 
 /* ---------- errors ---------- */
 app.use((err, req, res, _next) => {
@@ -1716,6 +1716,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
 
 /** Everything the live server does on its own: queues, sweeps, syncs. Never on a backup copy. */
 function startBackgroundWork() {
+  import("./eleven-video.js").then(async (video) => {
+    console.log("[eleven-video] access", JSON.stringify(await video.check()));
+  }).catch(() => console.warn("[eleven-video] access check unavailable"));
   // The durable SQLite queue is deliberately started only by the real server process, never by
   // imported test apps. Disabled or incomplete Meta configuration starts no worker at all.
   if (social.startWorker()) console.log("[meta] seller publishing worker started");

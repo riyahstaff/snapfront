@@ -27,6 +27,7 @@ import { spawn } from "node:child_process";
 import ffmpegPath from "ffmpeg-static";
 import { speak, wav, VOICES } from "./narrated.js";
 import * as elevenlabs from "./elevenlabs.js";
+import * as elevenVideo from "./eleven-video.js";
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS avatar_videos (
@@ -195,7 +196,9 @@ async function startMotion(account, seller, b) {
   catch (e) { db.prepare("DELETE FROM avatar_videos WHERE id = ?").run(id); throw e; }
   const images = [img(src.image), img(src.avatar.image_file), ...(src.product ? [img(src.product)] : [])];
   try {
-    const r = await aimedia.runpod(`${model.endpoint()}/run`, { input: model.input({ image: img(src.image), images, prompt, duration, resolution, sound }) });
+    const r = await elevenVideo.submit(id,
+      () => aimedia.runpod(`${model.endpoint()}/run`, { input: model.input({ image: img(src.image), images, prompt, duration, resolution, sound }) }),
+      { kind: "motion", imageFile: src.image, prompt, duration, resolution, sound });
     db.prepare("UPDATE avatar_videos SET status='running', runpod_id=?, updated_at=datetime('now') WHERE id=?").run(r.id, id);
   } catch (e) { fail(id, e.message); throw e; }
   return view(get(seller, id));
@@ -317,7 +320,9 @@ async function voiceAndSubmit(row) {
     const src = row.shot_id ? db.prepare("SELECT image_file FROM avatar_shots WHERE id = ?").get(row.shot_id)?.image_file
       : db.prepare("SELECT image_file FROM avatars WHERE id = ?").get(row.avatar_id)?.image_file;
     if (!src) throw new Error("The avatar photo is gone.");
-    const r = await aimedia.runpod(`${TALK.endpoint()}/run`, { input: { prompt: row.prompt, image: img(src), audio: `${config.publicUrl}/media/${name}`, size: TALK.size, enable_safety_checker: true } });
+    const r = await elevenVideo.submit(row.id,
+      () => aimedia.runpod(`${TALK.endpoint()}/run`, { input: { prompt: row.prompt, image: img(src), audio: `${config.publicUrl}/media/${name}`, size: TALK.size, enable_safety_checker: true } }),
+      { kind: "talk", imageFile: src, audioFile: name });
     db.prepare("UPDATE avatar_videos SET status='running', runpod_id=?, audio_file=?, updated_at=datetime('now') WHERE id=?").run(r.id, name, row.id);
   } catch (e) {
     console.warn("[avatar-videos] talk", row.id, e.message);
@@ -334,16 +339,20 @@ function fail(id, message) {
 }
 const endpointOf = (row) => (row.kind === "talk" ? TALK.endpoint() : MODELS.find((m) => m.id === row.model)?.endpoint());
 const minutesOld = (row) => (Date.now() - Date.parse(`${String(row.created_at).replace(" ", "T")}Z`)) / 60_000;
+const polling = new Set();
 export async function poll(id = null) {
   // A motion video that never reached the AI (the server stopped mid-start): give the credits back.
   if (!id) for (const r of db.prepare("SELECT id FROM avatar_videos WHERE kind = 'motion' AND status = 'queued' AND runpod_id IS NULL AND created_at < datetime('now', '-10 minutes')").all()) fail(r.id, "This didn't start. Your credits are back.");
   const rows = id ? db.prepare("SELECT * FROM avatar_videos WHERE id = ? AND status = 'running' AND stage = 'ai'").all(id)
     : db.prepare("SELECT * FROM avatar_videos WHERE status = 'running' AND stage = 'ai' ORDER BY created_at LIMIT 20").all();
   for (const row of rows) {
+    if (polling.has(row.id)) continue;
+    polling.add(row.id);
     try {
       const endpoint = endpointOf(row);
-      if (!endpoint) { fail(row.id, "This video model was retired. Your credits are back."); continue; }
-      const r = await aimedia.runpod(`${endpoint}/status/${row.runpod_id}`);
+      const backup = elevenVideo.backupFor(row.id);
+      if (!endpoint && !backup) { fail(row.id, "This video model was retired. Your credits are back."); continue; }
+      const r = backup ? await elevenVideo.poll(row.id) : await aimedia.runpod(`${endpoint}/status/${row.runpod_id}`);
       if (r.status === "COMPLETED") {
         const url = aimedia.resultUrl(r.output, "video");
         if (!url) { console.warn("[avatar-videos]", row.id, "no video link:", JSON.stringify(r).slice(0, 400)); fail(row.id, "The AI finished but didn't send the video back. Your credits are back."); continue; }
@@ -351,7 +360,9 @@ export async function poll(id = null) {
         if (!res.ok) throw new Error(`download ${res.status}`);
         const name = `${crypto.randomUUID()}.mp4`;
         fs.writeFileSync(path.join(dirs.media, name), Buffer.from(await res.arrayBuffer()));
-        if (row.kind === "motion" && !row.sound && MODELS.find((m) => m.id === row.model)?.sound === "strip") await stripAudio(path.join(dirs.media, name));
+        if (backup && row.kind === "motion") await elevenVideo.finishMotion(path.join(dirs.media, name), row.duration, Boolean(row.sound));
+        else if (row.kind === "motion" && !row.sound && MODELS.find((m) => m.id === row.model)?.sound === "strip") await stripAudio(path.join(dirs.media, name));
+        if (backup) elevenVideo.completed(row.id);
         if (row.kind === "motion" && row.script) {
           db.prepare("UPDATE avatar_videos SET stage='voice', raw_file=?, updated_at=datetime('now') WHERE id=? AND status='running'").run(name, row.id);
           kick();
@@ -366,7 +377,7 @@ export async function poll(id = null) {
     } catch (e) {
       console.warn("[avatar-videos] poll", row.id, e.message);
       if (minutesOld(row) > 40) fail(row.id, "This took too long. Your credits are back.");
-    }
+    } finally { polling.delete(row.id); }
   }
 }
 
@@ -376,7 +387,8 @@ function get(seller, id) {
   if (!v) throw httpError(404, "That isn't one of your avatar videos.");
   return v;
 }
-const nameOf = (row) => (row.kind === "talk" ? TALK.name : MODELS.find((m) => m.id === row.model)?.name || OLD_NAMES[row.model] || row.model);
+const nameOf = (row) => (elevenVideo.backupFor(row.id)?.generation_id ? (row.kind === "talk" ? "Aurora (backup)" : "Veo 3.1 Fast (backup)")
+  : row.kind === "talk" ? TALK.name : MODELS.find((m) => m.id === row.model)?.name || OLD_NAMES[row.model] || row.model);
 export const view = (v) => ({ id: v.id, kind: v.kind, model: v.model, model_name: nameOf(v), avatar_id: v.avatar_id, shot_id: v.shot_id, duration: v.duration, resolution: v.resolution,
   sound: Boolean(v.sound), script: v.script, voiceover: v.kind === "motion" && Boolean(v.script), premium_voice: elevenlabs.isPremium(v.voice), credits: v.credits, status: v.status,
   stage: v.status === "running" && v.stage === "voice" ? "voice" : null, error: v.status === "failed" ? v.error : null, note: v.note || null,
