@@ -4,13 +4,14 @@ import { router, useFocusEffect } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
 import { Body, Button, Field, H1, Notice, Screen } from "@/components/ui";
+import { MarketingAutopilot } from "@/components/marketing-autopilot";
 import { Card, Tile } from "@/components/panel";
 import { useMe } from "@/lib/account-store";
 import { api, ApiError, marketingCenterApi as mc, type OwnerContent, type OwnerMarketing, type OwnerAsset } from "@/lib/api";
 import { type, useColors } from "@/lib/theme";
 
-type Tab = "Campaigns" | "Social publishing" | "Blog & SEO" | "Calendar" | "Analytics";
-const tabs: Tab[] = ["Campaigns", "Social publishing", "Blog & SEO", "Calendar", "Analytics"];
+type Tab = "Autopilot" | "Campaigns" | "Social publishing" | "Blog & SEO" | "Calendar" | "Analytics";
+const tabs: Tab[] = ["Autopilot", "Campaigns", "Social publishing", "Blog & SEO", "Calendar", "Analytics"];
 const when = (value: string | null) => value ? new Date(value.endsWith("Z") ? value : value.replace(" ", "T") + "Z").toLocaleString() : "Unscheduled";
 const errorText = (e: unknown) => e instanceof ApiError || e instanceof Error ? e.message : "Something went wrong. Please try again.";
 
@@ -24,7 +25,7 @@ function Workspace({ store }: { store: string }) {
   const c = useColors();
   const [data, setData] = useState<OwnerMarketing | null>(null);
   const [assets, setAssets] = useState<OwnerAsset[]>([]);
-  const [tab, setTab] = useState<Tab>("Campaigns");
+  const [tab, setTab] = useState<Tab>("Autopilot");
   const [campaign, setCampaign] = useState("");
   const [form, setForm] = useState({ title: "", audience: "", goal: "", brief: "" });
   const [adding, setAdding] = useState(false);
@@ -82,7 +83,7 @@ function Workspace({ store }: { store: string }) {
     {tabs.map((name) => <Pressable key={name} disabled={dirty || busy} onPress={() => { setTab(name); select(null); }} accessibilityRole="tab" accessibilityState={{ selected: tab === name }} style={[styles.tab, { borderColor: tab === name ? c.accent : c.line, backgroundColor: tab === name ? c.accent : c.surface }]}><Text style={[type.label, { color: tab === name ? c.onAccent : c.ink }]}>{name}</Text></Pressable>)}
   </ScrollView>
   {!data ? <Card><ActivityIndicator color={c.accent} /><Body muted>Loading your workspace…</Body></Card> : <>
-    {tab === "Analytics" ? <>
+    {tab === "Autopilot" ? <MarketingAutopilot store={store} campaigns={data.campaigns} onChanged={load} onOpen={(id) => act(async () => { const next = await mc.dashboard(store); setData(next); const item = next.items.find((v) => v.id === id); if (item) { setCampaign(item.campaign_id); setTab(item.kind === "blog" ? "Blog & SEO" : "Social publishing"); select(item); } else throw new Error("That content is no longer available in the current list."); })} /> : tab === "Analytics" ? <>
       <Card title="Platform overview" sub="Current Snapfront totals, not conversions attributed to a campaign."><View style={styles.row}>
         <Tile label="Accounts with email" value={String(data.metrics.signed_in_accounts)} wide /><Tile label="Their stores" value={String(data.metrics.stores)} wide /><Tile label="Accounts with Pro access" value={String(data.metrics.pro_accounts)} sub="Includes complimentary access" wide />
       </View></Card>

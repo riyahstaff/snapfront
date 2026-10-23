@@ -1017,3 +1017,15 @@ export const marketingCenterApi = {
   approve: (store: string, item: OwnerContent, ids: string[], date: string | null) => request<OwnerContent>("POST", `${ownerMarketingPath}/content/${item.id}/approve`, { revision: item.revision, confirm: true, account_ids: ids, publish_at: date }, store),
   cancel: (store: string, item: OwnerContent) => request<OwnerContent>("POST", `${ownerMarketingPath}/content/${item.id}/cancel`, { revision: item.revision }, store),
 };
+
+export type AutopilotSettings = { enabled: boolean; revision: number; campaign_id: string; timezone: string; social_times: string[]; article_days: number[]; article_time: string; account_ids: string[]; daily_ai_limit: number; last_tick?: string | null };
+export type AutopilotStatus = {
+  settings: AutopilotSettings; ai_configured: boolean; ai_used_today: number; running: boolean; ready: SocialAccounts; renderer: string; in_flight?: number;
+  upcoming: { kind: string; due_at: string; slot_key: string }[];
+  jobs: { id: string; kind: string; state: string; due_at: string; title: string; error: string | null; attempts: number; content_id: string | null; video_id: string | null; posts: { status: string; error: string | null; permalink: string | null; account_name: string }[] }[];
+};
+export const autopilotApi = {
+  status: (store: string) => request<AutopilotStatus>("GET", `${ownerMarketingPath}/autopilot`, undefined, store),
+  save: (store: string, settings: AutopilotSettings, confirm: boolean) => request<AutopilotStatus>("PUT", `${ownerMarketingPath}/autopilot`, { ...settings, confirm }, store),
+  pause: (store: string, revision: number) => request<AutopilotStatus>("POST", `${ownerMarketingPath}/autopilot/pause`, { revision }, store),
+};
