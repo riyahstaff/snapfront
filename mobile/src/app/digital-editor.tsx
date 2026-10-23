@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { Body, Button, H1, H2, Notice, Pill, Screen, Segmented } from "@/components/ui";
+import { Body, Button, H1, H2, Notice, Pill, Screen } from "@/components/ui";
 import { DigitalDocumentControls } from "@/components/digital-document-controls";
 import { DigitalPreview } from "@/components/digital-preview";
 import type { DigitalPreviewSelection } from "@/components/digital-preview-bridge";
@@ -56,7 +56,14 @@ export default function DigitalEditorScreen() {
   const [product, setProduct] = useState<Product | null>(null);
   const [document, setDocument] = useState<DigitalDocument | null>(null);
   const [revision, setRevision] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const [manual, setManual] = useState(false);
+  const [assistantBusy, setAssistantBusy] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
+  const advanceRef = useRef(false);
+  const [finished, setFinished] = useState(false);
   const [stage, setStage] = useState<Stage>("edit");
+  useEffect(() => { scrollRef.current?.scrollTo({ y: 0, animated: false }); }, [stage]);
   const [message, setMessage] = useState<Message | null>(null);
   const [busy, setBusy] = useState<"save" | "preview" | "export" | "attach" | "image" | null>(null);
   const [preview, setPreview] = useState<DigitalPreviewData | null>(null);
@@ -162,6 +169,7 @@ export default function DigitalEditorScreen() {
     setDocument(source);
     draftGenerationRef.current += 1;
     setDraftGeneration(draftGenerationRef.current);
+    setFinished(false);
     setExported(null);
     setShowReview(false);
     setAttachCandidate(null);
@@ -177,6 +185,7 @@ export default function DigitalEditorScreen() {
     setDocument(documentRef.current);
     draftGenerationRef.current += 1;
     setDraftGeneration(draftGenerationRef.current);
+    setFinished(false);
     setExported(null);
     setShowReview(false);
     setAttachCandidate(null);
@@ -297,7 +306,8 @@ export default function DigitalEditorScreen() {
       if (!ownsSession(started)) return false;
       setDesign(result);
       setRevision(result.revision);
-      setExported(null);
+      setFinished(false);
+    setExported(null);
       savedGenerationRef.current = savingGeneration;
       setSavedGeneration(savingGeneration);
       setPendingLegacyRebuild(false);
@@ -382,7 +392,8 @@ export default function DigitalEditorScreen() {
       setPreviewPage(0);
       previewGenerationRef.current = generation;
       setPreviewGeneration(generation);
-      setMessage({ text: "Rendered from your current editable source. This preview is not a product attachment.", tone: "ok" });
+      setMessage({ text: "Preview ready. Check the pages, then continue when you’re happy.", tone: "ok" });
+      return true;
     } catch (error) {
       if (ownsSession(started) && request === previewRequestRef.current) {
         const text = digitalSaveError(error instanceof ApiError ? error : null);
@@ -392,6 +403,13 @@ export default function DigitalEditorScreen() {
     } finally {
       if (ownsSession(started) && request === previewRequestRef.current) { setPreviewLoading(false); setBusy(null); }
     }
+  }
+
+  async function nextToPreview() {
+    if (advanceRef.current || busy || assistantBusy) return;
+    advanceRef.current = true; setAdvancing(true);
+    try { if (await saveDraft()) { if (await renderPreview()) setStage("preview"); } }
+    finally { advanceRef.current = false; if (mountedRef.current) setAdvancing(false); }
   }
 
   async function uploadImage(pageId: string, block: DigitalBlock) {
@@ -496,7 +514,8 @@ export default function DigitalEditorScreen() {
       setExported(result.design.export);
       setShowReview(false);
       setAttachCandidate(null);
-      setMessage({ text: "Reviewed export attached. Your listing, price, status, plan, and billing were not changed.", tone: "ok" });
+      setFinished(true);
+      setMessage({ text: "Your PDF is added to this product. Next, review the listing and set your price.", tone: "ok" });
     } catch (error) {
       if (ownsSession(started)) setMessage({ text: digitalSaveError(error instanceof ApiError ? error : null), tone: "error" });
     } finally {
@@ -543,49 +562,44 @@ export default function DigitalEditorScreen() {
   }
 
   return (
-    <Screen>
+    <Screen scrollRef={scrollRef}>
       <Stack.Screen options={{ title: product?.status === "live" ? "Edit live digital product" : "Edit digital draft" }} />
       <View style={{ gap: space.sm }}>
-        <Pill text={`Private source · revision ${revision}`} tone="flash" />
-        <H1>Make this digital design yours.</H1>
-        <Body muted>Work in editable source pages, then render real server pages and review one saved export before changing a buyer download. Nothing here publishes your product.</Body>
+        <Pill text="Your private digital draft" tone="flash" />
+        <H1>{stage === "edit" ? "1. Make it yours." : stage === "preview" ? "2. Check your product." : "3. Finish your download."}</H1>
+        <Body muted>{stage === "edit" ? "Tell Mira what you want. Apply her changes, then click Next to see your product." : stage === "preview" ? "Look through every page. You can go back to change the writing, pictures, or style." : "Open your PDF to check it, then add it to your product. You’ll set the price and publish from the listing."}</Body>
+        <Text style={[type.small, { color: c.muted }]}>Personalize → Preview → Finish</Text>
       </View>
-      <Segmented value={stage} options={[{ value: "edit", label: "1 Edit" }, { value: "preview", label: "2 Preview" }, { value: "attach", label: "3 Attach" }]} onChange={setStage} />
       {replacementRoute && selectedTemplate ? <View style={{ gap: space.sm, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }}><Text style={[type.heading, { color: c.ink }]}>Try {selectedTemplate.name}&apos;s visual style</Text><Text style={[type.small, { color: c.muted }]}>This preserves every word, page, block, and owned image reference. Only the selected style and original cover artwork change after your confirmation.</Text><Button label="Apply visual style and keep content" variant="secondary" onPress={confirmTemplateStyle} /></View> : null}
-      {stage === "edit" ? (
-        <View style={{ gap: space.lg }}>
-          <Notice text={preview && !previewCurrent ? "This frame is from an earlier source revision. It remains visible for reference only; update it before export or attach." : null} tone="info" />
-          <DigitalPreview preview={preview} pageIndex={previewPage} loading={previewLoading} error={previewError} onPageIndex={setPreviewPage} onSelect={setSelection} onRetry={() => { void renderPreview(); }} />
-          <Button label="Update actual preview" variant="secondary" loading={busy === "preview"} disabled={busy !== null} onPress={() => { void renderPreview(); }} />
-          <DigitalDesignerAssistant key={`${routeStoreId}:${productId}`} storeId={routeStoreId!} productId={productId!} document={document} disabled={busy !== null} onApply={commitDocument} />
-          <DigitalDocumentControls document={document} selection={selection} undoCount={undoCount} busy={busy !== null} onChange={commitDocument} onUndo={undo} onAddPage={addPage} onDuplicatePage={duplicatePage} onMovePage={movePage} onDeletePage={confirmDeletePage} onAddBlock={addBlock} onMoveBlock={moveBlock} onDeleteBlock={confirmDeleteBlock} onUploadImage={uploadImage} onOpenDigitalPhotoStudio={openDigitalPhotoStudio} />
-          <Button label="Save private draft" loading={busy === "save"} disabled={busy !== null} onPress={saveDraft} />
-          <Button label="Choose another visual template" variant="ghost" disabled={busy !== null} onPress={() => router.push({ pathname: "/digital-designs", params: { edit_product_id: productId, storeId: routeStoreId } })} />
-          <Button label="Reload server source" variant="ghost" disabled={busy !== null} onPress={reloadServerCopy} />
-        </View>
-      ) : null}
-      {stage === "preview" ? (
-        <View style={{ gap: space.lg }}>
-          <Notice text={preview && !previewCurrent ? "The visible frame is an older preview. It is kept only for reference and cannot authorize an export or attach. Render the current source." : null} tone="info" />
-          <DigitalPreview preview={preview} pageIndex={previewPage} loading={previewLoading} error={previewError} onPageIndex={setPreviewPage} onSelect={(next) => { setSelection(next); setStage("edit"); }} onRetry={() => { void renderPreview(); }} />
-          <Button label="Render current source" loading={busy === "preview"} disabled={busy !== null} onPress={() => { void renderPreview(); }} />
-          <Button label="Save private draft" variant="secondary" loading={busy === "save"} disabled={busy !== null} onPress={saveDraft} />
-          <Button label="Continue to export review" variant="secondary" disabled={!previewCurrent || busy !== null} onPress={() => setStage("attach")} />
-        </View>
-      ) : null}
-      {stage === "attach" ? (
-        <View style={{ gap: space.lg }}>
-          <H2>Review before replacing a file</H2>
-          <Body muted>Export can only use the latest saved revision. It stays private until you review the exact title, page count, and export, then explicitly attach it.</Body>
-          <Notice text={savedGeneration !== draftGeneration ? "Edits are not saved yet. Save the private source before exporting." : !previewCurrent ? "Render the latest source. An earlier preview cannot authorize an attach." : null} tone="info" />
-          {preview ? <DigitalPreview preview={preview} pageIndex={previewPage} loading={previewLoading} error={previewError} onPageIndex={setPreviewPage} onSelect={(next) => { setSelection(next); setStage("edit"); }} onRetry={() => { void renderPreview(); }} /> : null}
-          <Button label="Save latest private draft" variant="secondary" loading={busy === "save"} disabled={busy !== null || savedGeneration === draftGeneration} onPress={saveDraft} />
-          <Button label="Render latest actual preview" variant="secondary" loading={busy === "preview"} disabled={busy !== null} onPress={() => { void renderPreview(); }} />
-          <Button label={exported && reviewedExport ? "Export again from this saved revision" : "Export current saved revision"} loading={busy === "export"} disabled={busy !== null || savedGeneration !== draftGeneration || !previewCurrent} onPress={exportCurrentRevision} />
-          {exported ? <View style={{ gap: space.sm, padding: space.md, borderWidth: 1, borderColor: c.line, borderRadius: radius.md, backgroundColor: c.surface }}><Text style={[type.heading, { color: c.ink }]}>Private export</Text><Text style={[type.small, { color: c.muted }]}>{exported.page_count} rendered pages · saved revision {exported.revision}</Text><Button label="Open private PDF" variant="secondary" onPress={() => { void openPrivateExport(exported.pdf_url, "PDF"); }} /><Button label="Open private cover" variant="secondary" onPress={() => { void openPrivateExport(exported.cover_url, "cover"); }} /></View> : null}
-          <Button label="Review and attach export" variant="flash" disabled={!reviewedExport || busy !== null} onPress={openReview} />
-        </View>
-      ) : null}
+      {stage === "edit" ? <View style={{ gap: space.lg }}>
+        <DigitalDesignerAssistant key={`${routeStoreId}:${productId}`} storeId={routeStoreId!} productId={productId!} document={document} disabled={busy !== null || advancing} onApply={commitDocument} onBusyChange={setAssistantBusy} />
+        <Button label={manual ? "Hide manual editing" : "Edit text, pictures & colors myself"} variant="secondary" disabled={busy !== null || assistantBusy || advancing} onPress={() => setManual(!manual)} />
+        {manual ? <>
+          <DigitalDocumentControls document={document} selection={selection} undoCount={undoCount} busy={busy !== null || assistantBusy || advancing} onChange={commitDocument} onUndo={undo} onAddPage={addPage} onDuplicatePage={duplicatePage} onMovePage={movePage} onDeletePage={confirmDeletePage} onAddBlock={addBlock} onMoveBlock={moveBlock} onDeleteBlock={confirmDeleteBlock} onUploadImage={uploadImage} onOpenDigitalPhotoStudio={openDigitalPhotoStudio} />
+          <Button label="Choose another visual style" variant="ghost" disabled={busy !== null || assistantBusy || advancing} onPress={() => router.push({ pathname: "/digital-designs", params: { edit_product_id: productId, storeId: routeStoreId } })} />
+          <Button label="Discard unsaved changes" variant="ghost" disabled={busy !== null || assistantBusy || advancing} onPress={reloadServerCopy} />
+        </> : undoCount > 0 ? <Button label="Undo last change" variant="ghost" disabled={busy !== null || assistantBusy || advancing} onPress={undo} /> : null}
+        <Button label="Next: preview my product" loading={advancing} disabled={busy !== null || assistantBusy || advancing} onPress={() => void nextToPreview()} />
+        <Button label="Save for later" variant="secondary" loading={busy === "save" && !advancing} disabled={busy !== null || assistantBusy || advancing} onPress={saveDraft} />
+        <Body muted>Your draft stays private. Next saves your changes automatically.</Body>
+      </View> : null}
+      {stage === "preview" ? <View style={{ gap: space.lg }}>
+        <Notice text={preview && !previewCurrent ? "Your draft changed. Go back and click Next to refresh this preview." : null} tone="info" />
+        <DigitalPreview preview={preview} pageIndex={previewPage} loading={previewLoading} error={previewError} onPageIndex={setPreviewPage} onSelect={next => { if (busy) return; setSelection(next); setManual(true); setStage("edit"); }} onRetry={() => { void renderPreview(); }} />
+        <Button label="Next: prepare my PDF" loading={busy === "export"} disabled={!previewCurrent || busy !== null} onPress={exportCurrentRevision} />
+        <Button label="Back: make changes" variant="secondary" disabled={busy !== null} onPress={() => setStage("edit")} />
+      </View> : null}
+      {stage === "attach" ? <View style={{ gap: space.lg }}>
+        {finished ? <>
+          <Notice text="Your download is ready. Review the listing and price before publishing." tone="ok" />
+          <Button label="Next: review listing & price" onPress={() => router.replace({ pathname: "/product/[id]", params: { id: productId! } })} />
+        </> : <>
+          {exported ? <View style={{ gap: space.md, padding: space.lg, borderWidth: 1, borderColor: c.line, borderRadius: radius.lg, backgroundColor: c.surface }}><Text style={[type.heading, { color: c.ink }]}>{document.title}</Text><Body muted>{exported.page_count} pages · PDF download</Body><Button label="Open PDF to review" variant="secondary" onPress={() => { void openPrivateExport(exported.pdf_url, "PDF"); }} /></View> : null}
+          <Button label={product?.status === "live" ? "Review replacement download" : "Add PDF to my product"} disabled={!reviewedExport || busy !== null} onPress={openReview} />
+          <Body muted>{product?.status === "live" ? "You’ll confirm before replacing the download on your live product." : "This adds the file to your private product. It does not publish it."}</Body>
+        </>}
+        <Button label="Back: preview" variant="secondary" disabled={busy !== null} onPress={() => setStage("preview")} />
+      </View> : null}
       <Notice text={message?.text ?? null} tone={message?.tone} />
       <AttachReviewModal visible={showReview} product={product} document={document} candidate={attachCandidate} liveAcknowledged={liveAcknowledged} busy={busy === "attach"} onAcknowledge={() => setLiveAcknowledged((value) => !value)} onCancel={() => { if (!busy) { setShowReview(false); setAttachCandidate(null); } }} onAttach={attachReviewedExport} />
     </Screen>
@@ -610,14 +624,14 @@ function AttachReviewModal({ visible, product, document, candidate, liveAcknowle
     <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.45)" }}>
       <ScrollView style={{ maxHeight: "85%" }} contentContainerStyle={{ paddingTop: space.xl, paddingBottom: Math.max(insets.bottom, space.lg) }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: space.md, paddingHorizontal: space.xl, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, backgroundColor: c.bg }}>
-          <H2>Final export review</H2>
+          <H2>Ready to add your PDF?</H2>
           <Text style={[type.body, { color: c.ink }]}>Title: {document.title || "Untitled digital design"}</Text>
           <Text style={[type.body, { color: c.ink }]}>Source pages: {document.pages.length}</Text>
           <Text style={[type.small, { color: c.muted }]}>Export: {candidate ? `${candidate.page_count} rendered pages · saved revision ${candidate.revision}` : "No current export"}</Text>
-          <Text style={[type.small, { color: c.muted }]}>Attaching replaces only this product&apos;s delivery file and cover with this frozen export revision. It does not publish the product, change its price, listing copy, plan, or billing.</Text>
+          <Text style={[type.small, { color: c.muted }]}>This adds the reviewed PDF and cover to your product. If it already has a download, this replaces it. Your listing and price stay as they are.</Text>
           {live ? <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: liveAcknowledged }} onPress={onAcknowledge} style={{ flexDirection: "row", alignItems: "flex-start", gap: space.sm, padding: space.md, borderWidth: 1, borderRadius: radius.md, borderColor: liveAcknowledged ? c.accent : c.line, backgroundColor: c.surface }}><View style={{ width: 22, height: 22, marginTop: 1, borderRadius: 4, borderWidth: 2, borderColor: c.accent, backgroundColor: liveAcknowledged ? c.accent : "transparent", alignItems: "center", justifyContent: "center" }}><Text style={{ color: c.onAccent, fontFamily: "System" }}>{liveAcknowledged ? "✓" : ""}</Text></View><Text style={[type.small, { color: c.ink, flex: 1 }]}>I understand that this live product&apos;s buyer download will be replaced by the reviewed export above. Earlier paid-order references remain protected by the server.</Text></Pressable> : null}
-          <Button label="Keep export private" variant="secondary" disabled={busy} onPress={onCancel} />
-          <Button label={live ? "Attach and replace live delivery" : "Attach reviewed export"} variant="flash" loading={busy} disabled={!candidate || (live && !liveAcknowledged)} onPress={onAttach} />
+          <Button label="Go back" variant="secondary" disabled={busy} onPress={onCancel} />
+          <Button label={live ? "Replace live download" : "Yes, add this PDF"} variant="flash" loading={busy} disabled={!candidate || (live && !liveAcknowledged)} onPress={onAttach} />
         </View>
       </ScrollView>
     </View>

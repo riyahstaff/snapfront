@@ -18,8 +18,8 @@ export type DigitalExport = { id: string; revision: number; document_hash: strin
 export type DigitalDesignRecord = { product_id: string; source_available: boolean; document: DigitalDocument | null; revision: number; export: DigitalExport | null; legacy_message: string | null };
 export type DigitalDesignCatalog = { templates: DigitalTemplateSummary[]; formats: { id: DigitalFormat; name: string }[]; version: 1 | 2 };
 export type DigitalIdea = { id: string; title: string; category_id: string; format: DigitalFormat; audience: string; outline: string[]; source_ids: string[]; delivery: string; external_requirement: string | null; brief: string };
-export type DigitalIdeaCatalog = { version: number; as_of: string; title: string; methodology: string; categories: { id: string; name: string; source_ids: string[]; evidence: string; audience: string }[]; sources: { id: string; title: string; url: string; published: string | null; note: string; checked: string }[]; ideas: DigitalIdea[] };
-export type DigitalDesignerProposal = { reply: string; document: DigitalDocument; changed: boolean; page_index: number };
+export type DigitalIdeaCatalog = { version: number; as_of: string; title: string; methodology: string; categories: { id: string; name: string; image_url?: string; source_ids: string[]; evidence: string; audience: string }[]; sources: { id: string; title: string; url: string; published: string | null; note: string; checked: string }[]; ideas: DigitalIdea[] };
+export type DigitalDesignerProposal = { reply: string; document: DigitalDocument; changed: boolean; page_index: number; scope?: "page" | "product"; image_requests?: { page_id: string; prompt: string; aspect: "wide" | "portrait" | "square"; replace_block_id?: string }[] };
 export type CreateDigitalDesignInput = { template_id: string; design_revision?: 1 | 2; title?: string; subtitle?: string; brand?: string };
 export type SaveDigitalDesignInput = { document: DigitalDocument; revision: number; rebuild_legacy?: true };
 export type AttachDigitalDesignInput = { export_id: string; revision: number; acknowledge_live: boolean };
@@ -560,7 +560,7 @@ export const api = {
   digitalIdeas: digitalIdeaCatalog,
   startDigitalIdea: (storeId: string, ideaId: string, requestId: string) => request<{ product: { id: string }; design: DigitalDesignRecord; idea: DigitalIdea }>("POST", "/api/digital-ideas/start", { idea_id: ideaId, request_id: requestId }, storeId),
   productIdea: (storeId: string, productId: string) => request<{ idea: DigitalIdea | null }>("GET", `/api/products/${encodeURIComponent(productId)}/digital-idea`, undefined, storeId),
-  digitalDesigner: (storeId: string, productId: string, input: { document: DigitalDocument; page_index: number; message: string }) => request<DigitalDesignerProposal>("POST", `/api/products/${encodeURIComponent(productId)}/digital-designer`, input, storeId, 90000),
+  digitalDesigner: (storeId: string, productId: string, input: { document: DigitalDocument; page_index: number; message: string; scope?: "page" | "product" }) => request<DigitalDesignerProposal>("POST", `/api/products/${encodeURIComponent(productId)}/digital-designer`, input, storeId, 90000),
   digitalDesigns: digitalDesignCatalog,
   createDigitalDesign: (storeId: string, input: CreateDigitalDesignInput) =>
     request<{ product: Product; design: DigitalDesignRecord }>("POST", "/api/digital-designs/create", input, storeId),

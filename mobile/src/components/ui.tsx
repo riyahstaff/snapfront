@@ -13,7 +13,7 @@ import { PAGE_MAX, isColumn, pageWidthFor, type PageWidth } from "@/lib/page-wid
 const Layout = React.createContext<PageWidth>("full");
 export const usePageLayout = () => React.useContext(Layout);
 
-export function Screen({ children, scroll = true, onScroll, onLayout, width }: { children: React.ReactNode; scroll?: boolean; onScroll?: ScrollViewProps["onScroll"]; onLayout?: ScrollViewProps["onLayout"]; width?: PageWidth }) {
+export function Screen({ children, scroll = true, onScroll, onLayout, width, scrollRef }: { children: React.ReactNode; scroll?: boolean; onScroll?: ScrollViewProps["onScroll"]; onLayout?: ScrollViewProps["onLayout"]; width?: PageWidth; scrollRef?: React.Ref<ScrollView> }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
@@ -24,7 +24,7 @@ export function Screen({ children, scroll = true, onScroll, onLayout, width }: {
   if (!scroll) return <Layout.Provider value={kind}><View style={[{ flex: 1, backgroundColor: c.bg }, pad, column]}>{children}</View></Layout.Provider>;
   return (
     <Layout.Provider value={kind}>
-      <ScrollView onScroll={onScroll} onLayout={onLayout} scrollEventThrottle={onScroll ? 64 : undefined} style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={[pad, { gap: space.xl }, column]} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} onScroll={onScroll} onLayout={onLayout} scrollEventThrottle={onScroll ? 64 : undefined} style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={[pad, { gap: space.xl }, column]} keyboardShouldPersistTaps="handled">
         {children}
       </ScrollView>
     </Layout.Provider>

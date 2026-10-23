@@ -69,3 +69,31 @@ test('designer proposes a valid page without saving, publishing or changing unre
  await read(await call(a.token,'POST',`/api/products/${made.product.id}/digital-designer`,body),502);
  delete process.env.SNAPFRONT_FAKE_AI;
 });
+test('topic art is local, varied, owned and accepted by the actual preview renderer',async()=>{
+ const {topicStyles}=await import('../src/digital-topic-styles.js');
+ const {ownedDocument}=await import('../src/digital-document.js');
+ assert.equal(Object.keys(topicStyles).length,25);
+ assert.ok(new Set(Object.values(topicStyles).map(s=>s.variant)).size>=8);
+ for(const cat of ideaCatalog.categories){assert.ok(fs.existsSync(new URL(`../assets/themes/${topicStyles[cat.id].asset}`,import.meta.url)),cat.id);assert.match(cat.image_url,/\/theme-assets\/.*-hero\.webp$/);}
+ const made=await read(await call(a.token,'POST','/api/digital-ideas/start',{idea_id:'cooking-02',request_id:'test-topic-artwork-01'}),201);
+ assert.ok(ownedDocument(a.seller?.id||a.id,made.design.document));
+ assert.throws(()=>ownedDocument(b.seller?.id||b.id,made.design.document));
+ assert.equal(made.design.document.palette.accent,'#A95632');assert.equal(made.design.document.show_artwork,false);
+ const preview=await read(await call(a.token,'POST',`/api/products/${made.product.id}/digital-design/preview`,{document:made.design.document}),200);assert.ok(preview.document_hash);
+});
+test('Mira develops the whole product and proposes targeted rose and river image jobs',async()=>{
+ const made=await read(await call(a.token,'POST','/api/digital-ideas/start',{idea_id:'planning-02',request_id:'test-whole-product-01'}),201),document=made.design.document;
+ const body={document,page_index:0,scope:'product',message:'Create a student planner for an introverted young woman with roses and river pictures.'};
+ const answer={reply:'A gentle student planner with two images to create.',title:'Quiet Days Student Planner',pages:document.pages.map(p=>({id:p.id,title:p.title,blocks:[{kind:'paragraph',text:'Plan a quiet study break.'},{kind:'writing',text:'My small next step'}]})),image_requests:[{page_id:document.pages[0].id,prompt:'Blush roses in a sunlit vase, no text',aspect:'wide',replace_block_id:'topic-image'},{page_id:document.pages[2].id,prompt:'Peaceful flowing river in a green woodland, no text',aspect:'wide'}]};
+ process.env.SNAPFRONT_FAKE_AI=JSON.stringify(answer);
+ const result=await read(await call(a.token,'POST',`/api/products/${made.product.id}/digital-designer`,body),200);
+ assert.equal(result.document.title,'Quiet Days Student Planner');assert.equal(result.image_requests.length,2);
+ assert.ok(result.document.pages.every(p=>p.blocks.some(b=>b.text?.includes('quiet study'))));
+ assert.equal(result.document.pages[0].blocks.find(b=>b.kind==='image').image_file,document.pages[0].blocks.find(b=>b.kind==='image').image_file);
+ const saved=await read(await call(a.token,'GET',`/api/products/${made.product.id}/digital-design`),200);assert.deepEqual(saved.document,document);
+ await read(await call(a.token,'POST',`/api/products/${made.product.id}/digital-designer`,{...body,scope:'page'}),502);
+ for(const invalid of [{...answer,image_requests:[{...answer.image_requests[0],page_id:'foreign-page'}]},{...answer,image_requests:[{...answer.image_requests[0],replace_block_id:'idea-heading-1'}]},{...answer,image_requests:Array(4).fill(answer.image_requests[0])},{...answer,pages:[{...answer.pages[0],id:'foreign-page'}]}]){
+  process.env.SNAPFRONT_FAKE_AI=JSON.stringify(invalid);await read(await call(a.token,'POST',`/api/products/${made.product.id}/digital-designer`,body),502);
+ }
+ delete process.env.SNAPFRONT_FAKE_AI;
+});
