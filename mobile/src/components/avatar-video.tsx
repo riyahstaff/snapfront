@@ -18,7 +18,7 @@ function Chip({ label, on, onPress, sub }: { label: string; on: boolean; onPress
   const c = useColors();
   return (
     <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: on }}
-      style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: radius.pill, borderWidth: on ? 2 : 1, borderColor: on ? c.accent : c.line, backgroundColor: c.bg }}>
+      style={{ maxWidth: "100%", minWidth: 0, paddingHorizontal: 14, paddingVertical: 9, borderRadius: radius.pill, borderWidth: on ? 2 : 1, borderColor: on ? c.accent : c.line, backgroundColor: c.bg }}>
       <Text style={[type.label, { color: c.ink }]}>{label}{sub ? <Text style={[type.small, { color: c.muted }]}>  {sub}</Text> : null}</Text>
     </Pressable>
   );
@@ -119,9 +119,7 @@ export function VideoPanel({ studio, mode, shotId, avatarId, avatarName, onStart
           <Field label="What should they say?" hint={`Up to ${studio.talk.max_chars} characters, about 30 seconds.`} value={script} onChangeText={setScript} maxLength={studio.talk.max_chars} multiline
             placeholder="Hey! This is the serum I use every single morning. Link's in my bio." />
           <Text style={[type.label, { color: c.ink }]}>Voice</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-            <VoicePicker voices={studio.talk.voices} value={voice} onChange={setVoice} premiumName={pv?.name} />
-          </View>
+          <VoicePicker voices={studio.talk.voices} value={voice} onChange={setVoice} premiumName={pv?.name} />
         </>
       )}
 
@@ -145,14 +143,14 @@ function VoicePicker({ voices, value, onChange, premiumName }: { voices: VideoVo
   const free = voices.filter((v) => !v.premium), premium = voices.filter((v) => v.premium);
   const chip = (v: VideoVoice) => <Chip key={v.id} label={v.name} sub={v.premium ? [v.accent, v.gender].filter(Boolean).join(" ") || undefined : v.accent === "British" ? "UK" : undefined} on={value === v.id} onPress={() => onChange(v.id)} />;
   return (
-    <View style={{ gap: space.sm }}>
+    <View style={{ width: "100%", minWidth: 0, gap: space.sm }}>
       <Text style={[type.small, { color: c.muted }]}>Free voices</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>{free.map(chip)}</View>
       {premium.length ? (
         <>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <Ionicons name="star" size={13} color={c.accent} />
-            <Text style={[type.small, { color: c.ink }]}>Premium voices{premiumName ? ` by ${premiumName}` : ""} · a few extra credits</Text>
+            <Text style={[type.small, { color: c.ink, flexShrink: 1 }]}>Premium voices{premiumName ? ` by ${premiumName}` : ""} · a few extra credits</Text>
           </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>{premium.map(chip)}</View>
         </>
