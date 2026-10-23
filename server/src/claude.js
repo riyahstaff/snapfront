@@ -37,7 +37,7 @@ export function parseJson(text) {
   return JSON.parse(body.slice(start, end + 1));
 }
 
-export async function askJson(content, maxTokens, model = config.claudeModel) {
+export async function askJson(content, maxTokens, model = config.claudeModel, { singleAttempt = false } = {}) {
   // Test hook: lets the smoke tests run without an API key.
   if (process.env.SNAPFRONT_FAKE_AI) return JSON.parse(process.env.SNAPFRONT_FAKE_AI);
   const ai = anthropic();
@@ -54,7 +54,7 @@ export async function askJson(content, maxTokens, model = config.claudeModel) {
         messages: [{ role: "user", content }],
         tools: [{ name: "submit", description: "Submit the finished JSON object described in the request.", input_schema: { type: "object", additionalProperties: true } }],
         tool_choice: { type: "auto" },
-      });
+      }, singleAttempt ? { maxRetries: 0 } : undefined);
     } catch (e) {
       console.error("[claude]", e.status, e.message);
       throw httpError(e.status === 429 ? 429 : 502, e.status === 400 ? (hasImage ? "The AI couldn't read that photo. Try a different one." : "The AI couldn't handle that request. Try different wording.") : "The AI writer is busy right now. Try again in a minute.");
@@ -66,7 +66,7 @@ export async function askJson(content, maxTokens, model = config.claudeModel) {
     const text = msg.content.filter((b) => b.type === "text").map((b) => b.text).join("");
     try { if (text) return parseJson(text); } catch { /* retry below */ }
     console.error("[claude] unusable reply", { attempt, stop: msg.stop_reason, keys: out ? Object.keys(out) : null });
-    if (attempt >= 2) throw httpError(502, "The AI's answer came back incomplete. Try again.");
+    if (singleAttempt || attempt >= 2) throw httpError(502, "The AI's answer came back incomplete. Try again.");
   }
 }
 

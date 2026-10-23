@@ -1,0 +1,27 @@
+import {test,after} from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import {spawnSync} from "node:child_process";
+const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"snapfront-brand-video-"));
+process.env.DATA_DIR=tmp;process.env.PUBLIC_URL="https://snapfront.app";
+const {db}=await import("../src/db.js");
+const plans=await import("../src/plans.js");
+const faceless=await import("../src/faceless.js");
+const {setVoiceEngine}=await import("../src/narrated.js");
+const ffmpeg=(await import("ffmpeg-static")).default;
+setVoiceEngine(async()=>({audio:new Float32Array(2400),sampling_rate:24000}));
+after(()=>{setVoiceEngine(null);db.close();fs.rmSync(tmp,{recursive:true,force:true});});
+test("brand workflow renders a real narrated MP4 without a product or a paid video provider",async()=>{
+ const owner=plans.createAccountWithStore("Test brand");
+ const script={hook:"Explore Snapfront",feature:"digital",scenes:[{text:"Create a digital product",say:"Create."},{text:"Make your store yours",say:"Customize."},{text:"Share your work",say:"Share."}],cta:"Explore Snapfront"};
+ const j=faceless.startBrand(owner.store,script,"autojob_render_test");
+ assert.equal(faceless.startBrand(owner.store,script,"autojob_render_test").id,j.id);
+ await faceless.work();const done=faceless.job(owner.store,j.id);
+ assert.equal(done.status,"done",done.error);assert.ok(done.seconds>0);
+ const file=db.prepare("SELECT file FROM faceless_jobs WHERE id=?").get(j.id).file;
+ const full=path.join(tmp,"media",file);assert.ok(fs.statSync(full).size>1000);
+ const inspected=spawnSync(ffmpeg,["-i",full,"-f","null","-"],{encoding:"utf8"});
+ assert.equal(inspected.status,0,inspected.stderr);assert.match(inspected.stderr,/1080x1920/);assert.match(inspected.stderr,/Audio: aac/);
+});

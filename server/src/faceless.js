@@ -118,6 +118,17 @@ export function start(seller, b = {}) {
   kick();
   return job(seller, id);
 }
+/** Internal brand workflow: no product listing is fabricated and no paid video API is called. */
+export function startBrand(seller, input, jobId) {
+  if (!/^autojob_[a-zA-Z0-9_-]+$/.test(String(jobId))) throw httpError(400, "Invalid automation job.");
+  const id = `fvid_${jobId}`;
+  const existing = db.prepare("SELECT * FROM faceless_jobs WHERE id=? AND seller_id=?").get(id, seller.id);
+  if (existing) return publicJob(existing);
+  if (db.prepare("SELECT COUNT(*) n FROM faceless_jobs WHERE seller_id=? AND status IN ('queued','working')").get(seller.id).n >= 3) throw httpError(503, "The video queue is busy. Autopilot will retry this slot.");
+  const script = { ...cleanScript(input), brand: "snapfront", feature: ["digital", "avatars", "marketing", "autodm"].includes(input.feature) ? input.feature : "digital" };
+  db.prepare("INSERT INTO faceless_jobs(id,seller_id,product_id,script,voice) VALUES (?,?,NULL,?,'af_heart')").run(id,seller.id,JSON.stringify(script));
+  kick(); return job(seller,id);
+}
 export function remove(seller, id) {
   const j = db.prepare("SELECT * FROM faceless_jobs WHERE id = ? AND seller_id = ?").get(String(id), seller.id);
   if (!j) throw httpError(404, "That video doesn't exist.");
@@ -133,13 +144,21 @@ async function make(j) {
   // Photos: the product's own, then the store's cover and other products, so scenes look different.
   const files = [p?.image_file, seller.banner_file, ...db.prepare("SELECT image_file FROM products WHERE seller_id = ? AND image_file IS NOT NULL AND id != ? ORDER BY created_at DESC LIMIT 3").all(j.seller_id, j.product_id || "").map((r) => r.image_file)]
     .filter((f) => f && /^[\w-]+\.(jpg|jpeg|png|webp|gif)$/.test(f)).map((f) => path.join(dirs.images, f)).filter((f) => fs.existsSync(f));
+  if (s.brand === "snapfront") {
+    files.length = 0;
+    const site = path.resolve(new URL("../assets/site/tools/", import.meta.url).pathname);
+    for (const feature of [s.feature, "digital", "marketing", "avatars"]) {
+      const file = path.join(site, `${["digital","avatars","marketing","autodm"].includes(feature) ? feature : "digital"}.webp`);
+      if (fs.existsSync(file) && !files.includes(file)) files.push(file);
+    }
+  }
   const photoFor = (i) => (files.length ? files[i === 0 || files.length === 1 ? 0 : (i % files.length)] : null);
   const slides = [];
   for (let i = 0; i < s.scenes.length; i++) {
     const sc = s.scenes[i];
     slides.push({ png: await slide(photoFor(i), i, sc.text || s.hook, { big: i === 0 }), say: sc.say || null, seconds: sc.say ? undefined : 2.5 });
   }
-  const domain = storeUrl(seller.store_slug).replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const domain = (s.brand === "snapfront" ? config.publicUrl : storeUrl(seller.store_slug)).replace(/^https?:\/\//, "").replace(/\/$/, "");
   slides.push({ png: await slide(photoFor(0), s.scenes.length, s.cta, { big: true, sub: domain }), seconds: 2.8 });
   fs.mkdirSync(dirs.media, { recursive: true });
   const file = `${crypto.randomUUID()}.mp4`;

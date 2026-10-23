@@ -60,7 +60,8 @@ function view(row) {
     status = posts.every((p) => p.status === "published") ? "published"
       : posts.some((p) => p.status === "uncertain") ? "needs_review"
       : posts.some((p) => p.status === "failed") ? "failed"
-      : posts.every((p) => p.status === "canceled") ? "canceled" : "scheduled";
+      : posts.every((p) => p.status === "canceled") ? "canceled"
+      : posts.every((p) => ["published","canceled"].includes(p.status)) ? "partially_published" : "scheduled";
   }
   const render = row.render_id && db.prepare("SELECT files_json,kind FROM social_renders WHERE id=? AND seller_id=?").get(row.render_id, row.seller_id);
   return { ...row, status, posts, media: render ? { kind: render.kind, files: parse(render.files_json).map((f) => ({ ...f, url: `${config.publicUrl}/media/${f.file}` })) } : null,
@@ -77,7 +78,7 @@ export function dashboard(account, seller) {
       stores: count("SELECT COUNT(*) n FROM sellers s JOIN accounts a ON s.account_id=a.id WHERE a.email IS NOT NULL AND a.email!=''"),
       pro_accounts: count("SELECT COUNT(*) n FROM accounts WHERE email IS NOT NULL AND email!='' AND (plan='pro' OR comp_plan='pro')"),
       blog_views: count("SELECT COALESCE(SUM(v.views),0) n FROM owner_blog_views v JOIN owner_content c ON c.id=v.content_id WHERE c.account_id=? AND c.seller_id=?", account.id, seller.id),
-      published: items.filter((i) => i.status === "published").length,
+      published: items.filter((i) => ["published","partially_published"].includes(i.status)).length,
       scheduled: items.filter((i) => i.status === "scheduled").length,
     } };
 }

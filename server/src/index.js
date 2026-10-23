@@ -1,3 +1,4 @@
+import * as marketingAutopilot from "./marketing-autopilot.js";
 import * as marketingCenter from "./marketing-center.js";
 import express from "express";
 import fs from "node:fs";
@@ -559,6 +560,9 @@ function ownerOnly(req, res, next) {
 const marketingBase = "/api/admin/owner/marketing";
 app.use(marketingBase, ownerOnly, (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
 app.get(marketingBase, (req, res) => res.json(marketingCenter.dashboard(req.account, req.seller)));
+app.get(`${marketingBase}/autopilot`, (req,res) => res.json(marketingAutopilot.status(req.account,req.seller)));
+app.put(`${marketingBase}/autopilot`, (req,res) => res.json(marketingAutopilot.save(req.account,req.seller,req.body || {})));
+app.post(`${marketingBase}/autopilot/pause`, (req,res) => res.json(marketingAutopilot.pause(req.account,req.seller,req.body || {})));
 app.get(`${marketingBase}/assets`, (req, res) => res.json(marketingCenter.assets(req.seller)));
 app.post(`${marketingBase}/campaigns`, (req, res) => res.status(201).json(marketingCenter.createCampaign(req.account, req.seller, req.body || {})));
 app.post(`${marketingBase}/campaigns/:id/drafts`, (req, res) => res.status(201).json(marketingCenter.createDraft(req.account, req.seller, req.params.id, req.body || {})));
@@ -1733,6 +1737,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
 /** Everything the live server does on its own: queues, sweeps, syncs. Never on a backup copy. */
 function startBackgroundWork() {
   marketingCenter.startWorker();
+  marketingAutopilot.startWorker();
   import("./eleven-video.js").then(async (video) => {
     console.log("[eleven-video] access", JSON.stringify(await video.check()));
   }).catch(() => console.warn("[eleven-video] access check unavailable"));
