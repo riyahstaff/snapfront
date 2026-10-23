@@ -33,7 +33,7 @@ export function ThemePreview({ theme, storeName, photo = null, height = 190, unc
           recyclingKey={candidate.key}
           cachePolicy="memory-disk"
           contentFit={uncropped ? "contain" : "cover"}
-          contentPosition="top center"
+          contentPosition={uncropped ? "top center" : "center"}
           transition={120}
           onError={() => setFailedSources((failed) => failed.includes(candidate.key) ? failed : [...failed, candidate.key])}
           style={StyleSheet.absoluteFill}
