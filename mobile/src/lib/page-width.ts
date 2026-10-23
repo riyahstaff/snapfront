@@ -14,7 +14,7 @@ const FOCUS = new Set([
   "digital-photo-studio", "draft", "product", "supplier", "welcome", "start", "sign-in", "community-post", "lesson", "assistant", "prompt",
 ]);
 const WIDE = new Set([
-  "academy", "prompts", "find", "autodm", "affiliates", "earn", "channels", "reviews", "trends", "sources", "ugc", "credits", "create", "community", "plans",
+  "looks", "academy", "prompts", "find", "autodm", "affiliates", "earn", "channels", "reviews", "trends", "sources", "ugc", "credits", "create", "community", "plans",
 ]);
 
 /** The width for a route name ("snap", "product/[id]") or a path ("/product/abc"). */

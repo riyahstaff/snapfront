@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as WebBrowser from "expo-web-browser";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Field, H2, Notice } from "@/components/ui";
+import { router, useLocalSearchParams } from "expo-router";
+import { Button, Field, H2, Notice, PageScroll } from "@/components/ui";
 import { ThemePicker } from "@/components/theme-picker";
 import { api, ApiError, type StoreTheme } from "@/lib/api";
 import { EMPTY_THEME_BROWSE, type ThemeBrowseState } from "@/lib/theme-catalog";
@@ -24,6 +23,7 @@ export default function LooksScreen() {
 }
 function LooksEditor({ initialQuery }: { initialQuery: string }) {
   const c = useColors();
+  const scroll = useRef<ScrollView>(null);
   const me = useMe();
   const insets = useSafeAreaInsets();
   const [themes, setThemes] = useState<StoreTheme[] | null>(null);
@@ -66,11 +66,6 @@ function LooksEditor({ initialQuery }: { initialQuery: string }) {
     } catch (error) { setMsg({ text: errText(error, "Couldn’t change your store look."), tone: "error" }); }
     finally { setSaving(false); }
   }
-  async function preview() {
-    if (!chosen || !me) return;
-    try { if (chosen.demo_url) await WebBrowser.openBrowserAsync(chosen.demo_url); else router.push({ pathname: "/storefront-setup", params: { theme: chosen.id } }); }
-    catch (error) { setMsg({ text: errText(error, "Couldn’t open your store preview."), tone: "error" }); }
-  }
 
   if (!themes) return <View style={{ flex: 1, backgroundColor: c.bg, alignItems: "center", justifyContent: "center", padding: space.lg }}>
     {msg ? <View style={{ width: "100%", gap: space.md }}><Notice text={msg.text} tone="error" /><Button label="Retry catalog" onPress={retryCatalog} /></View> : <ActivityIndicator color={c.accent} />}
@@ -78,34 +73,29 @@ function LooksEditor({ initialQuery }: { initialQuery: string }) {
 
   const changed = picked != null && picked !== current;
   return <View style={{ flex: 1, backgroundColor: c.bg }}>
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: 230 + insets.bottom }}>
-      <H2>Pick a finished design</H2>
-      <Text style={[type.small, { color: c.muted }]}>You don’t need to design an empty page. Choose a look, then swap its photos and words while you see the actual design.</Text>
-      <View style={{ gap: space.sm, backgroundColor: c.surface, borderRadius: radius.lg, padding: space.lg }}>
-        <Text style={[type.heading, { color: c.ink }]}>Build your storefront</Text>
-        <Text style={[type.small, { color: c.ink }]}>Pick a design → swap photos → change words → add products → check and finish. Your live store stays unchanged while you work.</Text>
-        <Button label="Open guided setup" variant="secondary" onPress={() => router.push("/storefront-setup")} />
+    <PageScroll ref={scroll} width="wide" keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: space.xl, gap: space.xl, paddingBottom: 48 + insets.bottom }}>
+      <View style={{ gap: space.sm }}>
+        <H2>Find your store’s look</H2>
+        <Text style={[type.body, { color: c.muted, maxWidth: 680 }]}>Explore complete designs, then make one yours. Preview a look up close or choose Customize to replace its photos and words.</Text>
       </View>
-      <H2>Browse store looks</H2>
-      <Text style={[type.small, { color: c.muted }]}>Search a theme name, product category or mood. Pictures and words in the examples show what the design can look like. Customize this design opens that layout with samples you can replace. Nothing is applied by browsing.</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: space.md, paddingVertical: space.md, borderTopWidth: 1, borderBottomWidth: 1, borderColor: c.line }}>
+        <View style={{ flex: 1, minWidth: 180, gap: 4 }}>
+          <Text style={[type.label, { color: c.ink }]}>Current look: {themes.find((theme) => theme.id === current)?.name || current}</Text>
+          <Text style={[type.small, { color: c.muted }]}>Your live store stays the same until you finish setup.</Text>
+        </View>
+        <Button label="Continue store setup" variant="secondary" disabled={saving || !me} onPress={() => router.push("/storefront-setup")} />
+      </View>
+      <Notice text={msg?.text ?? null} tone={msg?.tone} />
       <ThemePicker themes={themes} selected={picked ?? current} current={current} storeName={me?.store_name || "Your store"} photo={me?.banner_url ?? photo}
-        browse={browse} onBrowse={setBrowse} onSelect={(id) => { if (me) setPickState({ storeId: me.id, id }); setMsg(null); }} disabled={saving} onRetry={retryCatalog} />
+        browse={browse} onBrowse={(next) => { setBrowse(next); if (next.page !== browse.page) scroll.current?.scrollTo({ y: 0, animated: true }); }} onSelect={(id) => { if (me) setPickState({ storeId: me.id, id }); setMsg(null); }} disabled={saving} onRetry={retryCatalog}
+        onCustomize={advanced ? undefined : (id) => router.push({ pathname: "/storefront-setup", params: { theme: id } })} />
       <Button label={advanced ? "Hide quick edits" : "Already have a store? Optional quick edits"} variant="ghost" onPress={() => setAdvanced(!advanced)} disabled={saving} />
       {advanced ? <View style={{ gap: space.md }}>
-        <Notice text="Quick edits change your live store immediately. For a new store, use Customize this design below instead." />
+        <Notice text="Quick edits change your live store immediately. For a new store, choose Customize on a design instead." />
         <StorefrontDetails key={me?.id} />
         {changed && (me?.banner_url || photo) ? <Button label="Only change my existing store’s style" variant="secondary" disabled={!chosen || saving} loading={saving} onPress={apply} /> : null}
       </View> : null}
-    </ScrollView>
-    <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: space.lg, paddingBottom: space.lg + insets.bottom, gap: space.sm, backgroundColor: c.surface, borderTopWidth: 1, borderColor: c.line }}>
-      <Notice text={msg?.text ?? null} tone={msg?.tone} />
-      <Text numberOfLines={2} style={[type.label, { color: c.ink }]}>{chosen ? `${changed ? "Selected" : "Current"}: ${chosen.name}` : "Choose an available theme"}</Text>
-      <View style={{ flexDirection: "row", gap: space.sm }}>
-        <Button label="See example" variant="secondary" icon={<Ionicons name="eye-outline" size={18} color={c.ink} />} style={{ flex: 1, paddingHorizontal: space.sm }} disabled={!chosen || !me || saving} onPress={preview} />
-        <Button label="Customize this design" style={{ flex: 1.5, paddingHorizontal: space.sm }} disabled={!chosen || !me || saving}
-          onPress={() => { if (chosen) router.push({ pathname: "/storefront-setup", params: { theme: chosen.id } }); }} />
-      </View>
-    </View>
+    </PageScroll>
   </View>;
 }
 
