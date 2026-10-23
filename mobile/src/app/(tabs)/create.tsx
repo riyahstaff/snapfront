@@ -1,6 +1,6 @@
 import { DigitalIdeaPicker } from "@/components/digital-idea-picker";
-import React, { useEffect, useState } from "react";
-import { Pressable, Text, View, Platform } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Pressable, Text, View, Platform, ScrollView } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Body, Button, Field, H1, Notice, Screen } from "@/components/ui";
 import { account, useMe } from "@/lib/account-store";
@@ -22,6 +22,8 @@ function firstParam(value: string | string[] | undefined): string | null {
 
 export default function CreateScreen() {
   const c = useColors();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = () => scrollRef.current?.scrollTo({ y: 0, animated: false });
   const me = useMe();
   const params = useLocalSearchParams<{ template_id?: string | string[]; format?: string | string[]; design_revision?: string | string[] }>();
   const templateId = firstParam(params.template_id);
@@ -31,6 +33,7 @@ export default function CreateScreen() {
   const [niche, setNiche] = useState("");
   // Older servers still read a colour; the AI art director now picks the real one.
   const color = "cobalt";
+  const [custom, setCustom] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const typeForGeneration = templateId ? formatFromTemplateId(templateId) : type_;
@@ -38,14 +41,15 @@ export default function CreateScreen() {
   useEffect(() => { api.productTypes().then(setTypes).catch(() => {}); }, []);
 
   async function generate() {
+    if (busy) return;
     const owner = me?.id ?? null;
     const storeRevision = api.storeRevision();
-    if (templateId && !owner) { setError("Wait for the selected store before creating this editable AI draft."); return; }
+    if (!owner) { setError("Wait for the selected store before creating this editable AI draft."); return; }
     setBusy(true);
     setError(null);
     try {
-      const p = await api.generate({ type: typeForGeneration, niche, color, ...(templateId ? { template_id: templateId, design_revision: templateDesignRevision ?? 2 } : {}) });
-      if (templateId && owner) {
+      const p = await api.generate({ type: typeForGeneration, niche, color, template_id: templateId || `${typeForGeneration}-03`, design_revision: templateDesignRevision ?? 2 });
+      if (owner) {
         if (api.storeRevision() !== storeRevision || account.get()?.id !== owner) return;
         // The server registers the generated full source first; no generated words are replaced here.
         router.replace({ pathname: "/digital-editor", params: { id: p.id, storeId: owner } });
@@ -53,24 +57,23 @@ export default function CreateScreen() {
         router.push({ pathname: "/product/[id]", params: { id: p.id } });
       }
     } catch (e) {
-      if (!templateId || !owner || (api.storeRevision() === storeRevision && account.get()?.id === owner)) {
+      if (!owner || (api.storeRevision() === storeRevision && account.get()?.id === owner)) {
         setError(e instanceof ApiError ? e.message : "Couldn't create the product. Try again.");
       }
     } finally {
-      if (!templateId || !owner || (api.storeRevision() === storeRevision && account.get()?.id === owner)) setBusy(false);
+      if (!owner || (api.storeRevision() === storeRevision && account.get()?.id === owner)) setBusy(false);
     }
   }
 
   return (
-    <Screen>
+    <Screen scrollRef={scrollRef}>
       <View style={{ gap: space.sm }}>
-        <H1>{templateId ? "Write into your chosen design." : <>Make something{"\n"}people already buy.</>}</H1>
-        <Body muted>{templateId ? `AI will create a private ${typeForGeneration} product using your selected editable design template. You will review the full source, renderer preview, and export before any buyer file changes.` : "Choose an idea below, or start with a format and audience of your own. Snapfront helps you write, design and prepare a digital product. Review the finished work and set your own price before publishing."}</Body>
-        <Button label={templateId ? "Back to design library" : "Browse 50 editable designs"} variant={templateId ? "secondary" : "primary"} onPress={() => router.push("/digital-designs")} />
-        {!templateId ? <Body muted>10 e-book designs · 10 checklists · 10 content packs · 10 quote prints · 10 planners. Pick a pictured design, then make it yours.</Body> : null}
-        {!templateId ? <Button label="See which formats sell best" variant="ghost" style={{ alignSelf: "flex-start", paddingHorizontal: 0, minHeight: 36 }} onPress={() => router.push("/trends")} /> : null}
+        <H1>{templateId ? "Tell us what you’re making." : "Create a digital product."}</H1>
+        <Body muted>{templateId ? "Describe your audience and idea. We’ll create a private draft for you to personalize with Mira." : "Choose a topic → pick an idea → make it yours with Mira. We’ll guide you through each step."}</Body>
+        <Button label={custom ? "Browse topics instead" : templateId ? "Back to design library" : "I already have my own idea"} variant="secondary" onPress={() => { if (templateId) router.push("/digital-designs"); else { setCustom(!custom); scrollTop(); } }} />
       </View>
-      {!templateId ? <DigitalIdeaPicker key={me?.id ?? "loading"} /> : null}
+      {!templateId && !custom ? <DigitalIdeaPicker onStepChange={scrollTop} key={me?.id ?? "loading"} /> : null}
+      {templateId || custom ? <>
       <View style={Platform.OS === "web" ? { flexDirection: "row", flexWrap: "wrap", gap: space.md } : { gap: space.sm }} accessibilityRole="radiogroup">
         {types.map((t) => {
           const on = t.id === typeForGeneration;
@@ -96,7 +99,9 @@ export default function CreateScreen() {
         <Text style={[type.small, { color: c.muted }]}>Snapfront’s AI art director reads your product and designs a cover and inside images that fit it, like a styled meal for a recipe book.</Text>
       </View> : <Body muted>Your chosen design keeps its own colors. You can change them in the editor after the writing is ready.</Body>}
       <Notice text={busy ? "Writing your product and designing its cover and images. This takes about two minutes." : error} tone={busy ? "info" : "error"} />
-      <Button label={busy ? "Creating…" : templateId ? "Create editable AI draft" : "Create product"} onPress={generate} loading={busy} disabled={niche.trim().length < 4} />
+      <Button label={busy ? "Creating…" : templateId ? "Create editable AI draft" : "Create product"} onPress={generate} loading={busy} disabled={busy || niche.trim().length < 4} />
+      </> : null}
+      {!templateId && !custom ? <Button label="Explore visual designs" variant="ghost" onPress={() => router.push("/digital-designs")} /> : null}
     </Screen>
   );
 }
