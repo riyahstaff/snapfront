@@ -121,7 +121,7 @@ export function ThemePicker({ themes, selected, current, storeName, photo, brows
             <Notice text={previewError} tone="error" />
           </View>
           <ScrollView contentContainerStyle={{ padding: space.xl, alignItems: "center", gap: space.md, paddingBottom: 48 + insets.bottom }}>
-            <Text style={[type.small, { color: c.muted }]}>See the layout up close. Open the full website to scroll through every section.</Text>
+            <Text style={[type.small, { color: c.muted }]}>{preview?.demo_url ? "See the layout up close. Open the full website to scroll through every section." : "See the layout up close, then choose this design to make it yours."}</Text>
             {preview ? <ThemePreview key={preview.id} theme={preview} storeName={storeName} photo={photo} uncropped height={previewWidth * 667 / 960} style={{ width: previewWidth }} /> : null}
           </ScrollView>
         </View>

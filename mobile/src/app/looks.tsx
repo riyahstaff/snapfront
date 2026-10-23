@@ -91,7 +91,7 @@ function LooksEditor({ initialQuery }: { initialQuery: string }) {
         onCustomize={advanced ? undefined : (id) => router.push({ pathname: "/storefront-setup", params: { theme: id } })} />
       <Button label={advanced ? "Hide quick edits" : "Already have a store? Optional quick edits"} variant="ghost" onPress={() => setAdvanced(!advanced)} disabled={saving} />
       {advanced ? <View style={{ gap: space.md }}>
-        <Notice text="Quick edits change your live store immediately. For a new store, choose Customize on a design instead." />
+        <Notice text="Quick edits change your live store immediately. Hide quick edits to return to guided customization." />
         <StorefrontDetails key={me?.id} />
         {changed && (me?.banner_url || photo) ? <Button label="Only change my existing store’s style" variant="secondary" disabled={!chosen || saving} loading={saving} onPress={apply} /> : null}
       </View> : null}
