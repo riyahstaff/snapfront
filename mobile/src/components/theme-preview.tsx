@@ -11,11 +11,13 @@ type ThemePreviewProps = {
   storeName: string;
   photo?: string | null;
   height?: number;
+  /** Keep the whole renderer snapshot visible in the design gallery. */
+  uncropped?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
 /** A catalog preview is illustrative. Seller Preview still opens the seller's own storefront. */
-export function ThemePreview({ theme, storeName, photo = null, height = 190, style }: ThemePreviewProps) {
+export function ThemePreview({ theme, storeName, photo = null, height = 190, uncropped = false, style }: ThemePreviewProps) {
   const [failedSources, setFailedSources] = useState<string[]>([]);
   const candidates = themePreviewSources(theme);
   const candidate = availableThemePreview(theme, failedSources);
@@ -30,15 +32,16 @@ export function ThemePreview({ theme, storeName, photo = null, height = 190, sty
           source={candidate.source}
           recyclingKey={candidate.key}
           cachePolicy="memory-disk"
-          contentFit="cover"
+          contentFit={uncropped ? "contain" : "cover"}
+          contentPosition={uncropped ? "top center" : "center"}
           transition={120}
           onError={() => setFailedSources((failed) => failed.includes(candidate.key) ? failed : [...failed, candidate.key])}
           style={StyleSheet.absoluteFill}
         />
-        <View style={[styles.demoLabel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]} pointerEvents="none">
+        {!uncropped ? <View style={[styles.demoLabel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]} pointerEvents="none">
           <Ionicons name="images-outline" size={12} color={theme.colors.ink} />
           <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: theme.colors.ink }}>Demo imagery</Text>
-        </View>
+        </View> : null}
       </View>
     );
   }
