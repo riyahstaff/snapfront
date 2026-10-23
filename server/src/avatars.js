@@ -26,6 +26,7 @@ import { httpError, askJson, sniffImage } from "./claude.js";
 import sharp from "sharp";
 import * as plans from "./plans.js";
 import * as aimedia from "./aimedia.js";
+import * as elevenImage from "./eleven-image.js";
 import * as credits from "./credits.js";
 import { ownsSellerImage } from "./media-ownership.js";
 
@@ -153,7 +154,16 @@ export async function create(account, seller, b = {}) {
   db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, look) VALUES (?,?,?,?,?,?)").run(id, seller.id, account.id, name, style.id, look);
   plans.recordUsage(account, KIND);
   try {
-    const r = await aimedia.runpod(`${T2I}/run`, { input: { prompt: avatarPrompt(style, look), negative_prompt: "text, watermark, logo, celebrity, real person likeness, extra limbs, distorted hands, blurry", size: "1024*1280", seed: -1, enable_safety_checker: true } });
+    const prompt = avatarPrompt(style, look);
+    let r;
+    try {
+      r = await aimedia.runpod(`${T2I}/run`, { input: { prompt, negative_prompt: "text, watermark, logo, celebrity, real person likeness, extra limbs, distorted hands, blurry", size: "1024*1280", seed: -1, enable_safety_checker: true } });
+    } catch (e) {
+      // Switch providers only on Runpod's explicit insufficient-balance response. A timeout
+      // can mean the first request was accepted, so retrying that case could double-charge.
+      if (e?.runpod?.status !== 402 || !elevenImage.enabled()) throw e;
+      r = await elevenImage.submit(prompt);
+    }
     db.prepare("UPDATE avatars SET status='running', runpod_id=?, updated_at=datetime('now') WHERE id=?").run(r.id, id);
   } catch (e) { fail("avatars", id, e.message); throw e; }
   return avatarView(getAvatar(seller, id));
@@ -456,7 +466,10 @@ export async function poll({ table = null, id = null } = {}) {
         // Blends run on the photo models (older ones on Qwen Image Edit), not text-to-image.
         // New outfits run on the photo models too (they record which one).
         const blending = t === "avatars" && (row.source === "blend" || Boolean(row.engine));
-        const r = await aimedia.runpod(`${row.engine ? row.engine : blending ? EDIT : endpoint}/status/${row.runpod_id}`);
+        const imageBackup = String(row.runpod_id || "").startsWith("eleven-image:");
+        const r = imageBackup
+          ? await elevenImage.poll(String(row.runpod_id).slice("eleven-image:".length))
+          : await aimedia.runpod(`${row.engine ? row.engine : blending ? EDIT : endpoint}/status/${row.runpod_id}`);
         if (r.status === "COMPLETED") {
           const url = aimedia.resultUrl(r.output, "scene");
           if (!url) { console.warn("[avatars]", row.id, "finished without an image:", JSON.stringify(r).slice(0, 400)); fail(t, row.id, "The AI finished but didn't send the image back. Try again."); continue; }

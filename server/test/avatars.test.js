@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "snapfront-avatars-"));
-Object.assign(process.env, { DATA_DIR: tmp, PUBLIC_URL: "https://avatars.test", STORE_DOMAIN: "avatars.test", RUNPOD_API_KEY: "rp_test" });
+Object.assign(process.env, { DATA_DIR: tmp, PUBLIC_URL: "https://avatars.test", STORE_DOMAIN: "avatars.test", RUNPOD_API_KEY: "rp_test", ELEVENLABS_IMAGE_BACKUP: "true", ELEVENLABS_API_KEY: "el_test" });
 
 const { app } = await import("../src/index.js");
 const { db } = await import("../src/db.js");
@@ -16,19 +16,28 @@ const aimedia = await import("../src/aimedia.js");
 const marketing = await import("../src/marketing.js");
 const fonts = await import("../src/fonts.js");
 const avatars = await import("../src/avatars.js");
+const elevenImage = await import("../src/eleven-image.js");
 
 fonts.setFontFetch(async () => { throw new Error("offline"); });
 marketing.setCutout(async () => ({ png: await sharp({ create: { width: 300, height: 400, channels: 4, background: { r: 120, g: 60, b: 20, alpha: 1 } } }).png().toBuffer(), width: 300, height: 400, coverage: 0.3 }));
 const rp = [];
 let status = "IN_PROGRESS";
+let runpodEmpty = false;
 const jpeg = await sharp({ create: { width: 512, height: 640, channels: 3, background: "#8a93a3" } }).jpeg().toBuffer();
 aimedia.setRunpodFetch(async (url, init = {}) => {
   rp.push({ url, body: init.body ? JSON.parse(init.body) : null });
   const ok = (j) => ({ ok: true, status: 200, json: async () => j });
+  if (url.endsWith("/run") && runpodEmpty) return { ok: false, status: 402, json: async () => ({ error: "insufficient balance" }) };
   if (url.endsWith("/run")) return ok({ id: `rp${rp.length}`, status: "IN_QUEUE" });
   if (url.includes("/status/")) return ok(status === "COMPLETED" ? { status, output: { image_url: "https://image.runpod.ai/x/out.jpg", cost: 0.02 } } : { status });
-  if (url.startsWith("https://image.runpod.ai")) return { ok: true, status: 200, arrayBuffer: async () => new Uint8Array(jpeg).buffer };
+  if (url.startsWith("https://image.runpod.ai") || url.startsWith("https://image.elevenlabs.test")) return { ok: true, status: 200, arrayBuffer: async () => new Uint8Array(jpeg).buffer };
   throw new Error(`unexpected ${url}`);
+});
+elevenImage.setImageFetch(async (url, init = {}) => {
+  const ok = (j) => ({ ok: true, status: 200, json: async () => j });
+  if (url.endsWith("/flows/image")) return ok({ id: "el-avatar-image-test", status: "pending" });
+  if (url.endsWith("/flows/image/el-avatar-image-test")) return ok({ id: "el-avatar-image-test", status: "completed", content_url: "https://image.elevenlabs.test/avatar.png", content_mime_type: "image/png" });
+  throw new Error(`unexpected ElevenLabs request ${url}`);
 });
 
 let server, base, token, me, product;
@@ -140,6 +149,24 @@ test("a failed avatar gives the allowance back", async () => {
   assert.equal(failed.status, "failed");
   assert.match(failed.error, /couldn't make this avatar/);
   assert.equal(used(), before);
+});
+
+test("avatar portraits automatically use ElevenLabs only when Runpod explicitly reports no balance", async () => {
+  const before = db.prepare("SELECT COUNT(*) AS n FROM avatars").get().n;
+  runpodEmpty = true;
+  const r = await call("POST", "/api/avatars", { style: "illustrated", look: "emerald and silver editorial illustration" });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.equal(r.body.status, "running");
+  assert.equal(r.body.error, null);
+  assert.equal(r.body.id != null, true);
+  const row = db.prepare("SELECT runpod_id FROM avatars WHERE id=?").get(r.body.id);
+  assert.equal(row.runpod_id, "eleven-image:el-avatar-image-test");
+  runpodEmpty = false;
+  const done = (await call("GET", `/api/avatars/${r.body.id}`)).body;
+  assert.equal(done.status, "done");
+  assert.match(done.image_url, /^https:\/\/avatars\.test\/img\/[\w-]+\.jpg$/);
+  assert.ok(aimedia.isAiImage(done.image_url.split("/").pop()));
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM avatars").get().n, before + 1);
 });
 
 test("deleting an avatar removes it and its shots", async () => {
