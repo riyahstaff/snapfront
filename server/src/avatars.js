@@ -154,16 +154,7 @@ export async function create(account, seller, b = {}) {
   db.prepare("INSERT INTO avatars (id, seller_id, account_id, name, style, look) VALUES (?,?,?,?,?,?)").run(id, seller.id, account.id, name, style.id, look);
   plans.recordUsage(account, KIND);
   try {
-    const prompt = avatarPrompt(style, look);
-    let r;
-    try {
-      r = await aimedia.runpod(`${T2I}/run`, { input: { prompt, negative_prompt: "text, watermark, logo, celebrity, real person likeness, extra limbs, distorted hands, blurry", size: "1024*1280", seed: -1, enable_safety_checker: true } });
-    } catch (e) {
-      // Switch providers only on Runpod's explicit insufficient-balance response. A timeout
-      // can mean the first request was accepted, so retrying that case could double-charge.
-      if (e?.runpod?.status !== 402 || !elevenImage.enabled()) throw e;
-      r = await elevenImage.submit(prompt);
-    }
+    const r = await aimedia.runpod(`${T2I}/run`, { input: { prompt: avatarPrompt(style, look), negative_prompt: "text, watermark, logo, celebrity, real person likeness, extra limbs, distorted hands, blurry", size: "1024*1280", seed: -1, enable_safety_checker: true } });
     db.prepare("UPDATE avatars SET status='running', runpod_id=?, updated_at=datetime('now') WHERE id=?").run(r.id, id);
   } catch (e) { fail("avatars", id, e.message); throw e; }
   return avatarView(getAvatar(seller, id));
@@ -488,7 +479,7 @@ export async function poll({ table = null, id = null } = {}) {
           console.warn("[avatars]", row.id, r.status, JSON.stringify(r.error || r.output || "").slice(0, 400));
           // A blend the first model refused or failed gets one more try on the backup model.
           const step = blending ? BLENDERS.findIndex((b) => b.id() === row.engine) : -1;
-          if (step >= 0 && step + 1 < BLENDERS.length && (row.src_files || row.ref_files) && row.gen_prompt) {
+          if (!elevenImage.isBackup(row.runpod_id) && step >= 0 && step + 1 < BLENDERS.length && (row.src_files || row.ref_files) && row.gen_prompt) {
             try { await submitBlend(row.id, step + 1); continue; } catch (e) { console.warn("[avatars] blend backup", row.id, e.message); }
           }
           fail(t, row.id, t === "avatars" ? (row.ref_files ? "The AI couldn't change the outfit. Try describing it differently." : row.source === "blend" ? "The AI couldn't blend these photos. Try two clear, front-facing photos." : "The AI couldn't make this avatar. Try a different description.") : "The AI couldn't make this shot. Try another pose or product photo.");

@@ -15,7 +15,7 @@ and failures of already accepted jobs do not trigger another paid generation.
 - Ten-, twelve-, and fifteen-second motion clips still require Runpod funds;
   they are not silently shortened. ElevenLabs ByteDance access needs separate
   provider approval and is not assumed by this integration.
-- Photos, avatar images, and arbitrary owner Studio endpoint calls remain Runpod.
+- Supported image workflows have a separate [ElevenLabs image backup](elevenlabs-image-backup.md), including portraits, blends, photo edits and Mira artwork. Arbitrary custom endpoints remain Runpod.
 
 ## Configuration on the API service
 

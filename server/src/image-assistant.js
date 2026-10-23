@@ -9,6 +9,7 @@ import { db, newId } from "./db.js";
 import { httpError } from "./claude.js";
 import { ownsSellerImage } from "./media-ownership.js";
 import * as plans from "./plans.js";
+import * as elevenImage from "./eleven-image.js";
 
 const API = "https://api.runpod.ai/v2";
 const ENDPOINT = { edit: "qwen-image-edit-2511", art: "qwen-image-t2i" };
@@ -231,7 +232,7 @@ function providerInput(job) {
   };
 }
 
-async function runpod(pathname, body) {
+async function primaryRunpod(pathname, body) {
   if (!providerEnabled()) throw httpError(503, "AI image generation is not set up yet. Deterministic mockups are still available.");
   let res;
   const what = pathname.replace(/\/status\/.*/, "/status");
@@ -254,6 +255,8 @@ async function runpod(pathname, body) {
   }
   return data;
 }
+
+const runpod = (pathname, body) => elevenImage.route(pathname, body, () => primaryRunpod(pathname, body));
 
 function outputUrl(output) {
   if (!output) return null;
@@ -278,7 +281,7 @@ export function allowedProviderUrl(value) {
     || /^([a-z0-9.-]+\.)?s3([.-][a-z0-9-]+)*\.amazonaws\.com$/.test(host)
     || host === "storage.googleapis.com"
     || /^[a-z0-9-]+\.r2\.(cloudflarestorage\.com|dev)$/.test(host) || /^[a-z0-9]+\.[a-z0-9-]+\.r2\.cloudflarestorage\.com$/.test(host);
-  if (url.protocol !== "https:" || !(runpodHost || storageHost)) {
+  if (url.protocol !== "https:" || !(runpodHost || storageHost || host === "elevenlabs.io" || host.endsWith(".elevenlabs.io"))) {
     // Only the host, never the (often signed) link itself.
     console.warn("[image-assistant] result link host not allowed:", url.protocol, host);
     return null;
@@ -441,6 +444,7 @@ function fail(job, message) {
 
 /** Send this image to the AI service again (a new request), up to MAX_RETRIES times. False once used up. */
 function retryLater(job, why) {
+  if (elevenImage.isBackup(job.provider_job_id)) return false; // Never regenerate a failed paid backup automatically.
   const changed = db.prepare(`UPDATE image_assistant_jobs SET provider_job_id=NULL, submission_started=0, retries=retries+1, status='running', updated_at=datetime('now')
     WHERE id=? AND lease_owner=? AND status IN ('queued','running') AND refunded=0 AND retries < ?`).run(job.id, job.lease_owner, MAX_RETRIES).changes;
   if (changed) console.warn("[image-assistant] job", job.id, "retrying after", why);
