@@ -12,6 +12,7 @@ import { httpError, sniffImage } from "./claude.js";
 import sharp from "sharp";
 import * as plans from "./plans.js";
 import * as credits from "./credits.js";
+import * as elevenVideo from "./eleven-video.js";
 
 const API = "https://api.runpod.ai/v2";
 const EP = { video: "wan-2-2-i2v-720", scene: "qwen-image-edit-2511" };
@@ -73,7 +74,7 @@ export const presets = () => ({ enabled: enabled(), motions: MOTIONS.map(({ id, 
   engines: PHOTO_ENGINES.map((e) => ({ id: e.id, name: e.name, blurb: e.blurb, credits: photoEnginePrice(e) })) });
 
 /** What the owner sees when Runpod is out of money. */
-export const OWNER_EMPTY = "Runpod is out of money, so AI photos and videos can't be made. Add funds at runpod.io (Billing), then try again.";
+export const OWNER_EMPTY = "Runpod is out of money. Add funds at runpod.io (Billing) to restore all AI tools. Eligible videos can use the ElevenLabs backup when it is enabled and has credits.";
 let onEmpty = null, lastEmptyAlert = 0;
 /** Called (at most every 6 hours) when Runpod says the balance is empty. */
 export function onOutOfCredit(fn) { onEmpty = fn; lastEmptyAlert = 0; }
@@ -179,7 +180,10 @@ export async function start(account, seller, { kind, image_file, preset, prompt,
   db.prepare("INSERT INTO media_jobs (id, seller_id, account_id, kind, input, endpoint) VALUES (?,?,?,?,?,?)").run(id, seller.id, account.id, kind, JSON.stringify({ ...input, preset: p?.id || null, engine: eng.id }), endpoint);
   if (!premium) plans.recordUsage(account, kind);
   try {
-    const r = await rp(`${endpoint}/run`, { input });
+    const primary = () => rp(`${endpoint}/run`, { input });
+    const r = kind === "video" ? await elevenVideo.submit(id, primary, {
+      kind: "motion", imageFile: image_file, prompt: input.prompt, duration: 5, resolution: "720p", sound: false,
+    }) : await primary();
     db.prepare("UPDATE media_jobs SET status='running', runpod_id=?, updated_at=datetime('now') WHERE id=?").run(r.id, id);
   } catch (e) { fail(id, e.message); throw e; }
   return view(db.prepare("SELECT * FROM media_jobs WHERE id = ?").get(id));
@@ -187,19 +191,23 @@ export async function start(account, seller, { kind, image_file, preset, prompt,
 
 function fail(id, message) {
   const job = db.prepare("SELECT * FROM media_jobs WHERE id = ?").get(id);
-  if (!job || job.status === "failed") return;
+  if (!job || job.status === "failed" || job.status === "done") return;
   db.prepare("UPDATE media_jobs SET status='failed', error=?, updated_at=datetime('now') WHERE id=?").run(String(message).slice(0, 300), id);
   // Premium photos were paid with credits; standard ones used the plan's allowance.
   if (!credits.refund(id) && !db.prepare("SELECT 1 FROM credit_ledger WHERE ref = ?").get(id)) plans.refundUsage(plans.getAccount(job.account_id), job.kind);
 }
 
 /** Check running jobs; copy finished files to our storage. Called on a timer and when the app asks. */
+const polling = new Set();
 export async function poll(id = null) {
   const jobs = id ? db.prepare("SELECT * FROM media_jobs WHERE id = ? AND status = 'running'").all(id)
     : db.prepare("SELECT * FROM media_jobs WHERE status = 'running' ORDER BY created_at LIMIT 20").all();
   for (const job of jobs) {
+    if (polling.has(job.id)) continue;
+    polling.add(job.id);
     try {
-      const r = await rp(`${job.endpoint || EP[job.kind]}/status/${job.runpod_id}`);
+      const backup = elevenVideo.backupFor(job.id);
+      const r = backup ? await elevenVideo.poll(job.id) : await rp(`${job.endpoint || EP[job.kind]}/status/${job.runpod_id}`);
       if (r.status === "COMPLETED") {
         const url = resultUrl(r.output, job.kind);
         if (!url) {
@@ -216,6 +224,7 @@ export async function poll(id = null) {
         if (job.kind === "video") {
           const name = `${crypto.randomUUID()}.mp4`;
           fs.writeFileSync(path.join(dirs.media, name), buf);
+          if (backup) await elevenVideo.finishMotion(path.join(dirs.media, name), 5, false);
           result = { file: name, url: `${config.publicUrl}/media/${name}` };
         } else {
           const name = `${crypto.randomUUID()}.jpg`;
@@ -225,6 +234,7 @@ export async function poll(id = null) {
           result = { image_file: name, url: `${config.publicUrl}/img/${name}` };
         }
         db.prepare("UPDATE media_jobs SET status='done', result=?, updated_at=datetime('now') WHERE id=?").run(JSON.stringify({ ...result, cost: r.output?.cost ?? null }), job.id);
+        if (backup) elevenVideo.completed(job.id);
       } else if (["FAILED", "CANCELLED", "TIMED_OUT"].includes(r.status)) {
         console.warn("[runpod] job", job.id, r.status, JSON.stringify(r.error || r.output || "").slice(0, 600));
         fail(job.id, "The AI couldn't make this one. Try a different photo or option.");
@@ -234,7 +244,7 @@ export async function poll(id = null) {
     } catch (e) {
       console.warn("[runpod] poll", job.id, e.message);
       if (Date.now() - Date.parse(`${job.created_at}Z`) > 20 * 60_000) fail(job.id, "This took too long. Try again.");
-    }
+    } finally { polling.delete(job.id); }
   }
 }
 
