@@ -614,7 +614,7 @@ export const api = {
   },
   legalUrl: (page: "privacy" | "terms") => `${API_URL}/${page}`,
   /** Website pages: the Claude/ChatGPT connector guide and the tools page. */
-  siteUrl: (page: "connect-ai" | "tools" | "help") => `${API_URL}/${page}`,
+  siteUrl: (page: "connect-ai" | "tools" | "help" | "blog") => `${API_URL}/${page}`,
   /** The public home page (snapfront.app), where new visitors see what Snapfront does. */
   landingUrl: () => `${API_URL}/`,
   connectedApps: () => request<ConnectedApps>("GET", "/api/connected-apps"),
@@ -989,4 +989,31 @@ export const supportApi = {
   setStatus: (id: string, status: "open" | "answered" | "closed") => request<SupportTicket>("PATCH", `/api/support/tickets/${encodeURIComponent(id)}`, { status }),
   github: (id: string) => request<SupportTicket>("POST", `/api/support/tickets/${encodeURIComponent(id)}/github`),
   sentryTest: () => request<{ ok: boolean; message: string; event_id?: string }>("POST", "/api/admin/sentry-test"),
+};
+
+export type OwnerCampaign = { id: string; title: string; audience: string; goal: string; brief: string };
+export type OwnerContent = {
+  id: string; campaign_id: string; kind: "social" | "blog"; title: string; caption: string; script: string;
+  body: string; description: string; status: string; revision: number; scheduled_at: string | null;
+  published_at: string | null; url: string | null; render_id: string | null;
+  media: { kind: string; files: { url: string }[] } | null;
+  posts: { id: string; status: string; platform: string; account_name: string; permalink: string | null; error: string | null }[];
+};
+export type OwnerAsset = { id: string; label: string; kind: string; url: string };
+export type OwnerMarketing = {
+  campaigns: OwnerCampaign[]; items: OwnerContent[]; social: SocialAccounts;
+  ai: { configured: boolean; daily_limit: number; used_today: number };
+  metrics: { signed_in_accounts: number; stores: number; pro_accounts: number; blog_views: number; published: number; scheduled: number };
+};
+const ownerMarketingPath = "/api/admin/owner/marketing";
+export const marketingCenterApi = {
+  dashboard: (store: string) => request<OwnerMarketing>("GET", ownerMarketingPath, undefined, store),
+  assets: (store: string) => request<{ assets: OwnerAsset[] }>("GET", `${ownerMarketingPath}/assets`, undefined, store),
+  campaign: (store: string, body: Omit<OwnerCampaign, "id">) => request<OwnerCampaign>("POST", `${ownerMarketingPath}/campaigns`, body, store),
+  draft: (store: string, id: string, kind: "social" | "blog") => request<OwnerContent>("POST", `${ownerMarketingPath}/campaigns/${id}/drafts`, { kind }, store),
+  generate: (store: string, id: string) => request<{ items: OwnerContent[] }>("POST", `${ownerMarketingPath}/campaigns/${id}/generate`, {}, store, 180000),
+  save: (store: string, item: OwnerContent) => request<OwnerContent>("PATCH", `${ownerMarketingPath}/content/${item.id}`, item, store),
+  attach: (store: string, item: OwnerContent, asset: string) => request<OwnerContent>("POST", `${ownerMarketingPath}/content/${item.id}/media`, { revision: item.revision, asset_id: asset }, store),
+  approve: (store: string, item: OwnerContent, ids: string[], date: string | null) => request<OwnerContent>("POST", `${ownerMarketingPath}/content/${item.id}/approve`, { revision: item.revision, confirm: true, account_ids: ids, publish_at: date }, store),
+  cancel: (store: string, item: OwnerContent) => request<OwnerContent>("POST", `${ownerMarketingPath}/content/${item.id}/cancel`, { revision: item.revision }, store),
 };

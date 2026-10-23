@@ -51,7 +51,7 @@ export function WebNav() {
     { label: "Membership", href: "/plans", match: (p) => p.startsWith("/plans") },
     { label: "Settings", href: "/settings", match: (p) => p.startsWith("/settings") },
     { label: "Help & support", href: "/support", match: (p) => p === "/support" },
-    ...(me?.owner ? [{ label: "Support inbox (owner)", href: "/support-inbox" as Href, match: (p: string) => p.startsWith("/support-inbox") }] : []),
+    ...(me?.owner ? [{ label: "AI Marketing Center (owner)", href: "/marketing-center" as Href, match: (p: string) => p.startsWith("/marketing-center") }, { label: "Support inbox (owner)", href: "/support-inbox" as Href, match: (p: string) => p.startsWith("/support-inbox") }] : []),
   ] : [
     { label: "Explore Snapfront", href: "/" as Href, match: (p) => p === "/" },
     { label: "Membership", href: "/plans", match: (p) => p.startsWith("/plans") },

@@ -102,6 +102,7 @@ export default function RootLayout() {
         <Stack.Screen name="studio" options={{ title: "Product Photo Cleanup" }} />
         <Stack.Screen name="digital-photo-studio" options={{ title: "Digital Photo Studio" }} />
         <Stack.Screen name="sources" options={{ title: "Supplier directory" }} />
+        <Stack.Screen name="marketing-center" options={{ title: "AI Marketing Center" }} />
         <Stack.Screen name="marketing" options={{ title: "Marketing posts" }} />
         <Stack.Screen name="ai-media" options={{ title: "AI photos & video" }} />
         <Stack.Screen name="insights" options={{ title: "Insights" }} />

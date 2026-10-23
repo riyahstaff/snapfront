@@ -2,6 +2,8 @@ import React, { useId, useState } from "react";
 import { router, type Href } from "expo-router";
 import { fonts, useColors } from "@/lib/theme";
 
+import { useMe } from "@/lib/account-store";
+
 const pages = [
   ["My store", "/store", "Manage your store and products", "dashboard inventory shop products"],
   ["Store look & themes", "/looks", "Choose your store’s design", "themes colors fonts appearance templates design"],
@@ -43,11 +45,13 @@ const pages = [
 export function SiteSearch() {
   const c = useColors();
   const id = useId();
+  const me = useMe();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  const results = pages.map((page) => {
+  const available = me?.owner ? [...pages, ["AI Marketing Center (owner)", "/marketing-center", "Plan and publish Snapfront campaigns", "admin video social blog seo calendar analytics"]] : pages;
+  const results = available.map((page) => {
     const title = page[0].toLowerCase();
     const searchable = `${title} ${page[2]} ${page[3]}`.toLowerCase();
     const score = terms.every((term) => searchable.includes(term)) ? terms.reduce((n, term) => n + (title.includes(term) ? 3 : 1), 0) : -1;
