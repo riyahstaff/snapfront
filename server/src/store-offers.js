@@ -11,7 +11,7 @@ export function validateOffer(seller, input, publishing = false) {
   if (ids.length < (interval ? 1 : 2)) throw httpError(400, interval ? "Choose at least one digital product." : "A bundle needs at least two different products.");
   const products = ids.map((id) => db.prepare("SELECT * FROM products WHERE id=? AND seller_id=?").get(id, seller.id));
   for (const p of products) {
-    if (!p || p.id === input.id || p.kind !== "digital" || p.billing_interval || JSON.parse(p.bundle_product_ids || "[]").length) throw httpError(400, "Choose individual digital products from this store, not other bundles or subscriptions.");
+    if (!p || p.id === input.id || p.kind !== "digital" || p.purchase_method === "external" || p.billing_interval || JSON.parse(p.bundle_product_ids || "[]").length) throw httpError(400, "Choose individual digital products from this store, not other bundles or subscriptions.");
     if (db.prepare("SELECT 1 FROM product_variants WHERE product_id=? LIMIT 1").get(p.id)) throw httpError(400, `Use a product without variants: ${p.title}.`);
     if (p.inventory !== null && p.inventory !== undefined) throw httpError(400, `Set ${p.title} to unlimited stock before including this digital product.`);
     if (!p.delivery_file && !p.delivery_url) throw httpError(400, `Attach a download to ${p.title} first.`);

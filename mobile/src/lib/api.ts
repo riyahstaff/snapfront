@@ -48,6 +48,8 @@ export type StoreOfferInput = { title: string; description: string; price: numbe
 export type StoreSubscription = { id:string; title:string; email:string; status:string; period_end:number; cancel_at_period_end:number; revenue_cents:number };
 export type MiraProposal = { reply:string; photo_tip:string; patch: Partial<Pick<Seller,"theme"|"hero_motion"|"hero_title"|"hero_subtitle"|"hero_eyebrow"|"hero_cta"|"tagline"|"about"|"announcement">> };
 export type Product = Draft & {
+  purchase_method?: "direct" | "external";
+  external_url?: string | null;
   bundle_product_ids?: string[];
   bundle_items?: {id:string;title:string}[];
   billing_interval?: "month" | "year" | null;
@@ -76,6 +78,8 @@ export type PromptLibrary = { count: number; categories: PromptCategory[]; promp
 export type ConnectedApp = { id: string; name: string; site: string | null; connected_at: string; last_used_at: string | null };
 export type ConnectedApps = { apps: ConnectedApp[]; connector_url: string; guide_url: string };
 export type ProductPatch = Partial<Draft> & {
+  purchase_method?: "direct" | "external";
+  external_url?: string | null;
   inventory?: number | null;
   /** What one item costs the seller, for Sales & profit. null clears it. */
   cost?: number | null;

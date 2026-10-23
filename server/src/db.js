@@ -1,4 +1,5 @@
 import Database from "better-sqlite3";
+import { repairTaviPurchase } from "./purchase-repair.js";
 import path from "node:path";
 import crypto from "node:crypto";
 import { config } from "./config.js";
@@ -53,6 +54,9 @@ const addCol = (t, name, def) => { if (!cols(t).has(name)) db.exec(`ALTER TABLE 
 
 addCol("products", "bundle_product_ids", "TEXT NOT NULL DEFAULT '[]'");
 addCol("products", "billing_interval", "TEXT");
+addCol("products", "purchase_method", "TEXT NOT NULL DEFAULT 'direct'");
+addCol("products", "external_url", "TEXT");
+repairTaviPurchase(db);
 // Phase 1 commerce: inventory, variants, tax codes, shipping and tax settings.
 addCol("products", "inventory", "INTEGER");               // NULL = unlimited
 addCol("products", "option_name", "TEXT NOT NULL DEFAULT ''"); // e.g. "Size"; variants hold the values

@@ -17,6 +17,8 @@ export default function ProductScreen() {
   const me = useMe();
   const { id, note } = useLocalSearchParams<{ id: string; note?: string }>();
   const [p, setP] = useState<Product | null>(null);
+  const [purchase, setPurchase] = useState<"external" | "digital" | "self" | "supplier">("self");
+  const [purchaseUrl, setPurchaseUrl] = useState("");
   const [price, setPrice] = useState("");
   const [cost, setCost] = useState("");
   const [was, setWas] = useState("");
@@ -27,6 +29,8 @@ export default function ProductScreen() {
 
   const load = useCallback(() => {
     api.product(id).then((x) => {
+      setPurchase(x.purchase_method === "external" ? "external" : x.kind === "digital" ? "digital" : x.source ? "supplier" : "self");
+      setPurchaseUrl(x.external_url || "");
       setP(x); setPrice(String(x.price)); setCost(x.cost != null ? String(x.cost) : ""); setWas(x.compare_at != null ? x.compare_at.toFixed(2) : "");
       setWords({ title: x.title, tagline: x.tagline, label: x.label ?? "", category: x.category, description: x.description });
     }).catch((e) => setMsg({ text: e instanceof ApiError ? e.message : "Couldn't load this product.", tone: "error" }));
@@ -46,7 +50,7 @@ export default function ProductScreen() {
   return (
     <Screen>
       <Stack.Screen options={{ title: live ? "Live product" : "Draft product" }} />
-      <ProductPreview product={p} imageUri={p.image_url} badge={<Pill text={live ? (p.in_stock ? "Live · taking orders" : "Live · sold out") : "Draft · not visible yet"} tone={live ? (p.in_stock ? "good" : "neutral") : "flash"} />} />
+      <ProductPreview product={p} imageUri={p.image_url} badge={<Pill text={live ? (p.purchase_method === "external" ? "Live · buy on website" : p.in_stock ? "Live · taking orders" : "Live · sold out") : "Draft · not visible yet"} tone={live ? (p.in_stock ? "good" : "neutral") : "flash"} />} />
       {live ? (
         <View style={{ gap: space.sm }}>
           <Button label="Share product link" onPress={() => p.page_url && Share.share({ message: `${p.title} ${p.page_url}`, url: p.page_url })} />
@@ -60,7 +64,7 @@ export default function ProductScreen() {
               <Body muted>This product isn’t in your store yet. Putting products in your store comes with Snapfront membership, with no fees on your sales.</Body>
               <Button label="See membership" variant="flash" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
             </>
-          ) : me && !me.stripe_ready ? (
+          ) : me && !me.stripe_ready && p.purchase_method !== "external" ? (
             <>
               <Body muted>This product isn’t in your store yet. Connect Stripe first so buyers can pay you, then publish. It takes about five minutes.</Body>
               <Button label={me.stripe_connected ? "Finish Stripe setup" : "Connect Stripe"} variant="flash" loading={busy === "stripe"} onPress={() => run("stripe", async () => {
@@ -68,7 +72,7 @@ export default function ProductScreen() {
               })} />
             </>
           ) : (
-            <Body muted>Publishing puts it in your storefront. Buyers add it to their cart and pay through Stripe, straight into your account.</Body>
+            <Body muted>{p.purchase_method === "external" ? "Publishing puts it in your storefront. Buyers use the purchase button to pay on the linked website." : "Publishing puts it in your storefront. Buyers add it to their cart and pay through Stripe, straight into your account."}</Body>
           )}
           <Button label="Publish and start selling" loading={busy === "publish"} onPress={() => run("publish", async () => {
             const next = await api.publish(p.id); setP(next); setMsg({ text: "Published. Share the link to start selling.", tone: "ok" });
@@ -78,6 +82,28 @@ export default function ProductScreen() {
       )}
       {p.bundle_product_ids?.length ? <Button label="Edit included products & billing" variant="secondary" onPress={() => router.push({pathname:"/store-offers",params:{id:p.id}})} /> : null}
       <Notice text={msg?.text ?? null} tone={msg?.tone} />
+      {!p.bundle_product_ids?.length && !p.billing_interval ? <View style={{ gap: space.sm }}>
+        <H2>How will customers receive this product?</H2>
+        <Body muted>Choose where customers buy and who delivers it. Save your choice below.</Body>
+        {([
+          ["external", "Buy on Amazon or another website"],
+          ["digital", "Download a digital file"],
+          ["self", "I ship the product myself"],
+          ["supplier", "A connected supplier makes and ships it"],
+        ] as const).map(([value, label]) => <Button key={value} label={`${purchase === value ? "✓ " : ""}${label}`} variant={purchase === value ? "flash" : "secondary"}
+          disabled={busy !== null || (value === "supplier" ? !p.source : (value === "digital" || value === "self") && Boolean(p.source))} onPress={() => setPurchase(value)} />)}
+        {purchase === "external" ? <>
+          <Field label="Purchase link" hint="Paste the full https:// product link." value={purchaseUrl} onChangeText={setPurchaseUrl} autoCapitalize="none" keyboardType="url" />
+          <Body muted>Amazon links show Buy on Amazon. Other links show Buy on website. Customers pay there; the retailer handles delivery. Snapfront prices and stock are not shown for this item.</Body>
+        </> : purchase === "digital" ? <Body muted>Customers pay through Stripe and receive your attached download. Attach a file or download link before publishing.</Body>
+          : purchase === "supplier" ? <Body muted>Customers pay through Stripe. This product keeps its existing connected supplier fulfillment.</Body>
+          : <Body muted>Customers pay through Stripe. You are responsible for packing and shipping each order.</Body>}
+        {!p.source ? <Body muted>For supplier fulfillment, import a product from a supported connection in Sources first.</Body> : null}
+        <Button label="Save purchase method" loading={busy === "purchase"} disabled={busy !== null} onPress={() => run("purchase", async () => {
+          const next = await api.updateProduct(p.id, { purchase_method: purchase === "external" ? "external" : "direct", external_url: purchase === "external" ? purchaseUrl.trim() : null, kind: purchase === "external" ? p.kind : purchase === "digital" ? "digital" : "physical" });
+          setP(next); setPurchaseUrl(next.external_url || ""); setMsg({ text: "Saved. Your existing store and product link stay the same.", tone: "ok" });
+        })} />
+      </View> : null}
       {p.kind === "digital" && me ? (
         <View style={{ gap: space.sm }}>
           <H2>Digital design</H2>

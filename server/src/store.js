@@ -4,6 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { config, dirs } from "./config.js";
 import { ownsSellerImage as ownsImageFile, sellerImageIsStored } from "./media-ownership.js";
+import { isExternal, cleanPurchaseUrl } from "./purchase-method.js";
 import { db, newId, slugify, uniqueSlug, rowToProduct } from "./db.js";
 import { designPhotoFiles, IMAGE_FILE } from "./storefront-media.js";
 import { generateDigitalProduct, httpError, PRODUCT_TYPES } from "./claude.js";
@@ -151,7 +152,23 @@ export async function updateStoreChecked(seller, b) {
   }
   return updateStore(seller, b);
 }
+function validatePurchase(row, b) {
+  const method = b.purchase_method ?? row.purchase_method ?? "direct";
+  const kind = b.kind ?? row.kind ?? "physical";
+  if (!["direct", "external"].includes(method) || !["digital", "physical"].includes(kind)) throw httpError(400, "Choose a purchase method and product type.");
+  if (row.source && kind !== row.kind) throw httpError(400, "Supplier products keep their original product type.");
+  const externalUrl = method === "external" ? cleanPurchaseUrl(b.external_url ?? row.external_url) : null;
+  const included = JSON.parse(row.bundle_product_ids || "[]");
+  if (method === "external" && (row.billing_interval || included.length)) throw httpError(400, "Bundles and subscriptions use Snapfront checkout.");
+  if (method === "external" && row.id) {
+    const offers = db.prepare("SELECT bundle_product_ids FROM products WHERE seller_id=? AND id!=?").all(row.seller_id, row.id);
+    if (offers.some(p => JSON.parse(p.bundle_product_ids || "[]").includes(row.id))) throw httpError(409, "Remove this product from bundles and subscriptions before switching to an external website.");
+  }
+  if (method === "direct" && kind === "digital" && row.status === "live" && !row.delivery_file && !(b.delivery_url ?? row.delivery_url) && !included.length) throw httpError(400, "Save this product as a draft and attach a download before selling it as a digital product.");
+  return { method, kind, externalUrl };
+}
 export function createProduct(seller, b, deliveryFile = null) {
+  const purchase = validatePurchase({}, b);
   if (b.delivery_url && !/^https:\/\//.test(b.delivery_url)) throw httpError(400, "The download link must start with https://");
   if (b.image_file && !/^[\w-]+\.(jpg|png|webp|gif)$/.test(b.image_file)) throw httpError(400, "Invalid image reference.");
   if (b.image_file && (!ownsImageFile(seller.id, b.image_file) || !fs.existsSync(path.join(dirs.images, b.image_file)))) throw httpError(400, "Upload a photo to this store before using it.");
@@ -164,12 +181,14 @@ export function createProduct(seller, b, deliveryFile = null) {
     JSON.stringify(strList(b.bullets, 6)), JSON.stringify(faqList(b.faq)), JSON.stringify(strList(b.tags, 6, 30).map((t) => t.replace(/^#/, ""))),
     clampStr(b.category, 60), b.kind === "digital" ? "digital" : "physical", cents(b.price), b.image_file || null,
     clampStr(b.alt_text, 200), clampStr(b.seo_description || b.tagline, 160), deliveryFile, b.delivery_url ? clampStr(b.delivery_url, 500) : null);
+  db.prepare("UPDATE products SET purchase_method=?,external_url=? WHERE id=?").run(purchase.method, purchase.externalUrl, id);
   applyCommerceFields(id, b);
   return withPage(seller, db.prepare("SELECT * FROM products WHERE id = ?").get(id));
 }
 
 export function updateProduct(seller, id, b) {
   const row = productRow(seller, id);
+  const purchase = validatePurchase(row, b);
   if (b.delivery_url && !/^https:\/\//.test(b.delivery_url)) throw httpError(400, "The download link must start with https://");
   const next = {
     title: b.title != null ? clampStr(b.title, 120) : row.title,
@@ -182,10 +201,11 @@ export function updateProduct(seller, id, b) {
     tags: Array.isArray(b.tags) ? JSON.stringify(strList(b.tags, 6, 30).map((t) => t.replace(/^#/, ""))) : row.tags,
     faq: Array.isArray(b.faq) ? JSON.stringify(faqList(b.faq)) : row.faq,
   };
-  if (next.price_cents < 50 && row.status === "live") throw httpError(400, "Live products need a price of at least $0.50.");
+  if (purchase.method === "direct" && next.price_cents < 50 && row.status === "live") throw httpError(400, "Live products need a price of at least $0.50.");
   if (b.compare_at !== undefined) compareAtCents(b.compare_at, next.price_cents);
   db.transaction(() => {
     if (row.delivery_url !== next.delivery_url) snapshotProductDownloads(row);
+    db.prepare("UPDATE products SET purchase_method=?,external_url=?,kind=? WHERE id=?").run(purchase.method, purchase.externalUrl, purchase.kind, row.id);
     db.prepare("UPDATE products SET title=?, tagline=?, description=?, category=?, price_cents=?, delivery_url=?, bullets=?, tags=?, faq=? WHERE id=?")
       .run(next.title, next.tagline, next.description, next.category, next.price_cents, next.delivery_url, next.bullets, next.tags, next.faq, row.id);
   })();
@@ -280,6 +300,11 @@ export async function publishProduct(sellerIn, id) {
   let seller = fresh(sellerIn.id);
   const row = productRow(seller, id);
   plans.assertCanPublish(seller);
+  if (isExternal(row)) {
+    validatePurchase(row, {});
+    db.prepare("UPDATE products SET status='live' WHERE id=?").run(row.id);
+    return withPage(seller, productRow(seller, row.id));
+  }
   if (!seller.stripe_account_id) throw httpError(409, "Connect Stripe first so you can get paid.");
   if (!seller.stripe_ready) {
     const ready = await pay.accountReady(seller.stripe_account_id);

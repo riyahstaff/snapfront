@@ -81,6 +81,7 @@ export function priceCart(seller, rawItems, code) {
   for (const it of items) {
     const row = db.prepare("SELECT * FROM products WHERE id = ? AND seller_id = ? AND status = 'live'").get(String(it.product_id || ""), seller.id);
     if (!row) throw httpError(400, "Something in your cart is no longer for sale. Remove it and try again.");
+    if (row.purchase_method === "external") throw httpError(400, `${row.title} is purchased on another website. Remove it from your cart and use its product-page purchase button.`);
     const included = JSON.parse(row.bundle_product_ids || "[]");
     const deliveries = included.length ? validateOffer(seller, row, true).products.map((p) => ({ product_id:p.id,title:p.title })) : null;
     const variants = db.prepare("SELECT * FROM product_variants WHERE product_id = ? ORDER BY position").all(row.id);
