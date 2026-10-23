@@ -29,6 +29,21 @@ async function req(method, route, token, body) {
 const signup = async (name) => (await req("POST", "/api/sellers", null, { store_name: name })).json;
 const image = Buffer.concat([Buffer.from("89504E470D0A1A0A0000000D49484452000000010000000108060000001F15C4890000000D49444154789C63000100000500010D0A2DB40000000049454E44AE426082", "hex"), Buffer.alloc(200)]).toString("base64");
 
+test("older design drafts cannot replace a chosen store name with the onboarding placeholder", async () => {
+  const seller = await signup("Tavi and Friends");
+  const changed = await req("PATCH", "/api/me", seller.token, { store_name: "My Snapfront Store", theme: "noir" });
+  assert.equal(changed.status, 200);
+  assert.equal(changed.json.store_name, "Tavi and Friends");
+  assert.equal(changed.json.theme, "noir");
+  const page = await req("GET", `/s/${changed.json.store_slug}`);
+  assert.equal(page.status, 200);
+  assert.match(page.text, /class="brand"[^>]*>Tavi and Friends<\/a>/);
+  assert.match(page.text, /© \d{4} Snapfront/);
+  assert.doesNotMatch(page.text, /My Snapfront Store/);
+  const renamed = await req("PATCH", "/api/me", seller.token, { store_name: "Tavi's New Store" });
+  assert.equal(renamed.json.store_name, "Tavi's New Store");
+});
+
  test("staged cover and draft preview do not mutate the live storefront", async () => {
   const seller = await signup("Draft boutique");
   const staged = await req("POST", "/api/storefront/photo", seller.token, { imageBase64: image, mediaType: "image/png" });

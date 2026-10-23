@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import path from "node:path";
 import crypto from "node:crypto";
 import { config } from "./config.js";
+import { repairTaviStorefront } from "./storefront-repairs.js";
 
 export const db = new Database(path.join(config.dataDir, "snapfront.db"));
 db.pragma("journal_mode = WAL");
@@ -68,6 +69,8 @@ addCol("sellers", "hero_subtitle", "TEXT NOT NULL DEFAULT ''");
 addCol("sellers", "hero_eyebrow", "TEXT NOT NULL DEFAULT ''");
 addCol("sellers", "hero_cta", "TEXT NOT NULL DEFAULT ''");
 addCol("sellers", "hero_motion", "TEXT NOT NULL DEFAULT 'still'");
+const storefrontRepair = repairTaviStorefront(db);
+if (storefrontRepair.status !== "already_applied") console.info("[storefront-repair]", JSON.stringify(storefrontRepair));
 // A setup photo is private to its seller and does not become the live banner until Apply.
 db.exec(`CREATE TABLE IF NOT EXISTS storefront_photos (
   image_file TEXT PRIMARY KEY,
