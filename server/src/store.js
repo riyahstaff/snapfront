@@ -98,13 +98,17 @@ export function storefrontPatch(seller, b) {
     if (b[key] != null) out[key] = clampStr(b[key], limit).trim();
   }
   if (out.store_name === "") throw httpError(400, "Add a name for your store.");
+  // A draft saved before onboarding must not put the placeholder back over a real name.
+  if (/^my snapfront store$/i.test(out.store_name || "") && seller.store_name?.trim() && !/^my snapfront store$/i.test(seller.store_name.trim())) {
+    out.store_name = seller.store_name;
+  }
   return out;
 }
 
 export function updateStore(seller, b) {
   const hero = storefrontPatch(seller, b);
   return db.transaction(() => {
-  const name = b.store_name != null ? clampStr(b.store_name, 80).trim() : seller.store_name;
+  const name = hero.store_name ?? seller.store_name;
   const tagline = b.tagline != null ? clampStr(b.tagline, 160) : seller.tagline;
   // The address follows the name until the seller picks one; an address they type must be free.
   let slug = seller.store_slug;

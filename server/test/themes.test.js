@@ -61,14 +61,17 @@ test("there are 20 preserved classic and 110 complete independent product-specif
 
 test("every theme renders the store, product and cart pages", () => {
   const p = { id: "p1", slug: "mug", title: "Mug", image_url: "", price_cents: 1200, currency: "usd", variants: [], in_stock: true, status: "live", kind: "physical",
-    tagline: "", category: "", bullets: [], tags: [], faq: [], description: "" };
+    tagline: "", category: "", bullets: [], tags: [], faq: [], description: "Book: https://a.co/d/03F3C84Y" };
   for (const t of THEMES) {
     const store = { store_name: "Fern & Co", store_slug: "fern", tagline: "Plants", theme: t.id, _base: "", stripe_ready: true };
     for (const html of [storePage(store, [p]), productPage(store, p), cartPage(store)]) {
       assert.match(html, new RegExp(`<body class="th-${t.id} `));
       assert.match(html, new RegExp(`family=${t.fonts.display[0].replace(/ /g, "\\+")}`));
       assert.match(html, /Fern &amp; Co/);
+      assert.equal((html.match(/class="brand"[^>]*>Fern &amp; Co<\/a>/g) || []).length, 2);
+      assert.match(html, /© \d{4} Snapfront/);
     }
+    assert.match(productPage(store, p), /href="https:\/\/a.co\/d\/03F3C84Y" target="_blank"/);
   }
 });
 

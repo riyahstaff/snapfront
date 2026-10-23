@@ -238,6 +238,8 @@ h1,h2,h3{font-family:var(--display);font-weight:var(--dw);letter-spacing:var(--d
 .pd .mini{display:grid;gap:10px;padding:18px 0;border-block:1px solid var(--line);font-size:14.5px}
 .pd .mini div{display:flex;gap:12px;align-items:center}.pd .mini svg{flex:none;width:22px;height:22px;color:var(--accent)}
 .pd .desc{display:grid;gap:14px;color:color-mix(in srgb,var(--ink) 84%,var(--bg))}
+.pd .desc p{white-space:pre-line;overflow-wrap:anywhere}
+.pd .desc a{text-decoration:underline;text-underline-offset:3px;color:inherit}
 @media(max-width:820px){.pd{grid-template-columns:1fr}.pd .media{position:static}}
 ul.b{list-style:none;padding:0;margin:0;display:grid;gap:10px}ul.b li{padding-left:28px;position:relative}
 ul.b li::before{content:"";position:absolute;left:2px;top:.45em;width:12px;height:7px;border-left:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(-45deg)}

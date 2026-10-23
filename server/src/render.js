@@ -13,6 +13,7 @@ import { storefrontMediaSlots, storefrontPreviewMediaSlots } from "./storefront-
 import { headTags as pixelTags } from "./pixels.js";
 import { signupBox } from "./audience.js";
 import { programLive } from "./affiliates.js";
+import { linkedDescription } from "./storefront-text.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const money = (cents, cur = "usd") => new Intl.NumberFormat("en-US", { style: "currency", currency: cur.toUpperCase() }).format(cents / 100);
@@ -124,7 +125,7 @@ ${CART_JS(store.store_slug)}${STORE_JS(store)}<main>${body}</main>
 ${signup && !preview && !demo ? signupSection(store) : ""}<footer class="ft"><div class="wrap top"><div><a class="brand" href="${esc(home(store))}">${esc(store.store_name)}</a>${store.tagline ? `<p>${esc(store.tagline)}</p>` : ""}</div>
 <nav aria-label="Shop links"><h4>Shop</h4><a href="${esc(base(store))}/#shop">All products</a>${cats.slice(0, 5).map((c) => `<a href="${esc(catHref(store, c.name))}">${esc(c.name)}</a>`).join("")}</nav>
 <nav aria-label="Help"><h4>Help</h4><a href="${esc(base(store))}/cart">Your cart</a>${store.about ? `<a href="${esc(base(store))}/#about">About us</a>` : ""}${facts?.physical !== false ? `<span>${esc(ship.title)}</span>${ship.where ? `<span>${esc(ship.where)}</span>` : ""}` : ""}<span>Secure checkout by Stripe</span></nav></div>
-<div class="wrap bot"><span>© ${year} ${esc(store.store_name)}</span><span>Made with Snapfront</span></div></footer>
+<div class="wrap bot"><span>© ${year} Snapfront</span><span>Made with Snapfront</span></div></footer>
 ${module ? `<script>(function(){var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;document.querySelectorAll("[data-hero-motion-control]").forEach(function(btn){var hero=btn.closest(".hero");if(!hero||reduce)return;btn.addEventListener("click",function(){var paused=hero.classList.toggle("is-motion-paused");btn.setAttribute("aria-pressed",String(paused));btn.setAttribute("aria-label",paused?"Play hero motion":"Pause hero motion");btn.textContent=paused?"Play motion":"Pause motion"})})})();</script>` : `<script>(function(){if(!("IntersectionObserver" in window)||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
 var els=document.querySelectorAll(".sec-h,.pc,.cat-c,.cat-t,.perk,.feat .pic,.feat .txt,.story .pic,.story .txt,.rev,.lk,.strip a");
 var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{rootMargin:"0px 0px -8% 0px"});
@@ -262,7 +263,7 @@ document.getElementById("now").addEventListener("click",function(){add();locatio
 <div class="info"><div class="cat">${p.kind === "digital" ? "Digital download" : esc(p.category || store.store_name)}</div><h1>${esc(p.title)}</h1>${rv.count ? `<a class="rt" href="#reviews">${stars(rv.avg)} ${rv.avg} (${rv.count})</a>` : ""}
 ${p.compare_at_cents ? `<div class="price"><span id="price">${money(startPrice, p.currency)}${p.billing_interval ? ` / ${esc(p.billing_interval)}` : ""}</span><span id="was"${p.compare_at_cents > startPrice ? "" : " hidden"}>${wasPrice(p, startPrice, true)}</span></div>` : `<div class="price" id="price">${money(startPrice, p.currency)}${p.billing_interval ? ` / ${esc(p.billing_interval)}` : ""}</div>`}${p.billing_interval ? `<p class="fine">Renews automatically ${p.billing_interval === "year" ? "yearly" : "monthly"} until canceled. Access lasts through your paid period. Manage or cancel from your order confirmation.</p>` : ""}${p.bundle_items?.length ? `<section aria-label="Included products"><h2>What's included</h2><ul>${p.bundle_items.map((item)=>`<li>${esc(item.title)}</li>`).join("")}</ul></section>` : ""}${p.tagline ? `<p class="tl">${esc(p.tagline)}</p>` : ""}${opts}${buy}<div id="stock" class="stock" aria-live="polite"></div>
 <div class="mini">${mini.map(([i, t]) => `<div>${i}<span>${esc(t)}</span></div>`).join("")}</div>
-${p.description ? `<div class="desc">${String(p.description).split(/\n\s*\n/).filter(Boolean).map((t) => `<p>${esc(t)}</p>`).join("")}</div>` : ""}
+${p.description ? `<div class="desc">${linkedDescription(p.description)}</div>` : ""}
 ${p.bullets.length ? `<ul class="b">${p.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
 <div>${p.faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}${p.kind === "physical" ? `<details><summary>Shipping</summary><p>${esc(facts.ship.title)}.${facts.ship.where ? ` ${esc(facts.ship.where)}.` : ""} You'll see the shipping cost before you pay.</p></details>` : ""}</div>
 ${p.tags.length ? `<div class="tags">${p.tags.map((t) => `<span>#${esc(t)}</span>`).join("")}</div>` : ""}</div></article></div>
