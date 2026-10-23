@@ -13,6 +13,7 @@ import sharp from "sharp";
 import * as plans from "./plans.js";
 import * as credits from "./credits.js";
 import * as elevenVideo from "./eleven-video.js";
+import * as elevenImage from "./eleven-image.js";
 
 const API = "https://api.runpod.ai/v2";
 const EP = { video: "wan-2-2-i2v-720", scene: "qwen-image-edit-2511" };
@@ -74,13 +75,13 @@ export const presets = () => ({ enabled: enabled(), motions: MOTIONS.map(({ id, 
   engines: PHOTO_ENGINES.map((e) => ({ id: e.id, name: e.name, blurb: e.blurb, credits: photoEnginePrice(e) })) });
 
 /** What the owner sees when Runpod is out of money. */
-export const OWNER_EMPTY = "Runpod is out of money. Initial AI avatar portraits can use the configured ElevenLabs image backup. Product-photo edits, avatar/product composites and photo blends still require Runpod funds. Add funds at runpod.io (Billing).";
+export const OWNER_EMPTY = "Runpod is out of money. Supported images and eligible videos can use the ElevenLabs backup. This request could not use it; check the backup configuration or add funds at runpod.io (Billing).";
 let onEmpty = null, lastEmptyAlert = 0;
 /** Called (at most every 6 hours) when Runpod says the balance is empty. */
 export function onOutOfCredit(fn) { onEmpty = fn; lastEmptyAlert = 0; }
 /** The message to show: the owner's clear one when Runpod is out of money, else the error's own. */
 export const messageFor = (e, account) => (e?.runpod?.status === 402 && credits.isOwner(account) ? OWNER_EMPTY : e?.message);
-async function rp(pathname, body) {
+async function primaryRunpod(pathname, body) {
   if (!enabled()) throw httpError(503, "AI video isn't switched on yet.");
   let res;
   try {
@@ -91,7 +92,7 @@ async function rp(pathname, body) {
   } catch { throw httpError(502, "The AI studio didn't answer. Try again in a moment."); }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 || res.status === 403) { console.error("[runpod] key rejected"); throw httpError(503, "The AI studio isn't set up correctly. We're on it."); }
-  // Runpod's account is out of money: every AI photo and video fails until it's topped up. Members get a
+  // The shared image/video routers may recover this explicit balance rejection. Members get a
   // calm message (nothing they can do), the owner a clear one (see OWNER_EMPTY) and an email.
   if (res.status === 402) {
     console.error("[runpod] insufficient balance");
@@ -108,6 +109,8 @@ async function rp(pathname, body) {
   }
   return data;
 }
+
+const rp = (pathname, body) => elevenImage.route(pathname, body, () => primaryRunpod(pathname, body));
 
 /** Runpod calls and result downloads for other AI tools (faceless avatars), sharing the key, errors and test stand-in. */
 export const runpod = (pathname, body) => rp(pathname, body);
@@ -267,7 +270,7 @@ export async function editNow(imageFile, prompt) {
   const image = `${config.publicUrl}/img/${imageFile}`;
   const r = await rp(`${EP.scene}/runsync`, { input: { images: [image], prompt: `Place this exact product ${prompt}. Professional product photography. ${KEEP}`, size: "1280*1280", output_format: "jpeg", seed: -1 } });
   let out = r;
-  for (let i = 0; i < 30 && out.status !== "COMPLETED" && !["FAILED", "CANCELLED", "TIMED_OUT"].includes(out.status); i++) {
+  for (let i = 0; i < (elevenImage.isBackup(r.id) ? 90 : 30) && out.status !== "COMPLETED" && !["FAILED", "CANCELLED", "TIMED_OUT"].includes(out.status); i++) {
     await new Promise((s) => setTimeout(s, 2000));
     out = await rp(`${EP.scene}/status/${r.id}`);
   }

@@ -1709,7 +1709,7 @@ app.get("/api/trends", (_req, res) => res.json(store.TRENDS));
 
 // Tell the owner by email when Runpod runs out of money (members only see "paused for a little while").
 aimedia.onOutOfCredit(() => snapcare.notifyOwners("Snapfront: Runpod is out of money",
-  "Runpod says the balance is empty. AI photos, avatar images and blends need a top-up at runpod.io (Billing). Eligible video requests can use the ElevenLabs backup when enabled, within its credit reserve and daily limit. Longer motion videos still need Runpod funds."));
+  "Runpod says the balance is empty. Supported AI photos, avatar images, blends and eligible videos can use the ElevenLabs backups when enabled, within their credit reserves and daily limits. Longer motion videos still need Runpod funds."));
 
 /* ---------- errors ---------- */
 app.use((err, req, res, _next) => {
@@ -1736,6 +1736,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
 
 /** Everything the live server does on its own: queues, sweeps, syncs. Never on a backup copy. */
 function startBackgroundWork() {
+  import("./eleven-image.js").then(async (image) => {
+    console.log("[eleven-image] access", JSON.stringify(await image.check()));
+  }).catch(() => console.warn("[eleven-image] access check unavailable"));
   marketingCenter.startWorker();
   marketingAutopilot.startWorker();
   import("./eleven-video.js").then(async (video) => {

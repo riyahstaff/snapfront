@@ -35,6 +35,7 @@ aimedia.setRunpodFetch(async (url, init = {}) => {
 });
 elevenImage.setImageFetch(async (url, init = {}) => {
   const ok = (j) => ({ ok: true, status: 200, json: async () => j });
+  if (url.endsWith("/user/subscription")) return ok({ character_limit: 500000, character_count: 1000 });
   if (url.endsWith("/flows/image")) return ok({ id: "el-avatar-image-test", status: "pending" });
   if (url.endsWith("/flows/image/el-avatar-image-test")) return ok({ id: "el-avatar-image-test", status: "completed", content_url: "https://image.elevenlabs.test/avatar.png", content_mime_type: "image/png" });
   throw new Error(`unexpected ElevenLabs request ${url}`);
