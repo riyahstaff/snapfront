@@ -89,3 +89,58 @@ test("Comfy does not re-submit when the first submission's outcome is uncertain"
     else process.env.COMFY_ROUTER_ENABLED = oldOn;
   }
 });
+
+
+test("Five Comfy engines send the correct native inputs and collect only video assets", async () => {
+  const oldKey = process.env.COMFY_API_KEY, oldOn = process.env.COMFY_ROUTER_ENABLED;
+  process.env.COMFY_API_KEY = "test-secret";
+  process.env.COMFY_ROUTER_ENABLED = "true";
+  const image = "https://snapfront.app/img/my-product.png", prompt = "Slow dolly toward product";
+  const rid = "d759fcdb-73aa-4ed0-988d-b52b254512ab";
+  const models = [
+    ["wan/wan2.6-i2v", { input: { prompt, img_url: image }, parameters: { duration: 5, resolution: "720P" } },
+      { output: { video_url: "https://cdn.test/wan26.mp4" } }],
+    ["wan/wan2.7-i2v", { input: { prompt, media: [{ type: "first_frame", url: image }] }, parameters: { duration: 5, resolution: "720P" } },
+      { output: { video_url: "https://cdn.test/wan27.mp4" } }],
+    ["minimax/minimax-h3", { content: [{ type: "text", text: prompt }, { type: "image_url", role: "first_frame", image_url: { url: image } }], duration: 5, resolution: "768P" },
+      { task: { status: "succeeded", content: { url: "https://cdn.test/minimax.mp4" } } }],
+    ["byteplus/dreamina-seedance-2-5-260628", { content: [{ type: "text", text: prompt }, { type: "image_url", role: "first_frame", image_url: { url: image } }],
+      duration: 5, ratio: "adaptive", resolution: "720p", generate_audio: false, output_format: "mp4" },
+      { status: "succeeded", content: { video_url: "https://cdn.test/seedance.mp4", last_frame_url: "https://cdn.test/thumbnail.png" } }],
+    ["kling/kling-video-o1", { prompt, image_list: [{ type: "first_frame", image_url: image }], duration: "5", mode: "std" },
+      { code: 0, data: { task_status: "succeed", task_result: { videos: [{ url: "https://cdn.test/kling.mp4" }] } } }],
+  ];
+  const requests = [];
+  const ok = (status, data) => ({ ok: status >= 200 && status < 300, status, json: async () => data });
+  let native;
+  comfy.setComfyFetch(async (url, opts) => {
+    requests.push({ url, opts });
+    if (opts.method === "POST") return ok(201, { request_id: rid });
+    if (url.endsWith("/status")) return ok(200, { status: "COMPLETED" });
+    return ok(200, native);
+  });
+  try {
+    assert.equal(comfy.VIDEO_MODELS.length, 5);
+    for (const [modelId, expected, result] of models) {
+      native = result;
+      const queued = await comfy.submitProductVideo({ modelId, image, prompt,
+        idempotencyKey: "7083e164-1b7d-4828-80fa-0129bd299d35" });
+      assert.equal(queued.requestId, rid);
+      assert.deepEqual(JSON.parse(requests.at(-1).opts.body), expected);
+      assert.equal(requests.at(-1).url, "https://api.comfy.org/v2/models/" + modelId + "/requests");
+      const video = await comfy.pollProductVideo(rid, modelId);
+      assert.equal(video.status, "COMPLETED");
+      assert.match(video.output.video_url, /\.mp4$/);
+    }
+    await assert.rejects(comfy.submitProductVideo({ modelId: "bad/unknown", image, prompt,
+      idempotencyKey: "7083e164-1b7d-4828-80fa-0129bd299d35" }), /not supported/);
+    native = { content: { last_frame_url: "https://cdn.test/frame.png" }, status: "succeeded" };
+    const bad = await comfy.pollProductVideo(rid, "byteplus/dreamina-seedance-2-5-260628");
+    assert.equal(bad.status, "FAILED", "Never mistake a preview thumbnail for an MP4");
+  } finally {
+    if (oldKey === undefined) delete process.env.COMFY_API_KEY;
+    else process.env.COMFY_API_KEY = oldKey;
+    if (oldOn === undefined) delete process.env.COMFY_ROUTER_ENABLED;
+    else process.env.COMFY_ROUTER_ENABLED = oldOn;
+  }
+});
