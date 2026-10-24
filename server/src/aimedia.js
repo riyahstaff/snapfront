@@ -87,7 +87,7 @@ const reserveComfy = (jobId) => db.transaction(() => {
 })();
 export const presets = (account) => ({ enabled: enabled(), motions: MOTIONS.map(({ id, name }) => ({ id, name })), scenes: SCENES.map(({ id, name }) => ({ id, name })),
   engines: PHOTO_ENGINES.map((e) => ({ id: e.id, name: e.name, blurb: e.blurb, credits: photoEnginePrice(e) })),
-  ...(comfyForOwner(account) ? { video_providers: [{ id: "runpod", name: "Existing studio" }, { id: "comfy", name: "Comfy Wan 2.6 (test)" }] } : {}),
+  ...(comfyForOwner(account) ? { video_providers: [{ id: "runpod", name: "Existing studio" }, { id: "comfy", name: "Wan 2.6" }] } : {}),
 });
 
 /** What the owner sees when Runpod is out of money. */
