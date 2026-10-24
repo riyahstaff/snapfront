@@ -117,7 +117,7 @@ export default function AiMediaScreen() {
               </Pressable>
             ))}
           </View>
-          {videoProvider === "comfy" ? <Body muted>Owner-only Comfy test. Uses your Comfy developer credits, with a daily request cap.</Body> : null}
+          {videoProvider === "comfy" ? <Body muted>Uses your connected provider credits. Generation is limited to one request per day while the new video engine is being validated.</Body> : null}
         </View>
       ) : null}
       {videoLocked ? (
@@ -181,7 +181,12 @@ function JobCard({ job, product, onMsg }: { job: AiJob; product?: Product; onMsg
   );
 }
 function Clip({ url, width }: { url: string; width: number }) {
-  const player = useVideoPlayer(url, (p) => { p.loop = true; p.muted = true; p.play(); });
-  const style = useMemo(() => ({ width, height: (width * 16) / 9, borderRadius: radius.md, alignSelf: "center" as const }), [width]);
-  return <VideoView player={player} style={style} contentFit="cover" nativeControls={false} />;
+  // Browser autoplay is frequently blocked. Let customers explicitly tap Play/Pause,
+  // seek and replay using the native controls on web, Android and iOS.
+  const player = useVideoPlayer(url, (p) => { p.loop = true; });
+  const style = useMemo(() => ({
+    width, height: (width * 16) / 9, borderRadius: radius.md, alignSelf: "center" as const,
+    backgroundColor: "#000",
+  }), [width]);
+  return <VideoView player={player} style={style} contentFit="contain" nativeControls />;
 }
