@@ -25,6 +25,7 @@ export default function AiMediaScreen() {
   const [mode, setMode] = useState<"scene" | "video">("scene");
   const [preset, setPreset] = useState<string | null>(null);
   const [engine, setEngine] = useState("standard");
+  const [videoProvider, setVideoProvider] = useState("runpod");
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
@@ -53,7 +54,7 @@ export default function AiMediaScreen() {
     if (!product?.image_file) return;
     setBusy(true); setMsg(null);
     try {
-      const job = await api.startAiMedia({ kind: mode, image_file: product.image_file, preset: preset ?? undefined, prompt: preset ? undefined : prompt.trim(), engine: mode === "scene" ? engine : undefined });
+      const job = await api.startAiMedia({ kind: mode, image_file: product.image_file, preset: preset ?? undefined, prompt: preset ? undefined : prompt.trim(), engine: mode === "scene" ? engine : undefined, video_provider: mode === "video" ? videoProvider : undefined });
       setJobs((j) => [job, ...j]);
       account.refresh().catch(() => {});
       setMsg({ text: mode === "video" ? "Making your clip. It takes a minute or two." : "Making your photo. It takes about 20 seconds.", tone: "info" });
@@ -102,6 +103,23 @@ export default function AiMediaScreen() {
           placeholder={mode === "video" ? "steam rises slowly from the mug" : "a woman at a vanity applying this eyeliner"} /> : null}
       </View>
       {mode === "scene" ? <EnginePicker engines={presets?.engines} value={engine} onChange={setEngine} /> : null}
+      {mode === "video" && presets.video_providers?.length ? (
+        <View style={{ gap: space.sm }}>
+          <H2>Video provider</H2>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+            {presets.video_providers.map((provider) => (
+              <Pressable key={provider.id} onPress={() => setVideoProvider(provider.id)}
+                accessibilityRole="radio" accessibilityState={{ selected: videoProvider === provider.id }}
+                style={{ borderRadius: radius.pill, paddingVertical: 10, paddingHorizontal: 14,
+                  backgroundColor: c.surface, borderWidth: videoProvider === provider.id ? 2 : 1,
+                  borderColor: videoProvider === provider.id ? c.accent : c.line }}>
+                <Text style={[type.label, { color: c.ink }]}>{provider.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {videoProvider === "comfy" ? <Body muted>Owner-only Comfy test. Uses your Comfy developer credits, with a daily request cap.</Body> : null}
+        </View>
+      ) : null}
       {videoLocked ? (
         <Button label="See membership" variant="flash" onPress={() => router.push({ pathname: "/plans", params: { highlight: "pro" } })} />
       ) : (
