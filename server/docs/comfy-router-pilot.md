@@ -6,7 +6,7 @@ This is a gated **additional provider** for the existing Snapfront AI Media prod
 
 - Comfy model discovery: `GET /api/admin/owner/comfy/models` and `GET /api/admin/owner/comfy/schema?model=wan/wan2.6-i2v`. Both require the signed-in Snapfront owner.
 - Video submit: `POST /api/ai-media` with `kind:"video"`, an owned `image_file`, a preset or prompt, and `video_provider:"comfy"`.
-- The fixed initial model is `wan/wan2.6-i2v`, 5 seconds, 720P, with the product photo as `input.img_url` and motion as `input.prompt`. The payload and queued endpoint are from Comfy's published Wan 2.6 Router contract.
+- Five image-to-video engines are available for the owner in the existing Video engine selector: Wan 2.6, Wan 2.7, MiniMax H3, Seedance 2.5, and Kling Video O1. Each maps the product photo, motion prompt, and five-second duration into that model's documented native Comfy Router input schema. Generated MP4s are extracted using the model-specific result schema, avoiding confusion with image thumbnails.
 - Only the Snapfront owner may select Comfy. Each submission has a durable, unique idempotency key saved in the existing media job. The submitted Comfy request ID is saved and polled without re-submitting the job.
 - On successful completion, the video is copied into Snapfront's existing /data media store. Accepted jobs can still be polled after new submissions have been disabled.
 - The existing Snapfront plan allowance and failure refund path are reused. Owner media remains free in Snapfront accounting, **but Comfy credits are billed to the owner's Comfy workspace**.
@@ -31,3 +31,11 @@ The Comfy provider is offered in the AI Media screen **only when all three condi
 **Ambiguous submission handling:** a network timeout may happen after Comfy has accepted and billed a job. The client explicitly does **not** automatically re-submit a new generation. Reconcile such submissions in Comfy Activity before retrying.
 
 Reference: https://docs.comfy.org/development/comfy-router/models/wan/wan2-6-i2v/code
+
+## Business billing: separate Snapfront and provider ledgers
+
+Snapfront customer credits are **not** Comfy credits and cannot be transferred into Comfy by a Stripe payment. The customer's purchase increases the existing Snapfront `credit_ledger`; provider bills its own Comfy credit balance separately. Never expose `COMFY_API_KEY` to customers.
+
+**This five-model rollout is owner-only.** Before opening a model to customers, measure actual charges and set server-side credit prices per model, charge Snapfront credits transactionally before submitting, refund once when a job fails, and show the customer the price. Track owner/provider cost and gross margin per job; stop or fall back only when a submission is definitely rejected and the customer has opted into that fallback. The daily limit remains in force. Comfy top-ups and optional subscription payments are handled by Comfy's checkout (Stripe is supported), but **automatic threshold-based Comfy credit replenishment has not been verified**. Do not claim that funding will refill automatically without confirmation from Comfy.
+
+Prices must be verified against live Comfy model catalog before accepting customer-paid generations. Existing RunPod stays an option.

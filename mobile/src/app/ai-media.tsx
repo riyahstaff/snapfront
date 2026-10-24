@@ -54,7 +54,8 @@ export default function AiMediaScreen() {
     if (!product?.image_file) return;
     setBusy(true); setMsg(null);
     try {
-      const job = await api.startAiMedia({ kind: mode, image_file: product.image_file, preset: preset ?? undefined, prompt: preset ? undefined : prompt.trim(), engine: mode === "scene" ? engine : undefined, video_provider: mode === "video" ? videoProvider : undefined });
+      const job = await api.startAiMedia({ kind: mode, image_file: product.image_file, preset: preset ?? undefined, prompt: preset ? undefined : prompt.trim(), engine: mode === "scene" ? engine : undefined, video_provider: mode === "video" ? (videoProvider.startsWith("comfy:") ? "comfy" : videoProvider) : undefined,
+        video_model: mode === "video" && videoProvider.startsWith("comfy:") ? videoProvider.slice("comfy:".length) : undefined });
       setJobs((j) => [job, ...j]);
       account.refresh().catch(() => {});
       setMsg({ text: mode === "video" ? "Making your clip. It takes a minute or two." : "Making your photo. It takes about 20 seconds.", tone: "info" });
@@ -105,7 +106,7 @@ export default function AiMediaScreen() {
       {mode === "scene" ? <EnginePicker engines={presets?.engines} value={engine} onChange={setEngine} /> : null}
       {mode === "video" && presets.video_providers?.length ? (
         <View style={{ gap: space.sm }}>
-          <H2>Video provider</H2>
+          <H2>Video engine</H2>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
             {presets.video_providers.map((provider) => (
               <Pressable key={provider.id} onPress={() => setVideoProvider(provider.id)}
@@ -117,7 +118,10 @@ export default function AiMediaScreen() {
               </Pressable>
             ))}
           </View>
-          {videoProvider === "comfy" ? <Body muted>Uses your connected provider credits. Generation is limited to one request per day while the new video engine is being validated.</Body> : null}
+          {videoProvider.startsWith("comfy:") ? (
+            <Body muted>{presets.video_providers.find((p) => p.id === videoProvider)?.description || "AI video generation"}.
+              Uses your connected provider balance. The owner-only daily safety limit still applies.</Body>
+          ) : null}
         </View>
       ) : null}
       {videoLocked ? (
