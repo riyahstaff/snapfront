@@ -197,7 +197,7 @@ export type SocialPublishInput = { render_id: string; caption: string; account_i
 /** AI video clips and lifestyle photos (Runpod) */
 /** A photo AI: Standard (included) or a premium Nano Banana model (credits). */
 export type PhotoEngine = { id: string; name: string; blurb: string; credits: number };
-export type AiPresets = { enabled: boolean; motions: { id: string; name: string }[]; scenes: { id: string; name: string }[]; engines?: PhotoEngine[]; video_providers?: { id: string; name: string }[] };
+export type AiPresets = { enabled: boolean; motions: { id: string; name: string }[]; scenes: { id: string; name: string }[]; engines?: PhotoEngine[]; video_providers?: { id: string; name: string; description?: string }[] };
 export type AiJob = { id: string; kind: "video" | "scene"; status: "queued" | "running" | "done" | "failed"; error: string | null; created_at: string; url?: string; file?: string; image_file?: string };
 /** Avatars: an original AI character, your own photo or a blend of two, and shots of it with a product. */
 export type AvatarJobStatus = "queued" | "running" | "done" | "failed";
@@ -535,7 +535,7 @@ export const api = {
   cancelSocialPost: (id: string, storeId?: string) => request<SocialPosts>("POST", `/api/social/posts/${encodeURIComponent(id)}/cancel`, undefined, storeId),
   retrySocialPost: (id: string, storeId?: string) => request<SocialPosts>("POST", `/api/social/posts/${encodeURIComponent(id)}/retry`, undefined, storeId),
   aiMedia: () => request<AiPresets & { jobs: AiJob[] }>("GET", "/api/ai-media"),
-  startAiMedia: (input: { kind: "video" | "scene"; image_file: string; preset?: string; prompt?: string; engine?: string; video_provider?: string }) => request<AiJob>("POST", "/api/ai-media", input),
+  startAiMedia: (input: { kind: "video" | "scene"; image_file: string; preset?: string; prompt?: string; engine?: string; video_provider?: string; video_model?: string }) => request<AiJob>("POST", "/api/ai-media", input),
   aiJob: (id: string) => request<AiJob>("GET", `/api/ai-media/${id}`),
   avatars: () => request<AvatarStudio>("GET", "/api/avatars"),
   createAvatar: (input: { style: string; name?: string; look?: string }) => request<Avatar>("POST", "/api/avatars", input),
