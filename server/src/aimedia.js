@@ -87,7 +87,7 @@ const reserveComfy = (jobId) => db.transaction(() => {
 })();
 export const presets = (account) => ({ enabled: enabled(), motions: MOTIONS.map(({ id, name }) => ({ id, name })), scenes: SCENES.map(({ id, name }) => ({ id, name })),
   engines: PHOTO_ENGINES.map((e) => ({ id: e.id, name: e.name, blurb: e.blurb, credits: photoEnginePrice(e) })),
-  ...(comfyForOwner(account) ? { video_providers: [{ id: "runpod", name: "Existing studio" }, { id: "comfy", name: "Wan 2.6" }] } : {}),
+  ...(comfyForOwner(account) ? { video_providers: [{ id: "runpod", name: "Existing studio" }, ...comfyRouter.VIDEO_MODELS.map((m) => ({ id: `comfy:${m.id}`, name: m.name, description: m.note }))] } : {}),
 });
 
 /** What the owner sees when Runpod is out of money. */
@@ -175,7 +175,7 @@ export function resultUrl(output, kind) {
 }
 
 /** Start an AI video or scene. Counts against the plan when it starts; refunded if it fails. */
-export async function start(account, seller, { kind, image_file, preset, prompt, engine, video_provider }) {
+export async function start(account, seller, { kind, image_file, preset, prompt, engine, video_provider, video_model }) {
   kind = kindOf(kind);
   const list = kind === "video" ? MOTIONS : SCENES;
   const p = preset ? list.find((m) => m.id === preset) : null;
@@ -185,7 +185,8 @@ export async function start(account, seller, { kind, image_file, preset, prompt,
   const useComfy = kind === "video" && video_provider === "comfy";
   if (kind === "video" && video_provider && !["runpod", "comfy"].includes(video_provider))
     throw httpError(400, "That video provider is not available.");
-  if (useComfy && !comfyForOwner(account)) throw httpError(403, "Comfy is not yet available for your account.");
+  if (useComfy && !comfyForOwner(account)) throw httpError(403, "This model is not available for your account.");
+  const modelId = useComfy ? comfyRouter.assertVideoModel(video_model || comfyRouter.VIDEO_MODEL) : null;
   const image = publicImage(seller, image_file);
   const eng = kind === "scene" ? PHOTO_ENGINES.find((e) => e.id === (engine || "standard")) : PHOTO_ENGINES[0];
   if (!eng) throw httpError(400, "That photo engine isn't available.");
@@ -197,17 +198,17 @@ export async function start(account, seller, { kind, image_file, preset, prompt,
         num_inference_steps: 30, guidance: 5, flow_shift: 5, enable_prompt_optimization: false, enable_safety_checker: true }
     : premium ? eng.input(image, `Create a photorealistic lifestyle photo for an online store: ${p ? p.prompt : custom}. ${KEEP}`)
     : { images: [image], prompt: `Create a photorealistic lifestyle photo for an online store: ${p ? p.prompt : custom}. ${KEEP}`, size: "1024*1280", output_format: "jpeg", seed: -1 };
-  const endpoint = useComfy ? `comfy:${comfyRouter.VIDEO_MODEL}` : (premium ? eng.endpoint() : EP[kind]);
+  const endpoint = useComfy ? `comfy:${modelId}` : (premium ? eng.endpoint() : EP[kind]);
   const id = newId("job");
   const comfyKey = useComfy ? crypto.randomUUID() : null;
   if (useComfy) reserveComfy(id);
   if (premium) credits.spend(account, photoEnginePrice(eng), id, `${eng.name} photo`);
-  db.prepare("INSERT INTO media_jobs (id, seller_id, account_id, kind, input, endpoint) VALUES (?,?,?,?,?,?)").run(id, seller.id, account.id, kind, JSON.stringify({ ...input, preset: p?.id || null, engine: eng.id, ...(useComfy ? { video_provider: "comfy", comfy_idempotency_key: comfyKey } : {}) }), endpoint);
+  db.prepare("INSERT INTO media_jobs (id, seller_id, account_id, kind, input, endpoint) VALUES (?,?,?,?,?,?)").run(id, seller.id, account.id, kind, JSON.stringify({ ...input, preset: p?.id || null, engine: eng.id, ...(useComfy ? { video_provider: "comfy", video_model: modelId, comfy_idempotency_key: comfyKey } : {}) }), endpoint);
   if (!premium) plans.recordUsage(account, kind);
   try {
     const primary = () => rp(`${endpoint}/run`, { input });
     const r = useComfy
-      ? { id: (await comfyRouter.submitProductVideo({ image, prompt: input.prompt, idempotencyKey: comfyKey })).requestId }
+      ? { id: (await comfyRouter.submitProductVideo({ image, prompt: input.prompt, idempotencyKey: comfyKey, modelId })).requestId }
       : kind === "video" ? await elevenVideo.submit(id, primary, {
         kind: "motion", imageFile: image_file, prompt: input.prompt, duration: 5, resolution: "720p", sound: false,
       }) : await primary();
@@ -234,7 +235,7 @@ export async function poll(id = null) {
     polling.add(job.id);
     try {
       const backup = elevenVideo.backupFor(job.id);
-      const r = backup ? await elevenVideo.poll(job.id) : job.endpoint?.startsWith("comfy:") ? await comfyRouter.pollProductVideo(job.runpod_id) : await rp(`${job.endpoint || EP[job.kind]}/status/${job.runpod_id}`);
+      const r = backup ? await elevenVideo.poll(job.id) : job.endpoint?.startsWith("comfy:") ? await comfyRouter.pollProductVideo(job.runpod_id, job.endpoint.slice("comfy:".length)) : await rp(`${job.endpoint || EP[job.kind]}/status/${job.runpod_id}`);
       if (r.status === "COMPLETED") {
         const url = resultUrl(r.output, job.kind);
         if (!url) {
