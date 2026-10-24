@@ -37,7 +37,7 @@ jobs:
           node --check server/src/aimedia.js
           node --check server/src/index.js
       - name: Test Comfy Router (mocked, no API usage)
-        run: npm --prefix server exec -- node --test test/comfy-router.test.js
+        run: cd server && node --test test/comfy-router.test.js
       - name: Install frontend dependencies
         run: npm ci --prefix mobile --no-audit --no-fund
       - name: Type check frontend
