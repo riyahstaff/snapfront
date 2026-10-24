@@ -972,7 +972,7 @@ app.get("/api/social/posts", auth, (req, res) => res.json(social.posts(req.selle
 app.post("/api/social/posts", auth, (req, res) => res.status(201).json(social.createPosts(req.seller, req.body || {})));
 app.post("/api/social/posts/:id/cancel", auth, (req, res) => res.json(social.cancelPost(req.seller, req.params.id)));
 app.post("/api/social/posts/:id/retry", auth, (req, res) => res.json(social.retryPost(req.seller, req.params.id)));
-app.get("/api/ai-media", auth, (req, res) => res.json({ ...aimedia.presets(), jobs: aimedia.jobsFor(req.seller) }));
+app.get("/api/ai-media", auth, (req, res) => res.json({ ...aimedia.presets(req.account), jobs: aimedia.jobsFor(req.seller) }));
 app.post("/api/ai-media", auth, aiLimit, wrap(async (req, res) => res.status(201).json(await aimedia.start(req.account, req.seller, req.body || {}))));
 app.get("/api/ai-media/:id", auth, wrap(async (req, res) => {
   aimedia.jobFor(req.seller, req.params.id);
