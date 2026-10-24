@@ -94,7 +94,8 @@ async function videoRead(path) {
 }
 
 export async function pollProductVideo(requestId) {
-  if (!generationEnabled()) throw new Error("Comfy video access is paused.");
+  // Already accepted jobs must remain collectible when new paid submissions are switched off.
+  if (!configured()) throw new Error("Comfy API key is unavailable for polling.");
   if (!REQUEST_ID.test(String(requestId || ""))) throw new Error("Invalid Comfy request ID.");
   const { data } = await videoRead(`${encodeURIComponent(requestId)}/status`);
   if (data.status === "IN_QUEUE" || data.status === "IN_PROGRESS") return { status: "IN_PROGRESS" };
