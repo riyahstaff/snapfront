@@ -14,12 +14,13 @@ import * as plans from "./plans.js";
 import * as credits from "./credits.js";
 import * as elevenVideo from "./eleven-video.js";
 import * as elevenImage from "./eleven-image.js";
+import * as comfyRouter from "./comfy-router.js";
 
 const API = "https://api.runpod.ai/v2";
 const EP = { video: "wan-2-2-i2v-720", scene: "qwen-image-edit-2511" };
 let fetchImpl = (...a) => fetch(...a);
 export function setRunpodFetch(f) { fetchImpl = f; }   // tests
-export const enabled = () => Boolean(config.runpodKey);
+export const enabled = () => Boolean(config.runpodKey || comfyRouter.generationEnabled());
 
 db.exec(`CREATE TABLE IF NOT EXISTS media_jobs (
   id TEXT PRIMARY KEY,
@@ -71,8 +72,23 @@ export const PHOTO_ENGINES = [
     input: (image, prompt) => ({ images: [image], prompt, resolution: "2k", aspect_ratio: "4:5", output_format: "jpeg" }) },
 ];
 export const photoEnginePrice = (e) => (e.usd ? credits.creditsFor(e.usd) : 0);
-export const presets = () => ({ enabled: enabled(), motions: MOTIONS.map(({ id, name }) => ({ id, name })), scenes: SCENES.map(({ id, name }) => ({ id, name })),
-  engines: PHOTO_ENGINES.map((e) => ({ id: e.id, name: e.name, blurb: e.blurb, credits: photoEnginePrice(e) })) });
+const comfyDailyLimit = () => {
+  const n = Number(process.env.COMFY_ROUTER_DAILY_LIMIT || 0);
+  return Number.isSafeInteger(n) ? Math.max(0, Math.min(10, n)) : 0;
+};
+const comfyForOwner = (account) => credits.isOwner(account) && comfyRouter.generationEnabled() && comfyDailyLimit() > 0;
+db.exec(`CREATE TABLE IF NOT EXISTS comfy_video_attempts (
+  job_id TEXT PRIMARY KEY, created_at TEXT NOT NULL DEFAULT (datetime('now'))
+)`);
+const reserveComfy = (jobId) => db.transaction(() => {
+  const n = db.prepare("SELECT COUNT(*) AS n FROM comfy_video_attempts WHERE created_at >= date('now')").get().n;
+  if (n >= comfyDailyLimit()) throw httpError(429, "Comfy's daily test limit has been reached.");
+  db.prepare("INSERT INTO comfy_video_attempts (job_id) VALUES (?)").run(jobId);
+})();
+export const presets = (account) => ({ enabled: enabled(), motions: MOTIONS.map(({ id, name }) => ({ id, name })), scenes: SCENES.map(({ id, name }) => ({ id, name })),
+  engines: PHOTO_ENGINES.map((e) => ({ id: e.id, name: e.name, blurb: e.blurb, credits: photoEnginePrice(e) })),
+  ...(comfyForOwner(account) ? { video_providers: [{ id: "runpod", name: "Existing studio" }, { id: "comfy", name: "Comfy Wan 2.6 (test)" }] } : {}),
+});
 
 /** What the owner sees when Runpod is out of money. */
 export const OWNER_EMPTY = "Runpod is out of money. Supported images and eligible videos can use the ElevenLabs backup. This request could not use it; check the backup configuration or add funds at runpod.io (Billing).";
@@ -159,13 +175,17 @@ export function resultUrl(output, kind) {
 }
 
 /** Start an AI video or scene. Counts against the plan when it starts; refunded if it fails. */
-export async function start(account, seller, { kind, image_file, preset, prompt, engine }) {
+export async function start(account, seller, { kind, image_file, preset, prompt, engine, video_provider }) {
   kind = kindOf(kind);
   const list = kind === "video" ? MOTIONS : SCENES;
   const p = preset ? list.find((m) => m.id === preset) : null;
   if (preset && !p) throw httpError(400, "That option isn't available.");
   const custom = String(prompt || "").replace(/\s+/g, " ").trim().slice(0, 300);
   if (!p && custom.length < 3) throw httpError(400, kind === "video" ? "Pick a motion or describe one." : "Pick a scene or describe one.");
+  const useComfy = kind === "video" && video_provider === "comfy";
+  if (kind === "video" && video_provider && !["runpod", "comfy"].includes(video_provider))
+    throw httpError(400, "That video provider is not available.");
+  if (useComfy && !comfyForOwner(account)) throw httpError(403, "Comfy is not yet available for your account.");
   const image = publicImage(seller, image_file);
   const eng = kind === "scene" ? PHOTO_ENGINES.find((e) => e.id === (engine || "standard")) : PHOTO_ENGINES[0];
   if (!eng) throw httpError(400, "That photo engine isn't available.");
@@ -177,16 +197,20 @@ export async function start(account, seller, { kind, image_file, preset, prompt,
         num_inference_steps: 30, guidance: 5, flow_shift: 5, enable_prompt_optimization: false, enable_safety_checker: true }
     : premium ? eng.input(image, `Create a photorealistic lifestyle photo for an online store: ${p ? p.prompt : custom}. ${KEEP}`)
     : { images: [image], prompt: `Create a photorealistic lifestyle photo for an online store: ${p ? p.prompt : custom}. ${KEEP}`, size: "1024*1280", output_format: "jpeg", seed: -1 };
-  const endpoint = premium ? eng.endpoint() : EP[kind];
+  const endpoint = useComfy ? `comfy:${comfyRouter.VIDEO_MODEL}` : (premium ? eng.endpoint() : EP[kind]);
   const id = newId("job");
+  const comfyKey = useComfy ? crypto.randomUUID() : null;
+  if (useComfy) reserveComfy(id);
   if (premium) credits.spend(account, photoEnginePrice(eng), id, `${eng.name} photo`);
-  db.prepare("INSERT INTO media_jobs (id, seller_id, account_id, kind, input, endpoint) VALUES (?,?,?,?,?,?)").run(id, seller.id, account.id, kind, JSON.stringify({ ...input, preset: p?.id || null, engine: eng.id }), endpoint);
+  db.prepare("INSERT INTO media_jobs (id, seller_id, account_id, kind, input, endpoint) VALUES (?,?,?,?,?,?)").run(id, seller.id, account.id, kind, JSON.stringify({ ...input, preset: p?.id || null, engine: eng.id, ...(useComfy ? { video_provider: "comfy", comfy_idempotency_key: comfyKey } : {}) }), endpoint);
   if (!premium) plans.recordUsage(account, kind);
   try {
     const primary = () => rp(`${endpoint}/run`, { input });
-    const r = kind === "video" ? await elevenVideo.submit(id, primary, {
-      kind: "motion", imageFile: image_file, prompt: input.prompt, duration: 5, resolution: "720p", sound: false,
-    }) : await primary();
+    const r = useComfy
+      ? { id: (await comfyRouter.submitProductVideo({ image, prompt: input.prompt, idempotencyKey: comfyKey })).requestId }
+      : kind === "video" ? await elevenVideo.submit(id, primary, {
+        kind: "motion", imageFile: image_file, prompt: input.prompt, duration: 5, resolution: "720p", sound: false,
+      }) : await primary();
     db.prepare("UPDATE media_jobs SET status='running', runpod_id=?, updated_at=datetime('now') WHERE id=?").run(r.id, id);
   } catch (e) { fail(id, e.message); throw e; }
   return view(db.prepare("SELECT * FROM media_jobs WHERE id = ?").get(id));
@@ -210,7 +234,7 @@ export async function poll(id = null) {
     polling.add(job.id);
     try {
       const backup = elevenVideo.backupFor(job.id);
-      const r = backup ? await elevenVideo.poll(job.id) : await rp(`${job.endpoint || EP[job.kind]}/status/${job.runpod_id}`);
+      const r = backup ? await elevenVideo.poll(job.id) : job.endpoint?.startsWith("comfy:") ? await comfyRouter.pollProductVideo(job.runpod_id) : await rp(`${job.endpoint || EP[job.kind]}/status/${job.runpod_id}`);
       if (r.status === "COMPLETED") {
         const url = resultUrl(r.output, job.kind);
         if (!url) {
@@ -241,12 +265,12 @@ export async function poll(id = null) {
       } else if (["FAILED", "CANCELLED", "TIMED_OUT"].includes(r.status)) {
         console.warn("[runpod] job", job.id, r.status, JSON.stringify(r.error || r.output || "").slice(0, 600));
         fail(job.id, "The AI couldn't make this one. Try a different photo or option.");
-      } else if (Date.now() - Date.parse(`${job.created_at}Z`) > 20 * 60_000) {
+      } else if (Date.now() - Date.parse(`${job.created_at}Z`) > (job.endpoint?.startsWith("comfy:") ? 60 : 20) * 60_000) {
         fail(job.id, "This took too long. Try again.");
       }
     } catch (e) {
       console.warn("[runpod] poll", job.id, e.message);
-      if (Date.now() - Date.parse(`${job.created_at}Z`) > 20 * 60_000) fail(job.id, "This took too long. Try again.");
+      if (Date.now() - Date.parse(`${job.created_at}Z`) > (job.endpoint?.startsWith("comfy:") ? 60 : 20) * 60_000) fail(job.id, "This took too long. Try again.");
     } finally { polling.delete(job.id); }
   }
 }
