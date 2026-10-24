@@ -1753,6 +1753,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
 
 /** Everything the live server does on its own: queues, sweeps, syncs. Never on a backup copy. */
 function startBackgroundWork() {
+  // Non-billable Comfy catalog check; no image/video generation on startup.
+  if (comfyRouter.configured()) {
+    comfyRouter.listModels({ limit: 1 })
+      .then(() => console.log("[comfy-router] API catalog access ready"))
+      .catch((e) => console.warn("[comfy-router] catalog unavailable:", e.message));
+  }
   import("./eleven-image.js").then(async (image) => {
     console.log("[eleven-image] access", JSON.stringify(await image.check()));
   }).catch(() => console.warn("[eleven-image] access check unavailable"));
