@@ -1,0 +1,44 @@
+name: Comfy pilot validation
+
+on:
+  push:
+    branches:
+      - dev/comfy-router-provider
+  pull_request:
+    branches:
+      - main
+    paths:
+      - server/src/comfy-router.js
+      - server/src/aimedia.js
+      - server/src/index.js
+      - server/test/comfy-router.test.js
+      - mobile/src/app/ai-media.tsx
+      - mobile/src/lib/api.ts
+      - .github/workflows/comfy-pilot-ci.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-comfy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install backend dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Syntax check edited server files
+        run: |
+          node --check server/src/comfy-router.js
+          node --check server/src/aimedia.js
+          node --check server/src/index.js
+      - name: Test Comfy Router (mocked, no API usage)
+        run: npm --prefix server exec -- node --test test/comfy-router.test.js
+      - name: Install frontend dependencies
+        run: npm ci --prefix mobile --no-audit --no-fund
+      - name: Type check frontend
+        run: npm run typecheck --prefix mobile
