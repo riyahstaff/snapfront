@@ -42,71 +42,120 @@ export async function modelSchema(modelId) {
   return get(`/v2/models/${modelId}/openapi.json`);
 }
 
-// First paid path: a 5s product photo clip using Wan 2.6. Owner-only while piloting.
-// Contract: https://docs.comfy.org/development/comfy-router/models/wan/wan2-6-i2v/code
+// Supported product-image-to-video providers. Inputs and outputs are model-specific.
+// Only the owner sees these until actual Comfy charges and Snapfront customer pricing
+// have been validated. Prices are never inferred from the vendor's model name.
+// https://docs.comfy.org/development/comfy-router/models/
 export const VIDEO_MODEL = "wan/wan2.6-i2v";
-const VIDEO_ROUTE = "/v2/models/wan/wan2.6-i2v";
+export const VIDEO_MODELS = Object.freeze([
+  { id: VIDEO_MODEL, name: "Wan 2.6", note: "Reliable product-image motion" },
+  { id: "wan/wan2.7-i2v", name: "Wan 2.7", note: "Updated image-to-video model" },
+  { id: "minimax/minimax-h3", name: "MiniMax H3", note: "Video with generated audio" },
+  { id: "byteplus/dreamina-seedance-2-5-260628", name: "Seedance 2.5", note: "Product animation" },
+  { id: "kling/kling-video-o1", name: "Kling Video O1", note: "Cinematic image-to-video" },
+]);
+const allowed = new Set(VIDEO_MODELS.map((x) => x.id));
+export function assertVideoModel(id) {
+  if (typeof id !== "string" || !allowed.has(id)) throw httpError(400, "This video model is not supported.");
+  return id;
+}
 const IDENT = /^[a-f0-9-]{36}$/i;
 const REQUEST_ID = /^[a-zA-Z0-9_-]{6,150}$/;
+const routeFor = (modelId) => "/v2/models/" + assertVideoModel(modelId);
 
-export async function submitProductVideo({ image, prompt, idempotencyKey }) {
-  if (!generationEnabled()) throw httpError(503, "Comfy video is not enabled.");
-  if (!IDENT.test(String(idempotencyKey || ""))) throw httpError(500, "Missing durable submission identity.");
-  let u;
-  try { u = new URL(image); } catch { throw httpError(400, "Comfy needs a public image URL."); }
-  if (u.protocol !== "https:" || !u.hostname || u.username || u.password)
-    throw httpError(400, "Comfy needs a public HTTPS image.");
+export function videoBody({ modelId = VIDEO_MODEL, image, prompt }) {
+  assertVideoModel(modelId);
   const cleanPrompt = String(prompt || "").trim().slice(0, 1500);
   if (cleanPrompt.length < 3) throw httpError(400, "A video prompt is required.");
+  let u;
+  try { u = new URL(image); } catch { throw httpError(400, "A public product image is required."); }
+  if (u.protocol !== "https:" || !u.hostname || u.username || u.password)
+    throw httpError(400, "The product image must have a public HTTPS link.");
+  switch (modelId) {
+    case "wan/wan2.6-i2v":
+      return { input: { prompt: cleanPrompt, img_url: image }, parameters: { duration: 5, resolution: "720P" } };
+    case "wan/wan2.7-i2v":
+      return { input: { prompt: cleanPrompt, media: [{ type: "first_frame", url: image }] }, parameters: { duration: 5, resolution: "720P" } };
+    case "minimax/minimax-h3":
+      return { content: [{ type: "text", text: cleanPrompt }, { type: "image_url", role: "first_frame", image_url: { url: image } }],
+        duration: 5, resolution: "768P" };
+    case "byteplus/dreamina-seedance-2-5-260628":
+      return { content: [{ type: "text", text: cleanPrompt }, { type: "image_url", role: "first_frame", image_url: { url: image } }],
+        duration: 5, ratio: "adaptive", resolution: "720p", generate_audio: false, output_format: "mp4" };
+    case "kling/kling-video-o1":
+      return { prompt: cleanPrompt, image_list: [{ type: "first_frame", image_url: image }], duration: "5", mode: "std" };
+  }
+}
+function outputVideoUrl(modelId, result) {
+  switch (modelId) {
+    case "wan/wan2.6-i2v":
+    case "wan/wan2.7-i2v":
+      return result?.output?.video_url;
+    case "minimax/minimax-h3":
+      return result?.task?.content?.url;
+    case "byteplus/dreamina-seedance-2-5-260628":
+      return result?.content?.video_url;
+    case "kling/kling-video-o1":
+      return result?.data?.task_result?.videos?.find((x) => x?.url && x?.type !== "image")?.url;
+  }
+}
+function providerFailed(modelId, result) {
+  if (modelId === "minimax/minimax-h3") return result?.task?.status === "failed";
+  if (modelId === "byteplus/dreamina-seedance-2-5-260628") return ["failed", "expired", "cancelled"].includes(result?.status);
+  if (modelId === "kling/kling-video-o1") return result?.data?.task_status === "failed" || (result?.code != null && result.code !== 0);
+  return Boolean(result?.error_type);
+}
+export async function submitProductVideo({ image, prompt, idempotencyKey, modelId = VIDEO_MODEL }) {
+  if (!generationEnabled()) throw httpError(503, "Comfy video is not enabled.");
+  if (!IDENT.test(String(idempotencyKey || ""))) throw httpError(500, "Missing durable submission identity.");
+  const body = videoBody({ modelId, image, prompt });
   let res;
   try {
-    res = await fetchImpl(`${API}${VIDEO_ROUTE}/requests`, {
+    res = await fetchImpl(API + routeFor(modelId) + "/requests", {
       method: "POST",
       headers: { "X-API-Key": apiKey(), "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
-      body: JSON.stringify({ input: { prompt: cleanPrompt, img_url: image },
-        parameters: { duration: 5, resolution: "720P" } }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(45_000),
     });
   } catch {
-    // Unknown submission outcome. Caller must not make a second paid attempt automatically.
+    // A lost response does not mean the provider rejected the job. Never pay twice.
     throw httpError(503, "Comfy submission status is uncertain. Do not retry automatically.");
   }
-  if (res.status === 402) throw httpError(503, "Comfy has no credits. Add funds in the Comfy Developer Platform.");
-  if (res.status === 401 || res.status === 403) throw httpError(503, "Comfy rejected the API key or account access.");
+  if (res.status === 402) throw httpError(503, "Comfy has no credits. Add funds in the Developer Platform.");
+  if (res.status === 401 || res.status === 403) throw httpError(503, "Comfy rejected the configured API key.");
   if (!res.ok) {
-    console.warn("[comfy-router] video submit rejected", res.status);
-    throw httpError(502, "Comfy could not accept this video request.");
+    console.warn("[comfy-router] video submit rejected", modelId, res.status);
+    throw httpError(502, "The video provider did not accept this generation.");
   }
   const data = await res.json().catch(() => ({}));
   if (res.status !== 201 || !REQUEST_ID.test(String(data.request_id || "")))
-    throw httpError(502, "Comfy accepted a request but did not return a usable job ID.");
+    throw httpError(502, "Comfy returned no usable job ID. Check provider history before retrying.");
   return { requestId: data.request_id };
 }
-
-async function videoRead(path) {
-  const response = await fetchImpl(`${API}${VIDEO_ROUTE}/requests/${path}`, {
+async function videoRead(modelId, suffix) {
+  const res = await fetchImpl(API + routeFor(modelId) + "/requests/" + suffix, {
     headers: { "X-API-Key": apiKey() }, signal: AbortSignal.timeout(20_000),
   });
-  if (!response.ok && response.status !== 202) {
-    console.warn("[comfy-router] video poll failed", response.status);
-    throw httpError(502, "Comfy video status could not be read.");
+  if (!res.ok && res.status !== 202) {
+    console.warn("[comfy-router] video poll failed", modelId, res.status);
+    throw httpError(502, "The video provider's status could not be read.");
   }
-  return { status: response.status, data: await response.json().catch(() => ({})) };
+  return { status: res.status, data: await res.json().catch(() => ({})) };
 }
-
-export async function pollProductVideo(requestId) {
-  // Already accepted jobs must remain collectible when new paid submissions are switched off.
+export async function pollProductVideo(requestId, modelId = VIDEO_MODEL) {
+  // Existing accepted jobs remain collectible when new submissions are disabled.
   if (!configured()) throw httpError(503, "Comfy API key is unavailable for polling.");
-  if (!REQUEST_ID.test(String(requestId || ""))) throw httpError(400, "Invalid Comfy request ID.");
-  const { data } = await videoRead(`${encodeURIComponent(requestId)}/status`);
+  assertVideoModel(modelId);
+  if (!REQUEST_ID.test(String(requestId || ""))) throw httpError(400, "Invalid Comfy job ID.");
+  const suffix = encodeURIComponent(requestId);
+  const { data } = await videoRead(modelId, suffix + "/status");
   if (data.status === "IN_QUEUE" || data.status === "IN_PROGRESS") return { status: "IN_PROGRESS" };
-  if (data.status !== "COMPLETED") throw httpError(502, "Unknown Comfy generation status.");
+  if (data.status !== "COMPLETED") throw httpError(502, "Unknown provider generation status.");
   if (data.error_type) return { status: "FAILED" };
-  const result = await videoRead(encodeURIComponent(requestId));
+  const result = await videoRead(modelId, suffix);
   if (result.status === 202) return { status: "IN_PROGRESS" };
-  // Wan's native response nests its video URL in output.video_url.
-  const videoUrl = result.data?.output?.video_url;
-  if (typeof videoUrl !== "string" || !videoUrl.startsWith("https://"))
-    return { status: "FAILED" };
+  if (result.data?.error_type || providerFailed(modelId, result.data)) return { status: "FAILED" };
+  const videoUrl = outputVideoUrl(modelId, result.data);
+  if (typeof videoUrl !== "string" || !/^https:\/\//.test(videoUrl)) return { status: "FAILED" };
   return { status: "COMPLETED", output: { video_url: videoUrl } };
 }
