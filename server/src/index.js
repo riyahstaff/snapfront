@@ -39,6 +39,7 @@ import { ensureModel as ensureCutoutModel } from "./cutout.js";
 import * as supplierDirectory from "./supplier-directory.js";
 import * as marketing from "./marketing.js";
 import * as aimedia from "./aimedia.js";
+import * as comfyRouter from "./comfy-router.js";
 import * as growth from "./growth.js";
 import * as playbilling from "./playbilling.js";
 import * as webbilling from "./webbilling.js";
@@ -557,6 +558,22 @@ app.post("/api/vierra/session", wrap(async (req, res) => {
 function ownerOnly(req, res, next) {
   auth(req, res, (err) => (err ? next(err) : credits.isOwner(req.account) ? next() : next(httpError(403, "Only Snapfront's owner can do that."))));
 }
+// Owner-only, read-only Comfy Router discovery. Never starts billable generation.
+app.get("/api/admin/owner/comfy/models", ownerOnly, wrap(async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  if (!comfyRouter.configured()) throw httpError(503, "COMFY_API_KEY is not configured on the server.");
+  const catalog = await comfyRouter.listModels({
+    limit: Math.min(100, Math.max(1, Number(req.query.limit) || 50)),
+    cursor: req.query.cursor || undefined,
+  });
+  res.json({ ...catalog, generation_enabled: comfyRouter.generationEnabled() });
+}));
+app.get("/api/admin/owner/comfy/schema", ownerOnly, wrap(async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  if (!comfyRouter.configured()) throw httpError(503, "COMFY_API_KEY is not configured on the server.");
+  res.json(await comfyRouter.modelSchema(String(req.query.model || "")));
+}));
+
 const marketingBase = "/api/admin/owner/marketing";
 app.use(marketingBase, ownerOnly, (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
 app.get(marketingBase, (req, res) => res.json(marketingCenter.dashboard(req.account, req.seller)));
